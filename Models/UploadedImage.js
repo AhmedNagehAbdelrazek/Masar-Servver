@@ -31,6 +31,10 @@ UploadedImage.init(
       type: DataTypes.INTEGER,
       allowNull: true,
     },
+    provider: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
   },
   {
     sequelize,

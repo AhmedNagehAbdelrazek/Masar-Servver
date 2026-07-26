@@ -1,5 +1,5 @@
 const crypto = require('crypto');
-const cloudinary = require('../config/cloudinary');
+const { getUploader } = require('./uploaders');
 const UploadedImage = require('../Models/UploadedImage');
 
 async function upload(req) {
@@ -11,26 +11,40 @@ async function upload(req) {
 
   const existing = await UploadedImage.findOne({ where: { hash } });
   if (existing) {
-    return { id: existing.id, url: existing.url, filename: existing.filename, cached: true };
+    return {
+      id: existing.id,
+      url: existing.url,
+      filename: existing.filename,
+      cached: true,
+      provider: existing?.provider
+    };
   }
-
-  const b64 = Buffer.from(req.file.buffer).toString('base64');
-  const dataUri = `data:${req.file.mimetype};base64,${b64}`;
-
-  const result = await cloudinary.uploader.upload(dataUri, {
-    folder: 'techa',
-    resource_type: 'image',
+  const provider = (process.env.UPLOAD_PROVIDER || 'cloudinary').toLowerCase();
+  const uploader = getUploader();
+  const { url, filename } = await uploader.upload(req.file.buffer, {
+    mimetype: req.file.mimetype,
+    originalname: req.file.originalname,
   });
 
   const image = await UploadedImage.create({
     hash,
-    url: result.secure_url,
-    filename: result.public_id,
+    url,
+    filename,
     mimetype: req.file.mimetype,
     size: req.file.size,
+    provider
   });
 
-  return { id: image.id, url: result.secure_url, filename: result.public_id, cached: false };
+  return { id: image.id, url, filename, cached: false, provider: image?.provider };
 }
 
-module.exports = { upload };
+async function remove(imageId) {
+  const image = await UploadedImage.findByPk(imageId);
+  if (!image) return;
+
+  const uploader = getUploader();
+  await uploader.delete(image.filename);
+  await image.destroy();
+}
+
+module.exports = { upload, remove };
