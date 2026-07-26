@@ -1,0 +1,69 @@
+services:
+  # ── Audit stack ──────────────────────────────────────────────
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: audit
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5433:5432"
+    volumes:
+      - audit_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7
+    ports:
+      - "6380:6379"
+
+  audit-collector:
+    build: ./audit-server
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/audit
+      REDIS_URL: redis://redis:6379
+    ports:
+      - "4000:4000"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  # ── Main server stack ────────────────────────────────────────
+  main-server:
+    build: ./Main Server
+    environment:
+      NODE_ENV: production
+      PORT: 8000
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: app_db
+      DB_HOST: db
+      DB_PORT: 5432
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      JWT_SECRET: change-this-to-a-random-secret
+      JWT_EXPIRY: 24h
+      SALT_ROUNDS: 12
+      UPLOAD_PROVIDER: local
+      AUDIT_COLLECTOR_URL: http://audit-collector:4000
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    volumes:
+      - main_uploads:/app/uploads
+
+volumes:
+  audit_pgdata:
+  main_uploads:

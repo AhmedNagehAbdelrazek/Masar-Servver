@@ -9,13 +9,10 @@ const PORT = process.env.PORT || 3000;
 async function startServer() {
   await initDatabase();
 
-  
-  if(process.env.NODE_ENV == "development") {
-      httpServer.listen(PORT, () => {
-      console.log(`Server running on port ${PORT}`);
-      console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-    });
-  }
+  httpServer.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+    console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+  });
 }
 
 startServer().catch((err) => {
