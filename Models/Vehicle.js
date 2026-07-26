@@ -45,20 +45,36 @@ Vehicle.init(
             allowNull: false,
         },
         registrationDocFront: {
-            type: DataTypes.NUMERIC,
+            type: DataTypes.INTEGER,
             allowNull: true,
+            references: {
+                model: 'uploaded_images',
+                key: 'id',
+            },
         },
         registrationDocBack: {
-            type: DataTypes.NUMERIC,
+            type: DataTypes.INTEGER,
             allowNull: true,
+            references: {
+                model: 'uploaded_images',
+                key: 'id',
+            },
         },
         vehiclePhotoFront: {
-            type: DataTypes.NUMERIC,
+            type: DataTypes.INTEGER,
             allowNull: true,
+            references: {
+                model: 'uploaded_images',
+                key: 'id',
+            },
         },
         vehiclePhotoBack: {
-            type: DataTypes.NUMERIC,
+            type: DataTypes.INTEGER,
             allowNull: true,
+            references: {
+                model: 'uploaded_images',
+                key: 'id',
+            },
         },
         isVerified: {
             type: DataTypes.BOOLEAN,

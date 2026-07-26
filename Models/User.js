@@ -13,7 +13,7 @@ User.init(
         },
         fullName: {
             type: DataTypes.STRING(120),
-            allowNull: false,
+            allowNull: true,
         },
         countryCode: {
             type: DataTypes.STRING(5),

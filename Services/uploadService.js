@@ -11,7 +11,7 @@ async function upload(req) {
 
   const existing = await UploadedImage.findOne({ where: { hash } });
   if (existing) {
-    return { url: existing.url, filename: existing.filename, cached: true };
+    return { id: existing.id, url: existing.url, filename: existing.filename, cached: true };
   }
 
   const b64 = Buffer.from(req.file.buffer).toString('base64');
@@ -22,7 +22,7 @@ async function upload(req) {
     resource_type: 'image',
   });
 
-  await UploadedImage.create({
+  const image = await UploadedImage.create({
     hash,
     url: result.secure_url,
     filename: result.public_id,
@@ -30,7 +30,7 @@ async function upload(req) {
     size: req.file.size,
   });
 
-  return { url: result.secure_url, filename: result.public_id, cached: false };
+  return { id: image.id, url: result.secure_url, filename: result.public_id, cached: false };
 }
 
 module.exports = { upload };

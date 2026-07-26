@@ -1,12 +1,47 @@
 const createApp = require('../../app');
 const sequelize = require('../../config/database');
 
+// Mock Redis — store must be created INSIDE the factory (Jest hoisting rule)
+jest.mock('../../config/redis', () => {
+  const store = new Map();
+  global.__mockRedisStore = store;
+
+  return {
+    __esModule: true,
+    default: {
+      set: jest.fn(),
+      get: jest.fn(),
+      del: jest.fn(),
+      keys: jest.fn(),
+    },
+    setKey: jest.fn(async (key, value) => { store.set(key, value); }),
+    getKey: jest.fn(async (key) => store.get(key) || null),
+    deleteKey: jest.fn(async (key) => { store.delete(key); }),
+    exists: jest.fn(async (key) => store.has(key)),
+    incr: jest.fn(async (key) => {
+      const val = parseInt(store.get(key) || '0', 10) + 1;
+      store.set(key, String(val));
+      return val;
+    }),
+    redis: {
+      keys: jest.fn(async (pattern) => {
+        const prefix = pattern.replace('*', '');
+        return [...store.keys()].filter(k => k.startsWith(prefix));
+      }),
+      del: jest.fn(async (...keys) => {
+        keys.forEach(k => store.delete(k));
+      }),
+    },
+  };
+});
+
 let app;
 let agent;
 
 beforeAll(async () => {
   try {
     await sequelize.authenticate();
+    await sequelize.sync({ force: true });
   } catch (err) {
     console.warn('Database not available, tests may fail:', err.message);
   }
@@ -22,7 +57,14 @@ afterAll(async () => {
   }
 });
 
+beforeEach(() => {
+  const store = global.__mockRedisStore;
+  if (store) store.clear();
+  jest.clearAllMocks();
+});
+
 module.exports = {
   getApp: () => app,
   getAgent: () => agent,
+  getRedisStore: () => global.__mockRedisStore,
 };

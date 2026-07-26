@@ -1,13 +1,49 @@
 const router = require('express').Router();
 const c = require('../Controllers/authController');
 const protect = require('../middlewares/protect');
-const { signupValidation, loginValidation, updateProfileValidation } = require('../utils/validators/authValidator');
+const { roleGuard } = require('../middlewares/roleGuard');
 const validate = require('../middlewares/validatorMiddleware');
+const {
+  registerPhoneValidation,
+  verifyOTPValidation,
+  registerPasswordValidation,
+  loginValidation,
+  forgotPasswordValidation,
+  resetPasswordValidation,
+  resendOTPValidation,
+  refreshValidation,
+  onboardingProfileValidation,
+  onboardingVehicleValidation,
+} = require('../utils/validators/authValidator');
 
+// Registration
+router.post('/register/phone', ...registerPhoneValidation, validate, c.registerPhone);
+router.post('/register/verify-otp', ...verifyOTPValidation, validate, c.verifyRegistrationOTP);
+router.post('/register/password', ...registerPasswordValidation, validate, c.registerPassword);
 
-router.post('/signup',...signupValidation,validate, c.signup);
-router.post('/login', c.login);
+// Login
+router.post('/login', ...loginValidation, validate, c.login);
+
+// Token
+router.post('/refresh', ...refreshValidation, validate, c.refresh);
+router.post('/logout', protect, c.logout);
+
+// Me
 router.get('/me', protect, c.me);
-router.patch('/me', protect, c.updateProfile);
+
+// Forgot password
+router.post('/forgot-password', ...forgotPasswordValidation, validate, c.forgotPassword);
+router.post('/forgot-password/verify-otp', ...verifyOTPValidation, validate, c.verifyForgotPasswordOTP);
+router.post('/forgot-password/reset', ...resetPasswordValidation, validate, c.resetPassword);
+
+// Resend OTP
+router.post('/resend-otp', ...resendOTPValidation, validate, c.resendOTP);
+
+// Onboarding - Driver
+router.post('/onboarding/profile', protect, roleGuard(['driver']), ...onboardingProfileValidation, validate, c.submitDriverProfile);
+router.get('/onboarding/profile', protect, roleGuard(['driver']), c.getDriverProfile);
+router.post('/onboarding/vehicle', protect, roleGuard(['driver']), ...onboardingVehicleValidation, validate, c.submitVehicle);
+router.get('/onboarding/vehicle', protect, roleGuard(['driver']), c.getVehicle);
+router.get('/onboarding/status', protect, roleGuard(['driver']), c.getOnboardingStatus);
 
 module.exports = router;

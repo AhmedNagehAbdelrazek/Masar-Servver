@@ -17,7 +17,7 @@ DriverProfile.init(
             unique: true,
         },
         userIdentificationFront: {
-            type: DataTypes.NUMERIC,
+            type: DataTypes.INTEGER,
             allowNull: true,
             references: {
                 model: 'uploaded_images',
@@ -25,7 +25,7 @@ DriverProfile.init(
             },
         },
         userIdentificationBack: {
-            type: DataTypes.NUMERIC,
+            type: DataTypes.INTEGER,
             allowNull: true,
             references: {
                 model: 'uploaded_images',
@@ -33,7 +33,7 @@ DriverProfile.init(
             },
         },
         linceseFront: {
-            type: DataTypes.NUMERIC,
+            type: DataTypes.INTEGER,
             allowNull: true,
             references: {
                 model: 'uploaded_images',
@@ -41,7 +41,7 @@ DriverProfile.init(
             },
         },
         linceseBack: {
-            type: DataTypes.NUMERIC,
+            type: DataTypes.INTEGER,
             allowNull: true,
             references: {
                 model: 'uploaded_images',
@@ -49,7 +49,7 @@ DriverProfile.init(
             },
         },
         personalImageWithId: {
-            type: DataTypes.NUMERIC,
+            type: DataTypes.INTEGER,
             allowNull: true,
             references: {
                 model: 'uploaded_images',
