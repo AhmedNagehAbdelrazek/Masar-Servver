@@ -7,7 +7,7 @@ ENV CI=true
 WORKDIR /app
 
 COPY package.json pnpm-lock.yaml ./
-RUN pnpm install --frozen-lockfile --omit=dev
+RUN pnpm install --frozen-lockfile --prod
 
 COPY . .
 
