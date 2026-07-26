@@ -1,52 +1,87 @@
 const { Model, DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
-const { ROLES } = require('../config/constants');
+const { ROLES, GENDER, USER_STATUS } = require('../config/constants');
 
 class User extends Model { }
 
 User.init(
     {
         id: {
-            type: DataTypes.INTEGER,
-            autoIncrement: true,
+            type: DataTypes.UUID,
+            defaultValue: DataTypes.UUIDV4,
             primaryKey: true,
         },
-        email: {
-            type: DataTypes.STRING,
+        fullName: {
+            type: DataTypes.STRING(120),
+            allowNull: false,
+        },
+        countryCode: {
+            type: DataTypes.STRING(5),
+            allowNull: true,
+        },
+        phone: {
+            type: DataTypes.STRING(20),
             allowNull: false,
             unique: true,
         },
-        password: {
-            type: DataTypes.STRING,
-            allowNull: false,
+        email: {
+            type: DataTypes.STRING(160),
+            allowNull: true,
+            unique: true,
         },
         role: {
             type: DataTypes.ENUM(Object.values(ROLES)),
             allowNull: false,
-            defaultValue: ROLES.CUSTOMER,
         },
-        name: {
-            type: DataTypes.STRING,
+        gender: {
+            type: DataTypes.ENUM(Object.values(GENDER)),
+            allowNull: true,
+            defaultValue: GENDER.MALE,
+        },
+        passwordHash: {
+            type: DataTypes.STRING(255),
+            allowNull: false,
+        },
+        age: {
+            type: DataTypes.NUMERIC(3),
             allowNull: true,
         },
-        contactInfo: {
-            type: DataTypes.JSONB,
-            allowNull: true,
-        },
-        address: {
+        avatarUrl: {
             type: DataTypes.TEXT,
             allowNull: true,
         },
-        profilePictureUrl: {
-            type: DataTypes.TEXT,
-            allowNull: true,
-            field: 'profile_picture_url',
-        },
-        isActive: {
+        isVerified: {
             type: DataTypes.BOOLEAN,
+            allowNull: false,
+            defaultValue: false,
+        },
+        avgRating: {
+            type: DataTypes.NUMERIC(2, 1),
+            defaultValue: 0,
+        },
+        strikes: {
+            type: DataTypes.SMALLINT,
+            allowNull: false,
+            defaultValue: 0,
+        },
+        locale: {
+            type: DataTypes.STRING(5),
+            allowNull: false,
+            defaultValue: 'ar',
+        },
+        status: {
+            type: DataTypes.ENUM(Object.values(USER_STATUS)),
+            allowNull: false,
+            defaultValue: USER_STATUS.ACTIVE,
+        },
+        fcmToken: {
+            type: DataTypes.TEXT,
             allowNull: true,
-            defaultValue: true,
-        }
+        },
+        lastLoginAt: {
+            type: DataTypes.DATE,
+            allowNull: true,
+        },
     },
     {
         sequelize,

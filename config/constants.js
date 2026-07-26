@@ -1,10 +1,106 @@
 const ROLES = {
-  SUPER_ADMIN: 'super_admin',
+  PASSENGER: 'passenger',
+  DRIVER: 'driver',
   ADMIN: 'admin',
-  RIDER: 'rider',
-  PASSENGER:'passenger',
-  MANAGER: 'manager',
+  SUPPORT: 'support',
+  MODERATOR: 'moderator',
+};
 
+const USER_STATUS = {
+  ACTIVE: 'active',
+  WARNED: 'warned',
+  SUSPENDED: 'suspended',
+  BANNED: 'banned',
+};
+
+const GENDER = {
+  MALE: 'male',
+  FEMALE: 'female',
+};
+
+const VEHICLE_TYPES = {
+  SEDAN: 'sedan',
+  SUV: 'suv',
+  VAN: 'van',
+  BUS: 'bus',
+  HATCHBACK: 'hatchback',
+};
+
+const TRIP_STATUS = {
+  PUBLISHED: 'published',
+  FULL: 'full',
+  ONGOING: 'ongoing',
+  COMPLETED: 'completed',
+  CANCELLED: 'cancelled',
+};
+
+const BOOKING_STATUS = {
+  PENDING: 'pending',
+  CONFIRMED: 'confirmed',
+  CANCELLED: 'cancelled',
+  COMPLETED: 'completed',
+  NO_SHOW: 'no_show',
+};
+
+const PAYMENT_STATUS = {
+  PENDING: 'pending',
+  PAID_CASH: 'paid_cash',
+  PAID_OTHER: 'paid_other',
+  DISPUTED: 'disputed',
+};
+
+const RIDE_REQUEST_STATUS = {
+  OPEN: 'open',
+  OFFERED: 'offered',
+  ACCEPTED: 'accepted',
+  EXPIRED: 'expired',
+  CANCELLED: 'cancelled',
+};
+
+const REQUEST_OFFER_STATUS = {
+  SENT: 'sent',
+  ACCEPTED: 'accepted',
+  DECLINED: 'declined',
+  EXPIRED: 'expired',
+};
+
+const COMPLAINT_STATUS = {
+  OPEN: 'open',
+  REVIEWING: 'reviewing',
+  RESOLVED: 'resolved',
+  DISMISSED: 'dismissed',
+};
+
+const PENALTY_TYPES = {
+  WARNING: 'warning',
+  SUSPENSION: 'suspension',
+  BAN: 'ban',
+};
+
+const TICKET_STATUS = {
+  OPEN: 'open',
+  IN_PROGRESS: 'in_progress',
+  RESOLVED: 'resolved',
+  CLOSED: 'closed',
+};
+
+const TICKET_PRIORITY = {
+  LOW: 'low',
+  MEDIUM: 'medium',
+  HIGH: 'high',
+  URGENT: 'urgent',
+};
+
+const SUBSCRIPTION_TIER = {
+  FREE: 'free',
+  PRO_MONTHLY: 'pro_monthly',
+  PRO_ANNUAL: 'pro_annual',
+};
+
+const STOP_TYPE = {
+  PICKUP: 'pickup',
+  DROPOFF: 'dropoff',
+  BOTH: 'both',
 };
 
 const SIGNUP_ROLES = [ROLES.PASSENGER, ROLES.RIDER];
@@ -27,8 +123,20 @@ const PAGINATION = {
 
 module.exports = {
   ROLES,
-  ORDER_STATUS,
-  PAYMENT_METHODS,
+  USER_STATUS,
+  GENDER,
+  VEHICLE_TYPES,
+  TRIP_STATUS,
+  BOOKING_STATUS,
+  PAYMENT_STATUS,
+  RIDE_REQUEST_STATUS,
+  REQUEST_OFFER_STATUS,
+  COMPLAINT_STATUS,
+  PENALTY_TYPES,
+  TICKET_STATUS,
+  TICKET_PRIORITY,
+  SUBSCRIPTION_TIER,
+  STOP_TYPE,
   PAGINATION,
   ADMIN_RESOURCES,
   ADMIN_ACTIONS,

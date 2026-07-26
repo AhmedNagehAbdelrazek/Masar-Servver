@@ -1,22 +1,131 @@
-// import all models
 const User = require('./User');
 const UploadedImage = require('./UploadedImage');
+const Vehicle = require('./Vehicle');
+const DriverProfile = require('./DriverProfile');
+const PassengerProfile = require('./PassengerProfile');
+const Trip = require('./Trip');
+const TripAttribute = require('./TripAttribute');
+const TripStop = require('./TripStop');
+const Booking = require('./Booking');
+const RideRequest = require('./RideRequest');
+const RequestOffer = require('./RequestOffer');
+const Rating = require('./Rating');
+const DelayEvent = require('./DelayEvent');
+const Complaint = require('./Complaint');
+const Penalty = require('./Penalty');
+const SupportTicket = require('./SupportTicket');
+const Notification = require('./Notification');
+const FavoriteDriver = require('./FavoriteDriver');
+const FavoriteRoute = require('./FavoriteRoute');
+const AuditLog = require('./AuditLog');
+const SubscriptionTransaction = require('./SubscriptionTransaction');
 
+// ===== USER RELATIONS =====
+User.hasOne(DriverProfile, { foreignKey: 'driver_id', as: 'driverProfile' });
+DriverProfile.belongsTo(User, { foreignKey: 'driver_id', as: 'driver' });
 
-// Relations between models 
-// Example:
-// Order.hasMany(OrderItem, { foreignKey: 'order_id' });
-// OrderItem.belongsTo(Order, { foreignKey: 'order_id' });
+User.hasOne(PassengerProfile, { foreignKey: 'passenger_id', as: 'passengerProfile' });
+PassengerProfile.belongsTo(User, { foreignKey: 'passenger_id', as: 'passenger' });
 
-// Product.hasMany(OrderItem, { foreignKey: 'product_id' });
-// OrderItem.belongsTo(Product, { foreignKey: 'product_id' });
+User.hasMany(Vehicle, { foreignKey: 'driver_id', as: 'vehicles' });
+Vehicle.belongsTo(User, { foreignKey: 'driver_id', as: 'driver' });
 
-// Variant.hasMany(OrderItem, { foreignKey: 'variant_id' });
-// OrderItem.belongsTo(Variant, { foreignKey: 'variant_id' });
+User.hasMany(Trip, { foreignKey: 'driver_id', as: 'trips' });
+Trip.belongsTo(User, { foreignKey: 'driver_id', as: 'driver' });
 
+User.hasMany(Booking, { foreignKey: 'passenger_id', as: 'bookings' });
+Booking.belongsTo(User, { foreignKey: 'passenger_id', as: 'passenger' });
 
-// export all models
+User.hasMany(RideRequest, { foreignKey: 'passenger_id', as: 'rideRequests' });
+RideRequest.belongsTo(User, { foreignKey: 'passenger_id', as: 'passenger' });
+
+User.hasMany(RequestOffer, { foreignKey: 'driver_id', as: 'requestOffers' });
+RequestOffer.belongsTo(User, { foreignKey: 'driver_id', as: 'driver' });
+
+User.hasMany(Rating, { foreignKey: 'rater_id', as: 'ratingsGiven' });
+Rating.belongsTo(User, { foreignKey: 'rater_id', as: 'rater' });
+
+User.hasMany(Rating, { foreignKey: 'ratee_id', as: 'ratingsReceived' });
+Rating.belongsTo(User, { foreignKey: 'ratee_id', as: 'ratee' });
+
+User.hasMany(Complaint, { foreignKey: 'reporter_id', as: 'complaintsReported' });
+Complaint.belongsTo(User, { foreignKey: 'reporter_id', as: 'reporter' });
+
+User.hasMany(Complaint, { foreignKey: 'accused_id', as: 'complaintsAccused' });
+Complaint.belongsTo(User, { foreignKey: 'accused_id', as: 'accused' });
+
+User.hasMany(Penalty, { foreignKey: 'user_id', as: 'penalties' });
+Penalty.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+
+User.hasMany(SupportTicket, { foreignKey: 'user_id', as: 'supportTickets' });
+SupportTicket.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+
+User.hasMany(Notification, { foreignKey: 'user_id', as: 'notifications' });
+Notification.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+
+// FavoriteDriver (passenger -> driver)
+User.hasMany(FavoriteDriver, { foreignKey: 'passenger_id', as: 'favoriteDrivers' });
+FavoriteDriver.belongsTo(User, { foreignKey: 'passenger_id', as: 'passenger' });
+
+User.hasMany(FavoriteDriver, { foreignKey: 'driver_id', as: 'favoritedByPassengers' });
+FavoriteDriver.belongsTo(User, { foreignKey: 'driver_id', as: 'driver' });
+
+// FavoriteRoute
+User.hasMany(FavoriteRoute, { foreignKey: 'passenger_id', as: 'favoriteRoutes' });
+FavoriteRoute.belongsTo(User, { foreignKey: 'passenger_id', as: 'passenger' });
+
+// ===== VEHICLE RELATIONS =====
+Vehicle.hasMany(Trip, { foreignKey: 'vehicle_id', as: 'trips' });
+Trip.belongsTo(Vehicle, { foreignKey: 'vehicle_id', as: 'vehicle' });
+
+// ===== TRIP RELATIONS =====
+Trip.hasMany(TripAttribute, { foreignKey: 'trip_id', as: 'attributes', onDelete: 'CASCADE' });
+TripAttribute.belongsTo(Trip, { foreignKey: 'trip_id', as: 'trip' });
+
+Trip.hasMany(TripStop, { foreignKey: 'trip_id', as: 'stops', onDelete: 'CASCADE' });
+TripStop.belongsTo(Trip, { foreignKey: 'trip_id', as: 'trip' });
+
+Trip.hasMany(Booking, { foreignKey: 'trip_id', as: 'bookings' });
+Booking.belongsTo(Trip, { foreignKey: 'trip_id', as: 'trip' });
+
+Trip.hasMany(RequestOffer, { foreignKey: 'trip_id', as: 'offers' });
+RequestOffer.belongsTo(Trip, { foreignKey: 'trip_id', as: 'trip' });
+
+// ===== BOOKING RELATIONS =====
+Booking.hasMany(Rating, { foreignKey: 'booking_id', as: 'ratings' });
+Rating.belongsTo(Booking, { foreignKey: 'booking_id', as: 'booking' });
+
+Booking.hasMany(DelayEvent, { foreignKey: 'booking_id', as: 'delayEvents' });
+DelayEvent.belongsTo(Booking, { foreignKey: 'booking_id', as: 'booking' });
+
+// ===== RIDE REQUEST RELATIONS =====
+RideRequest.hasMany(RequestOffer, { foreignKey: 'request_id', as: 'offers' });
+RequestOffer.belongsTo(RideRequest, { foreignKey: 'request_id', as: 'rideRequest' });
+
+// ===== COMPLAINT RELATIONS =====
+Complaint.hasMany(Penalty, { foreignKey: 'complaint_id', as: 'penalties' });
+Penalty.belongsTo(Complaint, { foreignKey: 'complaint_id', as: 'complaint' });
+
 module.exports = {
   User,
   UploadedImage,
+  Vehicle,
+  DriverProfile,
+  PassengerProfile,
+  Trip,
+  TripAttribute,
+  TripStop,
+  Booking,
+  RideRequest,
+  RequestOffer,
+  Rating,
+  DelayEvent,
+  Complaint,
+  Penalty,
+  SupportTicket,
+  Notification,
+  FavoriteDriver,
+  FavoriteRoute,
+  AuditLog,
+  SubscriptionTransaction,
 };
