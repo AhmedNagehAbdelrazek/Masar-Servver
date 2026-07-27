@@ -26,20 +26,6 @@ async function initMigrations() {
     console.log('[init] Created migrations/versions/');
   }
 
-  const conn = createConnection();
-  try {
-    await conn.query(`
-      CREATE TABLE IF NOT EXISTS _schema_migrations (
-        version VARCHAR(255) PRIMARY KEY,
-        name VARCHAR(255),
-        applied_at TIMESTAMP DEFAULT NOW()
-      );
-    `);
-    console.log('[init] _schema_migrations table ready.');
-  } finally {
-    await conn.close();
-  }
-
   const rootFiles = fs.readdirSync(MIGRATIONS_ROOT).filter((f) => {
     return f.endsWith('.js') && /^\d+-.+\.js$/.test(f);
   });
@@ -74,8 +60,28 @@ async function initMigrations() {
     }
   }
 
+  let conn;
+  try {
+    conn = createConnection();
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS _schema_migrations (
+        version VARCHAR(255) PRIMARY KEY,
+        name VARCHAR(255),
+        applied_at TIMESTAMP DEFAULT NOW()
+      );
+    `);
+    console.log('[init] _schema_migrations table ready.');
+  } catch (err) {
+    console.warn('[init] Could not connect to DB:', err.message);
+    console.warn('[init] File organization done. Run "db:init" later when DB is available.');
+    console.log('[init] Done! Migration files are ready.');
+    return;
+  } finally {
+    if (conn) await conn.close();
+  }
+
   console.log('[init] Running pending migrations...');
-  await runMigrations({ sequelize: await createConnection() });
+  await runMigrations({ sequelize: createConnection() });
 
   console.log('[init] Done! Migration system is ready.');
 }

@@ -2,30 +2,746 @@
     "tables": {
         "users": {
             "tableName": "users",
+            "schema": {
+                "id": {
+                    "defaultValue": {
+                        "internal": true,
+                        "value": "Sequelize.UUIDV4"
+                    },
+                    "primaryKey": true,
+                    "field": "id",
+                    "seqType": "Sequelize.UUID"
+                },
+                "fullName": {
+                    "allowNull": true,
+                    "field": "full_name",
+                    "seqType": "Sequelize.STRING(120)"
+                },
+                "countryCode": {
+                    "allowNull": true,
+                    "field": "country_code",
+                    "seqType": "Sequelize.STRING(5)"
+                },
+                "phone": {
+                    "allowNull": false,
+                    "unique": true,
+                    "field": "phone",
+                    "seqType": "Sequelize.STRING(20)"
+                },
+                "email": {
+                    "allowNull": true,
+                    "unique": true,
+                    "field": "email",
+                    "seqType": "Sequelize.STRING(160)"
+                },
+                "role": {
+                    "allowNull": false,
+                    "field": "role",
+                    "seqType": "Sequelize.ENUM('passenger', 'driver', 'admin', 'support', 'moderator')"
+                },
+                "gender": {
+                    "allowNull": true,
+                    "defaultValue": {
+                        "value": "male"
+                    },
+                    "field": "gender",
+                    "seqType": "Sequelize.ENUM('male', 'female')"
+                },
+                "passwordHash": {
+                    "allowNull": false,
+                    "field": "password_hash",
+                    "seqType": "Sequelize.STRING(255)"
+                },
+                "age": {
+                    "allowNull": true,
+                    "field": "age",
+                    "seqType": "Sequelize.DECIMAL(3)"
+                },
+                "avatarUrl": {
+                    "allowNull": true,
+                    "field": "avatar_url",
+                    "seqType": "Sequelize.TEXT"
+                },
+                "isVerified": {
+                    "allowNull": false,
+                    "defaultValue": {
+                        "value": false
+                    },
+                    "field": "is_verified",
+                    "seqType": "Sequelize.BOOLEAN"
+                },
+                "avgRating": {
+                    "defaultValue": {
+                        "value": 0
+                    },
+                    "field": "avg_rating",
+                    "seqType": "Sequelize.DECIMAL(2, 1)"
+                },
+                "strikes": {
+                    "allowNull": false,
+                    "defaultValue": {
+                        "value": 0
+                    },
+                    "field": "strikes",
+                    "seqType": "Sequelize.SMALLINT"
+                },
+                "locale": {
+                    "allowNull": false,
+                    "defaultValue": {
+                        "value": "ar"
+                    },
+                    "field": "locale",
+                    "seqType": "Sequelize.STRING(5)"
+                },
+                "status": {
+                    "allowNull": false,
+                    "defaultValue": {
+                        "value": "active"
+                    },
+                    "field": "status",
+                    "seqType": "Sequelize.ENUM('active', 'warned', 'suspended', 'banned')"
+                },
+                "fcmToken": {
+                    "allowNull": true,
+                    "field": "fcm_token",
+                    "seqType": "Sequelize.TEXT"
+                },
+                "lastLoginAt": {
+                    "allowNull": true,
+                    "field": "last_login_at",
+                    "seqType": "Sequelize.DATE"
+                },
+                "createdat": {
+                    "allowNull": false,
+                    "field": "createdat",
+                    "seqType": "Sequelize.DATE"
+                },
+                "updatedat": {
+                    "allowNull": false,
+                    "field": "updatedat",
+                    "seqType": "Sequelize.DATE"
+                }
+            },
             "indexes": []
         },
         "uploaded_images": {
             "tableName": "uploaded_images",
+            "schema": {
+                "id": {
+                    "autoIncrement": true,
+                    "primaryKey": true,
+                    "field": "id",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "hash": {
+                    "allowNull": false,
+                    "unique": true,
+                    "field": "hash",
+                    "seqType": "Sequelize.STRING(64)"
+                },
+                "url": {
+                    "allowNull": false,
+                    "field": "url",
+                    "seqType": "Sequelize.TEXT"
+                },
+                "filename": {
+                    "allowNull": false,
+                    "field": "filename",
+                    "seqType": "Sequelize.TEXT"
+                },
+                "mimetype": {
+                    "allowNull": false,
+                    "field": "mimetype",
+                    "seqType": "Sequelize.TEXT"
+                },
+                "size": {
+                    "allowNull": true,
+                    "field": "size",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "provider": {
+                    "allowNull": true,
+                    "field": "provider",
+                    "seqType": "Sequelize.TEXT"
+                },
+                "createdat": {
+                    "allowNull": false,
+                    "field": "createdat",
+                    "seqType": "Sequelize.DATE"
+                },
+                "updatedat": {
+                    "allowNull": false,
+                    "field": "updatedat",
+                    "seqType": "Sequelize.DATE"
+                }
+            },
             "indexes": []
         },
         "vehicles": {
             "tableName": "vehicles",
+            "schema": {
+                "id": {
+                    "defaultValue": {
+                        "internal": true,
+                        "value": "Sequelize.UUIDV4"
+                    },
+                    "primaryKey": true,
+                    "field": "id",
+                    "seqType": "Sequelize.UUID"
+                },
+                "driverId": {
+                    "allowNull": false,
+                    "field": "driver_id",
+                    "seqType": "Sequelize.UUID"
+                },
+                "manufacturer": {
+                    "allowNull": false,
+                    "field": "manufacturer",
+                    "seqType": "Sequelize.STRING(80)"
+                },
+                "model": {
+                    "allowNull": false,
+                    "field": "model",
+                    "seqType": "Sequelize.STRING(80)"
+                },
+                "vehicleType": {
+                    "allowNull": false,
+                    "field": "vehicle_type",
+                    "seqType": "Sequelize.ENUM('sedan', 'suv', 'van', 'bus', 'hatchback')"
+                },
+                "modelYear": {
+                    "allowNull": true,
+                    "field": "model_year",
+                    "seqType": "Sequelize.SMALLINT"
+                },
+                "plateNumber": {
+                    "allowNull": false,
+                    "unique": true,
+                    "field": "plate_number",
+                    "seqType": "Sequelize.STRING(20)"
+                },
+                "color": {
+                    "allowNull": true,
+                    "field": "color",
+                    "seqType": "Sequelize.STRING(30)"
+                },
+                "seats": {
+                    "allowNull": false,
+                    "field": "seats",
+                    "seqType": "Sequelize.SMALLINT"
+                },
+                "registrationDocFront": {
+                    "allowNull": true,
+                    "references": {
+                        "model": "uploaded_images",
+                        "key": "id"
+                    },
+                    "field": "registration_doc_front",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "registrationDocBack": {
+                    "allowNull": true,
+                    "references": {
+                        "model": "uploaded_images",
+                        "key": "id"
+                    },
+                    "field": "registration_doc_back",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "vehiclePhotoFront": {
+                    "allowNull": true,
+                    "references": {
+                        "model": "uploaded_images",
+                        "key": "id"
+                    },
+                    "field": "vehicle_photo_front",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "vehiclePhotoBack": {
+                    "allowNull": true,
+                    "references": {
+                        "model": "uploaded_images",
+                        "key": "id"
+                    },
+                    "field": "vehicle_photo_back",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "isVerified": {
+                    "allowNull": false,
+                    "defaultValue": {
+                        "value": false
+                    },
+                    "field": "is_verified",
+                    "seqType": "Sequelize.BOOLEAN"
+                },
+                "verificationNotes": {
+                    "allowNull": true,
+                    "field": "verification_notes",
+                    "seqType": "Sequelize.TEXT"
+                },
+                "verifiedBy": {
+                    "allowNull": true,
+                    "field": "verified_by",
+                    "seqType": "Sequelize.UUID"
+                },
+                "verifiedAt": {
+                    "allowNull": true,
+                    "field": "verified_at",
+                    "seqType": "Sequelize.DATE"
+                },
+                "createdat": {
+                    "allowNull": false,
+                    "field": "createdat",
+                    "seqType": "Sequelize.DATE"
+                },
+                "updatedat": {
+                    "allowNull": false,
+                    "field": "updatedat",
+                    "seqType": "Sequelize.DATE"
+                },
+                "driver_id": {
+                    "allowNull": true,
+                    "references": {
+                        "model": "users",
+                        "key": "id"
+                    },
+                    "onDelete": "SET NULL",
+                    "onUpdate": "CASCADE",
+                    "field": "driver_id",
+                    "seqType": "Sequelize.UUID"
+                }
+            },
             "indexes": []
         },
         "driver_profiles": {
             "tableName": "driver_profiles",
+            "schema": {
+                "id": {
+                    "defaultValue": {
+                        "internal": true,
+                        "value": "Sequelize.UUIDV4"
+                    },
+                    "primaryKey": true,
+                    "field": "id",
+                    "seqType": "Sequelize.UUID"
+                },
+                "driverId": {
+                    "allowNull": false,
+                    "unique": true,
+                    "field": "driver_id",
+                    "seqType": "Sequelize.UUID"
+                },
+                "userIdentificationFront": {
+                    "allowNull": true,
+                    "references": {
+                        "model": "uploaded_images",
+                        "key": "id"
+                    },
+                    "field": "user_identification_front",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "userIdentificationBack": {
+                    "allowNull": true,
+                    "references": {
+                        "model": "uploaded_images",
+                        "key": "id"
+                    },
+                    "field": "user_identification_back",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "linceseFront": {
+                    "allowNull": true,
+                    "references": {
+                        "model": "uploaded_images",
+                        "key": "id"
+                    },
+                    "field": "lincese_front",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "linceseBack": {
+                    "allowNull": true,
+                    "references": {
+                        "model": "uploaded_images",
+                        "key": "id"
+                    },
+                    "field": "lincese_back",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "personalImageWithId": {
+                    "allowNull": true,
+                    "references": {
+                        "model": "uploaded_images",
+                        "key": "id"
+                    },
+                    "field": "personal_image_with_id",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "nationalID": {
+                    "allowNull": true,
+                    "field": "national_i_d",
+                    "seqType": "Sequelize.STRING(30)"
+                },
+                "idVerified": {
+                    "allowNull": true,
+                    "defaultValue": {
+                        "value": false
+                    },
+                    "field": "id_verified",
+                    "seqType": "Sequelize.BOOLEAN"
+                },
+                "licenseNumber": {
+                    "allowNull": true,
+                    "field": "license_number",
+                    "seqType": "Sequelize.STRING(50)"
+                },
+                "licenseExpiry": {
+                    "allowNull": true,
+                    "field": "license_expiry",
+                    "seqType": "Sequelize.DATEONLY"
+                },
+                "subscriptionTier": {
+                    "allowNull": true,
+                    "defaultValue": {
+                        "value": "free"
+                    },
+                    "field": "subscription_tier",
+                    "seqType": "Sequelize.ENUM('free', 'pro_monthly', 'pro_annual')"
+                },
+                "subscriptionExpiresAt": {
+                    "allowNull": true,
+                    "field": "subscription_expires_at",
+                    "seqType": "Sequelize.DATE"
+                },
+                "totalTrips": {
+                    "allowNull": true,
+                    "defaultValue": {
+                        "value": 0
+                    },
+                    "field": "total_trips",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "totalEarnings": {
+                    "allowNull": true,
+                    "defaultValue": {
+                        "value": 0
+                    },
+                    "field": "total_earnings",
+                    "seqType": "Sequelize.DECIMAL(12, 2)"
+                },
+                "responseRate": {
+                    "allowNull": true,
+                    "defaultValue": {
+                        "value": 100
+                    },
+                    "field": "response_rate",
+                    "seqType": "Sequelize.DECIMAL(5, 2)"
+                },
+                "bio": {
+                    "allowNull": true,
+                    "field": "bio",
+                    "seqType": "Sequelize.TEXT"
+                },
+                "createdat": {
+                    "allowNull": false,
+                    "field": "createdat",
+                    "seqType": "Sequelize.DATE"
+                },
+                "updatedat": {
+                    "allowNull": false,
+                    "field": "updatedat",
+                    "seqType": "Sequelize.DATE"
+                },
+                "driver_id": {
+                    "allowNull": true,
+                    "references": {
+                        "model": "users",
+                        "key": "id"
+                    },
+                    "onDelete": "SET NULL",
+                    "onUpdate": "CASCADE",
+                    "field": "driver_id",
+                    "seqType": "Sequelize.UUID"
+                }
+            },
             "indexes": []
         },
         "passenger_profiles": {
             "tableName": "passenger_profiles",
+            "schema": {
+                "id": {
+                    "defaultValue": {
+                        "internal": true,
+                        "value": "Sequelize.UUIDV4"
+                    },
+                    "primaryKey": true,
+                    "field": "id",
+                    "seqType": "Sequelize.UUID"
+                },
+                "passengerId": {
+                    "allowNull": false,
+                    "unique": true,
+                    "field": "passenger_id",
+                    "seqType": "Sequelize.UUID"
+                },
+                "preferredGender": {
+                    "allowNull": true,
+                    "defaultValue": {
+                        "value": "any"
+                    },
+                    "field": "preferred_gender",
+                    "seqType": "Sequelize.ENUM('male', 'female', 'any')"
+                },
+                "smokingPreference": {
+                    "allowNull": true,
+                    "defaultValue": {
+                        "value": "no_preference"
+                    },
+                    "field": "smoking_preference",
+                    "seqType": "Sequelize.ENUM('no_preference', 'non_smoking', 'smoking_allowed')"
+                },
+                "savedRoutes": {
+                    "allowNull": true,
+                    "defaultValue": {
+                        "value": []
+                    },
+                    "field": "saved_routes",
+                    "seqType": "Sequelize.JSONB"
+                },
+                "emergencyContacts": {
+                    "allowNull": true,
+                    "defaultValue": {
+                        "value": []
+                    },
+                    "field": "emergency_contacts",
+                    "seqType": "Sequelize.JSONB"
+                },
+                "createdat": {
+                    "allowNull": false,
+                    "field": "createdat",
+                    "seqType": "Sequelize.DATE"
+                },
+                "updatedat": {
+                    "allowNull": false,
+                    "field": "updatedat",
+                    "seqType": "Sequelize.DATE"
+                },
+                "passenger_id": {
+                    "allowNull": true,
+                    "references": {
+                        "model": "users",
+                        "key": "id"
+                    },
+                    "onDelete": "SET NULL",
+                    "onUpdate": "CASCADE",
+                    "field": "passenger_id",
+                    "seqType": "Sequelize.UUID"
+                }
+            },
             "indexes": []
         },
         "trips": {
             "tableName": "trips",
+            "schema": {
+                "id": {
+                    "defaultValue": {
+                        "internal": true,
+                        "value": "Sequelize.UUIDV4"
+                    },
+                    "primaryKey": true,
+                    "field": "id",
+                    "seqType": "Sequelize.UUID"
+                },
+                "driverId": {
+                    "allowNull": false,
+                    "field": "driver_id",
+                    "seqType": "Sequelize.UUID"
+                },
+                "vehicleId": {
+                    "allowNull": false,
+                    "field": "vehicle_id",
+                    "seqType": "Sequelize.UUID"
+                },
+                "originCity": {
+                    "allowNull": false,
+                    "field": "origin_city",
+                    "seqType": "Sequelize.STRING(80)"
+                },
+                "originAddress": {
+                    "allowNull": true,
+                    "field": "origin_address",
+                    "seqType": "Sequelize.STRING(255)"
+                },
+                "originLat": {
+                    "allowNull": true,
+                    "field": "origin_lat",
+                    "seqType": "Sequelize.DECIMAL(10, 8)"
+                },
+                "originLng": {
+                    "allowNull": true,
+                    "field": "origin_lng",
+                    "seqType": "Sequelize.DECIMAL(11, 8)"
+                },
+                "destinationCity": {
+                    "allowNull": false,
+                    "field": "destination_city",
+                    "seqType": "Sequelize.STRING(80)"
+                },
+                "destinationAddress": {
+                    "allowNull": true,
+                    "field": "destination_address",
+                    "seqType": "Sequelize.STRING(255)"
+                },
+                "destinationLat": {
+                    "allowNull": true,
+                    "field": "destination_lat",
+                    "seqType": "Sequelize.DECIMAL(10, 8)"
+                },
+                "destinationLng": {
+                    "allowNull": true,
+                    "field": "destination_lng",
+                    "seqType": "Sequelize.DECIMAL(11, 8)"
+                },
+                "departureTime": {
+                    "allowNull": false,
+                    "field": "departure_time",
+                    "seqType": "Sequelize.DATE"
+                },
+                "arrivalTime": {
+                    "allowNull": true,
+                    "field": "arrival_time",
+                    "seqType": "Sequelize.DATE"
+                },
+                "totalSeats": {
+                    "allowNull": false,
+                    "field": "total_seats",
+                    "seqType": "Sequelize.SMALLINT"
+                },
+                "availableSeats": {
+                    "allowNull": false,
+                    "field": "available_seats",
+                    "seqType": "Sequelize.SMALLINT"
+                },
+                "farePerSeat": {
+                    "allowNull": false,
+                    "field": "fare_per_seat",
+                    "seqType": "Sequelize.DECIMAL(10, 2)"
+                },
+                "currency": {
+                    "allowNull": true,
+                    "defaultValue": {
+                        "value": "JOD"
+                    },
+                    "field": "currency",
+                    "seqType": "Sequelize.STRING(3)"
+                },
+                "isRecurring": {
+                    "allowNull": false,
+                    "defaultValue": {
+                        "value": false
+                    },
+                    "field": "is_recurring",
+                    "seqType": "Sequelize.BOOLEAN"
+                },
+                "recurrencePattern": {
+                    "allowNull": true,
+                    "field": "recurrence_pattern",
+                    "seqType": "Sequelize.JSONB"
+                },
+                "status": {
+                    "allowNull": false,
+                    "defaultValue": {
+                        "value": "published"
+                    },
+                    "field": "status",
+                    "seqType": "Sequelize.ENUM('published', 'full', 'ongoing', 'completed', 'cancelled')"
+                },
+                "isFeatured": {
+                    "allowNull": true,
+                    "defaultValue": {
+                        "value": false
+                    },
+                    "field": "is_featured",
+                    "seqType": "Sequelize.BOOLEAN"
+                },
+                "featuredUntil": {
+                    "allowNull": true,
+                    "field": "featured_until",
+                    "seqType": "Sequelize.DATE"
+                },
+                "createdat": {
+                    "allowNull": false,
+                    "field": "createdat",
+                    "seqType": "Sequelize.DATE"
+                },
+                "updatedat": {
+                    "allowNull": false,
+                    "field": "updatedat",
+                    "seqType": "Sequelize.DATE"
+                },
+                "driver_id": {
+                    "allowNull": true,
+                    "references": {
+                        "model": "users",
+                        "key": "id"
+                    },
+                    "onDelete": "SET NULL",
+                    "onUpdate": "CASCADE",
+                    "field": "driver_id",
+                    "seqType": "Sequelize.UUID"
+                },
+                "vehicle_id": {
+                    "allowNull": true,
+                    "references": {
+                        "model": "vehicles",
+                        "key": "id"
+                    },
+                    "onDelete": "SET NULL",
+                    "onUpdate": "CASCADE",
+                    "field": "vehicle_id",
+                    "seqType": "Sequelize.UUID"
+                }
+            },
             "indexes": []
         },
         "trip_attributes": {
             "tableName": "trip_attributes",
+            "schema": {
+                "id": {
+                    "defaultValue": {
+                        "internal": true,
+                        "value": "Sequelize.UUIDV4"
+                    },
+                    "primaryKey": true,
+                    "field": "id",
+                    "seqType": "Sequelize.UUID"
+                },
+                "tripId": {
+                    "allowNull": false,
+                    "field": "trip_id",
+                    "seqType": "Sequelize.UUID"
+                },
+                "attrKey": {
+                    "allowNull": false,
+                    "field": "attr_key",
+                    "seqType": "Sequelize.STRING(30)"
+                },
+                "attrValue": {
+                    "allowNull": false,
+                    "field": "attr_value",
+                    "seqType": "Sequelize.STRING(30)"
+                },
+                "trip_id": {
+                    "allowNull": true,
+                    "references": {
+                        "model": "trips",
+                        "key": "id"
+                    },
+                    "onDelete": "CASCADE",
+                    "onUpdate": "CASCADE",
+                    "field": "trip_id",
+                    "seqType": "Sequelize.UUID"
+                }
+            },
             "indexes": {
                 "426a6e04e39ed053f5ef2da1ea053b364cf4169a": {
                     "unique": true,
@@ -43,46 +759,1007 @@
         },
         "trip_stops": {
             "tableName": "trip_stops",
+            "schema": {
+                "id": {
+                    "defaultValue": {
+                        "internal": true,
+                        "value": "Sequelize.UUIDV4"
+                    },
+                    "primaryKey": true,
+                    "field": "id",
+                    "seqType": "Sequelize.UUID"
+                },
+                "tripId": {
+                    "allowNull": false,
+                    "field": "trip_id",
+                    "seqType": "Sequelize.UUID"
+                },
+                "stopOrder": {
+                    "allowNull": false,
+                    "field": "stop_order",
+                    "seqType": "Sequelize.SMALLINT"
+                },
+                "city": {
+                    "allowNull": false,
+                    "field": "city",
+                    "seqType": "Sequelize.STRING(80)"
+                },
+                "address": {
+                    "allowNull": true,
+                    "field": "address",
+                    "seqType": "Sequelize.STRING(255)"
+                },
+                "lat": {
+                    "allowNull": true,
+                    "field": "lat",
+                    "seqType": "Sequelize.DECIMAL(10, 8)"
+                },
+                "lng": {
+                    "allowNull": true,
+                    "field": "lng",
+                    "seqType": "Sequelize.DECIMAL(11, 8)"
+                },
+                "stopType": {
+                    "allowNull": false,
+                    "field": "stop_type",
+                    "seqType": "Sequelize.ENUM('pickup', 'dropoff', 'both')"
+                },
+                "estimatedArrival": {
+                    "allowNull": true,
+                    "field": "estimated_arrival",
+                    "seqType": "Sequelize.DATE"
+                },
+                "createdat": {
+                    "allowNull": false,
+                    "field": "createdat",
+                    "seqType": "Sequelize.DATE"
+                },
+                "trip_id": {
+                    "allowNull": true,
+                    "references": {
+                        "model": "trips",
+                        "key": "id"
+                    },
+                    "onDelete": "CASCADE",
+                    "onUpdate": "CASCADE",
+                    "field": "trip_id",
+                    "seqType": "Sequelize.UUID"
+                }
+            },
             "indexes": []
         },
         "bookings": {
             "tableName": "bookings",
+            "schema": {
+                "id": {
+                    "defaultValue": {
+                        "internal": true,
+                        "value": "Sequelize.UUIDV4"
+                    },
+                    "primaryKey": true,
+                    "field": "id",
+                    "seqType": "Sequelize.UUID"
+                },
+                "tripId": {
+                    "allowNull": false,
+                    "field": "trip_id",
+                    "seqType": "Sequelize.UUID"
+                },
+                "passengerId": {
+                    "allowNull": false,
+                    "field": "passenger_id",
+                    "seqType": "Sequelize.UUID"
+                },
+                "seatNumber": {
+                    "allowNull": true,
+                    "field": "seat_number",
+                    "seqType": "Sequelize.SMALLINT"
+                },
+                "seatsBooked": {
+                    "allowNull": false,
+                    "defaultValue": {
+                        "value": 1
+                    },
+                    "field": "seats_booked",
+                    "seqType": "Sequelize.SMALLINT"
+                },
+                "agreedFare": {
+                    "allowNull": false,
+                    "field": "agreed_fare",
+                    "seqType": "Sequelize.DECIMAL(10, 2)"
+                },
+                "currency": {
+                    "allowNull": true,
+                    "defaultValue": {
+                        "value": "JOD"
+                    },
+                    "field": "currency",
+                    "seqType": "Sequelize.STRING(3)"
+                },
+                "dropoffPlace": {
+                    "allowNull": true,
+                    "field": "dropoff_place",
+                    "seqType": "Sequelize.STRING(120)"
+                },
+                "dropoffDeadline": {
+                    "allowNull": true,
+                    "field": "dropoff_deadline",
+                    "seqType": "Sequelize.DATE"
+                },
+                "dropoffOrder": {
+                    "allowNull": true,
+                    "field": "dropoff_order",
+                    "seqType": "Sequelize.SMALLINT"
+                },
+                "status": {
+                    "allowNull": false,
+                    "defaultValue": {
+                        "value": "confirmed"
+                    },
+                    "field": "status",
+                    "seqType": "Sequelize.ENUM('pending', 'confirmed', 'cancelled', 'completed', 'no_show')"
+                },
+                "referenceCode": {
+                    "allowNull": false,
+                    "unique": true,
+                    "field": "reference_code",
+                    "seqType": "Sequelize.STRING(12)"
+                },
+                "cancellationReason": {
+                    "allowNull": true,
+                    "field": "cancellation_reason",
+                    "seqType": "Sequelize.TEXT"
+                },
+                "cancelledBy": {
+                    "allowNull": true,
+                    "field": "cancelled_by",
+                    "seqType": "Sequelize.UUID"
+                },
+                "cancelledAt": {
+                    "allowNull": true,
+                    "field": "cancelled_at",
+                    "seqType": "Sequelize.DATE"
+                },
+                "paymentStatus": {
+                    "allowNull": true,
+                    "defaultValue": {
+                        "value": "pending"
+                    },
+                    "field": "payment_status",
+                    "seqType": "Sequelize.ENUM('pending', 'paid_cash', 'paid_other', 'disputed')"
+                },
+                "createdat": {
+                    "allowNull": false,
+                    "field": "createdat",
+                    "seqType": "Sequelize.DATE"
+                },
+                "updatedat": {
+                    "allowNull": false,
+                    "field": "updatedat",
+                    "seqType": "Sequelize.DATE"
+                },
+                "passenger_id": {
+                    "allowNull": true,
+                    "references": {
+                        "model": "users",
+                        "key": "id"
+                    },
+                    "onDelete": "SET NULL",
+                    "onUpdate": "CASCADE",
+                    "field": "passenger_id",
+                    "seqType": "Sequelize.UUID"
+                },
+                "trip_id": {
+                    "allowNull": true,
+                    "references": {
+                        "model": "trips",
+                        "key": "id"
+                    },
+                    "onDelete": "SET NULL",
+                    "onUpdate": "CASCADE",
+                    "field": "trip_id",
+                    "seqType": "Sequelize.UUID"
+                }
+            },
             "indexes": []
         },
         "ride_requests": {
             "tableName": "ride_requests",
+            "schema": {
+                "id": {
+                    "defaultValue": {
+                        "internal": true,
+                        "value": "Sequelize.UUIDV4"
+                    },
+                    "primaryKey": true,
+                    "field": "id",
+                    "seqType": "Sequelize.UUID"
+                },
+                "passengerId": {
+                    "allowNull": false,
+                    "field": "passenger_id",
+                    "seqType": "Sequelize.UUID"
+                },
+                "originPlace": {
+                    "allowNull": false,
+                    "field": "origin_place",
+                    "seqType": "Sequelize.STRING(120)"
+                },
+                "originCity": {
+                    "allowNull": false,
+                    "field": "origin_city",
+                    "seqType": "Sequelize.STRING(80)"
+                },
+                "originLat": {
+                    "allowNull": true,
+                    "field": "origin_lat",
+                    "seqType": "Sequelize.DECIMAL(10, 8)"
+                },
+                "originLng": {
+                    "allowNull": true,
+                    "field": "origin_lng",
+                    "seqType": "Sequelize.DECIMAL(11, 8)"
+                },
+                "originTime": {
+                    "allowNull": false,
+                    "field": "origin_time",
+                    "seqType": "Sequelize.DATE"
+                },
+                "destinationPlace": {
+                    "allowNull": false,
+                    "field": "destination_place",
+                    "seqType": "Sequelize.STRING(120)"
+                },
+                "destinationCity": {
+                    "allowNull": false,
+                    "field": "destination_city",
+                    "seqType": "Sequelize.STRING(80)"
+                },
+                "destinationLat": {
+                    "allowNull": true,
+                    "field": "destination_lat",
+                    "seqType": "Sequelize.DECIMAL(10, 8)"
+                },
+                "destinationLng": {
+                    "allowNull": true,
+                    "field": "destination_lng",
+                    "seqType": "Sequelize.DECIMAL(11, 8)"
+                },
+                "arrivalDeadline": {
+                    "allowNull": true,
+                    "field": "arrival_deadline",
+                    "seqType": "Sequelize.DATE"
+                },
+                "seatsNeeded": {
+                    "allowNull": false,
+                    "defaultValue": {
+                        "value": 1
+                    },
+                    "field": "seats_needed",
+                    "seqType": "Sequelize.SMALLINT"
+                },
+                "maxBudget": {
+                    "allowNull": true,
+                    "field": "max_budget",
+                    "seqType": "Sequelize.DECIMAL(10, 2)"
+                },
+                "currency": {
+                    "allowNull": true,
+                    "defaultValue": {
+                        "value": "JOD"
+                    },
+                    "field": "currency",
+                    "seqType": "Sequelize.STRING(3)"
+                },
+                "attributesPreferred": {
+                    "allowNull": true,
+                    "defaultValue": {
+                        "internal": true,
+                        "value": "Sequelize.Object"
+                    },
+                    "field": "attributes_preferred",
+                    "seqType": "Sequelize.JSONB"
+                },
+                "status": {
+                    "allowNull": false,
+                    "defaultValue": {
+                        "value": "open"
+                    },
+                    "field": "status",
+                    "seqType": "Sequelize.ENUM('open', 'offered', 'accepted', 'expired', 'cancelled')"
+                },
+                "expiresAt": {
+                    "allowNull": false,
+                    "field": "expires_at",
+                    "seqType": "Sequelize.DATE"
+                },
+                "createdat": {
+                    "allowNull": false,
+                    "field": "createdat",
+                    "seqType": "Sequelize.DATE"
+                },
+                "updatedat": {
+                    "allowNull": false,
+                    "field": "updatedat",
+                    "seqType": "Sequelize.DATE"
+                },
+                "passenger_id": {
+                    "allowNull": true,
+                    "references": {
+                        "model": "users",
+                        "key": "id"
+                    },
+                    "onDelete": "SET NULL",
+                    "onUpdate": "CASCADE",
+                    "field": "passenger_id",
+                    "seqType": "Sequelize.UUID"
+                }
+            },
             "indexes": []
         },
         "request_offers": {
             "tableName": "request_offers",
+            "schema": {
+                "id": {
+                    "defaultValue": {
+                        "internal": true,
+                        "value": "Sequelize.UUIDV4"
+                    },
+                    "primaryKey": true,
+                    "field": "id",
+                    "seqType": "Sequelize.UUID"
+                },
+                "requestId": {
+                    "allowNull": false,
+                    "field": "request_id",
+                    "seqType": "Sequelize.UUID"
+                },
+                "driverId": {
+                    "allowNull": false,
+                    "field": "driver_id",
+                    "seqType": "Sequelize.UUID"
+                },
+                "tripId": {
+                    "allowNull": true,
+                    "field": "trip_id",
+                    "seqType": "Sequelize.UUID"
+                },
+                "offeredFare": {
+                    "allowNull": true,
+                    "field": "offered_fare",
+                    "seqType": "Sequelize.DECIMAL(10, 2)"
+                },
+                "message": {
+                    "allowNull": true,
+                    "field": "message",
+                    "seqType": "Sequelize.TEXT"
+                },
+                "status": {
+                    "allowNull": false,
+                    "defaultValue": {
+                        "value": "sent"
+                    },
+                    "field": "status",
+                    "seqType": "Sequelize.ENUM('sent', 'accepted', 'declined', 'expired')"
+                },
+                "createdat": {
+                    "allowNull": false,
+                    "field": "createdat",
+                    "seqType": "Sequelize.DATE"
+                },
+                "updatedat": {
+                    "allowNull": false,
+                    "field": "updatedat",
+                    "seqType": "Sequelize.DATE"
+                },
+                "driver_id": {
+                    "allowNull": true,
+                    "references": {
+                        "model": "users",
+                        "key": "id"
+                    },
+                    "onDelete": "SET NULL",
+                    "onUpdate": "CASCADE",
+                    "field": "driver_id",
+                    "seqType": "Sequelize.UUID"
+                },
+                "trip_id": {
+                    "allowNull": true,
+                    "references": {
+                        "model": "trips",
+                        "key": "id"
+                    },
+                    "onDelete": "SET NULL",
+                    "onUpdate": "CASCADE",
+                    "field": "trip_id",
+                    "seqType": "Sequelize.UUID"
+                },
+                "request_id": {
+                    "allowNull": true,
+                    "references": {
+                        "model": "ride_requests",
+                        "key": "id"
+                    },
+                    "onDelete": "SET NULL",
+                    "onUpdate": "CASCADE",
+                    "field": "request_id",
+                    "seqType": "Sequelize.UUID"
+                }
+            },
             "indexes": []
         },
         "ratings": {
             "tableName": "ratings",
+            "schema": {
+                "id": {
+                    "defaultValue": {
+                        "internal": true,
+                        "value": "Sequelize.UUIDV4"
+                    },
+                    "primaryKey": true,
+                    "field": "id",
+                    "seqType": "Sequelize.UUID"
+                },
+                "bookingId": {
+                    "allowNull": false,
+                    "field": "booking_id",
+                    "seqType": "Sequelize.UUID"
+                },
+                "raterId": {
+                    "allowNull": false,
+                    "field": "rater_id",
+                    "seqType": "Sequelize.UUID"
+                },
+                "rateeId": {
+                    "allowNull": false,
+                    "field": "ratee_id",
+                    "seqType": "Sequelize.UUID"
+                },
+                "stars": {
+                    "allowNull": false,
+                    "field": "stars",
+                    "seqType": "Sequelize.SMALLINT"
+                },
+                "wasLate": {
+                    "allowNull": true,
+                    "defaultValue": {
+                        "value": false
+                    },
+                    "field": "was_late",
+                    "seqType": "Sequelize.BOOLEAN"
+                },
+                "lateMinutes": {
+                    "allowNull": true,
+                    "defaultValue": {
+                        "value": 0
+                    },
+                    "field": "late_minutes",
+                    "seqType": "Sequelize.SMALLINT"
+                },
+                "review": {
+                    "allowNull": true,
+                    "field": "review",
+                    "seqType": "Sequelize.TEXT"
+                },
+                "tags": {
+                    "allowNull": true,
+                    "field": "tags",
+                    "seqType": "Sequelize.ARRAY(Sequelize.TEXT)"
+                },
+                "isVisible": {
+                    "allowNull": true,
+                    "defaultValue": {
+                        "value": true
+                    },
+                    "field": "is_visible",
+                    "seqType": "Sequelize.BOOLEAN"
+                },
+                "createdat": {
+                    "allowNull": false,
+                    "field": "createdat",
+                    "seqType": "Sequelize.DATE"
+                },
+                "rater_id": {
+                    "allowNull": true,
+                    "references": {
+                        "model": "users",
+                        "key": "id"
+                    },
+                    "onDelete": "SET NULL",
+                    "onUpdate": "CASCADE",
+                    "field": "rater_id",
+                    "seqType": "Sequelize.UUID"
+                },
+                "ratee_id": {
+                    "allowNull": true,
+                    "references": {
+                        "model": "users",
+                        "key": "id"
+                    },
+                    "onDelete": "SET NULL",
+                    "onUpdate": "CASCADE",
+                    "field": "ratee_id",
+                    "seqType": "Sequelize.UUID"
+                },
+                "booking_id": {
+                    "allowNull": true,
+                    "references": {
+                        "model": "bookings",
+                        "key": "id"
+                    },
+                    "onDelete": "SET NULL",
+                    "onUpdate": "CASCADE",
+                    "field": "booking_id",
+                    "seqType": "Sequelize.UUID"
+                }
+            },
             "indexes": []
         },
         "delay_events": {
             "tableName": "delay_events",
+            "schema": {
+                "id": {
+                    "defaultValue": {
+                        "internal": true,
+                        "value": "Sequelize.UUIDV4"
+                    },
+                    "primaryKey": true,
+                    "field": "id",
+                    "seqType": "Sequelize.UUID"
+                },
+                "bookingId": {
+                    "allowNull": false,
+                    "field": "booking_id",
+                    "seqType": "Sequelize.UUID"
+                },
+                "party": {
+                    "allowNull": false,
+                    "field": "party",
+                    "seqType": "Sequelize.ENUM('driver', 'passenger')"
+                },
+                "delayMinutes": {
+                    "allowNull": false,
+                    "field": "delay_minutes",
+                    "seqType": "Sequelize.SMALLINT"
+                },
+                "reason": {
+                    "allowNull": true,
+                    "field": "reason",
+                    "seqType": "Sequelize.TEXT"
+                },
+                "reportedBy": {
+                    "allowNull": false,
+                    "field": "reported_by",
+                    "seqType": "Sequelize.UUID"
+                },
+                "createdat": {
+                    "allowNull": false,
+                    "field": "createdat",
+                    "seqType": "Sequelize.DATE"
+                },
+                "booking_id": {
+                    "allowNull": true,
+                    "references": {
+                        "model": "bookings",
+                        "key": "id"
+                    },
+                    "onDelete": "SET NULL",
+                    "onUpdate": "CASCADE",
+                    "field": "booking_id",
+                    "seqType": "Sequelize.UUID"
+                }
+            },
             "indexes": []
         },
         "complaints": {
             "tableName": "complaints",
+            "schema": {
+                "id": {
+                    "defaultValue": {
+                        "internal": true,
+                        "value": "Sequelize.UUIDV4"
+                    },
+                    "primaryKey": true,
+                    "field": "id",
+                    "seqType": "Sequelize.UUID"
+                },
+                "bookingId": {
+                    "allowNull": true,
+                    "field": "booking_id",
+                    "seqType": "Sequelize.UUID"
+                },
+                "reporterId": {
+                    "allowNull": false,
+                    "field": "reporter_id",
+                    "seqType": "Sequelize.UUID"
+                },
+                "accusedId": {
+                    "allowNull": false,
+                    "field": "accused_id",
+                    "seqType": "Sequelize.UUID"
+                },
+                "category": {
+                    "allowNull": false,
+                    "field": "category",
+                    "seqType": "Sequelize.STRING(30)"
+                },
+                "description": {
+                    "allowNull": false,
+                    "field": "description",
+                    "seqType": "Sequelize.TEXT"
+                },
+                "evidenceUrls": {
+                    "allowNull": true,
+                    "field": "evidence_urls",
+                    "seqType": "Sequelize.ARRAY(Sequelize.TEXT)"
+                },
+                "status": {
+                    "allowNull": false,
+                    "defaultValue": {
+                        "value": "open"
+                    },
+                    "field": "status",
+                    "seqType": "Sequelize.ENUM('open', 'reviewing', 'resolved', 'dismissed')"
+                },
+                "resolution": {
+                    "allowNull": true,
+                    "field": "resolution",
+                    "seqType": "Sequelize.TEXT"
+                },
+                "resolvedBy": {
+                    "allowNull": true,
+                    "field": "resolved_by",
+                    "seqType": "Sequelize.UUID"
+                },
+                "resolvedAt": {
+                    "allowNull": true,
+                    "field": "resolved_at",
+                    "seqType": "Sequelize.DATE"
+                },
+                "createdat": {
+                    "allowNull": false,
+                    "field": "createdat",
+                    "seqType": "Sequelize.DATE"
+                },
+                "updatedat": {
+                    "allowNull": false,
+                    "field": "updatedat",
+                    "seqType": "Sequelize.DATE"
+                },
+                "reporter_id": {
+                    "allowNull": true,
+                    "references": {
+                        "model": "users",
+                        "key": "id"
+                    },
+                    "onDelete": "SET NULL",
+                    "onUpdate": "CASCADE",
+                    "field": "reporter_id",
+                    "seqType": "Sequelize.UUID"
+                },
+                "accused_id": {
+                    "allowNull": true,
+                    "references": {
+                        "model": "users",
+                        "key": "id"
+                    },
+                    "onDelete": "SET NULL",
+                    "onUpdate": "CASCADE",
+                    "field": "accused_id",
+                    "seqType": "Sequelize.UUID"
+                }
+            },
             "indexes": []
         },
         "penalties": {
             "tableName": "penalties",
+            "schema": {
+                "id": {
+                    "defaultValue": {
+                        "internal": true,
+                        "value": "Sequelize.UUIDV4"
+                    },
+                    "primaryKey": true,
+                    "field": "id",
+                    "seqType": "Sequelize.UUID"
+                },
+                "userId": {
+                    "allowNull": false,
+                    "field": "user_id",
+                    "seqType": "Sequelize.UUID"
+                },
+                "complaintId": {
+                    "allowNull": true,
+                    "field": "complaint_id",
+                    "seqType": "Sequelize.UUID"
+                },
+                "type": {
+                    "allowNull": false,
+                    "field": "type",
+                    "seqType": "Sequelize.ENUM('warning', 'suspension', 'ban')"
+                },
+                "reason": {
+                    "allowNull": false,
+                    "field": "reason",
+                    "seqType": "Sequelize.TEXT"
+                },
+                "startsAt": {
+                    "allowNull": false,
+                    "defaultValue": {
+                        "internal": true,
+                        "value": "Sequelize.NOW"
+                    },
+                    "field": "starts_at",
+                    "seqType": "Sequelize.DATE"
+                },
+                "endsAt": {
+                    "allowNull": true,
+                    "field": "ends_at",
+                    "seqType": "Sequelize.DATE"
+                },
+                "issuedBy": {
+                    "allowNull": true,
+                    "field": "issued_by",
+                    "seqType": "Sequelize.UUID"
+                },
+                "isAppealed": {
+                    "allowNull": true,
+                    "defaultValue": {
+                        "value": false
+                    },
+                    "field": "is_appealed",
+                    "seqType": "Sequelize.BOOLEAN"
+                },
+                "appealReason": {
+                    "allowNull": true,
+                    "field": "appeal_reason",
+                    "seqType": "Sequelize.TEXT"
+                },
+                "appealResolvedAt": {
+                    "allowNull": true,
+                    "field": "appeal_resolved_at",
+                    "seqType": "Sequelize.DATE"
+                },
+                "createdat": {
+                    "allowNull": false,
+                    "field": "createdat",
+                    "seqType": "Sequelize.DATE"
+                },
+                "user_id": {
+                    "allowNull": true,
+                    "references": {
+                        "model": "users",
+                        "key": "id"
+                    },
+                    "onDelete": "SET NULL",
+                    "onUpdate": "CASCADE",
+                    "field": "user_id",
+                    "seqType": "Sequelize.UUID"
+                },
+                "complaint_id": {
+                    "allowNull": true,
+                    "references": {
+                        "model": "complaints",
+                        "key": "id"
+                    },
+                    "onDelete": "SET NULL",
+                    "onUpdate": "CASCADE",
+                    "field": "complaint_id",
+                    "seqType": "Sequelize.UUID"
+                }
+            },
             "indexes": []
         },
         "support_tickets": {
             "tableName": "support_tickets",
+            "schema": {
+                "id": {
+                    "defaultValue": {
+                        "internal": true,
+                        "value": "Sequelize.UUIDV4"
+                    },
+                    "primaryKey": true,
+                    "field": "id",
+                    "seqType": "Sequelize.UUID"
+                },
+                "userId": {
+                    "allowNull": false,
+                    "field": "user_id",
+                    "seqType": "Sequelize.UUID"
+                },
+                "category": {
+                    "allowNull": false,
+                    "field": "category",
+                    "seqType": "Sequelize.STRING(30)"
+                },
+                "subject": {
+                    "allowNull": false,
+                    "field": "subject",
+                    "seqType": "Sequelize.STRING(255)"
+                },
+                "description": {
+                    "allowNull": false,
+                    "field": "description",
+                    "seqType": "Sequelize.TEXT"
+                },
+                "priority": {
+                    "allowNull": true,
+                    "defaultValue": {
+                        "value": "medium"
+                    },
+                    "field": "priority",
+                    "seqType": "Sequelize.ENUM('low', 'medium', 'high', 'urgent')"
+                },
+                "status": {
+                    "allowNull": true,
+                    "defaultValue": {
+                        "value": "open"
+                    },
+                    "field": "status",
+                    "seqType": "Sequelize.ENUM('open', 'in_progress', 'resolved', 'closed')"
+                },
+                "assignedTo": {
+                    "allowNull": true,
+                    "field": "assigned_to",
+                    "seqType": "Sequelize.UUID"
+                },
+                "resolutionNotes": {
+                    "allowNull": true,
+                    "field": "resolution_notes",
+                    "seqType": "Sequelize.TEXT"
+                },
+                "createdat": {
+                    "allowNull": false,
+                    "field": "createdat",
+                    "seqType": "Sequelize.DATE"
+                },
+                "updatedat": {
+                    "allowNull": false,
+                    "field": "updatedat",
+                    "seqType": "Sequelize.DATE"
+                },
+                "user_id": {
+                    "allowNull": true,
+                    "references": {
+                        "model": "users",
+                        "key": "id"
+                    },
+                    "onDelete": "SET NULL",
+                    "onUpdate": "CASCADE",
+                    "field": "user_id",
+                    "seqType": "Sequelize.UUID"
+                }
+            },
             "indexes": []
         },
         "notifications": {
             "tableName": "notifications",
+            "schema": {
+                "id": {
+                    "defaultValue": {
+                        "internal": true,
+                        "value": "Sequelize.UUIDV4"
+                    },
+                    "primaryKey": true,
+                    "field": "id",
+                    "seqType": "Sequelize.UUID"
+                },
+                "userId": {
+                    "allowNull": false,
+                    "field": "user_id",
+                    "seqType": "Sequelize.UUID"
+                },
+                "type": {
+                    "allowNull": false,
+                    "field": "type",
+                    "seqType": "Sequelize.STRING(30)"
+                },
+                "title": {
+                    "allowNull": false,
+                    "field": "title",
+                    "seqType": "Sequelize.STRING(255)"
+                },
+                "body": {
+                    "allowNull": false,
+                    "field": "body",
+                    "seqType": "Sequelize.TEXT"
+                },
+                "data": {
+                    "allowNull": true,
+                    "defaultValue": {
+                        "internal": true,
+                        "value": "Sequelize.Object"
+                    },
+                    "field": "data",
+                    "seqType": "Sequelize.JSONB"
+                },
+                "isRead": {
+                    "allowNull": true,
+                    "defaultValue": {
+                        "value": false
+                    },
+                    "field": "is_read",
+                    "seqType": "Sequelize.BOOLEAN"
+                },
+                "sentVia": {
+                    "allowNull": true,
+                    "defaultValue": {
+                        "value": [
+                            "push"
+                        ]
+                    },
+                    "field": "sent_via",
+                    "seqType": "Sequelize.ARRAY(Sequelize.STRING)"
+                },
+                "createdat": {
+                    "allowNull": false,
+                    "field": "createdat",
+                    "seqType": "Sequelize.DATE"
+                },
+                "user_id": {
+                    "allowNull": true,
+                    "references": {
+                        "model": "users",
+                        "key": "id"
+                    },
+                    "onDelete": "SET NULL",
+                    "onUpdate": "CASCADE",
+                    "field": "user_id",
+                    "seqType": "Sequelize.UUID"
+                }
+            },
             "indexes": []
         },
         "favorite_drivers": {
             "tableName": "favorite_drivers",
+            "schema": {
+                "id": {
+                    "defaultValue": {
+                        "internal": true,
+                        "value": "Sequelize.UUIDV4"
+                    },
+                    "primaryKey": true,
+                    "field": "id",
+                    "seqType": "Sequelize.UUID"
+                },
+                "passengerId": {
+                    "allowNull": false,
+                    "field": "passenger_id",
+                    "seqType": "Sequelize.UUID"
+                },
+                "driverId": {
+                    "allowNull": false,
+                    "field": "driver_id",
+                    "seqType": "Sequelize.UUID"
+                },
+                "createdat": {
+                    "allowNull": false,
+                    "field": "createdat",
+                    "seqType": "Sequelize.DATE"
+                },
+                "passenger_id": {
+                    "allowNull": true,
+                    "references": {
+                        "model": "users",
+                        "key": "id"
+                    },
+                    "onDelete": "SET NULL",
+                    "onUpdate": "CASCADE",
+                    "field": "passenger_id",
+                    "seqType": "Sequelize.UUID"
+                },
+                "driver_id": {
+                    "allowNull": true,
+                    "references": {
+                        "model": "users",
+                        "key": "id"
+                    },
+                    "onDelete": "SET NULL",
+                    "onUpdate": "CASCADE",
+                    "field": "driver_id",
+                    "seqType": "Sequelize.UUID"
+                }
+            },
             "indexes": {
                 "0a1112b1c305f09f0cb1e1e6e5dbacddcef49291": {
                     "unique": true,
@@ -100,6 +1777,53 @@
         },
         "favorite_routes": {
             "tableName": "favorite_routes",
+            "schema": {
+                "id": {
+                    "defaultValue": {
+                        "internal": true,
+                        "value": "Sequelize.UUIDV4"
+                    },
+                    "primaryKey": true,
+                    "field": "id",
+                    "seqType": "Sequelize.UUID"
+                },
+                "passengerId": {
+                    "allowNull": false,
+                    "field": "passenger_id",
+                    "seqType": "Sequelize.UUID"
+                },
+                "originCity": {
+                    "allowNull": false,
+                    "field": "origin_city",
+                    "seqType": "Sequelize.STRING(80)"
+                },
+                "destinationCity": {
+                    "allowNull": false,
+                    "field": "destination_city",
+                    "seqType": "Sequelize.STRING(80)"
+                },
+                "label": {
+                    "allowNull": true,
+                    "field": "label",
+                    "seqType": "Sequelize.STRING(50)"
+                },
+                "createdat": {
+                    "allowNull": false,
+                    "field": "createdat",
+                    "seqType": "Sequelize.DATE"
+                },
+                "passenger_id": {
+                    "allowNull": true,
+                    "references": {
+                        "model": "users",
+                        "key": "id"
+                    },
+                    "onDelete": "SET NULL",
+                    "onUpdate": "CASCADE",
+                    "field": "passenger_id",
+                    "seqType": "Sequelize.UUID"
+                }
+            },
             "indexes": {
                 "699f92d2524a22c838b5c4bbc883bccbc62fbb18": {
                     "unique": true,
@@ -118,10 +1842,128 @@
         },
         "audit_logs": {
             "tableName": "audit_logs",
+            "schema": {
+                "id": {
+                    "defaultValue": {
+                        "internal": true,
+                        "value": "Sequelize.UUIDV4"
+                    },
+                    "primaryKey": true,
+                    "field": "id",
+                    "seqType": "Sequelize.UUID"
+                },
+                "tableName": {
+                    "allowNull": false,
+                    "field": "table_name",
+                    "seqType": "Sequelize.STRING(50)"
+                },
+                "recordId": {
+                    "allowNull": false,
+                    "field": "record_id",
+                    "seqType": "Sequelize.UUID"
+                },
+                "action": {
+                    "allowNull": false,
+                    "field": "action",
+                    "seqType": "Sequelize.ENUM('INSERT', 'UPDATE', 'DELETE')"
+                },
+                "oldData": {
+                    "allowNull": true,
+                    "field": "old_data",
+                    "seqType": "Sequelize.JSONB"
+                },
+                "newData": {
+                    "allowNull": true,
+                    "field": "new_data",
+                    "seqType": "Sequelize.JSONB"
+                },
+                "performedBy": {
+                    "allowNull": true,
+                    "field": "performed_by",
+                    "seqType": "Sequelize.UUID"
+                },
+                "ipAddress": {
+                    "allowNull": true,
+                    "field": "ip_address",
+                    "seqType": "Sequelize.INET"
+                },
+                "userAgent": {
+                    "allowNull": true,
+                    "field": "user_agent",
+                    "seqType": "Sequelize.TEXT"
+                },
+                "createdat": {
+                    "allowNull": false,
+                    "field": "createdat",
+                    "seqType": "Sequelize.DATE"
+                }
+            },
             "indexes": []
         },
         "subscription_transactions": {
             "tableName": "subscription_transactions",
+            "schema": {
+                "id": {
+                    "defaultValue": {
+                        "internal": true,
+                        "value": "Sequelize.UUIDV4"
+                    },
+                    "primaryKey": true,
+                    "field": "id",
+                    "seqType": "Sequelize.UUID"
+                },
+                "driverId": {
+                    "allowNull": false,
+                    "field": "driver_id",
+                    "seqType": "Sequelize.UUID"
+                },
+                "tier": {
+                    "allowNull": false,
+                    "field": "tier",
+                    "seqType": "Sequelize.STRING(20)"
+                },
+                "amount": {
+                    "allowNull": false,
+                    "field": "amount",
+                    "seqType": "Sequelize.DECIMAL(10, 2)"
+                },
+                "currency": {
+                    "allowNull": true,
+                    "defaultValue": {
+                        "value": "JOD"
+                    },
+                    "field": "currency",
+                    "seqType": "Sequelize.STRING(3)"
+                },
+                "paymentMethod": {
+                    "allowNull": false,
+                    "field": "payment_method",
+                    "seqType": "Sequelize.STRING(20)"
+                },
+                "status": {
+                    "allowNull": true,
+                    "defaultValue": {
+                        "value": "pending"
+                    },
+                    "field": "status",
+                    "seqType": "Sequelize.STRING(15)"
+                },
+                "providerTransactionId": {
+                    "allowNull": true,
+                    "field": "provider_transaction_id",
+                    "seqType": "Sequelize.STRING(255)"
+                },
+                "expiresAt": {
+                    "allowNull": false,
+                    "field": "expires_at",
+                    "seqType": "Sequelize.DATE"
+                },
+                "createdat": {
+                    "allowNull": false,
+                    "field": "createdat",
+                    "seqType": "Sequelize.DATE"
+                }
+            },
             "indexes": []
         }
     },

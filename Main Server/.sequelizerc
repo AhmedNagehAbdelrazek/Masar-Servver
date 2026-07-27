@@ -1,0 +1,6 @@
+const path = require('path');
+
+module.exports = {
+  'models-path': path.join(process.cwd(), 'Models'),
+  'migrations-path': path.join(process.cwd(), 'migrations', 'versions'),
+};
