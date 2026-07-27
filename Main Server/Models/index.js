@@ -1,3 +1,4 @@
+const sequelize = require('../config/database');
 const User = require('./User');
 const UploadedImage = require('./UploadedImage');
 const Vehicle = require('./Vehicle');
@@ -107,6 +108,7 @@ Complaint.hasMany(Penalty, { foreignKey: 'complaint_id', as: 'penalties' });
 Penalty.belongsTo(Complaint, { foreignKey: 'complaint_id', as: 'complaint' });
 
 module.exports = {
+  sequelize,
   User,
   UploadedImage,
   Vehicle,

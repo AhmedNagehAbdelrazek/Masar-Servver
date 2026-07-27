@@ -1,0 +1,129 @@
+{
+    "tables": {
+        "users": {
+            "tableName": "users",
+            "indexes": []
+        },
+        "uploaded_images": {
+            "tableName": "uploaded_images",
+            "indexes": []
+        },
+        "vehicles": {
+            "tableName": "vehicles",
+            "indexes": []
+        },
+        "driver_profiles": {
+            "tableName": "driver_profiles",
+            "indexes": []
+        },
+        "passenger_profiles": {
+            "tableName": "passenger_profiles",
+            "indexes": []
+        },
+        "trips": {
+            "tableName": "trips",
+            "indexes": []
+        },
+        "trip_attributes": {
+            "tableName": "trip_attributes",
+            "indexes": {
+                "426a6e04e39ed053f5ef2da1ea053b364cf4169a": {
+                    "unique": true,
+                    "fields": [
+                        "trip_id",
+                        "attr_key"
+                    ],
+                    "name": "trip_attributes_trip_id_attr_key",
+                    "options": {
+                        "indexName": "trip_attributes_trip_id_attr_key",
+                        "indicesType": "UNIQUE"
+                    }
+                }
+            }
+        },
+        "trip_stops": {
+            "tableName": "trip_stops",
+            "indexes": []
+        },
+        "bookings": {
+            "tableName": "bookings",
+            "indexes": []
+        },
+        "ride_requests": {
+            "tableName": "ride_requests",
+            "indexes": []
+        },
+        "request_offers": {
+            "tableName": "request_offers",
+            "indexes": []
+        },
+        "ratings": {
+            "tableName": "ratings",
+            "indexes": []
+        },
+        "delay_events": {
+            "tableName": "delay_events",
+            "indexes": []
+        },
+        "complaints": {
+            "tableName": "complaints",
+            "indexes": []
+        },
+        "penalties": {
+            "tableName": "penalties",
+            "indexes": []
+        },
+        "support_tickets": {
+            "tableName": "support_tickets",
+            "indexes": []
+        },
+        "notifications": {
+            "tableName": "notifications",
+            "indexes": []
+        },
+        "favorite_drivers": {
+            "tableName": "favorite_drivers",
+            "indexes": {
+                "0a1112b1c305f09f0cb1e1e6e5dbacddcef49291": {
+                    "unique": true,
+                    "fields": [
+                        "passenger_id",
+                        "driver_id"
+                    ],
+                    "name": "favorite_drivers_passenger_id_driver_id",
+                    "options": {
+                        "indexName": "favorite_drivers_passenger_id_driver_id",
+                        "indicesType": "UNIQUE"
+                    }
+                }
+            }
+        },
+        "favorite_routes": {
+            "tableName": "favorite_routes",
+            "indexes": {
+                "699f92d2524a22c838b5c4bbc883bccbc62fbb18": {
+                    "unique": true,
+                    "fields": [
+                        "passenger_id",
+                        "origin_city",
+                        "destination_city"
+                    ],
+                    "name": "favorite_routes_passenger_id_origin_city_destination_city",
+                    "options": {
+                        "indexName": "favorite_routes_passenger_id_origin_city_destination_city",
+                        "indicesType": "UNIQUE"
+                    }
+                }
+            }
+        },
+        "audit_logs": {
+            "tableName": "audit_logs",
+            "indexes": []
+        },
+        "subscription_transactions": {
+            "tableName": "subscription_transactions",
+            "indexes": []
+        }
+    },
+    "revision": 1
+}
