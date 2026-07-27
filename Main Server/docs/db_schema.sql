@@ -73,6 +73,7 @@ CREATE TABLE driver_profiles (
     lincese_front NUMERIC,  -- ID refrence to Uploaded Image
     lincese_back NUMERIC,   -- ID refrence to Uploaded Image
     personal_image_with_id NUMERIC, -- ID refrence to Uploaded Image
+    national_id VARCHAR(30),
     id_verified BOOLEAN DEFAULT FALSE,
     license_number VARCHAR(50),
     license_expiry DATE,

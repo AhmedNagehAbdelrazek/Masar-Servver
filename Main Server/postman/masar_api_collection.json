@@ -574,7 +574,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"fullName\": \"Ahmad Mohammed\",\n  \"age\": 28,\n  \"gender\": \"male\",\n  \"userIdentificationFront\": 1,\n  \"userIdentificationBack\": 2,\n  \"linceseFront\": 3,\n  \"linceseBack\": 4,\n  \"personalImageWithId\": 5\n}"
+              "raw": "{\n  \"fullName\": \"Ahmad Mohammed\",\n  \"age\": 28,\n  \"gender\": \"male\",\n  \"nationalID\": \"123456789\",\n  \"userIdentificationFront\": 1,\n  \"userIdentificationBack\": 2,\n  \"linceseFront\": 3,\n  \"linceseBack\": 4,\n  \"personalImageWithId\": 5\n}"
             },
             "url": {
               "raw": "{{base_url}}/auth/onboarding/profile",

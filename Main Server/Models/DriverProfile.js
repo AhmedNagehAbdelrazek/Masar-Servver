@@ -56,6 +56,10 @@ DriverProfile.init(
                 key: 'id',
             },
         },
+        nationalID: {
+            type: DataTypes.STRING(30),
+            allowNull: true,
+        },
         idVerified: {
             type: DataTypes.BOOLEAN,
             allowNull: true,

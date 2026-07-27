@@ -461,6 +461,7 @@ async function submitDriverProfile(userId, data) {
     linceseFront: data.linceseFront,
     linceseBack: data.linceseBack,
     personalImageWithId: data.personalImageWithId,
+    nationalID: data.nationalID,
   });
 
   return { driverProfile };

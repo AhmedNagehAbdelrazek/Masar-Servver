@@ -124,6 +124,10 @@ const onboardingProfileValidation = [
   body('personalImageWithId')
     .notEmpty().withMessage('Personal image with ID is required')
     .isInt().withMessage('Image ID must be a valid integer'),
+  body('nationalID')
+    .trim()
+    .notEmpty().withMessage('National ID is required')
+    .isLength({ min: 5, max: 30 }).withMessage('National ID must be between 5 and 30 characters'),
 ];
 
 const onboardingVehicleValidation = [
