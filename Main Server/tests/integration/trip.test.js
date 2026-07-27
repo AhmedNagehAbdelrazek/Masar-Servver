@@ -8,7 +8,6 @@ const PASSENGER_PHONE = '+962792222222';
 const DRIVER_ID = '550e8400-e29b-41d4-a716-446655440001';
 const PASSENGER_ID = '550e8400-e29b-41d4-a716-446655440002';
 const VEHICLE_ID = '550e8400-e29b-41d4-a716-446655440010';
-const OTHER_VEHICLE_ID = '550e8400-e29b-41d4-a716-446655440020';
 
 let driverToken;
 let passengerToken;
@@ -23,7 +22,7 @@ beforeEach(async () => {
   await TripStop.destroy({ where: {}, force: true });
   await TripSeat.destroy({ where: {}, force: true });
   await Trip.destroy({ where: {}, force: true });
-  await Vehicle.destroy({ where: { id: [VEHICLE_ID, OTHER_VEHICLE_ID] }, force: true });
+  await Vehicle.destroy({ where: { id: VEHICLE_ID }, force: true });
   await User.destroy({ where: { phone: [DRIVER_PHONE, PASSENGER_PHONE] }, force: true });
 
   await User.create({
@@ -56,6 +55,7 @@ beforeEach(async () => {
     plateNumber: 'TEST-123',
     color: 'White',
     seats: 4,
+    isVerified: true,
   });
 
   driverToken = generateAccessToken({ id: DRIVER_ID, role: 'driver' });
@@ -63,7 +63,6 @@ beforeEach(async () => {
 });
 
 const VALID_TRIP_BODY = {
-  vehicle_id: VEHICLE_ID,
   origin_city: 'Amman',
   origin_area: 'Abdoun',
   origin_lat: '31.9500',
@@ -161,14 +160,23 @@ describe('Trip - Create Trip', () => {
       expect(res.status).toBe(403);
     });
 
-    it('should reject if vehicle_id is missing', async () => {
-      const { vehicle_id, ...body } = VALID_TRIP_BODY;
+    it('should reject if driver has no vehicle', async () => {
+      const noVehicleDriver = await User.create({
+        id: '550e8400-e29b-41d4-a716-446655440099',
+        fullName: 'No Vehicle Driver',
+        phone: '+962799999999',
+        countryCode: 'JO',
+        role: 'driver',
+        passwordHash: 'hashed',
+        isVerified: true,
+      });
+      const noVehicleToken = generateAccessToken({ id: noVehicleDriver.id, role: 'driver' });
       const res = await getAgent()
         .post('/api/trips')
-        .set('Authorization', `Bearer ${driverToken}`)
-        .send(body);
+        .set('Authorization', `Bearer ${noVehicleToken}`)
+        .send(VALID_TRIP_BODY);
 
-      expect(res.status).toBe(422);
+      expect(res.status).toBe(403);
     });
 
     it('should reject if origin_city is missing', async () => {
@@ -283,22 +291,16 @@ describe('Trip - Create Trip', () => {
       expect(res.status).toBe(422);
     });
 
-    it('should reject if vehicle does not belong to driver', async () => {
-      await Vehicle.create({
-        id: OTHER_VEHICLE_ID,
-        driverId: PASSENGER_ID,
-        manufacturer: 'Honda',
-        model: 'Civic',
-        vehicleType: 'sedan',
-        plateNumber: 'OTHER-999',
-        seats: 4,
-      });
+    it('should reject if driver vehicle is not verified', async () => {
+      await Vehicle.update(
+        { isVerified: false },
+        { where: { id: VEHICLE_ID } }
+      );
 
-      const body = { ...VALID_TRIP_BODY, vehicle_id: OTHER_VEHICLE_ID };
       const res = await getAgent()
         .post('/api/trips')
         .set('Authorization', `Bearer ${driverToken}`)
-        .send(body);
+        .send(VALID_TRIP_BODY);
 
       expect(res.status).toBe(403);
     });

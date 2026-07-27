@@ -67,6 +67,7 @@ beforeEach(async () => {
     plateNumber: 'LK-123',
     color: 'White',
     seats: 4,
+    isVerified: true,
   });
 
   driverToken = generateAccessToken({ id: DRIVER_ID, role: 'driver' });
@@ -78,7 +79,6 @@ beforeEach(async () => {
     .post('/api/trips')
     .set('Authorization', `Bearer ${driverToken}`)
     .send({
-      vehicle_id: VEHICLE_ID,
       origin_city: 'Amman',
       destination_city: 'Irbid',
       departure_date: futureDate,

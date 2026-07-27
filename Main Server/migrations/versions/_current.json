@@ -688,10 +688,10 @@
                 "status": {
                     "allowNull": false,
                     "defaultValue": {
-                        "value": "draft"
+                        "value": "published"
                     },
                     "field": "status",
-                    "seqType": "Sequelize.ENUM('draft', 'published', 'full', 'in_progress', 'ongoing', 'completed', 'cancelled')"
+                    "seqType": "Sequelize.ENUM('published', 'full', 'in_progress', 'ongoing', 'completed', 'cancelled')"
                 },
                 "isFeatured": {
                     "allowNull": true,
@@ -2151,5 +2151,5 @@
             "indexes": []
         }
     },
-    "revision": 2
+    "revision": 3
 }

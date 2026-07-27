@@ -52,6 +52,7 @@ beforeEach(async () => {
     plateNumber: 'CTR-123',
     color: 'White',
     seats: 4,
+    isVerified: true,
   });
 
   driverToken = generateAccessToken({ id: DRIVER_ID, role: 'driver' });
@@ -64,7 +65,6 @@ describe('Contract: POST /api/trips', () => {
       .post('/api/trips')
       .set('Authorization', `Bearer ${driverToken}`)
       .send({
-        vehicle_id: VEHICLE_ID,
         origin_city: 'Amman',
         destination_city: 'Irbid',
         departure_date: getFutureDate(1),
@@ -109,7 +109,6 @@ describe('Contract: GET /api/trips/:trip_id', () => {
       .post('/api/trips')
       .set('Authorization', `Bearer ${driverToken}`)
       .send({
-        vehicle_id: VEHICLE_ID,
         origin_city: 'Amman',
         destination_city: 'Irbid',
         departure_date: getFutureDate(1),
@@ -166,7 +165,6 @@ describe('Contract: GET /api/trips/driver/my-trips', () => {
       .post('/api/trips')
       .set('Authorization', `Bearer ${driverToken}`)
       .send({
-        vehicle_id: VEHICLE_ID,
         origin_city: 'Amman',
         destination_city: 'Irbid',
         departure_date: getFutureDate(1),
@@ -207,7 +205,6 @@ describe('Contract: GET /api/trips/search/available', () => {
       .post('/api/trips')
       .set('Authorization', `Bearer ${driverToken}`)
       .send({
-        vehicle_id: VEHICLE_ID,
         origin_city: 'Amman',
         destination_city: 'Irbid',
         departure_date: getFutureDate(1),
@@ -293,7 +290,6 @@ describe('Contract: POST /api/trips/:trip_id/seats/lock', () => {
       .post('/api/trips')
       .set('Authorization', `Bearer ${driverToken}`)
       .send({
-        vehicle_id: VEHICLE_ID,
         origin_city: 'Amman',
         destination_city: 'Irbid',
         departure_date: getFutureDate(1),
@@ -335,7 +331,6 @@ describe('Contract: DELETE /api/trips/:trip_id/seats/lock/:seat_number', () => {
       .post('/api/trips')
       .set('Authorization', `Bearer ${driverToken}`)
       .send({
-        vehicle_id: VEHICLE_ID,
         origin_city: 'Amman',
         destination_city: 'Irbid',
         departure_date: getFutureDate(1),

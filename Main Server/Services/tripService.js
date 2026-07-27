@@ -13,11 +13,10 @@ const createTrip = async (driverId, data) => {
   if (driver.role !== 'driver') throw ApiErrors.forbidden('Only drivers can create trips');
   if (!driver.isVerified) throw ApiErrors.forbidden('Driver not verified');
 
-  // Verify vehicle belongs to driver
-  const vehicle = await Vehicle.findOne({
-    where: { id: data.vehicle_id, driverId },
-  });
-  if (!vehicle) throw ApiErrors.forbidden('Vehicle not found or does not belong to driver');
+  // Fetch driver's vehicle (each driver has exactly one vehicle)
+  const vehicle = await Vehicle.findOne({ where: { driverId } });
+  if (!vehicle) throw ApiErrors.forbidden('Driver has no registered vehicle');
+  if (!vehicle.isVerified) throw ApiErrors.forbidden('Driver vehicle is not verified');
 
   // Validate seat configuration matches vehicle
   if (data.seats.length !== vehicle.seats) {
@@ -67,7 +66,7 @@ const createTrip = async (driverId, data) => {
   // Create trip
   const trip = await Trip.create({
     driverId,
-    vehicleId: data.vehicle_id,
+    vehicleId: vehicle.id,
     originCity: data.origin_city,
     originArea: data.origin_area || null,
     originLat: data.origin_lat || null,

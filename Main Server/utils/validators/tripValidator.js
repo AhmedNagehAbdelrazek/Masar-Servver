@@ -2,10 +2,6 @@ const { body, param, query } = require('express-validator');
 const { TRIP_STATUS, GENDER_PREFERENCE } = require('../../config/constants');
 
 const createTripValidation = [
-  body('vehicle_id')
-    .notEmpty().withMessage('Vehicle ID is required')
-    .isUUID().withMessage('Vehicle ID must be a valid UUID'),
-
   body('origin_city')
     .trim()
     .notEmpty().withMessage('Origin city is required')
