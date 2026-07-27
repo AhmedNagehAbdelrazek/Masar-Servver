@@ -29,9 +29,22 @@ const VEHICLE_TYPES = {
 const TRIP_STATUS = {
   PUBLISHED: 'published',
   FULL: 'full',
+  IN_PROGRESS: 'in_progress',
   ONGOING: 'ongoing',
   COMPLETED: 'completed',
   CANCELLED: 'cancelled',
+};
+
+const SEAT_TYPE = {
+  DRIVER: 'driver',
+  UNAVAILABLE: 'unavailable',
+  AVAILABLE: 'available',
+};
+
+const GENDER_PREFERENCE = {
+  ALL: 'all',
+  WOMEN_ONLY: 'women_only',
+  MEN_ONLY: 'men_only',
 };
 
 const BOOKING_STATUS = {
@@ -127,6 +140,8 @@ module.exports = {
   GENDER,
   VEHICLE_TYPES,
   TRIP_STATUS,
+  SEAT_TYPE,
+  GENDER_PREFERENCE,
   BOOKING_STATUS,
   PAYMENT_STATUS,
   RIDE_REQUEST_STATUS,

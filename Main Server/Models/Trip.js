@@ -1,6 +1,6 @@
 const { Model, DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
-const { TRIP_STATUS } = require('../config/constants');
+const { TRIP_STATUS, GENDER_PREFERENCE } = require('../config/constants');
 
 class Trip extends Model { }
 
@@ -20,8 +20,12 @@ Trip.init(
             allowNull: false,
         },
         originCity: {
-            type: DataTypes.STRING(80),
+            type: DataTypes.STRING(100),
             allowNull: false,
+        },
+        originArea: {
+            type: DataTypes.STRING(120),
+            allowNull: true,
         },
         originAddress: {
             type: DataTypes.STRING(255),
@@ -36,8 +40,12 @@ Trip.init(
             allowNull: true,
         },
         destinationCity: {
-            type: DataTypes.STRING(80),
+            type: DataTypes.STRING(100),
             allowNull: false,
+        },
+        destinationArea: {
+            type: DataTypes.STRING(120),
+            allowNull: true,
         },
         destinationAddress: {
             type: DataTypes.STRING(255),
@@ -85,6 +93,27 @@ Trip.init(
             type: DataTypes.JSONB,
             allowNull: true,
         },
+        recurrenceDays: {
+            type: DataTypes.ARRAY(DataTypes.SMALLINT),
+            allowNull: true,
+        },
+        recurrenceEndDate: {
+            type: DataTypes.DATE,
+            allowNull: true,
+        },
+        genderPreference: {
+            type: DataTypes.ENUM(Object.values(GENDER_PREFERENCE)),
+            allowNull: false,
+            defaultValue: GENDER_PREFERENCE.ALL,
+        },
+        driverInstructions: {
+            type: DataTypes.TEXT,
+            allowNull: true,
+        },
+        additionalInstructions: {
+            type: DataTypes.TEXT,
+            allowNull: true,
+        },
         status: {
             type: DataTypes.ENUM(Object.values(TRIP_STATUS)),
             allowNull: false,
@@ -106,6 +135,25 @@ Trip.init(
         tableName: 'trips',
         underscored: true,
         timestamps: true,
+        indexes: [
+            {
+                name: 'idx_trips_driver_departure',
+                fields: ['driver_id', 'departure_time'],
+            },
+            {
+                name: 'idx_trips_origin_dest',
+                fields: ['origin_city', 'destination_city', 'departure_time'],
+            },
+            {
+                name: 'idx_trips_status',
+                fields: ['status'],
+            },
+            {
+                name: 'idx_trips_recurrence',
+                fields: ['recurrence_days'],
+                using: 'GIN',
+            },
+        ],
     }
 );
 

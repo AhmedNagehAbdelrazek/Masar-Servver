@@ -7,6 +7,7 @@ const PassengerProfile = require('./PassengerProfile');
 const Trip = require('./Trip');
 const TripAttribute = require('./TripAttribute');
 const TripStop = require('./TripStop');
+const TripSeat = require('./TripSeat');
 const Booking = require('./Booking');
 const RideRequest = require('./RideRequest');
 const RequestOffer = require('./RequestOffer');
@@ -86,6 +87,9 @@ TripAttribute.belongsTo(Trip, { foreignKey: 'trip_id', as: 'trip' });
 Trip.hasMany(TripStop, { foreignKey: 'trip_id', as: 'stops', onDelete: 'CASCADE' });
 TripStop.belongsTo(Trip, { foreignKey: 'trip_id', as: 'trip' });
 
+Trip.hasMany(TripSeat, { foreignKey: 'trip_id', as: 'seats', onDelete: 'CASCADE' });
+TripSeat.belongsTo(Trip, { foreignKey: 'trip_id', as: 'trip' });
+
 Trip.hasMany(Booking, { foreignKey: 'trip_id', as: 'bookings' });
 Booking.belongsTo(Trip, { foreignKey: 'trip_id', as: 'trip' });
 
@@ -117,6 +121,7 @@ module.exports = {
   Trip,
   TripAttribute,
   TripStop,
+  TripSeat,
   Booking,
   RideRequest,
   RequestOffer,

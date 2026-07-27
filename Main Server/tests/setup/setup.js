@@ -24,13 +24,21 @@ jest.mock('../../config/redis', () => {
       return val;
     }),
     redis: {
+      get: jest.fn(async (key) => store.get(key) || null),
+      set: jest.fn(async (key, value, ...args) => {
+        store.set(key, value);
+        return 'OK';
+      }),
+      del: jest.fn(async (...keys) => {
+        let count = 0;
+        keys.forEach(k => { if (store.delete(k)) count++; });
+        return count;
+      }),
       keys: jest.fn(async (pattern) => {
         const prefix = pattern.replace('*', '');
         return [...store.keys()].filter(k => k.startsWith(prefix));
       }),
-      del: jest.fn(async (...keys) => {
-        keys.forEach(k => store.delete(k));
-      }),
+      expire: jest.fn(async (key, ttl) => store.has(key) ? 1 : 0),
     },
   };
 });
