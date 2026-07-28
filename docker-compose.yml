@@ -46,11 +46,6 @@ services:
   # ── Main server stack ────────────────────────────────────────
   main-server:
     image: ghcr.io/ahmednagehabdelrazek/main-server:latest
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/healthz"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
     environment:
       NODE_ENV: production
       PORT: 8000

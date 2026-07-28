@@ -1,41 +1,83 @@
-name: Deploy to VPS
+name: Build, Push and Deploy
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
+
+permissions:
+  contents: read
+  packages: write
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    
+
     steps:
-      - name: Deploy via SSH
-        uses: appleboy/ssh-action@master
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and Push Main Server
+        uses: docker/build-push-action@v6
+        with:
+          context: ./Main Server
+          push: true
+          tags: |
+            ghcr.io/ahmednagehabdelrazek/main-server:latest
+            ghcr.io/ahmednagehabdelrazek/main-server:${{ github.sha }}
+
+      - name: Build and Push Audit Server
+        uses: docker/build-push-action@v6
+        with:
+          context: ./audit-server
+          push: true
+          tags: |
+            ghcr.io/ahmednagehabdelrazek/audit-server:latest
+            ghcr.io/ahmednagehabdelrazek/audit-server:${{ github.sha }}
+
+      - name: Deploy to VPS
+        uses: appleboy/ssh-action@v1.2.2
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USERNAME }}
-          key: ${{ secrets.VPS_SSH_KEY }} # <--- Changed from password to key
+          key: ${{ secrets.VPS_SSH_KEY }}
           script: |
             set -e
 
             cd /root/Masar-Servver
 
-            git pull origin main
+            git fetch origin
+            git reset --hard origin/main
 
             docker compose pull
-            docker compose up -d
 
-            echo "Waiting for health..."
+            docker compose up -d \
+              --force-recreate \
+              --remove-orphans
 
-            for i in {1..30}
+            echo "Waiting for application..."
+
+            for i in $(seq 1 30)
             do
-              if curl -f http://localhost:8000/healthz
+              if curl -fs http://localhost:8000/healthz >/dev/null
               then
-                echo "Application is healthy"
-                break
+                echo "Application is healthy."
+                exit 0
               fi
+
               echo "Waiting..."
               sleep 5
             done
 
-            docker image prune -f
+            echo "Health check failed."
+
+            docker compose logs main-server
+
+            exit 1
