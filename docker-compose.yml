@@ -31,7 +31,7 @@ services:
     image: redis:7
 
   audit-collector:
-    build: ./audit-server
+    image: ghcr.io/ahmednagehabdelrazek/audit-server:latest
     environment:
       NODE_ENV: production
       PORT: 4000
@@ -45,7 +45,12 @@ services:
 
   # ── Main server stack ────────────────────────────────────────
   main-server:
-    build: ./Main Server
+    image: ghcr.io/ahmednagehabdelrazek/main-server:latest
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
     environment:
       NODE_ENV: production
       PORT: 8000
