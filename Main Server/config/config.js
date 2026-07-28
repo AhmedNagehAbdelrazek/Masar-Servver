@@ -77,6 +77,7 @@ module.exports = {
   },
   production: {
     ...config,
+    logging: false,
     define: {
       createdAt: "createdat",
       updatedAt: "updatedat"
