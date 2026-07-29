@@ -6,6 +6,7 @@ const { ApiErrors } = require('../utils/ApiError');
 const { setKey, getKey, deleteKey } = require('../config/redis');
 const otpService = require('./otpService');
 const { validatePhone } = require('../utils/phoneValidator');
+const { TEST_PHONES } = require('../config/constants');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-in-production';
 const JWT_EXPIRY = process.env.JWT_EXPIRY || '24h';
@@ -83,10 +84,14 @@ async function registerPhone(countryCode, phone, role) {
   const normalizedPhone = normalizePhone(phone, countryCode);
   const existingUser = await User.findOne({ where: { phone: normalizedPhone } });
   if (existingUser) {
-    throw ApiErrors.conflict('Phone number is already registered');
+    if (TEST_PHONES.includes(normalizedPhone)) {
+      await existingUser.destroy();
+    } else {
+      throw ApiErrors.conflict('Phone number is already registered');
+    }
   }
 
-  const otp = otpService.generateOTP();
+  const otp = otpService.generateOTP(normalizedPhone);
   await otpService.storeOTP(normalizedPhone, otp, 'register');
 
   // Store registration data (countryCode, role) alongside OTP for later use
@@ -316,7 +321,7 @@ async function forgotPassword(phone) {
     return { message: 'If the phone number is registered, an OTP has been sent' };
   }
 
-  const otp = otpService.generateOTP();
+  const otp = otpService.generateOTP(phone);
   await otpService.storeOTP(phone, otp, 'forgot_password');
 
   console.log(`[OTP] Forgot password OTP for ${phone}: ${otp}`);
@@ -404,7 +409,7 @@ async function resendOTP(phone, purpose) {
 
   await otpService.deleteOTP(phone, purpose);
 
-  const otp = otpService.generateOTP();
+  const otp = otpService.generateOTP(phone);
   await otpService.storeOTP(phone, otp, purpose);
 
   const logLabel = purpose === 'forgot_password' ? 'Forgot password' : 'Registration';

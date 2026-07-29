@@ -2,33 +2,77 @@ require('dotenv').config();
 
 const bcrypt = require('bcrypt');
 const sequelize = require('./config/database');
-const {
-  AppSettings,
-  SiteContent,
-  ShippingRegion,
-  Product,
-  Admin,
-} = require('./Models/index');
+const { User } = require('./Models/index');
 
-const SALT_ROUNDS = 10;
-const DEFAULT_USERNAME = 'admin';
-const DEFAULT_PASSWORD = 'admin123';
-const DEFAULT_SUPERADMIN_USERNAME = 'superadmin';
-const DEFAULT_SUPERADMIN_PASSWORD = 'superadmin123';
+const SALT_ROUNDS = parseInt(process.env.SALT_ROUNDS, 10) || 12;
+
+const TEST_ACCOUNTS = [
+  {
+    phone: '+962700000000',
+    countryCode: 'JO',
+    role: 'driver',
+    fullName: 'Test Driver',
+    password: 'Test@1234',
+    isVerified: true,
+    locale: 'ar',
+  },
+  {
+    phone: '+962711111111',
+    countryCode: 'JO',
+    role: 'passenger',
+    fullName: 'Test Passenger',
+    password: 'Test@1234',
+    isVerified: true,
+    locale: 'ar',
+  },
+];
 
 async function seed() {
-
   console.log('Seeding database...');
 
   await sequelize.authenticate();
   console.log('Database connected.');
 
-  await sequelize.sync();
-  console.log('Models synced.');
+  console.log('Creating test accounts...');
 
-  // seed the models with the default values
+  for (const account of TEST_ACCOUNTS) {
+    const passwordHash = await bcrypt.hash(account.password, SALT_ROUNDS);
 
-  
+    const [user, created] = await User.findOrCreate({
+      where: { phone: account.phone },
+      defaults: {
+        phone: account.phone,
+        countryCode: account.countryCode,
+        role: account.role,
+        fullName: account.fullName,
+        passwordHash,
+        isVerified: account.isVerified,
+        locale: account.locale,
+      },
+    });
+
+    if (!created) {
+      await user.update({ passwordHash });
+      console.log(`  Updated: ${account.phone} (${account.role})`);
+    } else {
+      console.log(`  Created: ${account.phone} (${account.role})`);
+    }
+  }
+
+  console.log('');
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log('  Test Accounts Ready!');
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  for (const account of TEST_ACCOUNTS) {
+    console.log(`  ${account.fullName}`);
+    console.log(`    Phone:    ${account.phone}`);
+    console.log(`    Password: ${account.password}`);
+    console.log(`    Role:     ${account.role}`);
+    console.log('');
+  }
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log('Sign in via: POST /api/auth/login');
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
   await sequelize.close();
   console.log('Seeding complete!');

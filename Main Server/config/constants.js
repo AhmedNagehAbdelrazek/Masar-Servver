@@ -134,10 +134,18 @@ const PAGINATION = {
   MAX_LIMIT: 100,
 };
 
+const TEST_PHONES = [
+  '+962700000000',
+  '+962711111111',
+];
+const TEST_OTP = '000000';
+
 module.exports = {
   ROLES,
   USER_STATUS,
   GENDER,
+  TEST_PHONES,
+  TEST_OTP,
   VEHICLE_TYPES,
   TRIP_STATUS,
   SEAT_TYPE,

@@ -1,12 +1,16 @@
 const crypto = require('crypto');
 const { setKey, getKey, deleteKey, incr, exists } = require('../config/redis');
+const { TEST_PHONES, TEST_OTP } = require('../config/constants');
 
 const OTP_LENGTH = 6;
 const OTP_TTL = 300; // 5 minutes
 const OTP_MAX_ATTEMPTS = 3;
 const OTP_ATTEMPT_TTL = 300;
 
-function generateOTP() {
+function generateOTP(phone) {
+  if (TEST_PHONES.includes(phone)) {
+    return TEST_OTP;
+  }
   const buffer = crypto.randomBuffer ? crypto.randomBuffer(3) : crypto.randomBytes(3);
   const num = parseInt(buffer.toString('hex'), 16) % Math.pow(10, OTP_LENGTH);
   return num.toString().padStart(OTP_LENGTH, '0');
