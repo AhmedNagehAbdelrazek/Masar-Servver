@@ -81,7 +81,7 @@ const VALID_TRIP_BODY = {
     { seat_number: 3, type: 'available' },
     { seat_number: 4, type: 'unavailable' },
   ],
-  instructions: 'No smoking please',
+  instructions: ['No smoking please', 'Be ready 10 mins early'],
   additional_instructions: 'Bring water',
   waypoints: [
     { stop_name: 'Khalda', stop_lat: '31.9600', stop_lng: '35.9000' },

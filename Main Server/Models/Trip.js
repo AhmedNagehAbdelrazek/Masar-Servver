@@ -107,7 +107,7 @@ Trip.init(
             defaultValue: GENDER_PREFERENCE.ALL,
         },
         driverInstructions: {
-            type: DataTypes.TEXT,
+            type: DataTypes.ARRAY(DataTypes.TEXT),
             allowNull: true,
         },
         additionalInstructions: {

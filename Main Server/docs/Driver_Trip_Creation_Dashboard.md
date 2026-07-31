@@ -21,7 +21,7 @@ As a verified driver, I want to create a trip with precise origin/destination de
 | `destination_lng` | DECIMAL(11,8) | Longitude of destination |
 | `recurrence_days` | SMALLINT[] | Array of day-of-week integers (0=Sunday, 6=Saturday). NULL for one-time trips |
 | `recurrence_end_date` | TIMESTAMPTZ | End date for recurring trips. NULL if no end date |
-| `driver_instructions` | TEXT | e.g., "Please be ready 10 mins early" |
+| `driver_instructions` | TEXT[] | e.g., ["Please be ready 10 mins early", "No smoking"] |
 | `additional_instructions` | TEXT | e.g., "No eating inside the car" |
 | `gender_preference` | VARCHAR(10) | 'all', 'women_only', 'men_only' (maps to trip_attributes) |
 
@@ -79,7 +79,7 @@ This table holds waypoints (points the driver will pass through). Ensure it matc
 | `repeated_end_date` | `trips.recurrence_end_date` |
 | `allowed_type` | `trips.gender_preference` AND/OR `trip_attributes` (`women_only` / `men_only`) |
 | `fare_per_seat` | `trips.fare_per_seat` |
-| `instructions` | `trips.driver_instructions` (NEW) |
+| `instructions` | `trips.driver_instructions` (NEW, TEXT[]) |
 | `additional_instructions` | `trips.additional_instructions` (NEW) |
 
 ---
@@ -144,7 +144,7 @@ This table holds waypoints (points the driver will pass through). Ensure it matc
     {"seat_number": 4, "type": "unavailable"},
     {"seat_number": 5, "type": "available"}
   ],
-  "instructions": "Please be at the pickup point 10 minutes early.",
+  "instructions": ["Please be at the pickup point 10 minutes early.", "Bring your ID"],
   "additional_instructions": "No eating or drinking inside the car."
 }
 ```

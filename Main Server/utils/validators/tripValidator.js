@@ -135,8 +135,14 @@ const createTripValidation = [
 
   body('instructions')
     .optional()
-    .trim()
-    .isLength({ max: 1000 }).withMessage('Instructions must be at most 1000 characters'),
+    .isArray({ min: 1 }).withMessage('Instructions must be a non-empty array')
+    .custom((arr) => {
+      if (!arr.every((item) => typeof item === 'string' && item.trim().length > 0 && item.trim().length <= 1000)) {
+        throw new Error('Each instruction must be a non-empty string of at most 1000 characters');
+      }
+      return true;
+    })
+    .customSanitizer((arr) => arr.map((s) => s.trim())),
 
   body('additional_instructions')
     .optional()
