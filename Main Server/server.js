@@ -10,6 +10,7 @@ const PORT = process.env.PORT || 3000;
 async function startServer() {
   await initDatabase();
   startJobs();
+  console.log(process.env.CLOUDINARY_API_SECRET);
 
   httpServer.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);

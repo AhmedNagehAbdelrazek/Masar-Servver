@@ -1,19 +1,11 @@
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
-import pool from './db';
+import { ensureDatabase, migrate } from './initDb';
 
-async function migrate() {
-  const migrationPath = resolve(__dirname, '../migrations/001_init.sql');
-  const sql = readFileSync(migrationPath, 'utf8');
-
-  console.log('[migrate] Running migration...');
-  await pool.query(sql);
-  console.log('[migrate] Done.');
-
-  await pool.end();
+async function main() {
+  await ensureDatabase();
+  await migrate();
 }
 
-migrate().catch((err) => {
+main().catch((err) => {
   console.error('[migrate] Failed:', err);
   process.exit(1);
 });

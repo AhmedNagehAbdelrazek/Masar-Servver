@@ -16,6 +16,10 @@ build/
 coverage/
 specs/
 
+# Local-only dev config (not for VPS deploy)
+docker-compose.override.yml
+nginx.local.conf
+
 /seeders
 .env
 .env.example
