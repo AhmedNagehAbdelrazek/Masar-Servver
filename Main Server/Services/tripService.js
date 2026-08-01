@@ -1,10 +1,20 @@
 const { Op } = require('sequelize');
-const { Trip, TripSeat, TripStop, Vehicle, User, Booking, Rating } = require('../Models');
+const {
+  Trip,
+  TripSeat,
+  TripStop,
+  TripAttribute,
+  Vehicle,
+  User,
+  Booking,
+  Rating,
+} = require('../Models');
 const { ApiErrors } = require('../utils/ApiError');
-const { TRIP_STATUS, GENDER_PREFERENCE } = require('../config/constants');
+const { TRIP_STATUS, GENDER_PREFERENCE, BOOKING_STATUS } = require('../config/constants');
 const balanceService = require('./balanceService');
 const commissionService = require('./commissionService');
 const notificationService = require('./notificationService');
+const { releaseSeatLock } = require('../utils/seatLock');
 
 function round(n) {
   return Math.round((Number(n) + Number.EPSILON) * 100) / 100;
@@ -159,6 +169,7 @@ const getTripById = async (tripId) => {
     include: [
       { model: TripSeat, as: 'seats' },
       { model: TripStop, as: 'stops' },
+      { model: TripAttribute, as: 'attributes' },
       { model: Vehicle, as: 'vehicle' },
     ],
   });
@@ -192,6 +203,7 @@ const getAvailableTrips = async (originCity, destinationCity, date, genderPrefer
 
   const where = {
     status: TRIP_STATUS.PUBLISHED,
+    isModerated: false,
     availableSeats: { [Op.gt]: 0 },
     [Op.or]: [
       // One-time trips for this date
@@ -330,4 +342,165 @@ module.exports = {
   getAvailableTrips,
   startTrip,
   completeTrip,
+  updateTrip,
+  cancelTrip,
+  getTripAttributes,
 };
+
+/**
+ * Partial update of a driver's own trip (contract D1). Accepts fare,
+ * departure/arrival time, gender preference and instructions. When provided,
+ * `attributes` and `stops` replace the existing values. A departure-time
+ * change notifies all confirmed passengers (best-effort, never throws).
+ */
+async function updateTrip(driverId, tripId, data) {
+  const trip = await Trip.findByPk(tripId, {
+    include: [{ model: TripAttribute, as: 'attributes' }],
+  });
+  if (!trip) throw ApiErrors.notFound('Trip not found');
+  if (trip.driverId !== driverId) throw ApiErrors.forbidden('You can only edit your own trips');
+  if ([TRIP_STATUS.COMPLETED, TRIP_STATUS.CANCELLED].includes(trip.status)) {
+    throw ApiErrors.custom('Trip cannot be edited from its current status.', 422, 'INVALID_TRIP_STATUS');
+  }
+
+  const fields = {};
+  if (data.fare_per_seat !== undefined) fields.farePerSeat = data.fare_per_seat;
+  if (data.arrival_time !== undefined) fields.arrivalTime = data.arrival_time || null;
+  if (data.gender_preference !== undefined) fields.genderPreference = data.gender_preference;
+  if (data.driver_instructions !== undefined) fields.driverInstructions = data.driver_instructions;
+  if (data.additional_instructions !== undefined) fields.additionalInstructions = data.additional_instructions || null;
+
+  const departureChanged =
+    data.departure_time !== undefined &&
+    new Date(data.departure_time).getTime() !== new Date(trip.departureTime).getTime();
+  if (data.departure_time !== undefined) fields.departureTime = new Date(data.departure_time);
+
+  await trip.update(fields);
+
+  if (data.attributes !== undefined) {
+    await TripAttribute.destroy({ where: { tripId: trip.id } });
+    const records = (data.attributes || []).map((a) => ({
+      tripId: trip.id,
+      attrKey: a.attr_key,
+      attrValue: a.attr_value,
+    }));
+    if (records.length > 0) await TripAttribute.bulkCreate(records);
+  }
+
+  if (data.stops !== undefined) {
+    await TripStop.destroy({ where: { tripId: trip.id } });
+    const records = (data.stops || []).map((s, i) => ({
+      tripId: trip.id,
+      stopOrder: s.stop_order !== undefined ? s.stop_order : i + 1,
+      stopName: s.city || null,
+      city: s.city || null,
+      address: s.address || null,
+      lat: s.lat || null,
+      lng: s.lng || null,
+      stopType: s.stop_type || 'both',
+      estimatedArrival: s.estimated_arrival ? new Date(s.estimated_arrival) : null,
+    }));
+    if (records.length > 0) await TripStop.bulkCreate(records);
+  }
+
+  let notifiedPassengers = 0;
+  if (departureChanged) {
+    const departure = new Date(trip.departureTime);
+    notifiedPassengers = await notificationService.notifyConfirmedPassengers(
+      [trip.id],
+      'TRIP_TIME_CHANGED',
+      {
+        vars: { time: departure.toISOString() },
+        data: { trip_id: trip.id },
+      }
+    );
+  }
+
+  const attributes = await TripAttribute.findAll({ where: { tripId: trip.id } });
+
+  return {
+    trip: {
+      id: trip.id,
+      origin_city: trip.originCity,
+      destination_city: trip.destinationCity,
+      departure_time: trip.departureTime,
+      fare_per_seat: Number(trip.farePerSeat),
+      status: trip.status,
+      attributes: attributes.map((a) => ({ attr_key: a.attrKey, attr_value: a.attrValue })),
+      notified_passengers: notifiedPassengers,
+    },
+  };
+}
+
+/**
+ * Cancel a driver's own trip (contract D2). Refused once started. Marks the
+ * trip and its bookings cancelled, releases every Redis seat lock for the
+ * trip's seats, and notifies confirmed passengers (best-effort).
+ */
+async function cancelTrip(driverId, tripId) {
+  const trip = await Trip.findByPk(tripId);
+  if (!trip) throw ApiErrors.notFound('Trip not found');
+  if (trip.driverId !== driverId) throw ApiErrors.forbidden('You can only cancel your own trips');
+  if (
+    [TRIP_STATUS.IN_PROGRESS, TRIP_STATUS.ONGOING, TRIP_STATUS.COMPLETED].includes(trip.status)
+  ) {
+    throw ApiErrors.forbidden('A trip that has already started cannot be cancelled');
+  }
+  if (trip.status === TRIP_STATUS.CANCELLED) {
+    throw ApiErrors.custom('Trip is already cancelled.', 409, 'ALREADY_CANCELLED');
+  }
+
+  await trip.update({ status: TRIP_STATUS.CANCELLED });
+
+  let notifiedPassengers = 0;
+  try {
+    notifiedPassengers = await notificationService.notifyConfirmedPassengers(
+      [trip.id],
+      'TRIP_CANCELLED',
+      { data: { trip_id: trip.id } }
+    );
+  } catch (err) {
+    console.warn('[tripService] cancel notification failed:', err.message);
+  }
+
+  await Booking.update(
+    {
+      status: BOOKING_STATUS.CANCELLED,
+      cancellationReason: 'Trip cancelled by driver',
+      cancelledBy: driverId,
+      cancelledAt: new Date(),
+    },
+    { where: { tripId: trip.id, status: [BOOKING_STATUS.CONFIRMED, BOOKING_STATUS.PENDING] } }
+  );
+
+  const seats = await TripSeat.findAll({ where: { tripId: trip.id }, attributes: ['seatNumber'] });
+  for (const seat of seats) {
+    try {
+      await releaseSeatLock(trip.id, seat.seatNumber);
+    } catch (err) {
+      console.warn(`[tripService] failed to release seat lock for trip ${trip.id} seat ${seat.seatNumber}:`, err.message);
+    }
+  }
+
+  return {
+    trip: {
+      id: trip.id,
+      status: trip.status,
+      notified_passengers: notifiedPassengers,
+    },
+  };
+}
+
+/**
+ * Get the attribute key/value pairs for a trip (contract D11).
+ */
+async function getTripAttributes(tripId) {
+  const trip = await Trip.findByPk(tripId, { attributes: ['id'] });
+  if (!trip) throw ApiErrors.notFound('Trip not found');
+
+  const attributes = await TripAttribute.findAll({ where: { tripId: trip.id } });
+  return {
+    trip_id: trip.id,
+    attributes: attributes.map((a) => ({ attr_key: a.attrKey, attr_value: a.attrValue })),
+  };
+}

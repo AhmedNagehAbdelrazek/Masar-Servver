@@ -62,6 +62,33 @@ const completeTrip = async (req, res, next) => {
   }
 };
 
+const updateTrip = async (req, res, next) => {
+  try {
+    const result = await tripService.updateTrip(req.user.id, req.params.trip_id, req.body);
+    successResponse(res, result);
+  } catch (err) {
+    next(err);
+  }
+};
+
+const cancelTrip = async (req, res, next) => {
+  try {
+    const result = await tripService.cancelTrip(req.user.id, req.params.trip_id);
+    successResponse(res, result);
+  } catch (err) {
+    next(err);
+  }
+};
+
+const getTripAttributes = async (req, res, next) => {
+  try {
+    const result = await tripService.getTripAttributes(req.params.trip_id);
+    successResponse(res, result);
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   createTrip,
   getTripById,
@@ -69,4 +96,7 @@ module.exports = {
   getAvailableTrips,
   startTrip,
   completeTrip,
+  updateTrip,
+  cancelTrip,
+  getTripAttributes,
 };

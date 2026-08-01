@@ -165,8 +165,93 @@ const releaseSeatLockValidation = [
     .isInt({ min: 1 }).withMessage('Seat number must be a positive integer'),
 ];
 
+const TRIP_ATTR_KEYS = ['smoking_allowed', 'women_only', 'ac', 'pets', 'luggage', 'music'];
+
+const updateTripValidation = [
+  param('trip_id')
+    .isUUID().withMessage('Trip ID must be a valid UUID'),
+
+  body('fare_per_seat')
+    .optional()
+    .isDecimal({ decimal_digits: '1,2' }).withMessage('Fare must be a decimal with up to 2 decimal places')
+    .custom((value) => {
+      if (parseFloat(value) < 0) throw new Error('Fare cannot be negative');
+      return true;
+    }),
+
+  body('departure_time')
+    .optional()
+    .isISO8601().withMessage('Departure time must be a valid ISO-8601 datetime')
+    .custom((value) => {
+      if (new Date(value) <= new Date()) throw new Error('Departure time must be in the future');
+      return true;
+    }),
+
+  body('arrival_time')
+    .optional()
+    .isISO8601().withMessage('Arrival time must be a valid ISO-8601 datetime'),
+
+  body('gender_preference')
+    .optional()
+    .isIn(Object.values(GENDER_PREFERENCE)).withMessage(`Gender preference must be one of: ${Object.values(GENDER_PREFERENCE).join(', ')}`),
+
+  body('driver_instructions')
+    .optional()
+    .isArray().withMessage('Driver instructions must be an array')
+    .custom((arr) => {
+      if (!arr.every((item) => typeof item === 'string' && item.trim().length > 0 && item.trim().length <= 1000)) {
+        throw new Error('Each instruction must be a non-empty string of at most 1000 characters');
+      }
+      return true;
+    })
+    .customSanitizer((arr) => arr.map((s) => s.trim())),
+
+  body('additional_instructions')
+    .optional()
+    .trim()
+    .isLength({ max: 1000 }).withMessage('Additional instructions must be at most 1000 characters'),
+
+  body('attributes')
+    .optional()
+    .isArray().withMessage('Attributes must be an array'),
+  body('attributes.*.attr_key')
+    .optional()
+    .isIn(TRIP_ATTR_KEYS).withMessage(`Attribute key must be one of: ${TRIP_ATTR_KEYS.join(', ')}`),
+  body('attributes.*.attr_value')
+    .optional()
+    .isIn(['true', 'false', 'yes', 'no']).withMessage('Attribute value must be true/false/yes/no'),
+
+  body('stops')
+    .optional()
+    .isArray().withMessage('Stops must be an array'),
+  body('stops.*.city')
+    .optional()
+    .trim()
+    .isLength({ max: 100 }).withMessage('Stop city must be at most 100 characters'),
+  body('stops.*.address')
+    .optional()
+    .trim()
+    .isLength({ max: 255 }).withMessage('Stop address must be at most 255 characters'),
+  body('stops.*.lat')
+    .optional()
+    .isDecimal().withMessage('Stop latitude must be a decimal'),
+  body('stops.*.lng')
+    .optional()
+    .isDecimal().withMessage('Stop longitude must be a decimal'),
+  body('stops.*.stop_type')
+    .optional()
+    .isIn(['pickup', 'dropoff', 'both']).withMessage('Stop type must be pickup, dropoff, or both'),
+  body('stops.*.stop_order')
+    .optional()
+    .isInt({ min: 1 }).withMessage('Stop order must be a positive integer'),
+  body('stops.*.estimated_arrival')
+    .optional()
+    .isISO8601().withMessage('Estimated arrival must be a valid ISO-8601 datetime'),
+];
+
 module.exports = {
   createTripValidation,
   lockSeatValidation,
   releaseSeatLockValidation,
+  updateTripValidation,
 };

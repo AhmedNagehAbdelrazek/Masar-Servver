@@ -107,6 +107,46 @@ const TEMPLATES = {
       body: 'Your balance may not cover the commission for your upcoming trip to {route}. Please renew your subscription.',
     },
   },
+  TRIP_TIME_CHANGED: {
+    ar: {
+      title: 'تم تغيير موعد الرحلة',
+      body: 'موعد رحلتك {route} أصبح {time}.',
+    },
+    en: {
+      title: 'Trip time updated',
+      body: 'Your trip {route} now departs {time}.',
+    },
+  },
+  TRIP_CANCELLED: {
+    ar: {
+      title: 'تم إلغاء الرحلة',
+      body: 'تم إلغاء رحلتك {route}. تم استرداد الحجز الخاص بك.',
+    },
+    en: {
+      title: 'Trip cancelled',
+      body: 'Your trip {route} was cancelled. Your booking has been refunded.',
+    },
+  },
+  VERIFICATION_APPROVED: {
+    ar: {
+      title: 'تم توثيق حسابك',
+      body: 'تهانينا! تم توثيق {subject} بنجاح.',
+    },
+    en: {
+      title: 'Account verified',
+      body: 'Congratulations! Your {subject} has been verified.',
+    },
+  },
+  VERIFICATION_REJECTED: {
+    ar: {
+      title: 'تعذر توثيق حسابك',
+      body: 'تعذر توثيق {subject}. السبب: {reason}. يرجى إعادة إرسال المستندات الصحيحة.',
+    },
+    en: {
+      title: 'Verification rejected',
+      body: 'Your {subject} could not be verified. Reason: {reason}. Please resubmit the correct documents.',
+    },
+  },
 };
 
 function interpolate(template, vars = {}) {
@@ -210,4 +250,87 @@ async function notifyBookedPassengers(tripIds, type, { vars = {}, data = {}, cha
   }
 }
 
-module.exports = { sendToUser, notifyBookedPassengers, TEMPLATES };
+/**
+ * Notify only CONFIRMED passengers on the given trips (best-effort, never
+ * throws). Returns the number of distinct passengers notified. Used for
+ * trip edits/cancellations — delivery is asynchronous and failures are
+ * logged so the primary operation always succeeds.
+ */
+async function notifyConfirmedPassengers(tripIds, type, { vars = {}, data = {}, channels = ['in_app', 'push'] } = {}) {
+  if (!tripIds || tripIds.length === 0) return 0;
+  try {
+    const { Booking, Trip, User } = require('../../Models');
+    const { Op } = require('sequelize');
+    const { BOOKING_STATUS } = require('../../config/constants');
+
+    const bookings = await Booking.findAll({
+      where: {
+        tripId: { [Op.in]: Array.isArray(tripIds) ? tripIds : [tripIds] },
+        status: BOOKING_STATUS.CONFIRMED,
+      },
+      include: [
+        { model: Trip, as: 'trip', attributes: ['id', 'originCity', 'destinationCity'] },
+        { model: User, as: 'passenger', attributes: ['id', 'phone', 'fcmToken', 'locale'] },
+      ],
+    });
+
+    let count = 0;
+    const seen = new Set();
+    for (const booking of bookings) {
+      if (!booking.passenger || seen.has(booking.passenger.id)) continue;
+      seen.add(booking.passenger.id);
+      const route = booking.trip
+        ? `${booking.trip.originCity} → ${booking.trip.destinationCity}`
+        : '';
+      await sendToUser(booking.passenger, type, {
+        channels,
+        vars: { route, ...vars },
+        data,
+      });
+      count += 1;
+    }
+    return count;
+  } catch (err) {
+    console.warn('[notification] notifyConfirmedPassengers failed:', err.message);
+    return 0;
+  }
+}
+
+/**
+ * Paginated list of a user's own notifications.
+ */
+async function listForUser(userId, { unread = null, page = 1, limit = 20 } = {}) {
+  const { Notification } = require('../../Models');
+  const { Op } = require('sequelize');
+  const where = { userId };
+  if (unread === true) where.isRead = false;
+  else if (unread === false) where.isRead = true;
+
+  const { rows, count } = await Notification.findAndCountAll({
+    where,
+    order: [['createdat', 'DESC']],
+    offset: (page - 1) * limit,
+    limit,
+  });
+  return { rows, count };
+}
+
+/**
+ * Mark a user's notification as read. Throws NOT_FOUND when the
+ * notification does not exist and FORBIDDEN when it belongs to someone else.
+ */
+async function markRead(userId, notificationId) {
+  const { Notification } = require('../../Models');
+  const { ApiErrors } = require('../../utils/ApiError');
+
+  const notification = await Notification.findByPk(notificationId);
+  if (!notification) throw ApiErrors.notFound('Notification not found');
+  if (notification.userId !== userId) throw ApiErrors.forbidden('You can only mark your own notifications as read');
+
+  if (!notification.isRead) {
+    await notification.update({ isRead: true });
+  }
+  return notification;
+}
+
+module.exports = { sendToUser, notifyBookedPassengers, notifyConfirmedPassengers, listForUser, markRead, TEMPLATES };

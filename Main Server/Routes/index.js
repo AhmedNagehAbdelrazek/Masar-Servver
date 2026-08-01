@@ -1,7 +1,6 @@
 const router = require('express').Router();
 const protect = require('../middlewares/protect');
 const roleGuard = require('../middlewares/roleGuard');
-const { permissionGuard } = require('../middlewares/roleGuard');
 const { ROLES } = require('../config/constants');
 
 const uploadRoutes = require('./uploadRoutes');
@@ -14,16 +13,30 @@ const planRoutes = require('./planRoutes');
 const paymentMethodRoutes = require('./paymentMethodRoutes');
 const subscriptionRoutes = require('./subscriptionRoutes');
 const adminSubscriptionRoutes = require('./adminSubscriptionRoutes');
+const driverRoutes = require('./driverRoutes');
+const ratingRoutes = require('./ratingRoutes');
+const complaintRoutes = require('./complaintRoutes');
+const notificationRoutes = require('./notificationRoutes');
+const vehicleRoutes = require('./vehicleRoutes');
+const adminVerificationRoutes = require('./adminVerificationRoutes');
+const adminModerationRoutes = require('./adminModerationRoutes');
 
 router.use('/healthz', healthRoutes);
 router.use('/auth', authRoutes);
 router.use('/upload', uploadRoutes);
 router.use('/trips', tripRoutes);
 router.use('/driver/dashboard', dashboardRoutes);
+router.use('/driver', driverRoutes);
 router.use('/trips', seatLockRoutes);
 router.use('/plans', planRoutes);
 router.use('/payment-methods', paymentMethodRoutes);
 router.use('/subscriptions', subscriptionRoutes);
 router.use('/admin', adminSubscriptionRoutes);
+router.use('/admin/verification', adminVerificationRoutes);
+router.use('/admin', adminModerationRoutes);
+router.use('/ratings', ratingRoutes);
+router.use('/complaints', complaintRoutes);
+router.use('/notifications', notificationRoutes);
+router.use('/vehicles', vehicleRoutes);
 
 module.exports = router;

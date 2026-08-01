@@ -133,6 +133,19 @@ Trip.init(
             allowNull: false,
             defaultValue: false,
         },
+        isModerated: {
+            type: DataTypes.BOOLEAN,
+            allowNull: false,
+            defaultValue: false,
+        },
+        moderationReason: {
+            type: DataTypes.TEXT,
+            allowNull: true,
+        },
+        moderatedBy: {
+            type: DataTypes.UUID,
+            allowNull: true,
+        },
     },
     {
         sequelize,
