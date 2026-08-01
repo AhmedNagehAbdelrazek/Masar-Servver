@@ -7,7 +7,7 @@ var Sequelize = require('sequelize');
  *
  * createTable "subscription_plans", deps: []
  * createTable "payment_methods", deps: []
- * createTable "driver_subscriptions", deps: [users, subscription_plans]
+ * createTable "driver_subscriptions", deps: [users, subscription_plans, uploaded_images]
  * addColumn "total_balance" on table "users"
  * addColumn "is_in_debt" on table "users"
  * addColumn "is_blocked_by_balance" on table "trips"
@@ -68,7 +68,7 @@ function migrationSteps(queryInterface) {
         planPercentageCut: { type: Sequelize.DECIMAL(5, 2), field: 'plan_percentage_cut', allowNull: false },
         planCost: { type: Sequelize.DECIMAL(10, 2), field: 'plan_cost', allowNull: false },
         balance: { type: Sequelize.DECIMAL(10, 2), field: 'balance', allowNull: false, defaultValue: 0 },
-        screenshotUrl: { type: Sequelize.TEXT, field: 'screenshot_url', allowNull: true },
+        screenshotId: { type: Sequelize.INTEGER, field: 'screenshot_id', allowNull: true, references: { model: 'uploaded_images', key: 'id' }, onUpdate: 'CASCADE', onDelete: 'SET NULL' },
         paymentMethod: { type: Sequelize.JSONB, field: 'payment_method', allowNull: false, defaultValue: Sequelize.literal("'{}'::jsonb") },
         adminNotes: { type: Sequelize.TEXT, field: 'admin_notes', allowNull: true },
         status: { type: Sequelize.STRING(20), field: 'status', allowNull: false, defaultValue: 'pending_approval' },

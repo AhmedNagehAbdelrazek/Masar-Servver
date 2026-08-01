@@ -1,6 +1,6 @@
 const { Op } = require('sequelize');
 const sequelize = require('../config/database');
-const { User, DriverProfile, SubscriptionPlan, PaymentMethod, DriverSubscription } = require('../Models');
+const { User, DriverProfile, SubscriptionPlan, PaymentMethod, DriverSubscription, UploadedImage } = require('../Models');
 const { SUBSCRIPTION_STATUS, FREE_OFFER_TYPE } = require('../config/constants');
 const { ApiErrors } = require('../utils/ApiError');
 const balanceService = require('./balanceService');
@@ -124,6 +124,11 @@ async function createSubscription(driverId, data) {
     throw ApiErrors.validation('The selected payment method is unavailable.');
   }
 
+  const screenshot = await UploadedImage.findByPk(data.screenshot_id);
+  if (!screenshot) {
+    throw ApiErrors.validation('The screenshot image ID is invalid.');
+  }
+
   await assertFreePlanEligibility(driverId, plan);
 
   return sequelize.transaction(async (t) => {
@@ -162,7 +167,7 @@ async function createSubscription(driverId, data) {
         planPercentageCut: plan.percentageCut,
         planCost: plan.cost,
         balance: 0,
-        screenshotUrl: data.screenshot_url || null,
+        screenshotId: data.screenshot_id,
         paymentMethod: {
           name: method.name,
           account_number: method.accountNumber,
@@ -230,6 +235,7 @@ async function listPending({ status = SUBSCRIPTION_STATUS.PENDING_APPROVAL, sort
         ],
       },
       { model: SubscriptionPlan, as: 'plan', attributes: ['name', 'cost', 'isActive'] },
+      { model: UploadedImage, as: 'screenshot', attributes: ['id', 'url'] },
     ],
     order,
   });
@@ -253,7 +259,8 @@ async function listPending({ status = SUBSCRIPTION_STATUS.PENDING_APPROVAL, sort
       payment_method: {
         name: (sub.paymentMethod && sub.paymentMethod.name) || null,
       },
-      screenshot_url: sub.screenshotUrl,
+      screenshot_id: sub.screenshotId || null,
+      screenshot_url: (sub.screenshot && sub.screenshot.url) || null,
       submitted_at: sub.createdat || sub.createdAt,
     };
   });

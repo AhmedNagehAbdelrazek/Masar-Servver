@@ -1,5 +1,5 @@
 const { getAgent } = require('../setup/setup');
-const { User, DriverProfile, SubscriptionPlan, PaymentMethod, DriverSubscription } = require('../../Models');
+const { User, DriverProfile, SubscriptionPlan, PaymentMethod, DriverSubscription, UploadedImage } = require('../../Models');
 const { generateAccessToken } = require('../setup/helpers');
 const { SUBSCRIPTION_STATUS } = require('../../config/constants');
 
@@ -10,9 +10,11 @@ let adminToken;
 let driverToken;
 let plan;
 let method;
+let screenshot;
 
 beforeEach(async () => {
   await DriverSubscription.destroy({ where: {}, force: true });
+  await UploadedImage.destroy({ where: {}, force: true });
   await DriverProfile.destroy({ where: {}, force: true });
   await SubscriptionPlan.destroy({ where: {}, force: true });
   await PaymentMethod.destroy({ where: {}, force: true });
@@ -39,6 +41,14 @@ beforeEach(async () => {
     isActive: true,
   });
 
+  screenshot = await UploadedImage.create({
+    hash: 'admin-subscription-screenshot-hash',
+    url: 'https://res.cloudinary.com/x/screenshot.jpg',
+    filename: 'admin-subscription-screenshot.jpg',
+    mimetype: 'image/jpeg',
+    size: 1024,
+  });
+
   adminToken = generateAccessToken({ id: ADMIN_ID, role: 'admin' });
   driverToken = generateAccessToken({ id: DRIVER_ID, role: 'driver' });
 });
@@ -50,7 +60,7 @@ async function createPending() {
     .send({
       plan_id: plan.id,
       payment_method_id: method.id,
-      screenshot_url: 'https://res.cloudinary.com/x/screenshot.jpg',
+      screenshot_id: screenshot.id,
     });
   expect(res.status).toBe(201);
   return res.body.subscription_id;
@@ -67,6 +77,7 @@ describe('Admin pending queue - US2', () => {
     expect(res.body.pending[0].driver.full_name).toBe('Driver Three');
     expect(res.body.pending[0].plan.name).toBe('Basic');
     expect(res.body.pending[0].payment_method.name).toBe('Bank of Jordan');
+    expect(res.body.pending[0].screenshot_id).toBe(screenshot.id);
     expect(res.body.pending[0].screenshot_url).toContain('res.cloudinary.com');
   });
 });

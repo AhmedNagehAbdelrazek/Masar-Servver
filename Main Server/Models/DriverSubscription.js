@@ -40,9 +40,13 @@ DriverSubscription.init(
             allowNull: false,
             defaultValue: 0,
         },
-        screenshotUrl: {
-            type: DataTypes.TEXT,
+        screenshotId: {
+            type: DataTypes.INTEGER,
             allowNull: true,
+            references:{
+                model: 'uploaded_images',
+                key: 'id'
+            }
         },
         paymentMethod: {
             type: DataTypes.JSONB,

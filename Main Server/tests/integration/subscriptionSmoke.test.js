@@ -6,6 +6,7 @@ const {
   Trip,
   Booking,
   DriverSubscription,
+  UploadedImage,
 } = require('../../Models');
 const { generateAccessToken } = require('../setup/helpers');
 const { BOOKING_STATUS, SUBSCRIPTION_STATUS } = require('../../config/constants');
@@ -44,6 +45,7 @@ beforeEach(async () => {
   await Trip.destroy({ where: {}, force: true });
   await Vehicle.destroy({ where: {}, force: true });
   await DriverSubscription.destroy({ where: {}, force: true });
+  await UploadedImage.destroy({ where: {}, force: true });
   await DriverProfile.destroy({ where: {}, force: true });
   await User.destroy({ where: {}, force: true });
 
@@ -70,6 +72,14 @@ beforeEach(async () => {
 
 describe('End-to-end smoke (quickstart.md): plan → subscribe → approve → gate → commission', () => {
   it('walks the full driver subscription flow through the API', async () => {
+    const screenshot = await UploadedImage.create({
+      hash: 'smoke-screenshot-hash',
+      url: 'https://res.cloudinary.com/x/screenshot.jpg',
+      filename: 'smoke-screenshot.jpg',
+      mimetype: 'image/jpeg',
+      size: 1024,
+    });
+
     // 1. Admin creates a payment method + plan
     const methodRes = await getAgent()
       .post('/api/admin/payment-methods')
@@ -113,7 +123,7 @@ describe('End-to-end smoke (quickstart.md): plan → subscribe → approve → g
       .send({
         plan_id: plan.id,
         payment_method_id: method.id,
-        screenshot_url: 'https://res.cloudinary.com/x/screenshot.jpg',
+        screenshot_id: screenshot.id,
       });
     expect(submitRes.status).toBe(201);
     expect(submitRes.body.status).toBe(SUBSCRIPTION_STATUS.PENDING_APPROVAL);

@@ -95,12 +95,12 @@ Body:
 {
   "plan_id": "…",
   "payment_method_id": "…",
-  "screenshot_url": "https://res.cloudinary.com/x/screenshot.jpg",
+  "screenshot_id": 123,
   "resubmit": false
 }
 ```
 
-`plan_id`/`payment_method_id` must be valid UUIDs; `screenshot_url` must be a valid `http(s)` URL.
+`plan_id`/`payment_method_id` must be valid UUIDs; `screenshot_id` must be the integer image ID returned by `POST /api/upload` (the payment screenshot is uploaded through the server's image service and validated in the service layer).
 
 Response `201`:
 
@@ -231,6 +231,7 @@ Optional query params: `status` (default `pending_approval`), `sort` (`newest` |
       },
       "plan": { "name": "Basic", "cost": 15, "is_active": true },
       "payment_method": { "name": "Bank of Jordan" },
+      "screenshot_id": 123,
       "screenshot_url": "https://…",
       "submitted_at": "2026-08-01T10:00:00.000Z"
     }

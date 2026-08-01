@@ -7,11 +7,10 @@ const createSubscriptionValidation = [
   body('payment_method_id')
     .isUUID().withMessage('Payment method ID must be a valid UUID'),
 
-  body('screenshot_url')
-    .trim()
-    .notEmpty().withMessage('Screenshot URL is required')
-    .isURL({ require_protocol: true, protocols: ['http', 'https'] })
-    .withMessage('Screenshot URL must be a valid http(s) URL'),
+  body('screenshot_id')
+    .notEmpty().withMessage('Screenshot ID is required')
+    .isInt({ min: 1 }).withMessage('Screenshot ID must be a valid uploaded image ID')
+    .toInt(),
 
   body('resubmit')
     .optional()

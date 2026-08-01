@@ -86,7 +86,7 @@ Key goals:
 | driver_id | UUID FK→users(id) | Driver reference |
 | plan_id | UUID FK→subscription_plans(id) | Subscribed plan |
 | balance | DECIMAL(10,2) | Remaining credit balance |
-| screenshot_url | TEXT | URL to uploaded payment screenshot |
+| screenshot_id | INTEGER FK→uploaded_images(id) | ID of uploaded payment screenshot |
 | payment_method | JSONB | Snapshot of chosen payment option at time of subscription |
 | admin_notes | TEXT | Reason for rejection (if any) |
 | status | VARCHAR(20) | `pending_approval`, `approved`, `active`, `expired` |
@@ -197,9 +197,11 @@ Driver submits a subscription request.
 {
   "plan_id": "p1",
   "payment_method_id": "pm1",
-  "screenshot": "data:image/png;base64,..." // or a URL from file upload
+  "screenshot_id": 123
 }
 ```
+
+`screenshot_id` is the integer ID returned by `POST /upload` after the driver uploads the payment screenshot through the server.
 
 **Response** (201 Created):
 
@@ -299,6 +301,7 @@ List all subscription requests pending approval.
       "driver": {"id": "d1", "full_name": "Khaled", "phone": "+962..."},
       "plan": {"name": "Basic", "cost": 20.00},
       "payment_method": {"name": "Bank of Jordan"},
+      "screenshot_id": 123,
       "screenshot_url": "https://...",
       "submitted_at": "2026-08-01T10:00:00Z"
     }

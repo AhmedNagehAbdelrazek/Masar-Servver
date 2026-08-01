@@ -1,5 +1,5 @@
 const { getAgent } = require('../setup/setup');
-const { User, DriverProfile, SubscriptionPlan, PaymentMethod, DriverSubscription } = require('../../Models');
+const { User, DriverProfile, SubscriptionPlan, PaymentMethod, DriverSubscription, UploadedImage } = require('../../Models');
 const { generateAccessToken } = require('../setup/helpers');
 const { SUBSCRIPTION_STATUS } = require('../../config/constants');
 
@@ -14,9 +14,11 @@ let plan;
 let pendingPlan;
 let method;
 let pendingSub;
+let screenshot;
 
 beforeEach(async () => {
   await DriverSubscription.destroy({ where: {}, force: true });
+  await UploadedImage.destroy({ where: {}, force: true });
   await DriverProfile.destroy({ where: {}, force: true });
   await SubscriptionPlan.destroy({ where: {}, force: true });
   await PaymentMethod.destroy({ where: {}, force: true });
@@ -53,6 +55,14 @@ beforeEach(async () => {
     isActive: true,
   });
 
+  screenshot = await UploadedImage.create({
+    hash: 'contract-screenshot-hash',
+    url: 'https://res.cloudinary.com/x/screenshot.jpg',
+    filename: 'contract-screenshot.jpg',
+    mimetype: 'image/jpeg',
+    size: 1024,
+  });
+
   pendingSub = await DriverSubscription.create({
     driverId: DRIVER_ID,
     planId: pendingPlan.id,
@@ -61,7 +71,7 @@ beforeEach(async () => {
     planPercentageCut: pendingPlan.percentageCut,
     planCost: pendingPlan.cost,
     paymentMethod: { name: method.name, account_number: method.accountNumber, type: method.type },
-    screenshotUrl: 'https://res.cloudinary.com/x/screenshot.jpg',
+    screenshotId: screenshot.id,
     status: SUBSCRIPTION_STATUS.PENDING_APPROVAL,
   });
 
@@ -78,7 +88,7 @@ describe('Contract: POST /api/subscriptions', () => {
       .send({
         plan_id: plan.id,
         payment_method_id: method.id,
-        screenshot_url: 'https://res.cloudinary.com/x/screenshot.jpg',
+        screenshot_id: screenshot.id,
       });
 
     expect(res.status).toBe(201);
@@ -88,12 +98,12 @@ describe('Contract: POST /api/subscriptions', () => {
   });
 
   it('returns 401 without auth', async () => {
-    const res = await getAgent().post('/api/subscriptions').send({ plan_id: plan.id, payment_method_id: method.id, screenshot_url: 'https://x.com/s.jpg' });
+    const res = await getAgent().post('/api/subscriptions').send({ plan_id: plan.id, payment_method_id: method.id, screenshot_id: screenshot.id });
     expect(res.status).toBe(401);
   });
 
   it('returns 403 for passenger role', async () => {
-    const res = await getAgent().post('/api/subscriptions').set('Authorization', `Bearer ${passengerToken}`).send({ plan_id: plan.id, payment_method_id: method.id, screenshot_url: 'https://x.com/s.jpg' });
+    const res = await getAgent().post('/api/subscriptions').set('Authorization', `Bearer ${passengerToken}`).send({ plan_id: plan.id, payment_method_id: method.id, screenshot_id: screenshot.id });
     expect(res.status).toBe(403);
   });
 });
@@ -143,6 +153,7 @@ describe('Contract: GET /api/admin/subscriptions/pending', () => {
     expect(typeof item.plan.cost).toBe('number');
     expect(typeof item.plan.is_active).toBe('boolean');
     expect(typeof item.payment_method.name).toBe('string');
+    expect(typeof item.screenshot_id).toBe('number');
     expect(typeof item.screenshot_url).toBe('string');
     expect(typeof item.submitted_at).toBe('string');
   });

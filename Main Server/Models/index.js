@@ -119,6 +119,7 @@ User.hasMany(DriverSubscription, { foreignKey: 'driver_id', as: 'driverSubscript
 DriverSubscription.belongsTo(User, { foreignKey: 'driver_id', as: 'driver' });
 DriverSubscription.belongsTo(SubscriptionPlan, { foreignKey: 'plan_id', as: 'plan' });
 SubscriptionPlan.hasMany(DriverSubscription, { foreignKey: 'plan_id', as: 'subscriptions' });
+DriverSubscription.belongsTo(UploadedImage, { foreignKey: 'screenshot_id', as: 'screenshot' });
 
 module.exports = {
   sequelize,

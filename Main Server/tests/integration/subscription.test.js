@@ -1,5 +1,5 @@
 const { getAgent } = require('../setup/setup');
-const { User, DriverProfile, SubscriptionPlan, PaymentMethod, DriverSubscription, Vehicle, Trip, TripSeat, Notification } = require('../../Models');
+const { User, DriverProfile, SubscriptionPlan, PaymentMethod, DriverSubscription, Vehicle, Trip, TripSeat, Notification, UploadedImage } = require('../../Models');
 const { generateAccessToken } = require('../setup/helpers');
 const { SUBSCRIPTION_STATUS, TRIP_STATUS } = require('../../config/constants');
 
@@ -12,6 +12,7 @@ let driverToken;
 let plan;
 let freePlan;
 let method;
+let screenshot;
 
 beforeEach(async () => {
   await Notification.destroy({ where: {}, force: true });
@@ -19,6 +20,7 @@ beforeEach(async () => {
   await Trip.destroy({ where: {}, force: true });
   await Vehicle.destroy({ where: {}, force: true });
   await DriverSubscription.destroy({ where: {}, force: true });
+  await UploadedImage.destroy({ where: {}, force: true });
   await DriverProfile.destroy({ where: {}, force: true });
   await SubscriptionPlan.destroy({ where: {}, force: true });
   await PaymentMethod.destroy({ where: {}, force: true });
@@ -55,6 +57,14 @@ beforeEach(async () => {
     isActive: true,
   });
 
+  screenshot = await UploadedImage.create({
+    hash: 'subscription-screenshot-hash',
+    url: 'https://res.cloudinary.com/x/screenshot.jpg',
+    filename: 'subscription-screenshot.jpg',
+    mimetype: 'image/jpeg',
+    size: 1024,
+  });
+
   adminToken = generateAccessToken({ id: ADMIN_ID, role: 'admin' });
   driverToken = generateAccessToken({ id: DRIVER_ID, role: 'driver' });
 });
@@ -66,7 +76,7 @@ const submit = (planId) =>
     .send({
       plan_id: planId,
       payment_method_id: method.id,
-      screenshot_url: 'https://res.cloudinary.com/x/screenshot.jpg',
+      screenshot_id: screenshot.id,
     });
 
 const activateSub = (subPlan, balance, opts = {}) =>
@@ -141,7 +151,7 @@ describe('Driver subscription lifecycle - US2', () => {
       .send({
         plan_id: plan.id,
         payment_method_id: method.id,
-        screenshot_url: 'https://res.cloudinary.com/x/screenshot2.jpg',
+        screenshot_id: screenshot.id,
         resubmit: true,
       });
     expect(resubmit.status).toBe(201);

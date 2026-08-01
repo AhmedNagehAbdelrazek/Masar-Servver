@@ -9,6 +9,7 @@ const {
   SubscriptionPlan,
   DriverSubscription,
   PaymentMethod,
+  UploadedImage,
 } = require('../../Models');
 const { generateAccessToken } = require('../setup/helpers');
 const {
@@ -25,6 +26,7 @@ const VEHICLE_ID = '550e8400-e29b-41d4-a716-446655440e10';
 let adminToken;
 let driverToken;
 let method;
+let screenshot;
 
 function getFutureDate(daysAhead = 1) {
   const d = new Date();
@@ -113,6 +115,7 @@ beforeEach(async () => {
   await TripSeat.destroy({ where: {}, force: true });
   await Trip.destroy({ where: {}, force: true });
   await DriverSubscription.destroy({ where: { driverId: DRIVER_ID }, force: true });
+  await UploadedImage.destroy({ where: {}, force: true });
   await PaymentMethod.destroy({ where: {}, force: true });
   await SubscriptionPlan.destroy({ where: {}, force: true });
   await Vehicle.destroy({ where: { id: VEHICLE_ID }, force: true });
@@ -139,6 +142,13 @@ beforeEach(async () => {
     type: 'bank_account',
     email: 'payments@boj.com',
     isActive: true,
+  });
+  screenshot = await UploadedImage.create({
+    hash: 'commission-screenshot-hash',
+    url: 'https://res.cloudinary.com/x/screenshot.jpg',
+    filename: 'commission-screenshot.jpg',
+    mimetype: 'image/jpeg',
+    size: 1024,
   });
 
   adminToken = generateAccessToken({ id: ADMIN_ID, role: 'admin' });
@@ -318,7 +328,7 @@ describe('US3 - Commission deduction at completion', () => {
     const submit = await getAgent()
       .post('/api/subscriptions')
       .set('Authorization', `Bearer ${driverToken}`)
-      .send({ plan_id: newPlan.id, payment_method_id: method.id, screenshot_url: 'https://res.cloudinary.com/x/s.jpg' });
+      .send({ plan_id: newPlan.id, payment_method_id: method.id, screenshot_id: screenshot.id });
     expect(submit.status).toBe(201);
 
     const approve = await getAgent()

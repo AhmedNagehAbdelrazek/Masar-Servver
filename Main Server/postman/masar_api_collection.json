@@ -731,7 +731,7 @@
                 "upload"
               ]
             },
-            "description": "Upload an image file (multipart/form-data). Returns an image ID used by the onboarding endpoints and subscription `screenshot_url`.\n\n**Form field**\n- `file` *(file, required)* — select an image from the `file` value picker."
+            "description": "Upload an image file (multipart/form-data). Returns an image ID used by the onboarding endpoints and subscription `screenshot_id`.\n\n**Form field**\n- `file` *(file, required)* — select an image from the `file` value picker."
           },
           "response": []
         }
@@ -1137,7 +1137,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"plan_id\": \"{{plan_id}}\",\n  \"payment_method_id\": \"{{payment_method_id}}\",\n  \"screenshot_url\": \"https://res.cloudinary.com/example/payment_proof.png\",\n  \"resubmit\": false\n}"
+                  "raw": "{\n  \"plan_id\": \"{{plan_id}}\",\n  \"payment_method_id\": \"{{payment_method_id}}\",\n  \"screenshot_id\": \"{{screenshot_id}}\",\n  \"resubmit\": false\n}"
                 },
                 "url": {
                   "raw": "{{base_url}}/subscriptions",
@@ -1148,7 +1148,7 @@
                     "subscriptions"
                   ]
                 },
-                "description": "Submit a subscription request for admin approval. Returns `201` with status `pending_approval`.\n\nRequires role `driver`.\n\n**Body fields**\n- `plan_id` *(UUID, required)* — the plan to subscribe to (from `List Active Plans`).\n- `payment_method_id` *(UUID, required)* — the payment method used (from `List Payment Methods`).\n- `screenshot_url` *(string, required)* — valid `http(s)` URL of the payment proof image.\n- `resubmit` *(boolean, optional)* — set `true` to cancel an older pending request for the same plan and create a new one. Options: `true` | `false`.\n\nDuplicate pending requests for the same plan return `409 DUPLICATE_SUBSCRIPTION_REQUEST`."
+                "description": "Submit a subscription request for admin approval. Returns `201` with status `pending_approval`.\n\nRequires role `driver`.\n\n**Body fields**\n- `plan_id` *(UUID, required)* — the plan to subscribe to (from `List Active Plans`).\n- `payment_method_id` *(UUID, required)* — the payment method used (from `List Payment Methods`).\n- `screenshot_id` *(integer, required)* — the image ID returned by `Upload Image` for the payment proof screenshot.\n- `resubmit` *(boolean, optional)* — set `true` to cancel an older pending request for the same plan and create a new one. Options: `true` | `false`.\n\nDuplicate pending requests for the same plan return `409 DUPLICATE_SUBSCRIPTION_REQUEST`."
               },
               "response": []
             },
