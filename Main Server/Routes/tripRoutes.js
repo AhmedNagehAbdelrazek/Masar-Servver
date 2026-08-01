@@ -3,7 +3,7 @@ const c = require('../Controllers/tripController');
 const protect = require('../middlewares/protect');
 const { roleGuard } = require('../middlewares/roleGuard');
 const validate = require('../middlewares/validatorMiddleware');
-const { createTripValidation, updateTripValidation } = require('../utils/validators/tripValidator');
+const { createTripValidation, updateTripValidation, tripParamValidation } = require('../utils/validators/tripValidator');
 
 // Create trip (driver only)
 router.post('/', protect, roleGuard(['driver']), ...createTripValidation, validate, c.createTrip);
@@ -27,9 +27,9 @@ router.post('/:trip_id/complete', protect, roleGuard(['driver']), c.completeTrip
 router.put('/:trip_id', protect, roleGuard(['driver']), ...updateTripValidation, validate, c.updateTrip);
 
 // Cancel a trip (driver owner only)
-router.delete('/:trip_id', protect, roleGuard(['driver']), c.cancelTrip);
+router.delete('/:trip_id', protect, roleGuard(['driver']), ...tripParamValidation, validate, c.cancelTrip);
 
 // Trip attributes (any authenticated user)
-router.get('/:trip_id/attributes', protect, c.getTripAttributes);
+router.get('/:trip_id/attributes', protect, ...tripParamValidation, validate, c.getTripAttributes);
 
 module.exports = router;

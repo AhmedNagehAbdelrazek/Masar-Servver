@@ -182,6 +182,26 @@ describe('US3 - Ratings', () => {
 
       expect(res.status).toBe(404);
     });
+
+    it('should reject a third party who is not part of the booking with 403', async () => {
+      const booking = await createBooking();
+      const outsiderToken = generateAccessToken({ id: '550e8400-e29b-41d4-a716-446655440098', role: 'passenger' });
+      await User.create({
+        id: '550e8400-e29b-41d4-a716-446655440098', fullName: 'Outsider',
+        phone: '+962799999999', countryCode: 'JO', role: 'passenger',
+        passwordHash: 'hashed', isVerified: true, avgRating: 0,
+      });
+
+      const res = await getAgent()
+        .post('/api/ratings')
+        .set('Authorization', `Bearer ${outsiderToken}`)
+        .send({ booking_id: booking.id, stars: 5 });
+
+      expect(res.status).toBe(403);
+      const count = await Rating.count({ where: { bookingId: booking.id } });
+      expect(count).toBe(0);
+      await User.destroy({ where: { id: '550e8400-e29b-41d4-a716-446655440098' }, force: true });
+    });
   });
 
   describe('GET /api/driver/ratings', () => {

@@ -61,10 +61,13 @@ async function create(raterId, data) {
   });
   if (!booking) throw ApiErrors.notFound('Booking not found');
 
-  const rateeId =
-    booking.passengerId === raterId
-      ? booking.trip.driverId
-      : booking.passengerId;
+  const isPassenger = booking.passengerId === raterId;
+  const isDriver = booking.trip.driverId === raterId;
+  if (!isPassenger && !isDriver) {
+    throw ApiErrors.forbidden('Only the passenger or the driver of a booking may rate it');
+  }
+
+  const rateeId = isPassenger ? booking.trip.driverId : booking.passengerId;
 
   const existing = await Rating.findOne({
     where: { bookingId: booking.id, raterId },

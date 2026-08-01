@@ -150,6 +150,11 @@ const createTripValidation = [
     .isLength({ max: 1000 }).withMessage('Additional instructions must be at most 1000 characters'),
 ];
 
+const tripParamValidation = [
+  param('trip_id')
+    .isUUID().withMessage('Trip ID must be a valid UUID'),
+];
+
 const lockSeatValidation = [
   param('trip_id')
     .isUUID().withMessage('Trip ID must be a valid UUID'),
@@ -254,4 +259,5 @@ module.exports = {
   lockSeatValidation,
   releaseSeatLockValidation,
   updateTripValidation,
+  tripParamValidation,
 };
