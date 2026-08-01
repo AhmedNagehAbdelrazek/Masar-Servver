@@ -44,9 +44,29 @@ const getAvailableTrips = async (req, res, next) => {
   }
 };
 
+const startTrip = async (req, res, next) => {
+  try {
+    const result = await tripService.startTrip(req.user.id, req.params.trip_id);
+    successResponse(res, result);
+  } catch (err) {
+    next(err);
+  }
+};
+
+const completeTrip = async (req, res, next) => {
+  try {
+    const result = await tripService.completeTrip(req.user.id, req.params.trip_id);
+    successResponse(res, result);
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   createTrip,
   getTripById,
   getDriverTrips,
   getAvailableTrips,
+  startTrip,
+  completeTrip,
 };

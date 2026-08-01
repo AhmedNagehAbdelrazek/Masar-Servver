@@ -2,6 +2,36 @@ const { Op } = require('sequelize');
 const { Trip, TripSeat, TripStop, Vehicle, User, Booking, Rating } = require('../Models');
 const { ApiErrors } = require('../utils/ApiError');
 const { TRIP_STATUS, GENDER_PREFERENCE } = require('../config/constants');
+const balanceService = require('./balanceService');
+const commissionService = require('./commissionService');
+const notificationService = require('./notificationService');
+
+function round(n) {
+  return Math.round((Number(n) + Number.EPSILON) * 100) / 100;
+}
+
+/**
+ * US3 minimum-balance gate. Rejects with NO_ACTIVE_PLAN when the driver has
+ * no active plan, or INSUFFICIENT_BALANCE when the total balance cannot
+ * cover the commission for one seat.
+ */
+async function assertCanPublish(driverId, farePerSeat) {
+  const { current, minimum, totalBalance } = await commissionService.getGatingSnapshot(
+    driverId,
+    farePerSeat
+  );
+  if (!current) {
+    throw ApiErrors.custom('You need an active plan to publish trips.', 422, 'NO_ACTIVE_PLAN');
+  }
+  if (totalBalance < minimum) {
+    throw ApiErrors.custom(
+      `Insufficient balance to publish trip. You need at least ${minimum.toFixed(2)} to cover commission for one seat. Current balance: ${totalBalance.toFixed(2)}.`,
+      422,
+      'INSUFFICIENT_BALANCE'
+    );
+  }
+  return { minimum, totalBalance };
+}
 
 /**
  * Create a new trip with seats, waypoints, and recurrence
@@ -62,6 +92,9 @@ const createTrip = async (driverId, data) => {
       throw ApiErrors.validation('End date must be after departure date');
     }
   }
+
+  // US3: minimum-balance gate before publishing.
+  await assertCanPublish(driverId, data.fare_per_seat);
 
   // Create trip
   const trip = await Trip.create({
@@ -199,9 +232,102 @@ const getAvailableTrips = async (originCity, destinationCity, date, genderPrefer
   return trips;
 };
 
+/**
+ * Start a trip (US3). Re-verifies the minimum balance and marks the trip
+ * in-progress. Sends an INSUFFICIENT_BALANCE_START notification when the
+ * balance check fails.
+ */
+const startTrip = async (driverId, tripId) => {
+  const trip = await Trip.findByPk(tripId);
+  if (!trip) throw ApiErrors.notFound('Trip not found');
+  if (trip.driverId !== driverId) throw ApiErrors.forbidden('You can only start your own trips');
+
+  if (![TRIP_STATUS.PUBLISHED, TRIP_STATUS.FULL].includes(trip.status)) {
+    throw ApiErrors.custom('Trip cannot be started from its current status.', 422, 'INVALID_TRIP_STATUS');
+  }
+
+  const { current, minimum, totalBalance } = await commissionService.getGatingSnapshot(
+    driverId,
+    trip.farePerSeat
+  );
+  if (!current) {
+    throw ApiErrors.custom('You need an active plan to start trips.', 422, 'NO_ACTIVE_PLAN');
+  }
+  if (totalBalance < minimum) {
+    const user = await User.findByPk(driverId);
+    if (user) {
+      try {
+        await notificationService.sendToUser(user, 'INSUFFICIENT_BALANCE_START', {
+          channels: ['sms', 'in_app', 'push'],
+          data: { trip_id: tripId, required: minimum, balance: totalBalance },
+        });
+      } catch (err) {
+        console.warn('[tripService] insufficient balance notification failed:', err.message);
+      }
+    }
+    throw ApiErrors.custom(
+      'Your trip cannot be started because your balance is insufficient. Please subscribe to a plan.',
+      422,
+      'INSUFFICIENT_BALANCE'
+    );
+  }
+
+  await trip.update({ status: TRIP_STATUS.IN_PROGRESS });
+
+  return {
+    trip_id: trip.id,
+    status: trip.status,
+    message: 'Trip started successfully!',
+  };
+};
+
+/**
+ * Complete a trip (US3). Deducts the commission (total paid fare × current
+ * plan rate) FIFO from the active plans and marks the trip completed. If the
+ * deduction pushes the driver into debt their trips are blocked.
+ */
+const completeTrip = async (driverId, tripId) => {
+  const trip = await Trip.findByPk(tripId);
+  if (!trip) throw ApiErrors.notFound('Trip not found');
+  if (trip.driverId !== driverId) throw ApiErrors.forbidden('You can only complete your own trips');
+
+  if (![TRIP_STATUS.IN_PROGRESS, TRIP_STATUS.ONGOING].includes(trip.status)) {
+    throw ApiErrors.custom('Trip cannot be completed from its current status.', 422, 'INVALID_TRIP_STATUS');
+  }
+
+  const result = await commissionService.deductCommission(trip, driverId);
+
+  await trip.update({ status: TRIP_STATUS.COMPLETED });
+
+  if (result.isInDebt) {
+    const user = await User.findByPk(driverId);
+    if (user) {
+      try {
+        await notificationService.sendToUser(user, 'DEBT', {
+          channels: ['in_app', 'push'],
+          vars: { balance: Number(result.balanceAfter).toFixed(2) },
+          data: { trip_id: tripId, commission: result.commission },
+        });
+      } catch (err) {
+        console.warn('[tripService] debt notification failed:', err.message);
+      }
+    }
+  }
+
+  return {
+    trip_id: trip.id,
+    commission: result.commission,
+    plan_name: result.planName,
+    balance_after: result.balanceAfter,
+    is_in_debt: result.isInDebt,
+  };
+};
+
 module.exports = {
   createTrip,
   getTripById,
   getDriverTrips,
   getAvailableTrips,
+  startTrip,
+  completeTrip,
 };

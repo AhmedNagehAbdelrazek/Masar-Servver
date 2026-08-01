@@ -1,6 +1,7 @@
 const { getAgent, getRedisStore } = require('../setup/setup');
-const { User, Vehicle, Trip, TripSeat } = require('../../Models');
+const { User, Vehicle, Trip, TripSeat, SubscriptionPlan, DriverSubscription } = require('../../Models');
 const { generateAccessToken } = require('../setup/helpers');
+const { SUBSCRIPTION_STATUS } = require('../../config/constants');
 
 const DRIVER_PHONE = '+962795555555';
 const PASSENGER1_PHONE = '+962796666666';
@@ -24,6 +25,7 @@ function getFutureDate(daysAhead = 1) {
 beforeEach(async () => {
   await TripSeat.destroy({ where: {}, force: true });
   await Trip.destroy({ where: {}, force: true });
+  await DriverSubscription.destroy({ where: { driverId: DRIVER_ID }, force: true });
   await Vehicle.destroy({ where: {}, force: true });
   await User.destroy({ where: { phone: [DRIVER_PHONE, PASSENGER1_PHONE, PASSENGER2_PHONE] }, force: true });
 
@@ -73,6 +75,31 @@ beforeEach(async () => {
   driverToken = generateAccessToken({ id: DRIVER_ID, role: 'driver' });
   passenger1Token = generateAccessToken({ id: PASSENGER1_ID, role: 'passenger' });
   passenger2Token = generateAccessToken({ id: PASSENGER2_ID, role: 'passenger' });
+
+  const plan = await SubscriptionPlan.create({
+    name: 'Basic',
+    periodDays: 30,
+    percentageCut: 8,
+    cost: 100,
+    features: [],
+    isFree: false,
+    isActive: true,
+  });
+  await DriverSubscription.create({
+    driverId: DRIVER_ID,
+    planId: plan.id,
+    planName: plan.name,
+    planPeriodDays: plan.periodDays,
+    planPercentageCut: plan.percentageCut,
+    planCost: plan.cost,
+    balance: 100,
+    paymentMethod: { name: 'Bank of Jordan', account_number: 'JO94BOJX0000000000', type: 'bank_account' },
+    status: SUBSCRIPTION_STATUS.ACTIVE,
+    approvedAt: new Date(),
+    activatedAt: new Date(),
+    expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+  });
+  await User.update({ totalBalance: 100, isInDebt: false }, { where: { id: DRIVER_ID } });
 
   const futureDate = getFutureDate(1);
   const res = await getAgent()

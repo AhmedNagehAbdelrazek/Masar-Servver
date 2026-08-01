@@ -128,6 +128,11 @@ Trip.init(
             type: DataTypes.DATE,
             allowNull: true,
         },
+        isBlockedByBalance: {
+            type: DataTypes.BOOLEAN,
+            allowNull: false,
+            defaultValue: false,
+        },
     },
     {
         sequelize,

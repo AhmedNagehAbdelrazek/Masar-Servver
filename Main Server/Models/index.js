@@ -21,6 +21,9 @@ const FavoriteDriver = require('./FavoriteDriver');
 const FavoriteRoute = require('./FavoriteRoute');
 const AuditLog = require('./AuditLog');
 const SubscriptionTransaction = require('./SubscriptionTransaction');
+const SubscriptionPlan = require('./SubscriptionPlan');
+const DriverSubscription = require('./DriverSubscription');
+const PaymentMethod = require('./PaymentMethod');
 
 // ===== USER RELATIONS =====
 User.hasOne(DriverProfile, { foreignKey: 'driver_id', as: 'driverProfile' });
@@ -111,6 +114,12 @@ RequestOffer.belongsTo(RideRequest, { foreignKey: 'request_id', as: 'rideRequest
 Complaint.hasMany(Penalty, { foreignKey: 'complaint_id', as: 'penalties' });
 Penalty.belongsTo(Complaint, { foreignKey: 'complaint_id', as: 'complaint' });
 
+// ===== SUBSCRIPTION RELATIONS =====
+User.hasMany(DriverSubscription, { foreignKey: 'driver_id', as: 'driverSubscriptions' });
+DriverSubscription.belongsTo(User, { foreignKey: 'driver_id', as: 'driver' });
+DriverSubscription.belongsTo(SubscriptionPlan, { foreignKey: 'plan_id', as: 'plan' });
+SubscriptionPlan.hasMany(DriverSubscription, { foreignKey: 'plan_id', as: 'subscriptions' });
+
 module.exports = {
   sequelize,
   User,
@@ -135,4 +144,7 @@ module.exports = {
   FavoriteRoute,
   AuditLog,
   SubscriptionTransaction,
+  SubscriptionPlan,
+  DriverSubscription,
+  PaymentMethod,
 };

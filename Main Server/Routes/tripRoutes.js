@@ -17,4 +17,10 @@ router.get('/driver/my-trips', protect, roleGuard(['driver']), c.getDriverTrips)
 // Search available trips (passengers)
 router.get('/search/available', protect, c.getAvailableTrips);
 
+// Start a trip (driver only)
+router.post('/:trip_id/start', protect, roleGuard(['driver']), c.startTrip);
+
+// Complete a trip (driver only)
+router.post('/:trip_id/complete', protect, roleGuard(['driver']), c.completeTrip);
+
 module.exports = router;

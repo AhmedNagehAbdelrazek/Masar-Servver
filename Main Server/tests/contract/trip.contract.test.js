@@ -1,6 +1,7 @@
 const { getAgent } = require('../setup/setup');
-const { User, Vehicle, Trip, TripSeat, TripStop } = require('../../Models');
+const { User, Vehicle, Trip, TripSeat, TripStop, SubscriptionPlan, DriverSubscription } = require('../../Models');
 const { generateAccessToken } = require('../setup/helpers');
+const { SUBSCRIPTION_STATUS } = require('../../config/constants');
 
 const DRIVER_ID = '1b9d6bcd-bbfd-4b2d-9b5d-ab8dfbbd4d81';
 const PASSENGER_ID = '1b9d6bcd-bbfd-4b2d-9b5d-ab8dfbbd4d82';
@@ -15,10 +16,38 @@ function getFutureDate(daysAhead = 1) {
   return d.toISOString().split('T')[0];
 }
 
+async function seedActiveSubscription() {
+  const plan = await SubscriptionPlan.create({
+    name: 'Basic',
+    periodDays: 30,
+    percentageCut: 8,
+    cost: 100,
+    features: [],
+    isFree: false,
+    isActive: true,
+  });
+  await DriverSubscription.create({
+    driverId: DRIVER_ID,
+    planId: plan.id,
+    planName: plan.name,
+    planPeriodDays: plan.periodDays,
+    planPercentageCut: plan.percentageCut,
+    planCost: plan.cost,
+    balance: 100,
+    paymentMethod: { name: 'Bank of Jordan', account_number: 'JO94BOJX0000000000', type: 'bank_account' },
+    status: SUBSCRIPTION_STATUS.ACTIVE,
+    approvedAt: new Date(),
+    activatedAt: new Date(),
+    expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+  });
+  await User.update({ totalBalance: 100, isInDebt: false }, { where: { id: DRIVER_ID } });
+}
+
 beforeEach(async () => {
   await TripSeat.destroy({ where: {}, force: true });
   await TripStop.destroy({ where: {}, force: true });
   await Trip.destroy({ where: {}, force: true });
+  await DriverSubscription.destroy({ where: { driverId: DRIVER_ID }, force: true });
   await Vehicle.destroy({ where: { id: VEHICLE_ID }, force: true });
   await User.destroy({ where: { id: [DRIVER_ID, PASSENGER_ID] }, force: true });
 
@@ -54,6 +83,8 @@ beforeEach(async () => {
     seats: 4,
     isVerified: true,
   });
+
+  await seedActiveSubscription();
 
   driverToken = generateAccessToken({ id: DRIVER_ID, role: 'driver' });
   passengerToken = generateAccessToken({ id: PASSENGER_ID, role: 'passenger' });

@@ -3,11 +3,13 @@ const http = require('http');
 const createApp = require('./app');
 const { createSocketServer } = require('./socketServer');
 const { initDatabase } = require('./config/database');
+const { startJobs } = require('./jobs');
 
 const PORT = process.env.PORT || 3000;
 
 async function startServer() {
   await initDatabase();
+  startJobs();
 
   httpServer.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);

@@ -37,6 +37,9 @@ const ApiErrors = {
 
   serverError: (message = 'Internal server error') =>
     new ApiError(message, 500, 'INTERNAL_ERROR'),
+
+  custom: (message = 'Error', statusCode = 500, code = 'INTERNAL_ERROR') =>
+    new ApiError(message, statusCode, code),
 };
 
 module.exports = ApiError;

@@ -116,6 +116,31 @@ const STOP_TYPE = {
   BOTH: 'both',
 };
 
+const SUBSCRIPTION_STATUS = {
+  PENDING_APPROVAL: 'pending_approval',
+  ACTIVE: 'active',
+  REJECTED: 'rejected',
+  CANCELLED: 'cancelled',
+  EXPIRED: 'expired',
+};
+
+const PLAN_STATUS = {
+  MOST_REQUESTED: 'most_requested',
+  FREQUENT: 'frequent',
+  POPULAR: 'popular',
+};
+
+const PAYMENT_METHOD_TYPE = {
+  BANK_ACCOUNT: 'bank_account',
+  E_WALLET: 'e-wallet',
+  MOBILE_MONEY: 'mobile_money',
+};
+
+const FREE_OFFER_TYPE = {
+  TRIPS: 'trips',
+  CREDIT: 'credit',
+};
+
 const SIGNUP_ROLES = [ROLES.PASSENGER, ROLES.RIDER];
 
 // THE RESOURCES AND ACTIONS THAT THE ADMIN CAN GIVE THEM WITH EACH ROLE LIKE [{resource: 'trip', actions: ['create', 'read', 'update', 'delete']}]; 
@@ -160,6 +185,10 @@ module.exports = {
   TICKET_PRIORITY,
   SUBSCRIPTION_TIER,
   STOP_TYPE,
+  SUBSCRIPTION_STATUS,
+  PLAN_STATUS,
+  PAYMENT_METHOD_TYPE,
+  FREE_OFFER_TYPE,
   PAGINATION,
   ADMIN_RESOURCES,
   ADMIN_ACTIONS,

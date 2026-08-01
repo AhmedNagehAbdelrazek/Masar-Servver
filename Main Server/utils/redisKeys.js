@@ -4,12 +4,14 @@ const REDIS_KEYS = {
   TRIP_CACHE: (tripId) => `trip:${tripId}`,
   OTP: (phone) => `otp:${phone}`,
   REFRESH_TOKEN: (userId) => `refresh:${userId}`,
+  PLANS_ACTIVE: 'plans:active',
 };
 
 const CACHE_TTL = {
   DASHBOARD: 30, // 30 seconds
   TRIP: 60, // 60 seconds
   SEAT_LOCK: 300, // 5 minutes
+  PLANS: 60, // 60 seconds
 };
 
 module.exports = {

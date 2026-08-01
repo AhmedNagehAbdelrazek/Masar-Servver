@@ -82,6 +82,16 @@ User.init(
             type: DataTypes.DATE,
             allowNull: true,
         },
+        totalBalance: {
+            type: DataTypes.DECIMAL(10, 2),
+            allowNull: false,
+            defaultValue: 0,
+        },
+        isInDebt: {
+            type: DataTypes.BOOLEAN,
+            allowNull: false,
+            defaultValue: false,
+        },
     },
     {
         sequelize,

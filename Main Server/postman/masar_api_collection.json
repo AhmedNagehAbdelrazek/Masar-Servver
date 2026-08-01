@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "5dee1bcc-ba02-49d7-b305-189155d9a40c",
     "name": "Masar API",
-    "description": "Complete API collection for the Masar ride-sharing platform.\n\nBase URL: http://localhost:8000/api",
+    "description": "Complete API collection for the Masar ride-sharing platform.\n\nBase URL: http://localhost:8000/api\n\n## Authentication\n\nAll endpoints except `GET /payment-methods` and `Health Check` require `Authorization: Bearer <access_token>` (set automatically from collection variables).\n\n- **Driver endpoints** (trips, subscriptions, plans, onboarding) → use a token from a user with role `driver`.\n- **Admin endpoints** (`/admin/*`) → use a token from a user with role `admin`.\n\n## Running a flow\n\n1. `Auth > Registration` (or `Login`) to obtain an `access_token`.\n2. Use `Upload > Upload Image` to get image IDs for onboarding.\n3. `Onboarding (Driver)` to complete driver profile + vehicle.\n4. `Subscriptions (Driver)` to browse plans and subscribe.\n5. `Admin` to approve requests.\n6. `Trips` to publish, start, and complete trips (gated by subscription balance).",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "_exporter_id": "28639752"
   },
@@ -24,11 +24,12 @@
                 "healthz"
               ]
             },
-            "description": "Check if the API is running"
+            "description": "Check if the API is running.\n\nNo authentication required."
           },
           "response": []
         }
-      ]
+      ],
+      "description": "Liveness check"
     },
     {
       "name": "Auth",
@@ -77,7 +78,7 @@
                     "phone"
                   ]
                 },
-                "description": "Start registration by sending phone number. OTP will be logged to console."
+                "description": "Start registration by sending your phone number. An OTP is generated and logged to the server console (dev mode).\n\n**Body fields**\n- `country_code` *(string, required)* — 2-letter ISO country code. Options: e.g. `JO`, `AE`. Letters only.\n- `phone` *(string, required)* — phone number **without** country code (digits only, e.g. `791234565`).\n- `role` *(string, required)* — account role. Options: `driver` | `passenger`."
               },
               "response": []
             },
@@ -122,7 +123,7 @@
                     "verify-otp"
                   ]
                 },
-                "description": "Verify the OTP received via console. Replace OTP with the actual code."
+                "description": "Verify the OTP received in the server console. Returns a `registration_token` used in Step 3.\n\n**Body fields**\n- `phone` *(string, required)* — full phone number in international format, e.g. `+962791234565`.\n- `otp` *(string, required)* — the 6-digit code from the console. Replace with the actual code."
               },
               "response": []
             },
@@ -182,7 +183,7 @@
                     "password"
                   ]
                 },
-                "description": "Set password using the registration token from Step 2."
+                "description": "Set your password using the `registration_token` from Step 2 (sent as `Authorization: Bearer`). Returns `access_token` and `refresh_token`.\n\n**Body fields**\n- `password` *(string, required)* — at least 8 characters with uppercase, lowercase, a number, and a special character (`@$!%*?&`).\n- `confirmPassword` *(string, required)* — must match `password`."
               },
               "response": []
             },
@@ -210,7 +211,7 @@
                     "resend-otp"
                   ]
                 },
-                "description": "Resend OTP if the previous one expired or wasn't received."
+                "description": "Resend an OTP if the previous one expired or was not received.\n\n**Body fields**\n- `phone` *(string, required)* — full phone number in international format, e.g. `+962791234567`.\n- `purpose` *(string, required)* — OTP purpose. Options: `register` | `forgot_password`."
               },
               "response": []
             }
@@ -261,7 +262,7 @@
                     "login"
                   ]
                 },
-                "description": "Login with phone and password."
+                "description": "Login with phone and password. On success, `access_token` and `refresh_token` are stored in collection variables automatically.\n\n**Body fields**\n- `phone` *(string, required)* — full phone number in international format, e.g. `+962791234565`.\n- `password` *(string, required)* — account password."
               },
               "response": []
             }
@@ -309,7 +310,7 @@
                     "refresh"
                   ]
                 },
-                "description": "Get new access + refresh token pair."
+                "description": "Exchange an expired `access_token` for a fresh token pair.\n\n**Body fields**\n- `refresh_token` *(string, required)* — the refresh token obtained at login/registration."
               },
               "response": []
             },
@@ -341,7 +342,7 @@
                     "logout"
                   ]
                 },
-                "description": "Logout and revoke refresh token."
+                "description": "Logout and revoke the refresh token.\n\n**Body fields**\n- `refresh_token` *(string, required)* — the refresh token to revoke."
               },
               "response": []
             }
@@ -374,12 +375,12 @@
                     "forgot-password"
                   ]
                 },
-                "description": "Request OTP for password reset."
+                "description": "Request an OTP to reset your password.\n\n**Body fields**\n- `phone` *(string, required)* — full phone number in international format, e.g. `+962791234567`."
               },
               "response": []
             },
             {
-              "name": "Step 2 - Verify OTP",
+              "name": "Step 2 - Verify OTP (Forgot Password)",
               "event": [
                 {
                   "listen": "test",
@@ -417,7 +418,7 @@
                     "verify-otp"
                   ]
                 },
-                "description": "Verify forgot password OTP."
+                "description": "Verify the forgot-password OTP. Returns a `reset_token` used in Step 3.\n\n**Body fields**\n- `phone` *(string, required)* — full phone number in international format.\n- `otp` *(string, required)* — the 6-digit code."
               },
               "response": []
             },
@@ -450,7 +451,7 @@
                     "reset"
                   ]
                 },
-                "description": "Reset password using the reset token."
+                "description": "Reset the password using the `reset_token` from Step 2 (sent as `Authorization: Bearer`).\n\n**Body fields**\n- `password` *(string, required)* — at least 8 characters with uppercase, lowercase, a number, and a special character.\n- `confirmPassword` *(string, required)* — must match `password`."
               },
               "response": []
             },
@@ -478,209 +479,225 @@
                     "resend-otp"
                   ]
                 },
-                "description": "Resend OTP for forgot password flow."
+                "description": "Resend the forgot-password OTP. Same endpoint as registration resend, with a different purpose.\n\n**Body fields**\n- `phone` *(string, required)* — full phone number in international format.\n- `purpose` *(string, required)* — Options: `register` | `forgot_password`."
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Current User",
+          "item": [
+            {
+              "name": "Get Me",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{access_token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/auth/me",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "auth",
+                    "me"
+                  ]
+                },
+                "description": "Get the current authenticated user's profile. Includes `total_balance` and `is_in_debt` for drivers.\n\nNo body or query parameters."
               },
               "response": []
             }
           ]
         }
-      ]
+      ],
+      "description": "Authentication and account flows: registration, login, token refresh, logout, password reset, and current user"
     },
     {
-      "name": "User Profile",
+      "name": "Driver Onboarding",
       "item": [
         {
-          "name": "Get Me",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{access_token}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{access_token}}"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/auth/me",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "auth",
-                "me"
-              ]
-            },
-            "description": "Get current user profile."
-          },
-          "response": []
-        }
-      ]
-    },
-    {
-      "name": "Driver Onboarding Profile",
-      "item": [
-        {
-          "name": "Get Onboarding Status",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{access_token}}"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/auth/onboarding/status",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "auth",
-                "onboarding",
-                "status"
-              ]
-            },
-            "description": "Check current onboarding progress."
-          },
-          "response": []
-        },
-        {
-          "name": "Submit Driver Profile",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{access_token}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
+          "name": "Status",
+          "item": [
+            {
+              "name": "Get Onboarding Status",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/auth/onboarding/status",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "auth",
+                    "onboarding",
+                    "status"
+                  ]
+                },
+                "description": "Check current driver onboarding progress (which steps are completed).\n\nRequires role `driver`.\n\nNo body or query parameters."
               },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{access_token}}"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"fullName\": \"Ahmad Mohammed\",\n  \"age\": 28,\n  \"gender\": \"male\",\n  \"userIdentificationFront\": 1,\n  \"userIdentificationBack\": 2,\n  \"linceseFront\": 3,\n  \"linceseBack\": 4,\n  \"personalImageWithId\": 5\n}"
-            },
-            "url": {
-              "raw": "{{base_url}}/auth/onboarding/profile",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "auth",
-                "onboarding",
-                "profile"
-              ]
-            },
-            "description": "Submit driver profile with personal info and document image IDs."
-          },
-          "response": []
+              "response": []
+            }
+          ]
         },
         {
-          "name": "Get Driver Profile",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{access_token}}"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/auth/onboarding/profile",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "auth",
-                "onboarding",
-                "profile"
-              ]
-            },
-            "description": "Get driver profile status."
-          },
-          "response": []
-        },
-        {
-          "name": "Submit Vehicle",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
+          "name": "Driver Profile",
+          "item": [
+            {
+              "name": "Submit Driver Profile",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{access_token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"fullName\": \"Ahmad Mohammed\",\n  \"age\": 28,\n  \"gender\": \"male\",\n  \"nationalID\": \"N9998887\",\n  \"userIdentificationFront\": 1,\n  \"userIdentificationBack\": 2,\n  \"linceseFront\": 3,\n  \"linceseBack\": 4,\n  \"personalImageWithId\": 5\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/auth/onboarding/profile",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "auth",
+                    "onboarding",
+                    "profile"
+                  ]
+                },
+                "description": "Submit driver profile with personal info and document image IDs (obtained from `Upload > Upload Image`).\n\nRequires role `driver`.\n\n**Body fields**\n- `fullName` *(string, required)* — full name, max 120 chars.\n- `age` *(number, required)* — integer between 18 and 100.\n- `gender` *(string, required)* — Options: `male` | `female`.\n- `nationalID` *(string, required)* — national ID, 5-30 chars. Used for free-plan one-time eligibility.\n- `userIdentificationFront` / `userIdentificationBack` *(number, required)* — image IDs of national ID front/back.\n- `linceseFront` / `linceseBack` *(number, required)* — image IDs of driver license front/back (note the typo is intentional in the API).\n- `personalImageWithId` *(number, required)* — image ID of a selfie holding the ID."
               },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{access_token}}"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"vehicleType\": \"sedan\",\n  \"manufacturer\": \"Toyota\",\n  \"model\": \"Camry\",\n  \"modelYear\": 2023,\n  \"color\": \"White\",\n  \"plateNumber\": \"ABC-1234\",\n  \"seats\": 4,\n  \"registrationDocFront\": 6,\n  \"registrationDocBack\": 7,\n  \"vehiclePhotoFront\": 8,\n  \"vehiclePhotoBack\": 9\n}"
+              "response": []
             },
-            "url": {
-              "raw": "{{base_url}}/auth/onboarding/vehicle",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "auth",
-                "onboarding",
-                "vehicle"
-              ]
-            },
-            "description": "Submit vehicle details with document image IDs."
-          },
-          "response": []
+            {
+              "name": "Get Driver Profile",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/auth/onboarding/profile",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "auth",
+                    "onboarding",
+                    "profile"
+                  ]
+                },
+                "description": "Get the current driver profile and its status.\n\nRequires role `driver`.\n\nNo body or query parameters."
+              },
+              "response": []
+            }
+          ]
         },
         {
-          "name": "Get Vehicle",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{access_token}}"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/auth/onboarding/vehicle",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "auth",
-                "onboarding",
-                "vehicle"
-              ]
+          "name": "Vehicle",
+          "item": [
+            {
+              "name": "Submit Vehicle",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"vehicleType\": \"sedan\",\n  \"manufacturer\": \"Toyota\",\n  \"model\": \"Camry\",\n  \"modelYear\": 2023,\n  \"color\": \"White\",\n  \"plateNumber\": \"ABC-1234\",\n  \"seats\": 4,\n  \"registrationDocFront\": 6,\n  \"registrationDocBack\": 7,\n  \"vehiclePhotoFront\": 8,\n  \"vehiclePhotoBack\": 9\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/auth/onboarding/vehicle",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "auth",
+                    "onboarding",
+                    "vehicle"
+                  ]
+                },
+                "description": "Submit vehicle details with document image IDs.\n\nRequires role `driver`.\n\n**Body fields**\n- `vehicleType` *(string, required)* — Options: `sedan` | `suv` | `van` | `bus` | `hatchback`.\n- `manufacturer` *(string, required)* — e.g. `Toyota`, max 80 chars.\n- `model` *(string, required)* — e.g. `Camry`, max 80 chars.\n- `modelYear` *(number, optional)* — integer between 1900 and 2030.\n- `color` *(string, optional)* — max 30 chars.\n- `plateNumber` *(string, required)* — max 20 chars.\n- `seats` *(number, required)* — integer between 1 and 50.\n- `registrationDocFront` / `registrationDocBack` *(number, required)* — image IDs of registration document front/back.\n- `vehiclePhotoFront` / `vehiclePhotoBack` *(number, required)* — image IDs of vehicle photos front/back."
+              },
+              "response": []
             },
-            "description": "Get vehicle status."
-          },
-          "response": []
+            {
+              "name": "Get Vehicle",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/auth/onboarding/vehicle",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "auth",
+                    "onboarding",
+                    "vehicle"
+                  ]
+                },
+                "description": "Get the current driver's vehicle and its status.\n\nRequires role `driver`.\n\nNo body or query parameters."
+              },
+              "response": []
+            }
+          ]
         }
       ],
-      "description": "Driver onboarding steps after registration."
+      "description": "Driver onboarding: status, driver profile, and vehicle steps (all require role `driver`)"
     },
     {
       "name": "Upload",
@@ -714,17 +731,65 @@
                 "upload"
               ]
             },
-            "description": "Upload an image file. Returns the image ID needed for onboarding."
+            "description": "Upload an image file (multipart/form-data). Returns an image ID used by the onboarding endpoints and subscription `screenshot_url`.\n\n**Form field**\n- `file` *(file, required)* — select an image from the `file` value picker."
           },
           "response": []
         }
-      ]
+      ],
+      "description": "File upload used to obtain image IDs for onboarding and subscription proof"
     },
     {
-      "name": "Driver",
+      "name": "Trips",
       "item": [
         {
-          "name": "Trip",
+          "name": "Search",
+          "item": [
+            {
+              "name": "Search Available Trips",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/trips/search/available?origin_city=Amman&destination_city=Irbid&date=2026-08-15&gender_preference=all",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "trips",
+                    "search",
+                    "available"
+                  ],
+                  "query": [
+                    {
+                      "key": "origin_city",
+                      "value": "Amman",
+                      "description": "Origin city (optional)"
+                    },
+                    {
+                      "key": "destination_city",
+                      "value": "Irbid",
+                      "description": "Destination city (optional)"
+                    },
+                    {
+                      "key": "date",
+                      "value": "2026-08-15",
+                      "description": "Departure date in YYYY-MM-DD format"
+                    },
+                    {
+                      "key": "gender_preference",
+                      "value": "all",
+                      "description": "Gender filter (optional). Options: all | women_only | men_only"
+                    }
+                  ]
+                },
+                "description": "Search for available (published) trips. Use for passengers browsing trips.\n\n**Query parameters**\n- `origin_city` *(optional)* — e.g. `Amman`.\n- `destination_city` *(optional)* — e.g. `Irbid`.\n- `date` *(optional)* — `YYYY-MM-DD`.\n- `gender_preference` *(optional)* — Options: `all` | `women_only` | `men_only`."
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Driver Trips",
           "item": [
             {
               "name": "Create Trip (Driver)",
@@ -755,7 +820,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"origin_city\": \"Amman\",\n  \"origin_area\": \"Abdoun\",\n  \"origin_lat\": \"31.9500\",\n  \"origin_lng\": \"35.9100\",\n  \"destination_city\": \"Irbid\",\n  \"destination_area\": \"Downtown\",\n  \"destination_lat\": \"32.5500\",\n  \"destination_lng\": \"35.8500\",\n  \"departure_date\": \"2026-08-15\",\n  \"departure_time\": \"14:00\",\n  \"type_of_trip\": \"once\",\n  \"fare_per_seat\": \"15.50\",\n  \"seats\": [\n    { \"seat_number\": 1, \"type\": \"driver\" },\n    { \"seat_number\": 2, \"type\": \"available\" },\n    { \"seat_number\": 3, \"type\": \"available\" },\n    { \"seat_number\": 4, \"type\": \"unavailable\" }\n  ],\n  \"instructions\": \"No smoking please\",\n  \"additional_instructions\": \"Bring water\",\n  \"waypoints\": [\n    { \"stop_name\": \"Khalda\", \"stop_lat\": \"31.9600\", \"stop_lng\": \"35.9000\" }\n  ]\n}"
+                  "raw": "{\n  \"origin_city\": \"Amman\",\n  \"origin_area\": \"Abdoun\",\n  \"origin_lat\": \"31.9500\",\n  \"origin_lng\": \"35.9100\",\n  \"destination_city\": \"Irbid\",\n  \"destination_area\": \"Downtown\",\n  \"destination_lat\": \"32.5500\",\n  \"destination_lng\": \"35.8500\",\n  \"departure_date\": \"2026-08-15\",\n  \"departure_time\": \"14:00\",\n  \"type_of_trip\": \"once\",\n  \"fare_per_seat\": \"15.50\",\n  \"seats\": [\n    { \"seat_number\": 1, \"type\": \"driver\" },\n    { \"seat_number\": 2, \"type\": \"available\" },\n    { \"seat_number\": 3, \"type\": \"available\" },\n    { \"seat_number\": 4, \"type\": \"unavailable\" }\n  ],\n  \"instructions\": [\"No smoking please\"],\n  \"additional_instructions\": \"Bring water\",\n  \"waypoints\": [\n    { \"stop_name\": \"Khalda\", \"stop_lat\": \"31.9600\", \"stop_lng\": \"35.9000\" }\n  ]\n}"
                 },
                 "url": {
                   "raw": "{{base_url}}/trips",
@@ -765,7 +830,8 @@
                   "path": [
                     "trips"
                   ]
-                }
+                },
+                "description": "Publish a new trip. Requires role `driver` with an **active subscription plan and sufficient balance** (else `422 NO_ACTIVE_PLAN` / `INSUFFICIENT_BALANCE`). On success, `trip_id` is saved to a collection variable automatically.\n\n**Body fields**\n- `origin_city` *(string, required)* — max 100 chars.\n- `origin_area` *(string, optional)* — max 120 chars.\n- `origin_lat` / `origin_lng` *(string, optional)* — decimal; lat −90..90, lng −180..180.\n- `destination_city` *(string, required)* — max 100 chars.\n- `destination_area` *(string, optional)* — max 120 chars.\n- `destination_lat` / `destination_lng` *(string, optional)* — decimal; lat −90..90, lng −180..180.\n- `departure_date` *(string, required)* — `YYYY-MM-DD`, today or in the future.\n- `departure_time` *(string, required)* — 24h `HH:MM`.\n- `type_of_trip` *(string, required)* — Options: `once` | `repeated`.\n- `repeated_days` *(array, required when type is `repeated`)* — weekdays as integers. Options: `0` (Sunday) … `6` (Saturday).\n- `repeated_end_date` *(string, required when type is `repeated`)* — `YYYY-MM-DD`, after `departure_date`.\n- `fare_per_seat` *(string, required)* — decimal with up to 2 decimal places, ≥ 0.\n- `seats` *(array, required)* — each item: `{ \"seat_number\": number, \"type\": \"driver\" | \"available\" | \"unavailable\" }`.\n- `instructions` *(array, optional)* — non-empty strings, max 1000 chars each.\n- `additional_instructions` *(string, optional)* — max 1000 chars.\n- `waypoints` *(array, optional)* — each item: `{ \"stop_name\", \"stop_lat\", \"stop_lng\" }`.\n- `allowed_type` *(string, optional)* — Options: `all` | `women_only` | `men_only`."
               },
               "response": []
             },
@@ -781,7 +847,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"origin_city\": \"Amman\",\n  \"origin_area\": \"Abdoun\",\n  \"origin_lat\": \"31.9500\",\n  \"origin_lng\": \"35.9100\",\n  \"destination_city\": \"Irbid\",\n  \"destination_area\": \"Downtown\",\n  \"destination_lat\": \"32.5500\",\n  \"destination_lng\": \"35.8500\",\n  \"departure_date\": \"2026-08-15\",\n  \"departure_time\": \"14:00\",\n  \"type_of_trip\": \"repeated\",\n  \"repeated_days\": [1, 3, 5],\n  \"repeated_end_date\": \"2026-09-30\",\n  \"fare_per_seat\": \"15.50\",\n  \"seats\": [\n    { \"seat_number\": 1, \"type\": \"driver\" },\n    { \"seat_number\": 2, \"type\": \"available\" },\n    { \"seat_number\": 3, \"type\": \"available\" },\n    { \"seat_number\": 4, \"type\": \"unavailable\" }\n  ],\n  \"instructions\": \"No smoking please\",\n  \"waypoints\": [\n    { \"stop_name\": \"Khalda\", \"stop_lat\": \"31.9600\", \"stop_lng\": \"35.9000\" }\n  ]\n}"
+                  "raw": "{\n  \"origin_city\": \"Amman\",\n  \"origin_area\": \"Abdoun\",\n  \"origin_lat\": \"31.9500\",\n  \"origin_lng\": \"35.9100\",\n  \"destination_city\": \"Irbid\",\n  \"destination_area\": \"Downtown\",\n  \"destination_lat\": \"32.5500\",\n  \"destination_lng\": \"35.8500\",\n  \"departure_date\": \"2026-08-15\",\n  \"departure_time\": \"14:00\",\n  \"type_of_trip\": \"repeated\",\n  \"repeated_days\": [1, 3, 5],\n  \"repeated_end_date\": \"2026-09-30\",\n  \"fare_per_seat\": \"15.50\",\n  \"seats\": [\n    { \"seat_number\": 1, \"type\": \"driver\" },\n    { \"seat_number\": 2, \"type\": \"available\" },\n    { \"seat_number\": 3, \"type\": \"available\" },\n    { \"seat_number\": 4, \"type\": \"unavailable\" }\n  ],\n  \"instructions\": [\"No smoking please\"],\n  \"waypoints\": [\n    { \"stop_name\": \"Khalda\", \"stop_lat\": \"31.9600\", \"stop_lng\": \"35.9000\" }\n  ]\n}"
                 },
                 "url": {
                   "raw": "{{base_url}}/trips",
@@ -791,7 +857,8 @@
                   "path": [
                     "trips"
                   ]
-                }
+                },
+                "description": "Publish a recurring (repeated) trip — same fields as `Create Trip`, with `type_of_trip: \"repeated\"` plus the recurring fields below.\n\n**Body fields (recurring-specific)**\n- `type_of_trip` *(string)* — must be `repeated`.\n- `repeated_days` *(array, required)* — weekday integers. Options: `0` (Sunday) … `6` (Saturday).\n- `repeated_end_date` *(string, required)* — `YYYY-MM-DD`, must be after `departure_date`.\n\nAll other fields match `Create Trip (Driver)`."
               },
               "response": []
             },
@@ -809,7 +876,8 @@
                     "trips",
                     "{{trip_id}}"
                   ]
-                }
+                },
+                "description": "Get full details of a single trip.\n\n**Path parameter**\n- `trip_id` *(UUID, required)* — set automatically when creating a trip, or paste a trip UUID."
               },
               "response": []
             },
@@ -828,7 +896,8 @@
                     "driver",
                     "my-trips"
                   ]
-                }
+                },
+                "description": "Get all trips for the authenticated driver (newest first).\n\nRequires role `driver`.\n\nNo query parameters."
               },
               "response": []
             },
@@ -851,86 +920,76 @@
                     {
                       "key": "status",
                       "value": "published",
-                      "description": "Filter by trip status: published, in_progress, completed, cancelled"
+                      "description": "Filter by trip status. Options: published | full | in_progress | ongoing | completed | cancelled"
                     }
                   ]
-                }
+                },
+                "description": "Get the driver's trips filtered by status.\n\nRequires role `driver`.\n\n**Query parameters**\n- `status` *(optional)* — Options: `published` | `full` | `in_progress` | `ongoing` | `completed` | `cancelled`."
               },
               "response": []
             },
             {
-              "name": "Search Available Trips",
+              "name": "Start Trip",
               "request": {
-                "method": "GET",
-                "header": [],
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": ""
+                },
                 "url": {
-                  "raw": "{{base_url}}/trips/search/available?origin_city=Amman&destination_city=Irbid&date=2026-08-15&gender_preference=",
+                  "raw": "{{base_url}}/trips/{{trip_id}}/start",
                   "host": [
                     "{{base_url}}"
                   ],
                   "path": [
                     "trips",
-                    "search",
-                    "available"
-                  ],
-                  "query": [
-                    {
-                      "key": "origin_city",
-                      "value": "Amman",
-                      "description": "Origin city (optional)"
-                    },
-                    {
-                      "key": "destination_city",
-                      "value": "Irbid",
-                      "description": "Destination city (optional)"
-                    },
-                    {
-                      "key": "date",
-                      "value": "2026-08-15",
-                      "description": "Date in YYYY-MM-DD format"
-                    },
-                    {
-                      "key": "gender_preference",
-                      "value": "",
-                      "description": "Gender filter: all, women_only, men_only (optional)"
-                    }
+                    "{{trip_id}}",
+                    "start"
                   ]
-                }
+                },
+                "description": "Mark a trip as `in_progress`. Re-checks the driver's subscription minimum balance — returns `422 INSUFFICIENT_BALANCE` if the balance can't cover one-seat commission.\n\nRequires role `driver`.\n\n**Path parameter**\n- `trip_id` *(UUID, required)*.\n\nNo body."
+              },
+              "response": []
+            },
+            {
+              "name": "Complete Trip",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": ""
+                },
+                "url": {
+                  "raw": "{{base_url}}/trips/{{trip_id}}/complete",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "trips",
+                    "{{trip_id}}",
+                    "complete"
+                  ]
+                },
+                "description": "Complete a trip and deduct the commission from the driver's subscription balance (FIFO across active plans). If the balance runs out the driver goes into debt and trips are blocked.\n\nRequires role `driver`.\n\n**Path parameter**\n- `trip_id` *(UUID, required)*.\n\nNo body."
               },
               "response": []
             }
           ]
         },
         {
-          "name": "Dashboard",
-          "item": [
-            {
-              "name": "Get Driver Dashboard",
-              "request": {
-                "method": "GET",
-                "header": [],
-                "url": {
-                  "raw": "{{base_url}}/driver/dashboard",
-                  "host": [
-                    "{{base_url}}"
-                  ],
-                  "path": [
-                    "driver",
-                    "dashboard"
-                  ]
-                }
-              },
-              "response": []
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "name": "Passenger",
-      "item": [
-        {
-          "name": "Seat Lock",
+          "name": "Seats",
           "item": [
             {
               "name": "Lock Seat",
@@ -957,7 +1016,8 @@
                     "seats",
                     "lock"
                   ]
-                }
+                },
+                "description": "Temporarily lock a seat on a trip (reserved while the passenger confirms).\n\nRequires a passenger/authenticated user.\n\n**Path parameter**\n- `trip_id` *(UUID, required)*.\n\n**Body fields**\n- `seat_number` *(number, required)* — positive integer seat number."
               },
               "response": []
             },
@@ -967,7 +1027,7 @@
                 "method": "DELETE",
                 "header": [],
                 "url": {
-                  "raw": "{{base_url}}/trips/{{trip_id}}/seats/lock/2",
+                  "raw": "{{base_url}}/trips/{{trip_id}}/seats/lock/{{seat_number}}",
                   "host": [
                     "{{base_url}}"
                   ],
@@ -976,15 +1036,467 @@
                     "{{trip_id}}",
                     "seats",
                     "lock",
-                    "2"
+                    "{{seat_number}}"
                   ]
-                }
+                },
+                "description": "Release a previously locked seat so it becomes bookable again.\n\n**Path parameters**\n- `trip_id` *(UUID, required)*.\n- `seat_number` *(number, required)* — the locked seat number to release."
               },
               "response": []
             }
           ]
         }
-      ]
+      ],
+      "description": "Trip lifecycle: search, driver trip publishing, start/complete, and seat locking"
+    },
+    {
+      "name": "Driver Dashboard",
+      "item": [
+        {
+          "name": "Get Driver Dashboard",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/driver/dashboard",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "driver",
+                "dashboard"
+              ]
+            },
+            "description": "Get the authenticated driver's dashboard summary.\n\nRequires role `driver`.\n\nNo body or query parameters."
+          },
+          "response": []
+        }
+      ],
+      "description": "Driver dashboard summary"
+    },
+    {
+      "name": "Subscriptions (Driver)",
+      "item": [
+        {
+          "name": "Plans",
+          "item": [
+            {
+              "name": "List Active Plans",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/plans",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "plans"
+                  ]
+                },
+                "description": "Get the active subscription plan catalog (Redis-cached, 60s TTL). Includes the free plan with its `free_offer`.\n\nRequires role `driver`.\n\nNo query parameters."
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Payment Methods",
+          "item": [
+            {
+              "name": "List Payment Methods (Public)",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/payment-methods",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "payment-methods"
+                  ]
+                },
+                "description": "Get the active payment methods drivers can use to pay for a subscription.\n\nPublic — no authentication required.\n\nNo query parameters."
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "My Subscriptions",
+          "item": [
+            {
+              "name": "Create Subscription Request",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"plan_id\": \"{{plan_id}}\",\n  \"payment_method_id\": \"{{payment_method_id}}\",\n  \"screenshot_url\": \"https://res.cloudinary.com/example/payment_proof.png\",\n  \"resubmit\": false\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/subscriptions",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "subscriptions"
+                  ]
+                },
+                "description": "Submit a subscription request for admin approval. Returns `201` with status `pending_approval`.\n\nRequires role `driver`.\n\n**Body fields**\n- `plan_id` *(UUID, required)* — the plan to subscribe to (from `List Active Plans`).\n- `payment_method_id` *(UUID, required)* — the payment method used (from `List Payment Methods`).\n- `screenshot_url` *(string, required)* — valid `http(s)` URL of the payment proof image.\n- `resubmit` *(boolean, optional)* — set `true` to cancel an older pending request for the same plan and create a new one. Options: `true` | `false`.\n\nDuplicate pending requests for the same plan return `409 DUPLICATE_SUBSCRIPTION_REQUEST`."
+              },
+              "response": []
+            },
+            {
+              "name": "List My Subscriptions",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/subscriptions",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "subscriptions"
+                  ]
+                },
+                "description": "Get all of the authenticated driver's subscriptions, newest first (pending, active, rejected, cancelled, expired).\n\nRequires role `driver`.\n\nNo query parameters."
+              },
+              "response": []
+            },
+            {
+              "name": "Get Current Subscription",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/subscriptions/current",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "subscriptions",
+                    "current"
+                  ]
+                },
+                "description": "Get the driver's current active plan (queue order: free plan first, then shortest period, then submission FIFO) plus `total_balance` and `is_in_debt`.\n\nRequires role `driver`.\n\n`subscription` is `null` when there is no active plan.\n\nNo query parameters."
+              },
+              "response": []
+            }
+          ]
+        }
+      ],
+      "description": "Driver subscription plans: browse the catalog, pay via a method, and track the current active plan and balance"
+    },
+    {
+      "name": "Admin",
+      "item": [
+        {
+          "name": "Plans",
+          "item": [
+            {
+              "name": "List All Plans",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/admin/plans",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "plans"
+                  ]
+                },
+                "description": "List all plans including inactive ones (each item has `is_active`).\n\nRequires role `admin`.\n\nNo query parameters."
+              },
+              "response": []
+            },
+            {
+              "name": "Create Plan",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Basic\",\n  \"period_days\": 30,\n  \"percentage_cut\": \"8.00\",\n  \"cost\": \"100.00\",\n  \"status\": \"popular\",\n  \"features\": [\"no booking fees\"],\n  \"is_free\": false\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/admin/plans",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "plans"
+                  ]
+                },
+                "description": "Create a subscription plan. Returns `201` with the plan. `plan_id` is not captured automatically — copy it into the `plan_id` collection variable.\n\nRequires role `admin`.\n\n**Body fields**\n- `name` *(string, required)* — plan name, max 100 chars.\n- `period_days` *(number, required)* — plan length in days, positive integer.\n- `percentage_cut` *(string, optional, default 0)* — commission percentage deducted at trip completion, decimal 0–100 (e.g. `\"8.00\"`).\n- `cost` *(string, optional, default 0)* — price of the plan, decimal ≥ 0 (e.g. `\"100.00\"`).\n- `status` *(string, optional, nullable)* — plan tag. Options: `most_requested` | `frequent` | `popular` (or `null`).\n- `features` *(array, optional)* — list of feature strings, max 200 chars each.\n- `is_free` *(boolean, optional, default false)* — whether this is the free plan. Options: `true` | `false`. Only one free plan may be active at a time (`409 FREE_PLAN_EXISTS`).\n- `free_offer` *(object, required when `is_free: true`)* — `{ \"type\": \"trips\" | \"credit\", \"value\": number }`.\n\n**Free plan example body**\n```json\n{\n  \"name\": \"Free Trial\",\n  \"period_days\": 30,\n  \"percentage_cut\": \"0.00\",\n  \"cost\": \"0.00\",\n  \"features\": [],\n  \"is_free\": true,\n  \"free_offer\": { \"type\": \"trips\", \"value\": 5 }\n}\n```"
+              },
+              "response": []
+            },
+            {
+              "name": "Update Plan",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Basic Plus\",\n  \"cost\": \"120.00\",\n  \"percentage_cut\": \"7.50\",\n  \"status\": \"most_requested\",\n  \"features\": [\"no booking fees\", \"priority support\"]\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/admin/plans/{{plan_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "plans",
+                    "{{plan_id}}"
+                  ]
+                },
+                "description": "Update an existing plan. All fields are optional (partial update). Invalidates the driver plan cache.\n\nRequires role `admin`.\n\n**Path parameter**\n- `plan_id` *(UUID, required)*.\n\n**Body fields** — same field rules as `Create Plan`; only include fields you want to change: `name`, `period_days`, `percentage_cut`, `cost`, `status` (`most_requested` | `frequent` | `popular` | `null`), `features`, `is_free`, `free_offer`."
+              },
+              "response": []
+            },
+            {
+              "name": "Deactivate Plan",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/admin/plans/{{plan_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "plans",
+                    "{{plan_id}}"
+                  ]
+                }
+              },
+              "description": "Soft-delete a plan (`is_active = false`). The plan is hidden from drivers immediately; pending requests on it can no longer be approved.\n\nRequires role `admin`.\n\n**Path parameter**\n- `plan_id` *(UUID, required)*.\n\nNo body."
+            }
+          ]
+        },
+        {
+          "name": "Payment Methods",
+          "item": [
+            {
+              "name": "List All Payment Methods",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/admin/payment-methods",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "payment-methods"
+                  ]
+                },
+                "description": "List all payment methods including inactive ones (each item has `is_active`).\n\nRequires role `admin`.\n\nNo query parameters."
+              },
+              "response": []
+            },
+            {
+              "name": "Create Payment Method",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Bank of Jordan\",\n  \"account_number\": \"JO94BOJX0000000000\",\n  \"type\": \"bank_account\",\n  \"email\": \"payments@boj.com\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/admin/payment-methods",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "payment-methods"
+                  ]
+                },
+                "description": "Create a payment method drivers can choose when paying for a subscription. Returns `201`.\n\nRequires role `admin`.\n\n**Body fields**\n- `name` *(string, required)* — max 100 chars.\n- `account_number` *(string, required)* — max 50 chars.\n- `type` *(string, required)* — Options: `bank_account` | `e-wallet` | `mobile_money`.\n- `email` *(string, optional, nullable)* — valid email if provided."
+              },
+              "response": []
+            },
+            {
+              "name": "Update Payment Method",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Bank of Jordan - Corporate\",\n  \"type\": \"bank_account\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/admin/payment-methods/{{payment_method_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "payment-methods",
+                    "{{payment_method_id}}"
+                  ]
+                },
+                "description": "Update an existing payment method. All fields are optional (partial update).\n\nRequires role `admin`.\n\n**Path parameter**\n- `payment_method_id` *(UUID, required)*.\n\n**Body fields** — same rules as `Create Payment Method`: `name`, `account_number`, `type` (`bank_account` | `e-wallet` | `mobile_money`), `email`."
+              },
+              "response": []
+            },
+            {
+              "name": "Deactivate Payment Method",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/admin/payment-methods/{{payment_method_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "payment-methods",
+                    "{{payment_method_id}}"
+                  ]
+                },
+                "description": "Soft-delete a payment method (`is_active = false`). Hidden from the public list immediately.\n\nRequires role `admin`.\n\n**Path parameter**\n- `payment_method_id` *(UUID, required)*.\n\nNo body."
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Subscription Approvals",
+          "item": [
+            {
+              "name": "Pending Queue",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/admin/subscriptions/pending?status=pending_approval&sort=newest",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "subscriptions",
+                    "pending"
+                  ],
+                  "query": [
+                    {
+                      "key": "status",
+                      "value": "pending_approval",
+                      "description": "Filter by subscription status (optional). Options: pending_approval | active | rejected | cancelled | expired"
+                    },
+                    {
+                      "key": "sort",
+                      "value": "newest",
+                      "description": "Sort order (optional). Options: newest | oldest"
+                    }
+                  ]
+                },
+                "description": "List subscription requests awaiting action. The driver's National ID is **masked** server-side (`****1234`) and never returned raw.\n\nRequires role `admin`.\n\n**Query parameters**\n- `status` *(optional, default `pending_approval`)* — Options: `pending_approval` | `active` | `rejected` | `cancelled` | `expired`.\n- `sort` *(optional)* — Options: `newest` | `oldest`."
+              },
+              "response": []
+            },
+            {
+              "name": "Approve Subscription",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": ""
+                },
+                "url": {
+                  "raw": "{{base_url}}/admin/subscriptions/{{subscription_id}}/approve",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "subscriptions",
+                    "{{subscription_id}}",
+                    "approve"
+                  ]
+                },
+                "description": "Approve a pending subscription request. Credits the driver's balance (clears any debt first), activates the plan, and sends a notification. First action wins — a second approve/reject returns `409 REQUEST_ALREADY_PROCESSED`.\n\nRequires role `admin`.\n\n**Path parameter**\n- `subscription_id` *(UUID, required)* — from the Pending Queue.\n\nNo body."
+              },
+              "response": []
+            },
+            {
+              "name": "Reject Subscription",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"reason\": \"Payment proof is unclear. Please resubmit a clearer screenshot.\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/admin/subscriptions/{{subscription_id}}/reject",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "subscriptions",
+                    "{{subscription_id}}",
+                    "reject"
+                  ]
+                },
+                "description": "Reject a pending subscription request with a reason (sent to the driver via SMS + in-app notification). First action wins.\n\nRequires role `admin`.\n\n**Path parameter**\n- `subscription_id` *(UUID, required)* — from the Pending Queue.\n\n**Body fields**\n- `reason` *(string, required)* — rejection reason, max 500 chars."
+              },
+              "response": []
+            }
+          ]
+        }
+      ],
+      "description": "Admin management: subscription plans, payment methods, and subscription request approvals (all require role `admin`)"
     }
   ],
   "auth": {
@@ -1024,23 +1536,53 @@
   "variable": [
     {
       "key": "base_url",
-      "value": "http://localhost:8000/api"
+      "value": "http://localhost:8000/api",
+      "description": "Base URL of the Masar API (default: http://localhost:8000/api)."
     },
     {
       "key": "access_token",
-      "value": ""
+      "value": "",
+      "description": "JWT access token. Set automatically by Login/Registration. Use a DRIVER token for driver endpoints and an ADMIN token for /admin/* endpoints."
     },
     {
       "key": "refresh_token",
-      "value": ""
+      "value": "",
+      "description": "JWT refresh token, set automatically by Login/Registration. Used by Refresh Token and Logout."
     },
     {
       "key": "registration_token",
-      "value": ""
+      "value": "",
+      "description": "Temporary token returned after OTP verification, used to set the password."
     },
     {
       "key": "reset_token",
-      "value": ""
+      "value": "",
+      "description": "Temporary token returned after forgot-password OTP verification, used to reset the password."
+    },
+    {
+      "key": "trip_id",
+      "value": "",
+      "description": "UUID of a trip. Captured automatically when creating a trip; otherwise paste a trip UUID."
+    },
+    {
+      "key": "plan_id",
+      "value": "",
+      "description": "UUID of a subscription plan. Copy from List Active Plans (driver) or Create Plan (admin)."
+    },
+    {
+      "key": "payment_method_id",
+      "value": "",
+      "description": "UUID of a payment method. Copy from List Payment Methods or Create Payment Method (admin)."
+    },
+    {
+      "key": "subscription_id",
+      "value": "",
+      "description": "UUID of a subscription request. Copy from List My Subscriptions (driver) or the admin Pending Queue."
+    },
+    {
+      "key": "seat_number",
+      "value": "2",
+      "description": "Seat number to lock/release on a trip."
     }
   ]
 }
