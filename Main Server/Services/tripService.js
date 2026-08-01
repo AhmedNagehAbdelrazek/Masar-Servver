@@ -7,18 +7,12 @@ const {
   Vehicle,
   User,
   Booking,
-  Rating,
 } = require('../Models');
 const { ApiErrors } = require('../utils/ApiError');
 const { TRIP_STATUS, GENDER_PREFERENCE, BOOKING_STATUS } = require('../config/constants');
-const balanceService = require('./balanceService');
 const commissionService = require('./commissionService');
 const notificationService = require('./notificationService');
 const { releaseSeatLock } = require('../utils/seatLock');
-
-function round(n) {
-  return Math.round((Number(n) + Number.EPSILON) * 100) / 100;
-}
 
 /**
  * US3 minimum-balance gate. Rejects with NO_ACTIVE_PLAN when the driver has

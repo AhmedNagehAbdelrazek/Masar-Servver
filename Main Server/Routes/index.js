@@ -1,7 +1,4 @@
 const router = require('express').Router();
-const protect = require('../middlewares/protect');
-const roleGuard = require('../middlewares/roleGuard');
-const { ROLES } = require('../config/constants');
 
 const uploadRoutes = require('./uploadRoutes');
 const authRoutes = require('./authRoutes');

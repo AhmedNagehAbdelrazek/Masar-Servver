@@ -333,4 +333,4 @@ async function markRead(userId, notificationId) {
   return notification;
 }
 
-module.exports = { sendToUser, notifyBookedPassengers, notifyConfirmedPassengers, listForUser, markRead, TEMPLATES };
+module.exports = { sendToUser, notifyBookedPassengers, notifyConfirmedPassengers, listForUser, markRead };

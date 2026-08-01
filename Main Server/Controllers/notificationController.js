@@ -1,6 +1,6 @@
 const notificationService = require('../Services/notificationService');
 const { successResponse } = require('../utils/httpResponse');
-const { parsePagination } = require('../utils/pagination');
+const { parsePagination, buildPagination } = require('../utils/pagination');
 
 const listNotifications = async (req, res, next) => {
   try {
@@ -26,12 +26,7 @@ const listNotifications = async (req, res, next) => {
 
     successResponse(res, {
       data,
-      pagination: {
-        page,
-        limit,
-        total: count,
-        total_pages: count === 0 ? 0 : Math.ceil(count / limit),
-      },
+      pagination: buildPagination(count, page, limit),
     });
   } catch (err) {
     next(err);

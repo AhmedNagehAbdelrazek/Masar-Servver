@@ -24,6 +24,8 @@ CREATE TABLE users (
         CHECK (status IN ('active', 'warned', 'suspended', 'banned')),
     fcm_token TEXT, -- for push notifications
     last_login_at TIMESTAMPTZ,
+    total_balance NUMERIC(10,2) NOT NULL DEFAULT 0, -- migration-005; platform balance ledger
+    is_in_debt BOOLEAN NOT NULL DEFAULT FALSE, -- migration-005; blocks new trips while true
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -31,6 +33,21 @@ CREATE TABLE users (
 CREATE INDEX idx_users_phone ON users(phone);
 CREATE INDEX idx_users_role ON users(role);
 CREATE INDEX idx_users_status ON users(status);
+
+-- =====================================================
+-- 1b. UPLOADED IMAGES
+-- =====================================================
+CREATE TABLE uploaded_images (
+    id SERIAL PRIMARY KEY,
+    hash VARCHAR(64) UNIQUE NOT NULL,
+    url TEXT NOT NULL,
+    filename TEXT NOT NULL,
+    mimetype TEXT NOT NULL,
+    size INTEGER,
+    provider TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
 
 -- =====================================================
 -- 2. VEHICLES TABLE
@@ -109,10 +126,12 @@ CREATE TABLE trips (
     driver_id UUID NOT NULL REFERENCES users(id),
     vehicle_id UUID NOT NULL REFERENCES vehicles(id),
     origin_city VARCHAR(80) NOT NULL,
+    origin_area VARCHAR(120), -- migration-002
     origin_address VARCHAR(255),
     origin_lat NUMERIC(10, 8), -- PostGIS alternative: geometry(Point, 4326)
     origin_lng NUMERIC(11, 8),
     destination_city VARCHAR(80) NOT NULL,
+    destination_area VARCHAR(120), -- migration-002
     destination_address VARCHAR(255),
     destination_lat NUMERIC(10, 8),
     destination_lng NUMERIC(11, 8),
@@ -124,10 +143,20 @@ CREATE TABLE trips (
     currency VARCHAR(3) DEFAULT 'JOD',
     is_recurring BOOLEAN NOT NULL DEFAULT FALSE,
     recurrence_pattern JSONB, -- {frequency: 'daily', days: [1,3,5], until: '2026-12-31'}
+    recurrence_days SMALLINT[], -- migration-002; 0=Sun ... 6=Sat
+    recurrence_end_date TIMESTAMPTZ, -- migration-002
+    gender_preference VARCHAR(15) NOT NULL DEFAULT 'all' 
+        CHECK (gender_preference IN ('all', 'women_only', 'men_only')), -- migration-002
+    driver_instructions TEXT[], -- migration-002/004 (TEXT[] since 004)
+    additional_instructions TEXT, -- migration-002
     status VARCHAR(15) NOT NULL DEFAULT 'published' 
-        CHECK (status IN ('published', 'full', 'ongoing', 'completed', 'cancelled')),
+        CHECK (status IN ('published', 'full', 'in_progress', 'ongoing', 'completed', 'cancelled')),
     is_featured BOOLEAN DEFAULT FALSE, -- paid promotion
     featured_until TIMESTAMPTZ,
+    is_blocked_by_balance BOOLEAN NOT NULL DEFAULT FALSE, -- migration-005
+    is_moderated BOOLEAN NOT NULL DEFAULT FALSE, -- admin moderation
+    moderation_reason TEXT,
+    moderated_by UUID REFERENCES users(id),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -159,14 +188,32 @@ CREATE TABLE trip_stops (
     stop_order SMALLINT NOT NULL,
     city VARCHAR(80) NOT NULL,
     address VARCHAR(255),
+    stop_name VARCHAR(120), -- migration-002
     lat NUMERIC(10, 8),
     lng NUMERIC(11, 8),
+    stop_lat NUMERIC(10, 8), -- migration-002
+    stop_lng NUMERIC(11, 8), -- migration-002
     stop_type VARCHAR(20) NOT NULL CHECK (stop_type IN ('pickup', 'dropoff', 'both')),
     estimated_arrival TIMESTAMPTZ,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE INDEX idx_trip_stops_trip ON trip_stops(trip_id);
+
+-- =====================================================
+-- 7b. TRIP SEATS (Per-seat availability, migration-002)
+-- =====================================================
+CREATE TABLE trip_seats (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    trip_id UUID NOT NULL REFERENCES trips(id) ON DELETE CASCADE,
+    seat_number SMALLINT NOT NULL,
+    seat_type VARCHAR(15) NOT NULL CHECK (seat_type IN ('driver', 'available', 'unavailable')),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE (trip_id, seat_number)
+);
+
+CREATE INDEX idx_trip_seats_trip ON trip_seats(trip_id);
+CREATE UNIQUE INDEX idx_trip_seats_unique ON trip_seats(trip_id, seat_number);
 
 -- =====================================================
 -- 8. BOOKINGS (Reservations)
@@ -425,6 +472,72 @@ CREATE TABLE subscription_transactions (
     expires_at TIMESTAMPTZ NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+-- =====================================================
+-- 21. SUBSCRIPTION PLANS (migration-005)
+-- =====================================================
+CREATE TABLE subscription_plans (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name VARCHAR(100) NOT NULL,
+    period_days INTEGER NOT NULL,
+    percentage_cut NUMERIC(5,2) NOT NULL DEFAULT 0,
+    cost NUMERIC(10,2) NOT NULL DEFAULT 0,
+    status VARCHAR(30),
+    features JSONB NOT NULL DEFAULT '[]',
+    is_free BOOLEAN NOT NULL DEFAULT FALSE,
+    free_offer JSONB,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_plans_active ON subscription_plans(is_active);
+
+-- =====================================================
+-- 22. PAYMENT METHODS (migration-005)
+-- =====================================================
+CREATE TABLE payment_methods (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name VARCHAR(100) NOT NULL,
+    account_number VARCHAR(50) NOT NULL,
+    type VARCHAR(30) NOT NULL CHECK (type IN ('bank_account', 'e-wallet', 'mobile_money')),
+    email VARCHAR(100),
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_payment_methods_active ON payment_methods(is_active);
+
+-- =====================================================
+-- 23. DRIVER SUBSCRIPTIONS (migration-005)
+-- =====================================================
+CREATE TABLE driver_subscriptions (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    driver_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    plan_id UUID NOT NULL REFERENCES subscription_plans(id) ON DELETE CASCADE,
+    plan_name VARCHAR(100) NOT NULL,
+    plan_period_days INTEGER NOT NULL,
+    plan_percentage_cut NUMERIC(5,2) NOT NULL,
+    plan_cost NUMERIC(10,2) NOT NULL,
+    balance NUMERIC(10,2) NOT NULL DEFAULT 0 CHECK (balance >= 0),
+    screenshot_id INTEGER REFERENCES uploaded_images(id) ON DELETE SET NULL,
+    payment_method JSONB NOT NULL DEFAULT '{}',
+    admin_notes TEXT,
+    status VARCHAR(20) NOT NULL DEFAULT 'pending_approval' 
+        CHECK (status IN ('pending_approval', 'active', 'rejected', 'cancelled', 'expired')),
+    approved_at TIMESTAMPTZ,
+    activated_at TIMESTAMPTZ,
+    expires_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE UNIQUE INDEX idx_subscriptions_unique_pending ON driver_subscriptions(driver_id, plan_id) 
+    WHERE status = 'pending_approval';
+CREATE INDEX idx_subscriptions_driver ON driver_subscriptions(driver_id, status);
+CREATE INDEX idx_subscriptions_plan ON driver_subscriptions(plan_id);
+CREATE INDEX idx_subscriptions_expiry ON driver_subscriptions(status, expires_at);
 
 -- =====================================================
 -- FUNCTIONS & TRIGGERS

@@ -44,12 +44,14 @@ function buildDocuments(record, labels, urls) {
  * vehicles with their document image URLs resolved from `uploaded_images`.
  */
 async function getQueue(filters = {}) {
-  const { type } = filters;
+  const { type, status } = filters;
   const { page, limit } = parsePagination(filters);
 
   const items = [];
 
-  if (!type || type === 'driver') {
+  const isPending = status !== undefined && status !== 'pending';
+
+  if ((!type || type === 'driver') && !isPending) {
     const profiles = await DriverProfile.findAll({
       where: { idVerified: false },
       include: [{ model: User, as: 'driver', attributes: ['id', 'fullName', 'phone', 'createdat'] }],
@@ -70,7 +72,7 @@ async function getQueue(filters = {}) {
     }
   }
 
-  if (!type || type === 'vehicle') {
+  if ((!type || type === 'vehicle') && !isPending) {
     const vehicles = await Vehicle.findAll({
       where: { isVerified: false },
       include: [{ model: User, as: 'driver', attributes: ['id', 'fullName', 'phone'] }],

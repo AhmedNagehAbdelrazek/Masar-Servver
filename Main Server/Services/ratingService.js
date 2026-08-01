@@ -114,4 +114,4 @@ async function listReceived(rateeId, filters = {}) {
   };
 }
 
-module.exports = { create, listReceived, updateDriverAvg };
+module.exports = { create, listReceived };
