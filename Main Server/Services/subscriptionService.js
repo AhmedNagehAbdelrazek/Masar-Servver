@@ -36,7 +36,7 @@ function logMutation({ action, actorId, resourceType, resourceId, payload }) {
 }
 
 function toSubscriptionDTO(sub) {
-  return {
+  const dto = {
     id: sub.id,
     plan: {
       name: sub.planName,
@@ -49,10 +49,16 @@ function toSubscriptionDTO(sub) {
     approved_at: sub.approvedAt || null,
     expires_at: sub.expiresAt || null,
   };
+
+  if (sub.freeTripsUsed !== undefined) {
+    dto.free_trips_used = Number(sub.freeTripsUsed) || 0;
+  }
+
+  return dto;
 }
 
 function toCurrentDTO(sub, user) {
-  return {
+  const result = {
     subscription: sub
       ? {
           id: sub.id,
@@ -67,6 +73,18 @@ function toCurrentDTO(sub, user) {
     total_balance: Number(user.totalBalance),
     is_in_debt: user.isInDebt,
   };
+
+  if (sub && sub.plan && sub.plan.isFree && sub.plan.freeOffer) {
+    const offer = sub.plan.freeOffer;
+    result.subscription.free_offer = {
+      type: offer.type,
+      value: Number(offer.value),
+      used: Number(sub.freeTripsUsed) || 0,
+      remaining: Math.max(0, Number(offer.value) - (Number(sub.freeTripsUsed) || 0)),
+    };
+  }
+
+  return result;
 }
 
 /**

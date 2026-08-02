@@ -66,7 +66,7 @@ async function findCurrentSubscription(driverId, { transaction } = {}) {
       status: SUBSCRIPTION_STATUS.ACTIVE,
       expiresAt: { [Op.gt]: now },
     },
-    include: [{ model: SubscriptionPlan, as: 'plan', attributes: ['isFree'] }],
+    include: [{ model: SubscriptionPlan, as: 'plan', attributes: ['isFree', 'freeOffer'] }],
     order: ACTIVE_SUBSCRIPTION_ORDER,
     transaction,
   });

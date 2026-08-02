@@ -6,6 +6,38 @@ const { User } = require('./Models/index');
 
 const SALT_ROUNDS = parseInt(process.env.SALT_ROUNDS, 10) || 12;
 
+async function seedAdmin() {
+  const phone = process.env.SEED_ADMIN_PHONE;
+  const username = process.env.SEED_ADMIN_USERNAME;
+  const password = process.env.SEED_ADMIN_PASSWORD;
+
+  if (!phone || !username || !password) {
+    console.log('[seed] SEED_ADMIN_PHONE, SEED_ADMIN_USERNAME, or SEED_ADMIN_PASSWORD not set — skipping admin seed');
+    return;
+  }
+
+  const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
+
+  const [user, created] = await User.findOrCreate({
+    where: { phone },
+    defaults: {
+      phone,
+      role: 'admin',
+      fullName: username,
+      passwordHash,
+      isVerified: true,
+      locale: 'en',
+    },
+  });
+
+  if (!created) {
+    await user.update({ passwordHash, fullName: username });
+    console.log(`[seed] Admin updated: ${username} (${phone})`);
+  } else {
+    console.log(`[seed] Admin created: ${username} (${phone})`);
+  }
+}
+
 const TEST_ACCOUNTS = [
   {
     phone: '+962700000000',
@@ -32,6 +64,8 @@ async function seed() {
 
   await sequelize.authenticate();
   console.log('Database connected.');
+
+  await seedAdmin();
 
   console.log('Creating test accounts...');
 
@@ -78,7 +112,9 @@ async function seed() {
   console.log('Seeding complete!');
 }
 
-seed().catch((err) => {
-  console.error('Seed failed:', err.message);
-  process.exit(1);
-});
+// seed().catch((err) => {
+//   console.error('Seed failed:', err.message);
+//   process.exit(1);
+// });
+
+module.exports = { seedAdmin };

@@ -4,11 +4,13 @@ const createApp = require('./app');
 const { createSocketServer } = require('./socketServer');
 const { initDatabase } = require('./config/database');
 const { startJobs } = require('./jobs');
+const { seedAdmin } = require('./seed');
 
 const PORT = process.env.PORT || 3000;
 
 async function startServer() {
   await initDatabase();
+  await seedAdmin();
   startJobs();
   console.log(process.env.CLOUDINARY_API_SECRET);
 

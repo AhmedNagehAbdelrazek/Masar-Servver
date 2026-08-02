@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const { ApiErrors } = require('../utils/ApiError');
+const { isAccessTokenBlacklisted } = require('../Services/authService');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-in-production';
 
@@ -17,6 +18,11 @@ async function protect(req, res, next) {
 
     if (decoded.type !== 'access') {
       return next(ApiErrors.unauthorized('Invalid token type'));
+    }
+
+    const blacklisted = await isAccessTokenBlacklisted(token);
+    if (blacklisted) {
+      return next(ApiErrors.unauthorized('Token has been revoked. Please login again.'));
     }
 
     req.user = {

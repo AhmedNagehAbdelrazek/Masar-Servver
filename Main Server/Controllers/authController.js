@@ -54,7 +54,8 @@ const refresh = async (req, res, next) => {
 const logout = async (req, res, next) => {
   try {
     const { refresh_token } = req.body;
-    const result = await authService.logout(req.user.id, refresh_token);
+    const accessToken = req.headers.authorization?.split(' ')[1];
+    const result = await authService.logout(req.user.id, refresh_token, accessToken);
     successResponse(res, result);
   } catch (err) {
     next(err);

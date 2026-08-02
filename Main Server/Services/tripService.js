@@ -7,9 +7,11 @@ const {
   Vehicle,
   User,
   Booking,
+  DriverSubscription,
+  SubscriptionPlan,
 } = require('../Models');
 const { ApiErrors } = require('../utils/ApiError');
-const { TRIP_STATUS, GENDER_PREFERENCE, BOOKING_STATUS } = require('../config/constants');
+const { TRIP_STATUS, GENDER_PREFERENCE, BOOKING_STATUS, FREE_OFFER_TYPE } = require('../config/constants');
 const commissionService = require('./commissionService');
 const notificationService = require('./notificationService');
 const { releaseSeatLock } = require('../utils/seatLock');
@@ -35,6 +37,67 @@ async function assertCanPublish(driverId, farePerSeat) {
     );
   }
   return { minimum, totalBalance };
+}
+
+/**
+ * Free-trips gate. If the driver's current active plan is a free plan with
+ * a trips offer, check that the driver has not exhausted the allowed count.
+ * When free trips are exhausted, the driver is still allowed to publish if
+ * they have an active paid subscription (the balance gate will enforce
+ * commission rules for the paid plan instead).
+ */
+async function assertFreeTripsAvailable(driverId) {
+  const now = new Date();
+
+  // Find the driver's current active free plan subscription (highest priority).
+  const freeSub = await DriverSubscription.findOne({
+    where: {
+      driverId,
+      status: 'active',
+      expiresAt: { [Op.gt]: now },
+    },
+    include: [{
+      model: SubscriptionPlan,
+      as: 'plan',
+      where: { isFree: true },
+      attributes: ['id', 'isFree', 'freeOffer'],
+    }],
+  });
+
+  // No active free plan — nothing to block.
+  if (!freeSub) return;
+  const plan = freeSub.plan;
+  if (!plan || !plan.freeOffer) return;
+  if (plan.freeOffer.type !== FREE_OFFER_TYPE.TRIPS) return;
+
+  const limit = Number(plan.freeOffer.value);
+  const used = Number(freeSub.freeTripsUsed) || 0;
+
+  if (used < limit) return;
+
+  // Free trips exhausted. Check if the driver has an active paid subscription
+  // that can take over (balance gate will enforce commission rules).
+  const paidSub = await DriverSubscription.findOne({
+    where: {
+      driverId,
+      status: 'active',
+      expiresAt: { [Op.gt]: now },
+    },
+    include: [{
+      model: SubscriptionPlan,
+      as: 'plan',
+      where: { isFree: false },
+      attributes: ['id'],
+    }],
+  });
+
+  if (paidSub) return;
+
+  throw ApiErrors.custom(
+    `You have used all ${limit} free trips included in your plan. Please subscribe to a paid plan to continue publishing trips.`,
+    422,
+    'FREE_TRIPS_EXHAUSTED'
+  );
 }
 
 /**
@@ -96,6 +159,9 @@ const createTrip = async (driverId, data) => {
       throw ApiErrors.validation('End date must be after departure date');
     }
   }
+
+  // Free-trips gate: block if the driver exhausted their free trip allowance.
+  await assertFreeTripsAvailable(driverId);
 
   // US3: minimum-balance gate before publishing.
   await assertCanPublish(driverId, data.fare_per_seat);
@@ -304,6 +370,31 @@ const completeTrip = async (driverId, tripId) => {
   const result = await commissionService.deductCommission(trip, driverId);
 
   await trip.update({ status: TRIP_STATUS.COMPLETED });
+
+  // Increment free trips counter if the driver is on a free plan with a trips offer.
+  try {
+    const now = new Date();
+    const subscription = await DriverSubscription.findOne({
+      where: {
+        driverId,
+        status: 'active',
+        expiresAt: { [Op.gt]: now },
+      },
+      include: [{
+        model: SubscriptionPlan,
+        as: 'plan',
+        where: { isFree: true },
+        attributes: ['id', 'freeOffer'],
+      }],
+    });
+
+    if (subscription && subscription.plan && subscription.plan.freeOffer &&
+        subscription.plan.freeOffer.type === FREE_OFFER_TYPE.TRIPS) {
+      await subscription.increment('freeTripsUsed');
+    }
+  } catch (err) {
+    console.warn('[tripService] failed to increment free trips counter:', err.message);
+  }
 
   if (result.isInDebt) {
     const user = await User.findByPk(driverId);

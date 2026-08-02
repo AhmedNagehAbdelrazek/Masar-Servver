@@ -275,7 +275,26 @@ async function refreshToken(refreshTokenValue) {
 
 // ===== LOGOUT =====
 
-async function logout(userId, refreshTokenValue) {
+async function blacklistAccessToken(token) {
+  try {
+    const decoded = verifyToken(token);
+    if (decoded.type !== 'access') return;
+
+    const expiresIn = decoded.exp - Math.floor(Date.now() / 1000);
+    if (expiresIn <= 0) return;
+
+    await setKey(`blacklist:${token}`, '1', expiresIn);
+  } catch {
+    // token already invalid, ignore
+  }
+}
+
+async function isAccessTokenBlacklisted(token) {
+  const { exists } = require('../config/redis');
+  return exists(`blacklist:${token}`);
+}
+
+async function logout(userId, refreshTokenValue, accessToken) {
   if (refreshTokenValue) {
     try {
       const decoded = verifyToken(refreshTokenValue);
@@ -286,6 +305,11 @@ async function logout(userId, refreshTokenValue) {
       // token already invalid, ignore
     }
   }
+
+  if (accessToken) {
+    await blacklistAccessToken(accessToken);
+  }
+
   return { message: 'Logged out successfully' };
 }
 
@@ -577,4 +601,5 @@ module.exports = {
   submitVehicle,
   getVehicle,
   getOnboardingStatus,
+  isAccessTokenBlacklisted,
 };

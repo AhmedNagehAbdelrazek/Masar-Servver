@@ -30,6 +30,9 @@ services:
 
   redis:
     image: redis:7
+    command: redis-server --save 60 1 --loglevel warning
+    volumes:
+      - redis_data:/data
 
   audit-collector:
     image: ghcr.io/ahmednagehabdelrazek/audit-server:latest
@@ -75,3 +78,4 @@ services:
 volumes:
   audit_pgdata:
   main_uploads:
+  redis_data:

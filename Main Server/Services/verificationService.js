@@ -6,6 +6,16 @@ const { parsePagination, buildPagination } = require('../utils/pagination');
 const notificationService = require('./notificationService');
 const auditService = require('./auditService');
 
+async function syncUserVerification(driverId) {
+  const profile = await DriverProfile.findOne({ where: { driverId } });
+  const hasVerifiedVehicle = await Vehicle.findOne({
+    where: { driverId, isVerified: true },
+  });
+  const fullyVerified = Boolean(profile?.idVerified && hasVerifiedVehicle);
+
+  await User.update({ isVerified: fullyVerified }, { where: { id: driverId } });
+}
+
 const DRIVER_DOC_LABELS = [
   ['userIdentificationFront', 'national_id_front'],
   ['userIdentificationBack', 'national_id_back'],
@@ -112,6 +122,8 @@ async function approveDriver(adminId, driverId) {
     idVerified: true,
   });
 
+  await syncUserVerification(driverId);
+
   const driver = await User.findByPk(driverId);
   if (driver) {
     await notificationService.sendToUser(driver, 'VERIFICATION_APPROVED', {
@@ -138,6 +150,8 @@ async function rejectDriver(adminId, driverId, reason) {
   if (!profile) throw ApiErrors.notFound('Driver profile not found');
 
   await profile.update({ idVerified: false });
+
+  await syncUserVerification(driverId);
 
   const driver = await User.findByPk(driverId);
   if (driver) {
@@ -170,6 +184,8 @@ async function approveVehicle(adminId, vehicleId) {
     verifiedAt: new Date(),
   });
 
+  await syncUserVerification(vehicle.driverId);
+
   const owner = await User.findByPk(vehicle.driverId);
   if (owner) {
     await notificationService.sendToUser(owner, 'VERIFICATION_APPROVED', {
@@ -199,6 +215,8 @@ async function rejectVehicle(adminId, vehicleId, reason) {
     isVerified: false,
     verificationNotes: reason,
   });
+
+  await syncUserVerification(vehicle.driverId);
 
   const owner = await User.findByPk(vehicle.driverId);
   if (owner) {

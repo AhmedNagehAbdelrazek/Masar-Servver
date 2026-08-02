@@ -73,6 +73,11 @@ DriverSubscription.init(
             type: DataTypes.DATE,
             allowNull: true,
         },
+        freeTripsUsed: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+            defaultValue: 0,
+        },
     },
     {
         sequelize,

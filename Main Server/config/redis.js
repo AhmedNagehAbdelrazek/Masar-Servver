@@ -39,10 +39,11 @@ async function incr(key) {
   return redis.incr(key);
 }
 
-module.exports = redis;
-module.exports.redis = redis;
-module.exports.setKey = setKey;
-module.exports.getKey = getKey;
-module.exports.deleteKey = deleteKey;
-module.exports.exists = exists;
-module.exports.incr = incr;
+module.exports = {
+  redis,
+  setKey,
+  getKey,
+  deleteKey,
+  exists,
+  incr,
+};
