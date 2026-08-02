@@ -7,6 +7,8 @@ var Sequelize = require('sequelize');
  *
  * changeColumn "driver_instructions" on table "trips" (TEXT → TEXT[])
  *
+ * NOTE: rewritten to emit a USING cast — plain `ALTER COLUMN ... TYPE TEXT[]`
+ * fails with 42804 because there is no implicit cast from text to text[].
  **/
 
 var info = {
@@ -16,38 +18,19 @@ var info = {
     "comment": ""
 };
 
-var migrationCommands = [{
-    fn: "changeColumn",
-    params: [
-        "trips",
-        "driver_instructions",
-        {
-            "type": Sequelize.ARRAY(Sequelize.TEXT),
-            "field": "driver_instructions",
-            "allowNull": true
-        }
-    ]
-}];
-
 module.exports = {
     pos: 0,
-    up: function(queryInterface, Sequelize)
+    up: function(queryInterface)
     {
-        var index = this.pos;
-        return new Promise(function(resolve, reject) {
-            function next() {
-                if (index < migrationCommands.length)
-                {
-                    let command = migrationCommands[index];
-                    console.log("[#"+index+"] execute: " + command.fn);
-                    index++;
-                    queryInterface[command.fn].apply(queryInterface, command.params).then(next, reject);
-                }
-                else
-                    resolve();
-            }
-            next();
-        });
+        // Wrap a legacy single text value into a one-element array; NULL stays NULL.
+        return queryInterface.sequelize.query(`
+            ALTER TABLE "trips"
+            ALTER COLUMN "driver_instructions" TYPE TEXT[]
+            USING (CASE
+                WHEN "driver_instructions" IS NULL THEN NULL
+                ELSE ARRAY["driver_instructions"]::text[]
+            END)
+        `);
     },
     info: info
 };

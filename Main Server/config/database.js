@@ -36,12 +36,16 @@ async function validateDatabase() {
   } finally {
     await tempSequelize.close();
   }
+}
 
+async function syncSchema() {
   try {
     await sequelize.authenticate();
-    // if (process.env.NODE_ENV === 'test') {
-      await sequelize.sync({ force: false ,alter:true});
-    // }
+    // Migrations own the schema; sync only creates missing tables so a
+    // fresh DB still boots without manual steps. `alter: true` is disabled
+    // because it emits uncastable ALTERs (TEXT→TEXT[], varchar→enum) and
+    // crashes startup; use a migration for column type changes instead.
+    await sequelize.sync({ force: false });
     console.log('Connection to database established successfully.');
   } catch (error) {
     console.error('Unable to connect to the database:', error);
@@ -57,6 +61,7 @@ async function initDatabase({ runMigrations: doRun = true } = {}) {
   await validateDatabase();
 
   if (process.env.NODE_ENV === 'test') {
+    await syncSchema();
     return sequelize;
   }
 
@@ -64,6 +69,8 @@ async function initDatabase({ runMigrations: doRun = true } = {}) {
     const { runMigrations } = require('../migrations');
     await runMigrations();
   }
+
+  await syncSchema();
 
   return sequelize;
 }
