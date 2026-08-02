@@ -58,6 +58,7 @@ async function invalidatePlansCache() {
 
 /**
  * Active plan catalog for drivers (Redis-cached).
+ * Free plans are excluded since they are auto-assigned at signup.
  */
 async function getActivePlans() {
   try {
@@ -70,7 +71,7 @@ async function getActivePlans() {
   }
 
   const plans = await SubscriptionPlan.findAll({
-    where: { isActive: true },
+    where: { isActive: true, isFree: false },
     order: [['createdat', 'ASC']],
   });
 

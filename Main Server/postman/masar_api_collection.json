@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "1e71f58b-2606-4341-9411-2bd20399c38d",
     "name": "Masar API",
-    "description": "Complete API collection for the Masar ride-sharing platform (Driver Flow Audit reorganization, 2026-08-01).\n\nBase URL: {{base_url}} (default http://localhost:8000/api).\n\n## Folder organization\n- **Auth (shared)** — registration, login, tokens, forgot password, current user.\n- **Driver** — Profile & Vehicle, Trip Management, Dashboard, Bookings, Communication, Ratings & Reviews, Complaints, Penalties, Notifications, Subscription & Earnings.\n- **Passenger** — Trip Discovery, Booking, Tracking, Ratings, Complaints, Request Board, Favorites.\n- **Admin** — Subscription Management, Verification Queue, Users Management, Trip Moderation, Arbitration, Penalties, Reports & Analytics.\n\n## Notes\n- Requests marked **PROPOSED** (in the description) are not implemented yet; their response examples are proposed designs.\n- Every request carries a success + error example.\n- Token-setting tests on registration/login flows populate {{access_token}}/{{refresh_token}} automatically.\n- Error envelope: `{ \"status\": \"error\", \"message\": \"...\", \"code\": \"...\" }`.",
+    "description": "Complete API collection for the Masar ride-sharing platform (Driver Flow Audit reorganization, 2026-08-01).\n\nBase URL: {{base_url}} (default http://localhost:8000/api).\n\n## Folder organization\n- **Auth (shared)** — registration, login, tokens, forgot password, current user.\n- **Driver** — Profile & Vehicle, Trip Management, Dashboard, Bookings, Communication, Ratings & Reviews, Complaints, Penalties, Notifications, Subscription & Earnings.\n- **Passenger** — Trip Discovery, Booking, Tracking, Ratings, Complaints, Request Board, Favorites.\n- **Admin** — Subscription Management, Verification Queue, Users Management, Trip Moderation, Arbitration, Penalties, Reports & Analytics.\n\n## Notes\n- Requests marked **PROPOSED** (in the description) are not implemented yet; their response examples are proposed designs.\n- Every request carries a success + error example.\n- Token-setting tests on registration/login flows populate {{access_token}}/{{refresh_token}} automatically.\n- Error envelope: `{ \"status\": \"error\", \"message\": \"...\", \"code\": \"...\" }`.\n\n## Free Plan\n- The free plan is **automatically assigned** to every new driver at signup — no manual subscription required.\n- Drivers **cannot** subscribe to the free plan manually (`422 FREE_PLAN_NOT_SUBSCRIBABLE`).\n- The admin can create/update/deactivate the free plan via Admin > Subscription Management.\n- The free plan's `free_offer` configures the number of free trips (`{ \"type\": \"trips\", \"value\": N }`).\n- Once free trips are exhausted, the driver must subscribe to a paid plan to continue.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "_exporter_id": "28639752"
   },
@@ -6674,7 +6674,7 @@
                     "plans"
                   ]
                 },
-                "description": "Get the active subscription plan catalog (Redis-cached, 60s TTL). Includes the free plan with its `free_offer`.\n\nRequires role `driver`.\n\nNo query parameters."
+                "description": "Get the active subscription plan catalog (Redis-cached, 60s TTL). Free plans are excluded — they are automatically assigned at signup.\n\nRequires role `driver`.\n\nNo query parameters."
               },
               "response": [
                 {
@@ -6691,7 +6691,7 @@
                         "plans"
                       ]
                     },
-                    "description": "Get the active subscription plan catalog (Redis-cached, 60s TTL). Includes the free plan with its `free_offer`.\n\nRequires role `driver`.\n\nNo query parameters."
+                    "description": "Get the active subscription plan catalog (Redis-cached, 60s TTL). Free plans are excluded — they are automatically assigned at signup.\n\nRequires role `driver`.\n\nNo query parameters."
                   },
                   "status": "OK",
                   "code": 200,
@@ -6891,7 +6891,7 @@
                     "subscriptions"
                   ]
                 },
-                "description": "Submit a subscription request for admin approval. Returns `201` with status `pending_approval`.\n\nRequires role `driver`.\n\n**Body fields**\n- `plan_id` *(UUID, required)* — the plan to subscribe to (from `List Active Plans`).\n- `payment_method_id` *(UUID, required)* — the payment method used (from `List Payment Methods`).\n- `screenshot_id` *(integer, required)* — the image ID returned by `Upload Image` for the payment proof screenshot.\n- `resubmit` *(boolean, optional)* — set `true` to cancel an older pending request for the same plan and create a new one. Options: `true` | `false`.\n\nDuplicate pending requests for the same plan return `409 DUPLICATE_SUBSCRIPTION_REQUEST`."
+                "description": "Submit a subscription request for admin approval. Returns `201` with status `pending_approval`.\n\nRequires role `driver`.\n\n**Note:** Free plans cannot be subscribed to manually — they are automatically assigned at signup. Attempting to subscribe to a free plan returns `422 FREE_PLAN_NOT_SUBSCRIBABLE`.\n\n**Body fields**\n- `plan_id` *(UUID, required)* — the paid plan to subscribe to (from `List Active Plans`).\n- `payment_method_id` *(UUID, required)* — the payment method used (from `List Payment Methods`).\n- `screenshot_id` *(integer, required)* — the image ID returned by `Upload Image` for the payment proof screenshot.\n- `resubmit` *(boolean, optional)* — set `true` to cancel an older pending request for the same plan and create a new one. Options: `true` | `false`.\n\nDuplicate pending requests for the same plan return `409 DUPLICATE_SUBSCRIPTION_REQUEST`."
               },
               "response": [
                 {
@@ -6917,7 +6917,7 @@
                         "subscriptions"
                       ]
                     },
-                    "description": "Submit a subscription request for admin approval. Returns `201` with status `pending_approval`.\n\nRequires role `driver`.\n\n**Body fields**\n- `plan_id` *(UUID, required)* — the plan to subscribe to (from `List Active Plans`).\n- `payment_method_id` *(UUID, required)* — the payment method used (from `List Payment Methods`).\n- `screenshot_id` *(integer, required)* — the image ID returned by `Upload Image` for the payment proof screenshot.\n- `resubmit` *(boolean, optional)* — set `true` to cancel an older pending request for the same plan and create a new one. Options: `true` | `false`.\n\nDuplicate pending requests for the same plan return `409 DUPLICATE_SUBSCRIPTION_REQUEST`."
+                    "description": "Submit a subscription request for admin approval. Returns `201` with status `pending_approval`.\n\nRequires role `driver`.\n\n**Note:** Free plans cannot be subscribed to manually — they are automatically assigned at signup. Attempting to subscribe to a free plan returns `422 FREE_PLAN_NOT_SUBSCRIBABLE`.\n\n**Body fields**\n- `plan_id` *(UUID, required)* — the paid plan to subscribe to (from `List Active Plans`).\n- `payment_method_id` *(UUID, required)* — the payment method used (from `List Payment Methods`).\n- `screenshot_id` *(integer, required)* — the image ID returned by `Upload Image` for the payment proof screenshot.\n- `resubmit` *(boolean, optional)* — set `true` to cancel an older pending request for the same plan and create a new one. Options: `true` | `false`.\n\nDuplicate pending requests for the same plan return `409 DUPLICATE_SUBSCRIPTION_REQUEST`."
                   },
                   "status": "Created",
                   "code": 201,
@@ -6955,7 +6955,7 @@
                         "subscriptions"
                       ]
                     },
-                    "description": "Submit a subscription request for admin approval. Returns `201` with status `pending_approval`.\n\nRequires role `driver`.\n\n**Body fields**\n- `plan_id` *(UUID, required)* — the plan to subscribe to (from `List Active Plans`).\n- `payment_method_id` *(UUID, required)* — the payment method used (from `List Payment Methods`).\n- `screenshot_id` *(integer, required)* — the image ID returned by `Upload Image` for the payment proof screenshot.\n- `resubmit` *(boolean, optional)* — set `true` to cancel an older pending request for the same plan and create a new one. Options: `true` | `false`.\n\nDuplicate pending requests for the same plan return `409 DUPLICATE_SUBSCRIPTION_REQUEST`."
+                    "description": "Submit a subscription request for admin approval. Returns `201` with status `pending_approval`.\n\nRequires role `driver`.\n\n**Note:** Free plans cannot be subscribed to manually — they are automatically assigned at signup. Attempting to subscribe to a free plan returns `422 FREE_PLAN_NOT_SUBSCRIBABLE`.\n\n**Body fields**\n- `plan_id` *(UUID, required)* — the paid plan to subscribe to (from `List Active Plans`).\n- `payment_method_id` *(UUID, required)* — the payment method used (from `List Payment Methods`).\n- `screenshot_id` *(integer, required)* — the image ID returned by `Upload Image` for the payment proof screenshot.\n- `resubmit` *(boolean, optional)* — set `true` to cancel an older pending request for the same plan and create a new one. Options: `true` | `false`.\n\nDuplicate pending requests for the same plan return `409 DUPLICATE_SUBSCRIPTION_REQUEST`."
                   },
                   "status": "Conflict",
                   "code": 409,
@@ -6968,7 +6968,7 @@
                     }
                   ],
                   "cookie": [],
-                  "body": "{\n  \"status\": \"error\",\n  \"message\": \"This national ID has already used the free plan.\",\n  \"code\": \"FREE_PLAN_ALREADY_USED\"\n}"
+                  "body": "{\n  \"status\": \"error\",\n  \"message\": \"Free plans are automatically assigned at signup and cannot be subscribed to manually.\",\n  \"code\": \"FREE_PLAN_NOT_SUBSCRIBABLE\"\n}"
                 }
               ]
             },
@@ -7122,11 +7122,11 @@
                     "current"
                   ]
                 },
-                "description": "Get the driver's current active plan (queue order: free plan first, then shortest period, then submission FIFO) plus `total_balance` and `is_in_debt`.\n\nRequires role `driver`.\n\n`subscription` is `null` when there is no active plan.\n\nNo query parameters."
+                "description": "Get the driver's current active plan (queue order: free plan first, then shortest period, then submission FIFO) plus `total_balance` and `is_in_debt`.\n\nRequires role `driver`.\n\n`subscription` is `null` when there is no active plan.\n\nWhen the driver is on a free plan with a trips offer, the response includes `free_offer` with `type`, `value` (limit), `used`, and `remaining`.\n\nNo query parameters."
               },
               "response": [
                 {
-                  "name": "Success",
+                  "name": "Success — Paid plan",
                   "originalRequest": {
                     "method": "GET",
                     "header": [],
@@ -7140,7 +7140,7 @@
                         "current"
                       ]
                     },
-                    "description": "Get the driver's current active plan (queue order: free plan first, then shortest period, then submission FIFO) plus `total_balance` and `is_in_debt`.\n\nRequires role `driver`.\n\n`subscription` is `null` when there is no active plan.\n\nNo query parameters."
+                    "description": "Get the driver's current active plan (queue order: free plan first, then shortest period, then submission FIFO) plus `total_balance` and `is_in_debt`.\n\nRequires role `driver`.\n\n`subscription` is `null` when there is no active plan.\n\nWhen the driver is on a free plan with a trips offer, the response includes `free_offer` with `type`, `value` (limit), `used`, and `remaining`.\n\nNo query parameters."
                   },
                   "status": "OK",
                   "code": 200,
@@ -7154,6 +7154,35 @@
                   ],
                   "cookie": [],
                   "body": "{\n  \"subscription\": {\n    \"id\": \"00000000-0000-0000-0000-000000000120\",\n    \"plan\": {\n      \"name\": \"Pro\",\n      \"percentage_cut\": 10\n    },\n    \"balance\": 15,\n    \"expires_at\": \"2026-07-31T00:00:00.000Z\"\n  },\n  \"total_balance\": 15,\n  \"is_in_debt\": false\n}"
+                },
+                {
+                  "name": "Success — Free plan with trips offer",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{base_url}}/subscriptions/current",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "subscriptions",
+                        "current"
+                      ]
+                    }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json",
+                      "type": "text"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n  \"subscription\": {\n    \"id\": \"00000000-0000-0000-0000-000000000121\",\n    \"plan\": {\n      \"name\": \"Free Trial\",\n      \"percentage_cut\": 0\n    },\n    \"balance\": 0,\n    \"expires_at\": \"2026-08-31T00:00:00.000Z\",\n    \"free_offer\": {\n      \"type\": \"trips\",\n      \"value\": 5,\n      \"used\": 2,\n      \"remaining\": 3\n    }\n  },\n  \"total_balance\": 0,\n  \"is_in_debt\": false\n}"
                 },
                 {
                   "name": "Unauthorized",
@@ -11075,6 +11104,138 @@
               ]
             },
             {
+              "name": "Create Free Plan",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "exec": [
+                      "pm.environment.get('admin_token') || pm.environment.get('access_token') ? pm.request.headers.add({ key: 'Authorization', value: 'Bearer ' + (pm.environment.get('admin_token') || pm.environment.get('access_token')) }) : console.warn('No token set - use an admin-role token');"
+                    ],
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status code is 2xx or 4xx', function () {",
+                      "  pm.expect(pm.response.code).to.be.oneOf([200, 201, 204, 400, 401, 403, 404, 409, 422, 500]);",
+                      "});",
+                      "pm.test('Response is valid JSON', function () {",
+                      "  pm.response.to.be.json;",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Free Trial\",\n  \"period_days\": 30,\n  \"percentage_cut\": \"0.00\",\n  \"cost\": \"0.00\",\n  \"features\": [\"limited free trips\"],\n  \"is_free\": true,\n  \"free_offer\": { \"type\": \"trips\", \"value\": 5 }\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/admin/plans",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "plans"
+                  ]
+                },
+                "description": "Create a free subscription plan. This plan is **automatically assigned** to every new driver at signup — drivers cannot subscribe to it manually.\n\nRequires role `admin`.\n\nOnly **one** free plan can be active at a time — creating a second returns `409 FREE_PLAN_EXISTS`.\n\n**Body fields**\n- `name` *(string, required)* — plan name, max 100 chars.\n- `period_days` *(number, required)* — plan length in days.\n- `percentage_cut` *(string, optional, default `\"0.00\"`)* — commission percentage (set to `\"0.00\"` for free plans).\n- `cost` *(string, optional, default `\"0.00\"`)* — price (set to `\"0.00\"` for free plans).\n- `features` *(array, optional)* — list of feature strings.\n- `is_free` *(boolean, required)* — must be `true`.\n- `free_offer` *(object, required)* — `{ \"type\": \"trips\", \"value\": N }` where `N` is the number of free trips allowed. The admin can change this value later via Update Plan.\n\n**Example response (201)**\n```json\n{\n  \"id\": \"...\",\n  \"name\": \"Free Trial\",\n  \"period_days\": 30,\n  \"percentage_cut\": 0,\n  \"cost\": 0,\n  \"is_free\": true,\n  \"free_offer\": { \"type\": \"trips\", \"value\": 5 },\n  \"is_active\": true\n}\n```"
+              },
+              "response": [
+                {
+                  "name": "Success — Free plan created",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"name\": \"Free Trial\",\n  \"period_days\": 30,\n  \"percentage_cut\": \"0.00\",\n  \"cost\": \"0.00\",\n  \"features\": [\"limited free trips\"],\n  \"is_free\": true,\n  \"free_offer\": { \"type\": \"trips\", \"value\": 5 }\n}"
+                    },
+                    "url": {
+                      "raw": "{{base_url}}/admin/plans",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "admin",
+                        "plans"
+                      ]
+                    }
+                  },
+                  "status": "Created",
+                  "code": 201,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json",
+                      "type": "text"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n  \"id\": \"00000000-0000-0000-0000-000000000101\",\n  \"name\": \"Free Trial\",\n  \"period_days\": 30,\n  \"percentage_cut\": 0,\n  \"cost\": 0,\n  \"status\": null,\n  \"features\": [\"limited free trips\"],\n  \"is_free\": true,\n  \"free_offer\": { \"type\": \"trips\", \"value\": 5 },\n  \"is_active\": true\n}"
+                },
+                {
+                  "name": "Conflict — Free plan already exists",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"name\": \"Free Trial\",\n  \"period_days\": 30,\n  \"percentage_cut\": \"0.00\",\n  \"cost\": \"0.00\",\n  \"features\": [\"limited free trips\"],\n  \"is_free\": true,\n  \"free_offer\": { \"type\": \"trips\", \"value\": 5 }\n}"
+                    },
+                    "url": {
+                      "raw": "{{base_url}}/admin/plans",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "admin",
+                        "plans"
+                      ]
+                    }
+                  },
+                  "status": "Conflict",
+                  "code": 409,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json",
+                      "type": "text"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n  \"status\": \"error\",\n  \"message\": \"A free plan already exists. Only one free plan can be active at a time.\",\n  \"code\": \"FREE_PLAN_EXISTS\"\n}"
+                }
+              ]
+            },
+            {
               "name": "Update Plan",
               "event": [
                 {
@@ -11111,7 +11272,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"name\": \"Basic Plus\", // string\n  \"cost\": \"120.00\", // number ≥ 0 (JOD)\n  \"percentage_cut\": \"7.50\", // number (JOD % of fare) 0-100\n  \"status\": \"most_requested\", // \"active\" | \"popular\" | \"most_requested\" | \"inactive\"\n  \"features\": [\"no booking fees\", \"priority support\"] // string[]\n}"
+                  "raw": "{\n  \"name\": \"Free Trial Plus\",\n  \"free_offer\": { \"type\": \"trips\", \"value\": 10 }\n}"
                 },
                 "url": {
                   "raw": "{{base_url}}/admin/plans/{{plan_id}}",
@@ -11124,7 +11285,7 @@
                     "{{plan_id}}"
                   ]
                 },
-                "description": "Update an existing plan. All fields are optional (partial update). Invalidates the driver plan cache.\n\nRequires role `admin`.\n\n**Path parameter**\n- `plan_id` *(UUID, required)*.\n\n**Body fields** — same field rules as `Create Plan`; only include fields you want to change: `name`, `period_days`, `percentage_cut`, `cost`, `status` (`most_requested` | `frequent` | `popular` | `null`), `features`, `is_free`, `free_offer`."
+                "description": "Update an existing plan. All fields are optional (partial update). Invalidates the driver plan cache.\n\nRequires role `admin`.\n\n**Path parameter**\n- `plan_id` *(UUID, required)*.\n\n**Body fields** — same field rules as `Create Plan`; only include fields you want to change: `name`, `period_days`, `percentage_cut`, `cost`, `status` (`most_requested` | `frequent` | `popular` | `null`), `features`, `is_free`, `free_offer`.\n\n**To change the free trips limit** on an existing free plan:\n```json\n{ \"free_offer\": { \"type\": \"trips\", \"value\": 10 } }\n```"
               },
               "response": [
                 {
@@ -11139,7 +11300,7 @@
                     ],
                     "body": {
                       "mode": "raw",
-                      "raw": "{\n  \"name\": \"Basic Plus\", // string\n  \"cost\": \"120.00\", // number ≥ 0 (JOD)\n  \"percentage_cut\": \"7.50\", // number (JOD % of fare) 0-100\n  \"status\": \"most_requested\", // \"active\" | \"popular\" | \"most_requested\" | \"inactive\"\n  \"features\": [\"no booking fees\", \"priority support\"] // string[]\n}"
+                      "raw": "{\n  \"name\": \"Free Trial Plus\",\n  \"free_offer\": { \"type\": \"trips\", \"value\": 10 }\n}"
                     },
                     "url": {
                       "raw": "{{base_url}}/admin/plans/{{plan_id}}",
@@ -11152,7 +11313,7 @@
                         "{{plan_id}}"
                       ]
                     },
-                    "description": "Update an existing plan. All fields are optional (partial update). Invalidates the driver plan cache.\n\nRequires role `admin`.\n\n**Path parameter**\n- `plan_id` *(UUID, required)*.\n\n**Body fields** — same field rules as `Create Plan`; only include fields you want to change: `name`, `period_days`, `percentage_cut`, `cost`, `status` (`most_requested` | `frequent` | `popular` | `null`), `features`, `is_free`, `free_offer`."
+                    "description": "Update an existing plan. All fields are optional (partial update). Invalidates the driver plan cache.\n\nRequires role `admin`.\n\n**Path parameter**\n- `plan_id` *(UUID, required)*.\n\n**Body fields** — same field rules as `Create Plan`; only include fields you want to change: `name`, `period_days`, `percentage_cut`, `cost`, `status` (`most_requested` | `frequent` | `popular` | `null`), `features`, `is_free`, `free_offer`.\n\n**To change the free trips limit** on an existing free plan:\n```json\n{ \"free_offer\": { \"type\": \"trips\", \"value\": 10 } }\n```"
                   },
                   "status": "OK",
                   "code": 200,
@@ -11165,7 +11326,7 @@
                     }
                   ],
                   "cookie": [],
-                  "body": "{\n  \"plan\": {\n    \"id\": \"00000000-0000-0000-0000-000000000100\",\n    \"cost\": 24.99,\n    \"is_active\": true\n  }\n}"
+                  "body": "{\n  \"id\": \"00000000-0000-0000-0000-000000000101\",\n  \"name\": \"Free Trial Plus\",\n  \"period_days\": 30,\n  \"percentage_cut\": 0,\n  \"cost\": 0,\n  \"is_free\": true,\n  \"free_offer\": { \"type\": \"trips\", \"value\": 10 },\n  \"is_active\": true\n}"
                 },
                 {
                   "name": "Not found",
@@ -11179,7 +11340,7 @@
                     ],
                     "body": {
                       "mode": "raw",
-                      "raw": "{\n  \"name\": \"Basic Plus\", // string\n  \"cost\": \"120.00\", // number ≥ 0 (JOD)\n  \"percentage_cut\": \"7.50\", // number (JOD % of fare) 0-100\n  \"status\": \"most_requested\", // \"active\" | \"popular\" | \"most_requested\" | \"inactive\"\n  \"features\": [\"no booking fees\", \"priority support\"] // string[]\n}"
+                      "raw": "{\n  \"name\": \"Free Trial Plus\",\n  \"free_offer\": { \"type\": \"trips\", \"value\": 10 }\n}"
                     },
                     "url": {
                       "raw": "{{base_url}}/admin/plans/{{plan_id}}",
@@ -11192,7 +11353,7 @@
                         "{{plan_id}}"
                       ]
                     },
-                    "description": "Update an existing plan. All fields are optional (partial update). Invalidates the driver plan cache.\n\nRequires role `admin`.\n\n**Path parameter**\n- `plan_id` *(UUID, required)*.\n\n**Body fields** — same field rules as `Create Plan`; only include fields you want to change: `name`, `period_days`, `percentage_cut`, `cost`, `status` (`most_requested` | `frequent` | `popular` | `null`), `features`, `is_free`, `free_offer`."
+                    "description": "Update an existing plan. All fields are optional (partial update). Invalidates the driver plan cache.\n\nRequires role `admin`.\n\n**Path parameter**\n- `plan_id` *(UUID, required)*.\n\n**Body fields** — same field rules as `Create Plan`; only include fields you want to change: `name`, `period_days`, `percentage_cut`, `cost`, `status` (`most_requested` | `frequent` | `popular` | `null`), `features`, `is_free`, `free_offer`.\n\n**To change the free trips limit** on an existing free plan:\n```json\n{ \"free_offer\": { \"type\": \"trips\", \"value\": 10 } }\n```"
                   },
                   "status": "Not Found",
                   "code": 404,

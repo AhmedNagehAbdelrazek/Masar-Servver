@@ -78,6 +78,10 @@ DriverSubscription.init(
             allowNull: false,
             defaultValue: 0,
         },
+        freeOffer: {
+            type: DataTypes.JSONB,
+            allowNull: true,
+        },
     },
     {
         sequelize,

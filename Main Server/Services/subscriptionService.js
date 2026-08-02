@@ -1,6 +1,6 @@
 const { Op } = require('sequelize');
 const sequelize = require('../config/database');
-const { User, DriverProfile, SubscriptionPlan, PaymentMethod, DriverSubscription, UploadedImage } = require('../Models');
+const { User, SubscriptionPlan, PaymentMethod, DriverSubscription, UploadedImage } = require('../Models');
 const { SUBSCRIPTION_STATUS, FREE_OFFER_TYPE } = require('../config/constants');
 const { ApiErrors } = require('../utils/ApiError');
 const balanceService = require('./balanceService');
@@ -50,8 +50,15 @@ function toSubscriptionDTO(sub) {
     expires_at: sub.expiresAt || null,
   };
 
-  if (sub.freeTripsUsed !== undefined) {
-    dto.free_trips_used = Number(sub.freeTripsUsed) || 0;
+  // Show free trips info from the snapshot on the subscription.
+  if (sub.freeOffer && sub.freeOffer.type === FREE_OFFER_TYPE.TRIPS) {
+    const limit = Number(sub.freeOffer.value) || 0;
+    const used = Number(sub.freeTripsUsed) || 0;
+    dto.free_trips = {
+      max: limit,
+      used,
+      remaining: Math.max(0, limit - used),
+    };
   }
 
   return dto;
@@ -74,13 +81,14 @@ function toCurrentDTO(sub, user) {
     is_in_debt: user.isInDebt,
   };
 
-  if (sub && sub.plan && sub.plan.isFree && sub.plan.freeOffer) {
-    const offer = sub.plan.freeOffer;
-    result.subscription.free_offer = {
-      type: offer.type,
-      value: Number(offer.value),
-      used: Number(sub.freeTripsUsed) || 0,
-      remaining: Math.max(0, Number(offer.value) - (Number(sub.freeTripsUsed) || 0)),
+  // Show free trips info from the snapshot on the subscription.
+  if (sub && sub.freeOffer && sub.freeOffer.type === FREE_OFFER_TYPE.TRIPS) {
+    const limit = Number(sub.freeOffer.value) || 0;
+    const used = Number(sub.freeTripsUsed) || 0;
+    result.subscription.free_trips = {
+      max: limit,
+      used,
+      remaining: Math.max(0, limit - used),
     };
   }
 
@@ -88,53 +96,24 @@ function toCurrentDTO(sub, user) {
 }
 
 /**
- * Free-plan eligibility: the National ID (from the verified DriverProfile)
- * may only activate a free plan once. Pending/active/expired all count as
- * "used"; rejected and cancelled requests do not.
- */
-async function assertFreePlanEligibility(driverId, plan) {
-  if (!plan.isFree) return;
-
-  const profile = await DriverProfile.findOne({ where: { driverId } });
-  if (!profile || !profile.nationalID) {
-    throw ApiErrors.validation(
-      'A verified national ID is required to subscribe to the free plan.'
-    );
-  }
-
-  const used = await DriverSubscription.findOne({
-    where: {
-      driverId,
-      planId: plan.id,
-      status: {
-        [Op.in]: [
-          SUBSCRIPTION_STATUS.PENDING_APPROVAL,
-          SUBSCRIPTION_STATUS.ACTIVE,
-          SUBSCRIPTION_STATUS.EXPIRED,
-        ],
-      },
-    },
-  });
-
-  if (used) {
-    throw ApiErrors.custom(
-      'This national ID has already used the free plan.',
-      422,
-      'FREE_PLAN_ALREADY_USED'
-    );
-  }
-}
-
-/**
  * Create a subscription request (US2).
  * - Idempotency: a pending request for the same plan returns 409 unless the
  *   driver explicitly resubmits, in which case older pending rows are
  *   cancelled and a new one is created.
+ * - Free plans cannot be subscribed to manually; they are auto-assigned on signup.
  */
 async function createSubscription(driverId, data) {
   const plan = await SubscriptionPlan.findByPk(data.plan_id);
   if (!plan || !plan.isActive) {
     throw ApiErrors.custom('The selected plan is no longer active.', 422, 'PLAN_INACTIVE');
+  }
+
+  if (plan.isFree) {
+    throw ApiErrors.custom(
+      'Free plans are automatically assigned at signup and cannot be subscribed to manually.',
+      422,
+      'FREE_PLAN_NOT_SUBSCRIBABLE'
+    );
   }
 
   const method = await PaymentMethod.findByPk(data.payment_method_id);
@@ -146,8 +125,6 @@ async function createSubscription(driverId, data) {
   if (!screenshot) {
     throw ApiErrors.validation('The screenshot image ID is invalid.');
   }
-
-  await assertFreePlanEligibility(driverId, plan);
 
   return sequelize.transaction(async (t) => {
     const existing = await DriverSubscription.findAll({

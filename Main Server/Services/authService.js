@@ -1,12 +1,13 @@
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 const crypto = require('crypto');
-const { User, DriverProfile, Vehicle, UploadedImage } = require('../Models');
+const { User, DriverProfile, Vehicle, UploadedImage, SubscriptionPlan, DriverSubscription } = require('../Models');
 const { ApiErrors } = require('../utils/ApiError');
 const { setKey, getKey, deleteKey } = require('../config/redis');
 const otpService = require('./otpService');
 const { validatePhone } = require('../utils/phoneValidator');
-const { TEST_PHONES } = require('../config/constants');
+const { TEST_PHONES, SUBSCRIPTION_STATUS, FREE_OFFER_TYPE } = require('../config/constants');
+const balanceService = require('./balanceService');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-in-production';
 const JWT_EXPIRY = process.env.JWT_EXPIRY || '24h';
@@ -173,6 +174,48 @@ async function registerPassword(authHeader, password) {
     passwordHash,
     locale: 'ar',
   });
+
+  // Auto-assign the active free plan to new drivers.
+  if (decoded.role === 'driver') {
+    try {
+      const freePlan = await SubscriptionPlan.findOne({
+        where: { isFree: true, isActive: true },
+      });
+
+      if (freePlan) {
+        const now = new Date();
+        const expiresAt = new Date(now.getTime() + Number(freePlan.periodDays) * 24 * 60 * 60 * 1000);
+
+        const sub = await DriverSubscription.create({
+          driverId: user.id,
+          planId: freePlan.id,
+          planName: freePlan.name,
+          planPeriodDays: freePlan.periodDays,
+          planPercentageCut: freePlan.percentageCut,
+          planCost: freePlan.cost,
+          balance: 0,
+          paymentMethod: { type: 'auto_assigned', name: 'Free Plan' },
+          status: SUBSCRIPTION_STATUS.ACTIVE,
+          activatedAt: now,
+          expiresAt,
+          freeOffer: freePlan.freeOffer || null,
+        });
+
+        // Credit free offer balance if the plan uses a credit offer.
+        if (freePlan.freeOffer && freePlan.freeOffer.type === FREE_OFFER_TYPE.CREDIT) {
+          const creditAmount = Number(freePlan.freeOffer.value) || 0;
+          if (creditAmount > 0) {
+            await balanceService.creditOnApproval(sub, {
+              actorId: null,
+              extraBalance: creditAmount,
+            });
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('[authService] failed to auto-assign free plan:', err.message);
+    }
+  }
 
   const accessToken = generateAccessToken(user);
   const { token: refreshToken, jti } = generateRefreshToken(user);

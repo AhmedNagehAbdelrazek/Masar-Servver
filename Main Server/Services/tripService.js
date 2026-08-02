@@ -40,17 +40,16 @@ async function assertCanPublish(driverId, farePerSeat) {
 }
 
 /**
- * Free-trips gate. If the driver's current active plan is a free plan with
- * a trips offer, check that the driver has not exhausted the allowed count.
- * When free trips are exhausted, the driver is still allowed to publish if
- * they have an active paid subscription (the balance gate will enforce
- * commission rules for the paid plan instead).
+ * Free-trips gate. If the driver's current active subscription has a free
+ * trips offer (snapshots from signup), check that the driver has not
+ * exhausted the allowed count. When free trips are exhausted, the driver
+ * is still allowed to publish if they have an active paid subscription.
  */
 async function assertFreeTripsAvailable(driverId) {
   const now = new Date();
 
-  // Find the driver's current active free plan subscription (highest priority).
-  const freeSub = await DriverSubscription.findOne({
+  // Find the driver's current active subscription (free plan has queue priority).
+  const subscription = await DriverSubscription.findOne({
     where: {
       driverId,
       status: 'active',
@@ -59,24 +58,27 @@ async function assertFreeTripsAvailable(driverId) {
     include: [{
       model: SubscriptionPlan,
       as: 'plan',
-      where: { isFree: true },
-      attributes: ['id', 'isFree', 'freeOffer'],
+      attributes: ['id', 'isFree'],
     }],
   });
 
-  // No active free plan — nothing to block.
-  if (!freeSub) return;
-  const plan = freeSub.plan;
-  if (!plan || !plan.freeOffer) return;
-  if (plan.freeOffer.type !== FREE_OFFER_TYPE.TRIPS) return;
+  // No active subscription — nothing to block here.
+  if (!subscription) return;
 
-  const limit = Number(plan.freeOffer.value);
-  const used = Number(freeSub.freeTripsUsed) || 0;
+  // Use the snapshot from the subscription, not the current plan.
+  const freeOffer = subscription.freeOffer;
+  if (!freeOffer) return;
+  if (freeOffer.type !== FREE_OFFER_TYPE.TRIPS) return;
+
+  // Only block if this is a free plan subscription.
+  if (!subscription.plan || !subscription.plan.isFree) return;
+
+  const limit = Number(freeOffer.value);
+  const used = Number(subscription.freeTripsUsed) || 0;
 
   if (used < limit) return;
 
-  // Free trips exhausted. Check if the driver has an active paid subscription
-  // that can take over (balance gate will enforce commission rules).
+  // Free trips exhausted. Check if the driver has an active paid subscription.
   const paidSub = await DriverSubscription.findOne({
     where: {
       driverId,
@@ -371,7 +373,7 @@ const completeTrip = async (driverId, tripId) => {
 
   await trip.update({ status: TRIP_STATUS.COMPLETED });
 
-  // Increment free trips counter if the driver is on a free plan with a trips offer.
+  // Increment free trips counter if the driver's subscription has a free trips offer.
   try {
     const now = new Date();
     const subscription = await DriverSubscription.findOne({
@@ -384,12 +386,13 @@ const completeTrip = async (driverId, tripId) => {
         model: SubscriptionPlan,
         as: 'plan',
         where: { isFree: true },
-        attributes: ['id', 'freeOffer'],
+        attributes: ['id'],
       }],
     });
 
-    if (subscription && subscription.plan && subscription.plan.freeOffer &&
-        subscription.plan.freeOffer.type === FREE_OFFER_TYPE.TRIPS) {
+    // Use the snapshot from the subscription, not the current plan.
+    if (subscription && subscription.freeOffer &&
+        subscription.freeOffer.type === FREE_OFFER_TYPE.TRIPS) {
       await subscription.increment('freeTripsUsed');
     }
   } catch (err) {
