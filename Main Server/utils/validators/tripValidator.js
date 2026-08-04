@@ -150,6 +150,26 @@ const createTripValidation = [
     .isLength({ max: 1000 }).withMessage('Additional instructions must be at most 1000 characters'),
 ];
 
+const searchAvailableTripsValidation = [
+  query('origin_city')
+    .optional()
+    .trim()
+    .isLength({ max: 100 }).withMessage('Origin city must be at most 100 characters'),
+
+  query('destination_city')
+    .optional()
+    .trim()
+    .isLength({ max: 100 }).withMessage('Destination city must be at most 100 characters'),
+
+  query('date')
+    .optional()
+    .isDate().withMessage('Date must be a valid date (YYYY-MM-DD)'),
+
+  query('gender_preference')
+    .optional()
+    .isIn(Object.values(GENDER_PREFERENCE)).withMessage(`Gender preference must be one of: ${Object.values(GENDER_PREFERENCE).join(', ')}`),
+];
+
 const tripParamValidation = [
   param('trip_id')
     .isUUID().withMessage('Trip ID must be a valid UUID'),
@@ -256,6 +276,7 @@ const updateTripValidation = [
 
 module.exports = {
   createTripValidation,
+  searchAvailableTripsValidation,
   lockSeatValidation,
   releaseSeatLockValidation,
   updateTripValidation,

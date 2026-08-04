@@ -290,7 +290,7 @@ const getAvailableTrips = async (originCity, destinationCity, date, genderPrefer
   if (originCity) where.originCity = originCity;
   if (destinationCity) where.destinationCity = destinationCity;
   if (genderPreference && genderPreference !== GENDER_PREFERENCE.ALL) {
-    where.genderPreference = { [Op.in]: [GENDER_PREFERENCE.ALL, genderPreference] };
+    where.genderPreference = { [Op.in]: [ genderPreference ] };
   }
 
   const trips = await Trip.findAll({
