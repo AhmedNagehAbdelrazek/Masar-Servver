@@ -13,6 +13,8 @@ services:
     depends_on:
       - main-server
       - audit-collector
+    networks:
+      - masar_default
 
   # ── Audit stack ──────────────────────────────────────────────
   db:
@@ -46,6 +48,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_started
+    networks:
+      - masar_default
 
   # ── Main server stack ────────────────────────────────────────
   main-server:
@@ -74,8 +78,14 @@ services:
         condition: service_started
     volumes:
       - main_uploads:/app/uploads
+    networks:
+      - masar_default
 
 volumes:
   audit_pgdata:
   main_uploads:
   redis_data:
+
+networks:
+  masar_default:
+    driver: bridge
