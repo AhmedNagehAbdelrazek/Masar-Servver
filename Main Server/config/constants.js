@@ -141,6 +141,26 @@ const FREE_OFFER_TYPE = {
   CREDIT: 'credit',
 };
 
+const SOS_STATUS = {
+  PENDING: 'pending',
+  ACKNOWLEDGED: 'acknowledged',
+  RESOLVED: 'resolved',
+  CANCELLED: 'cancelled',
+};
+
+const SOS_URGENCY = {
+  LOW: 'low',
+  MEDIUM: 'medium',
+  HIGH: 'high',
+  CRITICAL: 'critical',
+};
+
+const MESSAGE_TYPE = {
+  TEXT: 'text',
+  IMAGE: 'image',
+  SYSTEM: 'system',
+};
+
 const SIGNUP_ROLES = [ROLES.PASSENGER, ROLES.RIDER];
 
 // THE RESOURCES AND ACTIONS THAT THE ADMIN CAN GIVE THEM WITH EACH ROLE LIKE [{resource: 'trip', actions: ['create', 'read', 'update', 'delete']}]; 
@@ -189,6 +209,9 @@ module.exports = {
   PLAN_STATUS,
   PAYMENT_METHOD_TYPE,
   FREE_OFFER_TYPE,
+  SOS_STATUS,
+  SOS_URGENCY,
+  MESSAGE_TYPE,
   PAGINATION,
   ADMIN_RESOURCES,
   ADMIN_ACTIONS,

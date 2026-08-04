@@ -147,6 +147,16 @@ const TEMPLATES = {
       body: 'Your {subject} could not be verified. Reason: {reason}. Please resubmit the correct documents.',
     },
   },
+  TICKET_RESOLVED: {
+    ar: {
+      title: 'تم حل تذكرتك',
+      body: 'تم حل تذكرة الدعم الخاصة بك: {ticket}.',
+    },
+    en: {
+      title: 'Support ticket resolved',
+      body: 'Your support ticket has been resolved: {ticket}.',
+    },
+  },
 };
 
 function interpolate(template, vars = {}) {
@@ -329,8 +339,55 @@ async function markRead(userId, notificationId) {
 
   if (!notification.isRead) {
     await notification.update({ isRead: true });
+    emitCount(userId);
   }
   return notification;
 }
 
-module.exports = { sendToUser, notifyBookedPassengers, notifyConfirmedPassengers, listForUser, markRead };
+/**
+ * Mark all of a user's notifications as read and re-emit the unread badge.
+ */
+async function markAllRead(userId) {
+  const { Notification } = require('../../Models');
+
+  const [affected] = await Notification.update(
+    { isRead: true },
+    { where: { userId, isRead: false } }
+  );
+  emitCount(userId);
+  return { marked: affected };
+}
+
+/**
+ * Count a user's unread notifications (for the realtime badge).
+ */
+async function countUnread(userId) {
+  const { Notification } = require('../../Models');
+  return Notification.count({ where: { userId, isRead: false } });
+}
+
+function emitCount(userId) {
+  try {
+    const realtimeService = require('../realtimeService');
+    countUnread(userId)
+      .then((unreadCount) => {
+        realtimeService.emitToUser(userId, 'notification:count', {
+          unread_count: unreadCount,
+          timestamp: Date.now(),
+        });
+      })
+      .catch(() => {});
+  } catch (err) {
+    // ignore
+  }
+}
+
+module.exports = {
+  sendToUser,
+  notifyBookedPassengers,
+  notifyConfirmedPassengers,
+  listForUser,
+  markRead,
+  markAllRead,
+  countUnread,
+};

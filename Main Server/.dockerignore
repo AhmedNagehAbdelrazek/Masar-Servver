@@ -4,3 +4,5 @@ uploads/
 uploads/*
 .git
 .gitignore
+coverage/
+*.log*

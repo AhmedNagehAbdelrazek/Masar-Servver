@@ -62,7 +62,6 @@ services:
       DB_PORT: 5432
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      JWT_SECRET: change-this-to-a-random-secret
       JWT_EXPIRY: 24h
       SALT_ROUNDS: 12
       UPLOAD_PROVIDER: local
