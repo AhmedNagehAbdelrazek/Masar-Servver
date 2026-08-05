@@ -9,6 +9,10 @@ const { seedAdmin } = require('./seed');
 const PORT = process.env.PORT || 3000;
 
 async function startServer() {
+  console.log("Audit URL", process.env.AUDIT_URL);
+  console.log("AUDIT_SERVICE_ID", process.env.AUDIT_SERVICE_ID);
+  console.log("AUDIT_CLIENT_SECRET", process.env.AUDIT_CLIENT_SECRET);
+
   await initDatabase();
   await seedAdmin();
   startJobs();

@@ -1,27 +1,13 @@
 name: masar
 
 services:
-  # ── Nginx gateway ──────────────────────────────────────────
-  nginx:
-    image: nginx:alpine
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro
-      - /etc/letsencrypt:/etc/letsencrypt:ro
-    depends_on:
-      - main-server
-      - audit-collector
-    networks:
-      - masar_default
 
-  # ── Audit stack ──────────────────────────────────────────────
   db:
     image: postgres:16
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
     volumes:
       - audit_pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -29,16 +15,12 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
-    networks:
-      - masar_default
 
   redis:
     image: redis:7
     command: redis-server --save 60 1 --loglevel warning
     volumes:
       - redis_data:/data
-    networks:
-      - masar_default
 
   audit-collector:
     image: ghcr.io/ahmednagehabdelrazek/audit-server:latest
@@ -52,10 +34,7 @@ services:
         condition: service_healthy
       redis:
         condition: service_started
-    networks:
-      - masar_default
 
-  # ── Main server stack ────────────────────────────────────────
   main-server:
     image: ghcr.io/ahmednagehabdelrazek/main-server:latest
     env_file:
@@ -70,7 +49,6 @@ services:
       DB_PORT: 5432
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      JWT_SECRET: change-this-to-a-random-secret
       JWT_EXPIRY: 24h
       SALT_ROUNDS: 12
       UPLOAD_PROVIDER: local
@@ -82,14 +60,8 @@ services:
         condition: service_started
     volumes:
       - main_uploads:/app/uploads
-    networks:
-      - masar_default
 
 volumes:
   audit_pgdata:
   main_uploads:
   redis_data:
-
-networks:
-  masar_default:
-    driver: bridge

@@ -53,12 +53,15 @@ jobs:
 
             cd /root/Masar-Servver
 
+            echo "Updating repository..."
             git fetch origin
             git reset --hard origin/main
 
-            docker compose pull main-server audit-collector
+            echo "Pulling application images..."
+            docker compose pull main-server audit-collector nginx
 
-            docker compose up -d --no-deps main-server audit-collector
+            echo "Deploying application..."
+            docker compose up -d --no-deps main-server audit-collector nginx
 
             echo "Waiting for application..."
 
@@ -66,16 +69,34 @@ jobs:
             do
               if curl -kfs https://localhost/api/healthz >/dev/null
               then
-                echo "Application is healthy."
-                exit 0
+                echo "Main application is healthy."
+                break
               fi
 
-              echo "Waiting..."
+              echo "Waiting... ($i/30)"
               sleep 5
             done
 
-            echo "Health check failed."
+            if ! curl -kfs https://localhost/api/healthz >/dev/null
+            then
+              echo "Health check failed."
 
-            docker compose logs main-server
+              echo "Container status:"
+              docker compose ps -a
 
-            exit 1
+              echo "Main server logs:"
+              docker compose logs --tail=100 main-server
+
+              echo "Audit server logs:"
+              docker compose logs --tail=100 audit-collector
+
+              echo "Nginx logs:"
+              docker compose logs --tail=100 nginx
+
+              exit 1
+            fi
+
+            echo "Final container status:"
+            docker compose ps
+
+            echo "Deployment successful."
