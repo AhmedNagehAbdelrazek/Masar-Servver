@@ -23,7 +23,9 @@ services:
       - redis_data:/data
 
   audit-collector:
-    image: ghcr.io/ahmednagehabdelrazek/audit-server:latest
+    build:
+      context: ./audit-server
+      dockerfile: Dockerfile
     environment:
       NODE_ENV: production
       PORT: 4000
@@ -36,7 +38,9 @@ services:
         condition: service_started
 
   main-server:
-    image: ghcr.io/ahmednagehabdelrazek/main-server:latest
+    build:
+      context: ./Main Server
+      dockerfile: Dockerfile
     env_file:
       - ./Main Server/.env
     environment:
