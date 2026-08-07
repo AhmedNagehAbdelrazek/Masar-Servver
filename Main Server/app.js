@@ -1,4 +1,5 @@
 const express = require('express');
+const path = require('path');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
@@ -19,6 +20,13 @@ function createApp() {
   app.use(morgan('short'));
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
+
+  app.use(
+    '/uploads',
+    // express.static(process.env.LOCAL_UPLOAD_DIR || path.join(__dirname, 'uploads'))
+    express.static(path.join(__dirname, 'uploads'))
+  // );
+  );
 
   app.use('/api', apiRouter);
 

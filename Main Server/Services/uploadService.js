@@ -20,7 +20,7 @@ async function upload(req) {
     };
   }
   const provider = (process.env.UPLOAD_PROVIDER || 'cloudinary').toLowerCase();
-  const uploader = getUploader();
+  const uploader = getUploader(provider);
   const { url, filename } = await uploader.upload(req.file.buffer, {
     mimetype: req.file.mimetype,
     originalname: req.file.originalname,

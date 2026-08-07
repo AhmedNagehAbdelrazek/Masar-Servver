@@ -10,10 +10,10 @@ const providers = {
 
 let instance = null;
 
-function getUploader() {
+function getUploader(provider) {
   if (instance) return instance;
 
-  const provider = (process.env.UPLOAD_PROVIDER || 'cloudinary').toLowerCase();
+  // const provider = (process.env.UPLOAD_PROVIDER || 'cloudinary').toLowerCase();
   const Provider = providers[provider];
 
   if (!Provider) {

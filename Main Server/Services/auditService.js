@@ -8,15 +8,16 @@ const { audit } = require('../config/audit');
  * Never throws — failures are logged so audit issues do not break
  * the primary operation.
  */
-function track({ action, resourceType, resourceId, resourceLabel, actorId, actorType = 'admin', payload = {} }) {
+function track({ action, resourceType, resourceId, resourceLabel, actorId, actorType = 'admin', outcome = 'success', error, payload = {} }) {
   try {
     audit.track({
       event_type: 'domain.event',
       action,
-      outcome: 'success',
+      outcome,
       actor: actorId ? { type: actorType, id: actorId } : { type: 'system' },
       resource: { type: resourceType, id: resourceId, label: resourceLabel },
       payload,
+      error,
     });
   } catch (err) {
     console.warn('[auditService] tracking failed:', err.message);

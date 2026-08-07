@@ -1,4 +1,5 @@
 const ApiError = require('../utils/ApiError');
+const multer = require('multer');
 const { ValidationError, UniqueConstraintError } = require('sequelize');
 
 function globalErrorHandler(err, req, res, next) {
@@ -29,6 +30,22 @@ function globalErrorHandler(err, req, res, next) {
       status: 'error',
       message: `Duplicate value for: ${fields}`,
       code: 'CONFLICT',
+    });
+  }
+
+  if (err instanceof multer.MulterError) {
+    if (err.code === 'LIMIT_FILE_SIZE') {
+      return res.status(413).json({
+        status: 'error',
+        message: 'File too large. Maximum allowed size is 10 MB.',
+        code: 'FILE_TOO_LARGE',
+      });
+    }
+
+    return res.status(400).json({
+      status: 'error',
+      message: err.message || 'Invalid upload.',
+      code: 'INVALID_UPLOAD',
     });
   }
 
