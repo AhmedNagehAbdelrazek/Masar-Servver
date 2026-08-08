@@ -8,6 +8,7 @@ export declare const config: {
         bufferSize: number;
         flushIntervalMs: number;
         maxEventSize: number;
+        maxBatchBytes: number;
     };
 };
 //# sourceMappingURL=config.d.ts.map

@@ -15,6 +15,7 @@ export interface AuditClientConfig {
   batchSize?: number;
   flushIntervalMs?: number;
   maxQueueSize?: number;
+  maxBatchBytes?: number;
 }
 
 export class AuditClient {
@@ -35,6 +36,7 @@ export class AuditClient {
       batchSize: 100,
       flushIntervalMs: 1000,
       maxQueueSize: 10000,
+      maxBatchBytes: 1536 * 1024,
       enabled: true,
       instanceId: undefined,
       ...config,
@@ -141,7 +143,10 @@ export class AuditClient {
     const spans = this.spanQueue.splice(0, this.spanQueue.length);
 
     try {
-      await this.send({ events, spans });
+      const chunks = this.createChunks(events, spans);
+      for (const chunk of chunks) {
+        await this.send(chunk);
+      }
     } catch (err) {
       this.eventQueue.unshift(...events);
       this.spanQueue.unshift(...spans);
@@ -149,6 +154,45 @@ export class AuditClient {
     } finally {
       this.flushing = false;
     }
+  }
+
+  private createChunks(
+    events: AuditEvent[],
+    spans: TraceSpan[]
+  ): { events: AuditEvent[]; spans: TraceSpan[] }[] {
+    const maxBatchBytes = this.config.maxBatchBytes ?? 1536 * 1024;
+    const chunks: { events: AuditEvent[]; spans: TraceSpan[] }[] = [];
+    let current: { events: AuditEvent[]; spans: TraceSpan[] } = { events: [], spans: [] };
+    let currentBytes = 0;
+
+    const flushCurrent = (): void => {
+      if (current.events.length > 0 || current.spans.length > 0) {
+        chunks.push(current);
+        current = { events: [], spans: [] };
+        currentBytes = 0;
+      }
+    };
+
+    for (const event of events) {
+      const itemBytes = Buffer.byteLength(JSON.stringify(event));
+      if (current.events.length > 0 && currentBytes + itemBytes > maxBatchBytes) {
+        flushCurrent();
+      }
+      current.events.push(event);
+      currentBytes += itemBytes;
+    }
+
+    for (const span of spans) {
+      const itemBytes = Buffer.byteLength(JSON.stringify(span));
+      if (current.spans.length > 0 && currentBytes + itemBytes > maxBatchBytes) {
+        flushCurrent();
+      }
+      current.spans.push(span);
+      currentBytes += itemBytes;
+    }
+
+    flushCurrent();
+    return chunks;
   }
 
   private async send(payload: { events: AuditEvent[]; spans: TraceSpan[] }): Promise<void> {

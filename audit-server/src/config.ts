@@ -12,5 +12,6 @@ export const config = {
     bufferSize: parseInt(process.env.INGEST_BUFFER_SIZE || '1000', 10),
     flushIntervalMs: parseInt(process.env.INGEST_FLUSH_INTERVAL || '3000', 10),
     maxEventSize: parseInt(process.env.MAX_EVENT_SIZE || (2 * 1024 * 1024).toString(), 10),
+    maxBatchBytes: parseInt(process.env.INGEST_MAX_BATCH_BYTES || (10 * 1024 * 1024).toString(), 10),
   },
 };

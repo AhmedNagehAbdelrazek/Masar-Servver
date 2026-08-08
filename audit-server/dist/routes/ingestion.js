@@ -6,12 +6,13 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.createIngestRouter = createIngestRouter;
 const express_1 = __importDefault(require("express"));
 const auth_1 = require("../auth");
+const config_1 = require("../config");
 function createIngestRouter(pool, queue) {
     const router = express_1.default.Router();
     // Use express.raw() to capture the body as a Buffer — this preserves
     // the raw bytes for HMAC verification AND doesn't consume the stream
     // before JSON parsing.
-    router.post('/v1/audit/ingest', express_1.default.raw({ type: 'application/json', limit: '2mb' }), async (req, res) => {
+    router.post('/v1/audit/ingest', express_1.default.raw({ type: 'application/json', limit: config_1.config.ingestion.maxBatchBytes }), async (req, res) => {
         try {
             const rawBody = req.body.toString('utf8');
             const service = await (0, auth_1.verifyAuditRequest)({

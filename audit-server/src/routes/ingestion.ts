@@ -2,6 +2,7 @@ import express from 'express';
 import { Pool } from 'pg';
 import { verifyAuditRequest } from '../auth';
 import { AuditQueue } from '../queue';
+import { config } from '../config';
 
 export function createIngestRouter(pool: Pool, queue: AuditQueue) {
   const router = express.Router();
@@ -11,7 +12,7 @@ export function createIngestRouter(pool: Pool, queue: AuditQueue) {
   // before JSON parsing.
   router.post(
     '/v1/audit/ingest',
-    express.raw({ type: 'application/json', limit: '2mb' }),
+    express.raw({ type: 'application/json', limit: config.ingestion.maxBatchBytes }),
     async (req: any, res) => {
       try {
         const rawBody = req.body.toString('utf8');

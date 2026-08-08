@@ -11,6 +11,7 @@ export interface AuditClientConfig {
     batchSize?: number;
     flushIntervalMs?: number;
     maxQueueSize?: number;
+    maxBatchBytes?: number;
 }
 export declare class AuditClient {
     readonly config: Required<Pick<AuditClientConfig, 'serviceId' | 'serviceName' | 'environment' | 'collectorUrl' | 'clientKey' | 'clientSecret'>> & Omit<AuditClientConfig, 'serviceId' | 'serviceName' | 'environment' | 'collectorUrl' | 'clientKey' | 'clientSecret'>;
@@ -24,6 +25,7 @@ export declare class AuditClient {
     private trimQueue;
     private maybeFlush;
     flush(): Promise<void>;
+    private createChunks;
     private send;
     close(): Promise<void>;
 }

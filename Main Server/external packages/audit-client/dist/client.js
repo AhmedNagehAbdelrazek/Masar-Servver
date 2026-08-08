@@ -15,6 +15,7 @@ class AuditClient {
             batchSize: 100,
             flushIntervalMs: 1000,
             maxQueueSize: 10000,
+            maxBatchBytes: 1536 * 1024,
             enabled: true,
             instanceId: undefined,
             ...config,
@@ -113,7 +114,10 @@ class AuditClient {
         const events = this.eventQueue.splice(0, this.eventQueue.length);
         const spans = this.spanQueue.splice(0, this.spanQueue.length);
         try {
-            await this.send({ events, spans });
+            const chunks = this.createChunks(events, spans);
+            for (const chunk of chunks) {
+                await this.send(chunk);
+            }
         }
         catch (err) {
             this.eventQueue.unshift(...events);
@@ -123,6 +127,37 @@ class AuditClient {
         finally {
             this.flushing = false;
         }
+    }
+    createChunks(events, spans) {
+        const maxBatchBytes = this.config.maxBatchBytes ?? 1536 * 1024;
+        const chunks = [];
+        let current = { events: [], spans: [] };
+        let currentBytes = 0;
+        const flushCurrent = () => {
+            if (current.events.length > 0 || current.spans.length > 0) {
+                chunks.push(current);
+                current = { events: [], spans: [] };
+                currentBytes = 0;
+            }
+        };
+        for (const event of events) {
+            const itemBytes = Buffer.byteLength(JSON.stringify(event));
+            if (current.events.length > 0 && currentBytes + itemBytes > maxBatchBytes) {
+                flushCurrent();
+            }
+            current.events.push(event);
+            currentBytes += itemBytes;
+        }
+        for (const span of spans) {
+            const itemBytes = Buffer.byteLength(JSON.stringify(span));
+            if (current.spans.length > 0 && currentBytes + itemBytes > maxBatchBytes) {
+                flushCurrent();
+            }
+            current.spans.push(span);
+            currentBytes += itemBytes;
+        }
+        flushCurrent();
+        return chunks;
     }
     async send(payload) {
         const body = JSON.stringify(payload);
