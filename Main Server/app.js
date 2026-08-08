@@ -15,7 +15,7 @@ function createApp() {
   app.use(cors());
   app.use(helmet());
   app.use(createAuditMiddleware(audit, {
-    skip: (req) => req.path === '/health'
+    skip: (req) => req.method === 'GET' || req.path === '/health'
   }));
   app.use(morgan('short'));
   app.use(express.json());
