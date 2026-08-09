@@ -23,7 +23,7 @@ beforeEach(async () => {
   });
   await Vehicle.create({
     id: VEHICLE_ID, driverId: DRIVER_ID, manufacturer: 'Toyota', model: 'Corolla',
-    vehicleType: 'sedan', modelYear: 2022, plateNumber: '12-34567',
+    vehicleType: 'sedan', modelYear: 2022, plateNumber: '12-34567', codeNumber: 'CODE-100',
     color: 'White', seats: 4, isVerified: true,
   });
 
@@ -84,6 +84,7 @@ describe('US9 Contract - Driver Profile & Vehicles', () => {
       vehicle_type: 'sedan',
       model_year: 2022,
       plate_number: '12-34567',
+      code_number: 'CODE-100',
       color: 'White',
       seats: 4,
       is_verified: true,

@@ -18,19 +18,26 @@ var info = {
     "comment": ""
 };
 
+var migrationCommands = [{
+    fn: "rawQuery",
+    params: [`
+        ALTER TABLE "trips"
+        ALTER COLUMN "driver_instructions" TYPE TEXT[]
+        USING (CASE
+            WHEN "driver_instructions" IS NULL THEN NULL
+            WHEN pg_typeof("driver_instructions")::text = 'text[]' THEN "driver_instructions"
+            ELSE ARRAY["driver_instructions"]::text[]
+        END)
+    `]
+}];
+
 module.exports = {
     pos: 0,
+    migrationCommands,
     up: function(queryInterface)
     {
         // Wrap a legacy single text value into a one-element array; NULL stays NULL.
-        return queryInterface.sequelize.query(`
-            ALTER TABLE "trips"
-            ALTER COLUMN "driver_instructions" TYPE TEXT[]
-            USING (CASE
-                WHEN "driver_instructions" IS NULL THEN NULL
-                ELSE ARRAY["driver_instructions"]::text[]
-            END)
-        `);
+        return queryInterface.sequelize.query(migrationCommands[0].params[0]);
     },
     info: info
 };

@@ -97,6 +97,7 @@ async function getQueue(filters = {}) {
         manufacturer: v.manufacturer,
         model: v.model,
         plate_number: v.plateNumber,
+        code_number: v.codeNumber,
         full_name: v.driver ? v.driver.fullName : null,
         documents: buildDocuments(v, VEHICLE_DOC_LABELS, urls),
         is_verified: false,

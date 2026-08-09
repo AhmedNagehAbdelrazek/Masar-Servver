@@ -2391,7 +2391,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"vehicleType\": \"sedan\", // \"sedan\" | \"suv\" | \"van\" | \"bus\" | \"hatchback\"\n  \"manufacturer\": \"Toyota\", // string ≤ 80\n  \"model\": \"Camry\", // string ≤ 80\n  \"modelYear\": 2023, // integer (e.g. 2023)\n  \"color\": \"White\", // string ≤ 30\n  \"plateNumber\": \"ABC-1234\", // string (unique)\n  \"seats\": 4, // integer 1-50\n  \"registrationDocFront\": 1, // uploaded image id (int)\n  \"registrationDocBack\": 2, // uploaded image id (int)\n  \"vehiclePhotoFront\": 3, // uploaded image id (int)\n  \"vehiclePhotoBack\": 4 // uploaded image id (int)\n}"
+                  "raw": "{\n  \"vehicleType\": \"sedan\", // \"sedan\" | \"suv\" | \"van\" | \"bus\" | \"hatchback\"\n  \"manufacturer\": \"Toyota\", // string ≤ 80\n  \"model\": \"Camry\", // string ≤ 80\n  \"modelYear\": 2023, // integer (e.g. 2023)\n  \"color\": \"White\", // string ≤ 30\n  \"plateNumber\": \"ABC-1234\", // string (unique)\n  \"codeNumber\": \"1234567\", // string (unique, optional)\n  \"seats\": 4, // integer 1-50\n  \"registrationDocFront\": 1, // uploaded image id (int)\n  \"registrationDocBack\": 2, // uploaded image id (int)\n  \"vehiclePhotoFront\": 3, // uploaded image id (int)\n  \"vehiclePhotoBack\": 4 // uploaded image id (int)\n}"
                 },
                 "url": {
                   "raw": "{{base_url}}/auth/onboarding/vehicle",
@@ -2404,7 +2404,7 @@
                     "vehicle"
                   ]
                 },
-                "description": "Submit vehicle details with document image IDs.\n\nRequires role `driver`.\n\n**Body fields**\n- `vehicleType` *(string, required)* — Options: `sedan` | `suv` | `van` | `bus` | `hatchback`.\n- `manufacturer` *(string, required)* — e.g. `Toyota`, max 80 chars.\n- `model` *(string, required)* — e.g. `Camry`, max 80 chars.\n- `modelYear` *(number, optional)* — integer between 1900 and 2030.\n- `color` *(string, optional)* — max 30 chars.\n- `plateNumber` *(string, required)* — max 20 chars.\n- `seats` *(number, required)* — integer between 1 and 50.\n- `registrationDocFront` / `registrationDocBack` *(number, required)* — image IDs of registration document front/back.\n- `vehiclePhotoFront` / `vehiclePhotoBack` *(number, required)* — image IDs of vehicle photos front/back."
+                "description": "Submit vehicle details with document image IDs.\n\nRequires role `driver`.\n\n**Body fields**\n- `vehicleType` *(string, required)* — Options: `sedan` | `suv` | `van` | `bus` | `hatchback`.\n- `manufacturer` *(string, required)* — e.g. `Toyota`, max 80 chars.\n- `model` *(string, required)* — e.g. `Camry`, max 80 chars.\n- `modelYear` *(number, optional)* — within the last 10 years (2016 – 2026).\n- `color` *(string, optional)* — max 30 chars.\n- `plateNumber` *(string, required)* — max 20 chars.\n- `codeNumber` *(string, optional)* — plate code number, unique, max 20 chars.\n- `seats` *(number, required)* — integer between 1 and 50.\n- `registrationDocFront` / `registrationDocBack` *(number, required)* — image IDs of registration document front/back.\n- `vehiclePhotoFront` / `vehiclePhotoBack` *(number, required)* — image IDs of vehicle photos front/back."
               },
               "response": [
                 {
@@ -2423,7 +2423,7 @@
                     ],
                     "body": {
                       "mode": "raw",
-                      "raw": "{\n  \"vehicleType\": \"sedan\", // \"sedan\" | \"suv\" | \"van\" | \"bus\" | \"hatchback\"\n  \"manufacturer\": \"Toyota\", // string ≤ 80\n  \"model\": \"Camry\", // string ≤ 80\n  \"modelYear\": 2023, // integer (e.g. 2023)\n  \"color\": \"White\", // string ≤ 30\n  \"plateNumber\": \"ABC-1234\", // string (unique)\n  \"seats\": 4, // integer 1-50\n  \"registrationDocFront\": 1, // uploaded image id (int)\n  \"registrationDocBack\": 2, // uploaded image id (int)\n  \"vehiclePhotoFront\": 3, // uploaded image id (int)\n  \"vehiclePhotoBack\": 4 // uploaded image id (int)\n}"
+                      "raw": "{\n  \"vehicleType\": \"sedan\", // \"sedan\" | \"suv\" | \"van\" | \"bus\" | \"hatchback\"\n  \"manufacturer\": \"Toyota\", // string ≤ 80\n  \"model\": \"Camry\", // string ≤ 80\n  \"modelYear\": 2023, // integer (e.g. 2023)\n  \"color\": \"White\", // string ≤ 30\n  \"plateNumber\": \"ABC-1234\", // string (unique)\n  \"codeNumber\": \"1234567\", // string (unique, optional)\n  \"seats\": 4, // integer 1-50\n  \"registrationDocFront\": 1, // uploaded image id (int)\n  \"registrationDocBack\": 2, // uploaded image id (int)\n  \"vehiclePhotoFront\": 3, // uploaded image id (int)\n  \"vehiclePhotoBack\": 4 // uploaded image id (int)\n}"
                     },
                     "url": {
                       "raw": "{{base_url}}/auth/onboarding/vehicle",
@@ -2436,7 +2436,7 @@
                         "vehicle"
                       ]
                     },
-                    "description": "Submit vehicle details with document image IDs.\n\nRequires role `driver`.\n\n**Body fields**\n- `vehicleType` *(string, required)* — Options: `sedan` | `suv` | `van` | `bus` | `hatchback`.\n- `manufacturer` *(string, required)* — e.g. `Toyota`, max 80 chars.\n- `model` *(string, required)* — e.g. `Camry`, max 80 chars.\n- `modelYear` *(number, optional)* — integer between 1900 and 2030.\n- `color` *(string, optional)* — max 30 chars.\n- `plateNumber` *(string, required)* — max 20 chars.\n- `seats` *(number, required)* — integer between 1 and 50.\n- `registrationDocFront` / `registrationDocBack` *(number, required)* — image IDs of registration document front/back.\n- `vehiclePhotoFront` / `vehiclePhotoBack` *(number, required)* — image IDs of vehicle photos front/back."
+                    "description": "Submit vehicle details with document image IDs.\n\nRequires role `driver`.\n\n**Body fields**\n- `vehicleType` *(string, required)* — Options: `sedan` | `suv` | `van` | `bus` | `hatchback`.\n- `manufacturer` *(string, required)* — e.g. `Toyota`, max 80 chars.\n- `model` *(string, required)* — e.g. `Camry`, max 80 chars.\n- `modelYear` *(number, optional)* — within the last 10 years (2016 – 2026).\n- `color` *(string, optional)* — max 30 chars.\n- `plateNumber` *(string, required)* — max 20 chars.\n- `codeNumber` *(string, optional)* — plate code number, unique, max 20 chars.\n- `seats` *(number, required)* — integer between 1 and 50.\n- `registrationDocFront` / `registrationDocBack` *(number, required)* — image IDs of registration document front/back.\n- `vehiclePhotoFront` / `vehiclePhotoBack` *(number, required)* — image IDs of vehicle photos front/back."
                   },
                   "status": "Created",
                   "code": 201,
@@ -2467,7 +2467,7 @@
                     ],
                     "body": {
                       "mode": "raw",
-                      "raw": "{\n  \"vehicleType\": \"sedan\", // \"sedan\" | \"suv\" | \"van\" | \"bus\" | \"hatchback\"\n  \"manufacturer\": \"Toyota\", // string ≤ 80\n  \"model\": \"Camry\", // string ≤ 80\n  \"modelYear\": 2023, // integer (e.g. 2023)\n  \"color\": \"White\", // string ≤ 30\n  \"plateNumber\": \"ABC-1234\", // string (unique)\n  \"seats\": 4, // integer 1-50\n  \"registrationDocFront\": 1, // uploaded image id (int)\n  \"registrationDocBack\": 2, // uploaded image id (int)\n  \"vehiclePhotoFront\": 3, // uploaded image id (int)\n  \"vehiclePhotoBack\": 4 // uploaded image id (int)\n}"
+                      "raw": "{\n  \"vehicleType\": \"sedan\", // \"sedan\" | \"suv\" | \"van\" | \"bus\" | \"hatchback\"\n  \"manufacturer\": \"Toyota\", // string ≤ 80\n  \"model\": \"Camry\", // string ≤ 80\n  \"modelYear\": 2023, // integer (e.g. 2023)\n  \"color\": \"White\", // string ≤ 30\n  \"plateNumber\": \"ABC-1234\", // string (unique)\n  \"codeNumber\": \"1234567\", // string (unique, optional)\n  \"seats\": 4, // integer 1-50\n  \"registrationDocFront\": 1, // uploaded image id (int)\n  \"registrationDocBack\": 2, // uploaded image id (int)\n  \"vehiclePhotoFront\": 3, // uploaded image id (int)\n  \"vehiclePhotoBack\": 4 // uploaded image id (int)\n}"
                     },
                     "url": {
                       "raw": "{{base_url}}/auth/onboarding/vehicle",
@@ -2480,7 +2480,7 @@
                         "vehicle"
                       ]
                     },
-                    "description": "Submit vehicle details with document image IDs.\n\nRequires role `driver`.\n\n**Body fields**\n- `vehicleType` *(string, required)* — Options: `sedan` | `suv` | `van` | `bus` | `hatchback`.\n- `manufacturer` *(string, required)* — e.g. `Toyota`, max 80 chars.\n- `model` *(string, required)* — e.g. `Camry`, max 80 chars.\n- `modelYear` *(number, optional)* — integer between 1900 and 2030.\n- `color` *(string, optional)* — max 30 chars.\n- `plateNumber` *(string, required)* — max 20 chars.\n- `seats` *(number, required)* — integer between 1 and 50.\n- `registrationDocFront` / `registrationDocBack` *(number, required)* — image IDs of registration document front/back.\n- `vehiclePhotoFront` / `vehiclePhotoBack` *(number, required)* — image IDs of vehicle photos front/back."
+                    "description": "Submit vehicle details with document image IDs.\n\nRequires role `driver`.\n\n**Body fields**\n- `vehicleType` *(string, required)* — Options: `sedan` | `suv` | `van` | `bus` | `hatchback`.\n- `manufacturer` *(string, required)* — e.g. `Toyota`, max 80 chars.\n- `model` *(string, required)* — e.g. `Camry`, max 80 chars.\n- `modelYear` *(number, optional)* — within the last 10 years (2016 – 2026).\n- `color` *(string, optional)* — max 30 chars.\n- `plateNumber` *(string, required)* — max 20 chars.\n- `codeNumber` *(string, optional)* — plate code number, unique, max 20 chars.\n- `seats` *(number, required)* — integer between 1 and 50.\n- `registrationDocFront` / `registrationDocBack` *(number, required)* — image IDs of registration document front/back.\n- `vehiclePhotoFront` / `vehiclePhotoBack` *(number, required)* — image IDs of vehicle photos front/back."
                   },
                   "status": "Conflict",
                   "code": 409,

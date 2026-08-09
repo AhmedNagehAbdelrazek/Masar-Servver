@@ -590,6 +590,7 @@ async function submitVehicle(userId, data) {
     modelYear: data.modelYear || null,
     color: data.color || null,
     plateNumber: data.plateNumber,
+    codeNumber: data.codeNumber || null,
     seats: data.seats,
     registrationDocFront: data.registrationDocFront,
     registrationDocBack: data.registrationDocBack,

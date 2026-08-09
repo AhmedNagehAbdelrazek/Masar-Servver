@@ -144,7 +144,15 @@ const onboardingVehicleValidation = [
     .isLength({ max: 80 }).withMessage('Model must be at most 80 characters'),
   body('modelYear')
     .optional()
-    .isInt({ min: 1900, max: 2030 }).withMessage('Invalid model year'),
+    .isInt().withMessage('Model year must be a valid year')
+    .custom((value) => {
+      const currentYear = new Date().getFullYear();
+      const minYear = currentYear - 10;
+      if (value < minYear || value > currentYear) {
+        throw new Error(`Model year must be between ${minYear} and ${currentYear} (within the last 10 years)`);
+      }
+      return true;
+    }),
   body('color')
     .optional()
     .trim()
@@ -153,6 +161,10 @@ const onboardingVehicleValidation = [
     .trim()
     .notEmpty().withMessage('Plate number is required')
     .isLength({ max: 20 }).withMessage('Plate number must be at most 20 characters'),
+  body('codeNumber')
+    .optional()
+    .trim()
+    .isLength({ max: 20 }).withMessage('Code number must be at most 20 characters'),
   body('seats')
     .notEmpty().withMessage('Number of seats is required')
     .isInt({ min: 1, max: 50 }).withMessage('Seats must be between 1 and 50'),

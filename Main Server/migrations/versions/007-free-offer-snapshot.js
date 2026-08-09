@@ -27,8 +27,13 @@ function migrationSteps(queryInterface) {
   ];
 }
 
+var migrationCommands = [
+  { fn: 'addColumn', params: ['driver_subscriptions', 'free_offer', { type: Sequelize.JSONB, allowNull: true }] }
+];
+
 module.exports = {
     pos: 0,
+    migrationCommands,
     up: function (queryInterface, Sequelize) {
         var steps = migrationSteps(queryInterface);
         var index = this.pos;

@@ -16,6 +16,7 @@
     "seed": "node seed.js",
     "db:init": "node -e \"require('./migrations').initMigrations()\"",
     "db:migrate": "node -e \"require('./migrations').runMigrations()\"",
+    "db:migrate:redo": "node -e \"require('./migrations').runMigrations({redo:true})\"",
     "db:migrate:generate": "node migrations/scripts/generate.js",
     "db:migrate:preview": "node migrations/scripts/generate.js --preview",
     "postinstall": "node scripts/patch-auto-migrations.js"

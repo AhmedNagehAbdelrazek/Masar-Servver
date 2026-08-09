@@ -371,6 +371,11 @@ var migrationCommands = [{
                     "unique": true,
                     "allowNull": false
                 },
+                "codeNumber": {
+                    "type": Sequelize.STRING(20),
+                    "field": "code_number",
+                    "allowNull": true
+                },
                 "color": {
                     "type": Sequelize.STRING(30),
                     "field": "color",
@@ -1916,6 +1921,7 @@ var migrationCommands = [{
 
 module.exports = {
     pos: 0,
+    migrationCommands,
     up: function(queryInterface, Sequelize)
     {
         var index = this.pos;

@@ -36,6 +36,10 @@ Vehicle.init(
             allowNull: false,
             unique: true,
         },
+        codeNumber:{ // the plate code number
+            type: DataTypes.STRING(20),
+            allowNull: true,
+        },
         color: {
             type: DataTypes.STRING(30),
             allowNull: true,

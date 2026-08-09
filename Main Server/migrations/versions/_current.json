@@ -111,6 +111,22 @@
                     "field": "last_login_at",
                     "seqType": "Sequelize.DATE"
                 },
+                "totalBalance": {
+                    "allowNull": false,
+                    "defaultValue": {
+                        "value": 0
+                    },
+                    "field": "total_balance",
+                    "seqType": "Sequelize.DECIMAL(10, 2)"
+                },
+                "isInDebt": {
+                    "allowNull": false,
+                    "defaultValue": {
+                        "value": false
+                    },
+                    "field": "is_in_debt",
+                    "seqType": "Sequelize.BOOLEAN"
+                },
                 "createdat": {
                     "allowNull": false,
                     "field": "createdat",
@@ -213,12 +229,6 @@
                     "allowNull": true,
                     "field": "model_year",
                     "seqType": "Sequelize.SMALLINT"
-                },
-                "plateNumber": {
-                    "allowNull": false,
-                    "unique": true,
-                    "field": "plate_number",
-                    "seqType": "Sequelize.STRING(20)"
                 },
                 "color": {
                     "allowNull": true,
@@ -678,7 +688,7 @@
                 "driverInstructions": {
                     "allowNull": true,
                     "field": "driver_instructions",
-                    "seqType": "Sequelize.TEXT"
+                    "seqType": "Sequelize.ARRAY(Sequelize.TEXT)"
                 },
                 "additionalInstructions": {
                     "allowNull": true,
@@ -705,6 +715,32 @@
                     "allowNull": true,
                     "field": "featured_until",
                     "seqType": "Sequelize.DATE"
+                },
+                "isBlockedByBalance": {
+                    "allowNull": false,
+                    "defaultValue": {
+                        "value": false
+                    },
+                    "field": "is_blocked_by_balance",
+                    "seqType": "Sequelize.BOOLEAN"
+                },
+                "isModerated": {
+                    "allowNull": false,
+                    "defaultValue": {
+                        "value": false
+                    },
+                    "field": "is_moderated",
+                    "seqType": "Sequelize.BOOLEAN"
+                },
+                "moderationReason": {
+                    "allowNull": true,
+                    "field": "moderation_reason",
+                    "seqType": "Sequelize.TEXT"
+                },
+                "moderatedBy": {
+                    "allowNull": true,
+                    "field": "moderated_by",
+                    "seqType": "Sequelize.UUID"
                 },
                 "createdat": {
                     "allowNull": false,
@@ -2149,7 +2185,346 @@
                 }
             },
             "indexes": []
+        },
+        "subscription_plans": {
+            "tableName": "subscription_plans",
+            "schema": {
+                "id": {
+                    "defaultValue": {
+                        "internal": true,
+                        "value": "Sequelize.UUIDV4"
+                    },
+                    "primaryKey": true,
+                    "field": "id",
+                    "seqType": "Sequelize.UUID"
+                },
+                "name": {
+                    "allowNull": false,
+                    "field": "name",
+                    "seqType": "Sequelize.STRING(100)"
+                },
+                "periodDays": {
+                    "allowNull": false,
+                    "field": "period_days",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "percentageCut": {
+                    "allowNull": false,
+                    "defaultValue": {
+                        "value": 0
+                    },
+                    "field": "percentage_cut",
+                    "seqType": "Sequelize.DECIMAL(5, 2)"
+                },
+                "cost": {
+                    "allowNull": false,
+                    "defaultValue": {
+                        "value": 0
+                    },
+                    "field": "cost",
+                    "seqType": "Sequelize.DECIMAL(10, 2)"
+                },
+                "status": {
+                    "allowNull": true,
+                    "field": "status",
+                    "seqType": "Sequelize.STRING(30)"
+                },
+                "features": {
+                    "allowNull": false,
+                    "defaultValue": {
+                        "value": []
+                    },
+                    "field": "features",
+                    "seqType": "Sequelize.JSONB"
+                },
+                "isFree": {
+                    "allowNull": false,
+                    "defaultValue": {
+                        "value": false
+                    },
+                    "field": "is_free",
+                    "seqType": "Sequelize.BOOLEAN"
+                },
+                "freeOffer": {
+                    "allowNull": true,
+                    "field": "free_offer",
+                    "seqType": "Sequelize.JSONB"
+                },
+                "isActive": {
+                    "allowNull": false,
+                    "defaultValue": {
+                        "value": true
+                    },
+                    "field": "is_active",
+                    "seqType": "Sequelize.BOOLEAN"
+                },
+                "createdat": {
+                    "allowNull": false,
+                    "field": "createdat",
+                    "seqType": "Sequelize.DATE"
+                },
+                "updatedat": {
+                    "allowNull": false,
+                    "field": "updatedat",
+                    "seqType": "Sequelize.DATE"
+                }
+            },
+            "indexes": {
+                "bb43a89779987bc9558c77d1a8639707922a4a14": {
+                    "name": "idx_plans_active",
+                    "fields": [
+                        "is_active"
+                    ],
+                    "options": {
+                        "indexName": "idx_plans_active"
+                    }
+                }
+            }
+        },
+        "driver_subscriptions": {
+            "tableName": "driver_subscriptions",
+            "schema": {
+                "id": {
+                    "defaultValue": {
+                        "internal": true,
+                        "value": "Sequelize.UUIDV4"
+                    },
+                    "primaryKey": true,
+                    "field": "id",
+                    "seqType": "Sequelize.UUID"
+                },
+                "driverId": {
+                    "allowNull": false,
+                    "field": "driver_id",
+                    "seqType": "Sequelize.UUID"
+                },
+                "planId": {
+                    "allowNull": false,
+                    "field": "plan_id",
+                    "seqType": "Sequelize.UUID"
+                },
+                "planName": {
+                    "allowNull": false,
+                    "field": "plan_name",
+                    "seqType": "Sequelize.STRING(100)"
+                },
+                "planPeriodDays": {
+                    "allowNull": false,
+                    "field": "plan_period_days",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "planPercentageCut": {
+                    "allowNull": false,
+                    "field": "plan_percentage_cut",
+                    "seqType": "Sequelize.DECIMAL(5, 2)"
+                },
+                "planCost": {
+                    "allowNull": false,
+                    "field": "plan_cost",
+                    "seqType": "Sequelize.DECIMAL(10, 2)"
+                },
+                "balance": {
+                    "allowNull": false,
+                    "defaultValue": {
+                        "value": 0
+                    },
+                    "field": "balance",
+                    "seqType": "Sequelize.DECIMAL(10, 2)"
+                },
+                "screenshotId": {
+                    "allowNull": true,
+                    "references": {
+                        "model": "uploaded_images",
+                        "key": "id"
+                    },
+                    "field": "screenshot_id",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "paymentMethod": {
+                    "allowNull": false,
+                    "field": "payment_method",
+                    "seqType": "Sequelize.JSONB"
+                },
+                "adminNotes": {
+                    "allowNull": true,
+                    "field": "admin_notes",
+                    "seqType": "Sequelize.TEXT"
+                },
+                "status": {
+                    "allowNull": false,
+                    "defaultValue": {
+                        "value": "pending_approval"
+                    },
+                    "field": "status",
+                    "seqType": "Sequelize.ENUM('pending_approval', 'active', 'rejected', 'cancelled', 'expired')"
+                },
+                "approvedAt": {
+                    "allowNull": true,
+                    "field": "approved_at",
+                    "seqType": "Sequelize.DATE"
+                },
+                "activatedAt": {
+                    "allowNull": true,
+                    "field": "activated_at",
+                    "seqType": "Sequelize.DATE"
+                },
+                "expiresAt": {
+                    "allowNull": true,
+                    "field": "expires_at",
+                    "seqType": "Sequelize.DATE"
+                },
+                "freeTripsUsed": {
+                    "allowNull": false,
+                    "defaultValue": {
+                        "value": 0
+                    },
+                    "field": "free_trips_used",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "freeOffer": {
+                    "allowNull": true,
+                    "field": "free_offer",
+                    "seqType": "Sequelize.JSONB"
+                },
+                "createdat": {
+                    "allowNull": false,
+                    "field": "createdat",
+                    "seqType": "Sequelize.DATE"
+                },
+                "updatedat": {
+                    "allowNull": false,
+                    "field": "updatedat",
+                    "seqType": "Sequelize.DATE"
+                },
+                "driver_id": {
+                    "allowNull": true,
+                    "references": {
+                        "model": "users",
+                        "key": "id"
+                    },
+                    "onDelete": "SET NULL",
+                    "onUpdate": "CASCADE",
+                    "field": "driver_id",
+                    "seqType": "Sequelize.UUID"
+                },
+                "plan_id": {
+                    "allowNull": true,
+                    "references": {
+                        "model": "subscription_plans",
+                        "key": "id"
+                    },
+                    "onDelete": "SET NULL",
+                    "onUpdate": "CASCADE",
+                    "field": "plan_id",
+                    "seqType": "Sequelize.UUID"
+                },
+                "screenshot_id": {
+                    "allowNull": true,
+                    "references": {
+                        "model": "uploaded_images",
+                        "key": "id"
+                    },
+                    "onDelete": "SET NULL",
+                    "onUpdate": "CASCADE",
+                    "field": "screenshot_id",
+                    "seqType": "Sequelize.INTEGER"
+                }
+            },
+            "indexes": {
+                "fe3893e894e8a1ab9ff3deb84b7cbfec41dbcc9f": {
+                    "name": "idx_subscriptions_driver",
+                    "fields": [
+                        "driver_id",
+                        "status"
+                    ],
+                    "options": {
+                        "indexName": "idx_subscriptions_driver"
+                    }
+                },
+                "8c0eb1caa30960363aed759426dc8249be6d5da5": {
+                    "name": "idx_subscriptions_plan",
+                    "fields": [
+                        "plan_id"
+                    ],
+                    "options": {
+                        "indexName": "idx_subscriptions_plan"
+                    }
+                },
+                "048ceb674529f9a6828f134eb4e8a0e9974a4478": {
+                    "name": "idx_subscriptions_expiry",
+                    "fields": [
+                        "status",
+                        "expires_at"
+                    ],
+                    "options": {
+                        "indexName": "idx_subscriptions_expiry"
+                    }
+                }
+            }
+        },
+        "payment_methods": {
+            "tableName": "payment_methods",
+            "schema": {
+                "id": {
+                    "defaultValue": {
+                        "internal": true,
+                        "value": "Sequelize.UUIDV4"
+                    },
+                    "primaryKey": true,
+                    "field": "id",
+                    "seqType": "Sequelize.UUID"
+                },
+                "name": {
+                    "allowNull": false,
+                    "field": "name",
+                    "seqType": "Sequelize.STRING(100)"
+                },
+                "accountNumber": {
+                    "allowNull": false,
+                    "field": "account_number",
+                    "seqType": "Sequelize.STRING(50)"
+                },
+                "type": {
+                    "allowNull": false,
+                    "field": "type",
+                    "seqType": "Sequelize.ENUM('bank_account', 'e-wallet', 'mobile_money')"
+                },
+                "email": {
+                    "allowNull": true,
+                    "field": "email",
+                    "seqType": "Sequelize.STRING(100)"
+                },
+                "isActive": {
+                    "allowNull": false,
+                    "defaultValue": {
+                        "value": true
+                    },
+                    "field": "is_active",
+                    "seqType": "Sequelize.BOOLEAN"
+                },
+                "createdat": {
+                    "allowNull": false,
+                    "field": "createdat",
+                    "seqType": "Sequelize.DATE"
+                },
+                "updatedat": {
+                    "allowNull": false,
+                    "field": "updatedat",
+                    "seqType": "Sequelize.DATE"
+                }
+            },
+            "indexes": {
+                "df0f78014b44ef01cd9ec528844c08670140ed8e": {
+                    "name": "idx_payment_methods_active",
+                    "fields": [
+                        "is_active"
+                    ],
+                    "options": {
+                        "indexName": "idx_payment_methods_active"
+                    }
+                }
+            }
         }
     },
-    "revision": 3
+    "revision": 10
 }

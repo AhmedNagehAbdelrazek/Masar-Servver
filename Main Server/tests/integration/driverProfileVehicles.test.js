@@ -67,6 +67,7 @@ beforeEach(async () => {
     vehicleType: 'sedan',
     modelYear: 2022,
     plateNumber: '12-34567',
+    codeNumber: 'CODE-100',
     color: 'White',
     seats: 4,
     isVerified: true,
@@ -80,6 +81,7 @@ beforeEach(async () => {
     vehicleType: 'sedan',
     modelYear: 2021,
     plateNumber: '77-00000',
+    codeNumber: 'CODE-200',
     color: 'Black',
     seats: 4,
     isVerified: false,
@@ -239,6 +241,26 @@ describe('PUT /api/vehicles/:vehicle_id', () => {
       .send({ plate_number: '77-00000' });
 
     expect(res.status).toBe(409);
+  });
+
+  it('should allow a code number shared with another vehicle (not unique)', async () => {
+    const res = await getAgent()
+      .put(`/api/vehicles/${VEHICLE_ID}`)
+      .set('Authorization', `Bearer ${driverToken}`)
+      .send({ code_number: 'CODE-200' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.vehicle.code_number).toBe('CODE-200');
+  });
+
+  it('should update the code number', async () => {
+    const res = await getAgent()
+      .put(`/api/vehicles/${VEHICLE_ID}`)
+      .set('Authorization', `Bearer ${driverToken}`)
+      .send({ code_number: 'CODE-999' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.vehicle.code_number).toBe('CODE-999');
   });
 
   it('should return 404 for a nonexistent vehicle', async () => {

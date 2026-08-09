@@ -122,6 +122,7 @@ const getProfile = async (req, res, next) => {
           vehicle_type: v.vehicleType,
           model_year: v.modelYear,
           plate_number: v.plateNumber,
+          code_number: v.codeNumber,
           color: v.color,
           seats: v.seats,
           is_verified: v.isVerified,

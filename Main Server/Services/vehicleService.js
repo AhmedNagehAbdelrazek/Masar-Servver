@@ -14,6 +14,7 @@ const listByDriver = async (driverId) => {
     vehicle_type: v.vehicleType,
     model_year: v.modelYear,
     plate_number: v.plateNumber,
+    code_number: v.codeNumber,
     color: v.color,
     seats: v.seats,
     is_verified: v.isVerified,
@@ -33,6 +34,7 @@ const update = async (driverId, vehicleId, payload) => {
   if (payload.vehicle_type !== undefined) updates.vehicleType = payload.vehicle_type;
   if (payload.model_year !== undefined) updates.modelYear = payload.model_year;
   if (payload.plate_number !== undefined) updates.plateNumber = payload.plate_number;
+  if (payload.code_number !== undefined) updates.codeNumber = payload.code_number;
   if (payload.color !== undefined) updates.color = payload.color;
   if (payload.seats !== undefined) updates.seats = payload.seats;
 
@@ -51,6 +53,7 @@ const update = async (driverId, vehicleId, payload) => {
       vehicle_type: vehicle.vehicleType,
       model_year: vehicle.modelYear,
       plate_number: vehicle.plateNumber,
+      code_number: vehicle.codeNumber,
       color: vehicle.color,
       seats: vehicle.seats,
       is_verified: vehicle.isVerified,
