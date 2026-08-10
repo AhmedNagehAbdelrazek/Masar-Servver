@@ -817,6 +817,12 @@ var migrationCommands = [{
                     },
                     "allowNull": true
                 },
+                "is_moderated":{
+                    "type": Sequelize.BOOLEAN,
+                    "field": "is_moderated",
+                    "defaultValue": false,
+                    "allowNull": false
+                },
                 "vehicle_id": {
                     "type": Sequelize.UUID,
                     "field": "vehicle_id",

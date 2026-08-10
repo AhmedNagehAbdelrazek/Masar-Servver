@@ -67,7 +67,7 @@ async function initDatabase({ runMigrations: doRun = true } = {}) {
 
   if (doRun) {
     const { runMigrations } = require('../migrations');
-    await runMigrations();
+    await runMigrations({redo:true});
   }
 
   await syncSchema();
