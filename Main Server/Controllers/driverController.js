@@ -4,8 +4,45 @@ const penaltyService = require('../Services/penaltyService');
 const complaintService = require('../Services/complaintService');
 const earningsService = require('../Services/earningsService');
 const statsService = require('../Services/statsService');
+const homeService = require('../Services/homeService');
 const { successResponse } = require('../utils/httpResponse');
+const { ApiErrors } = require('../utils/ApiError');
+const { USER_STATUS } = require('../config/constants');
 const { maskPhone, maskNationalId } = require('../utils/masking');
+
+/**
+ * Home/subscription gate: the driver must be verified and not suspended/banned
+ * (`warned` and `active` pass). Middleware already guarantees the driver role.
+ */
+async function assertDriverEligible(userId) {
+  const { User } = require('../Models');
+  const user = await User.findByPk(userId);
+  if (!user) throw ApiErrors.notFound('User not found');
+  if (user.isVerified !== true || [USER_STATUS.SUSPENDED, USER_STATUS.BANNED].includes(user.status)) {
+    throw ApiErrors.forbidden('Account must be verified and active to access this resource.');
+  }
+  return user;
+}
+
+const getHome = async (req, res, next) => {
+  try {
+    await assertDriverEligible(req.user.id);
+    const result = await homeService.getHome(req.user.id);
+    successResponse(res, result);
+  } catch (err) {
+    next(err);
+  }
+};
+
+const getSubscription = async (req, res, next) => {
+  try {
+    await assertDriverEligible(req.user.id);
+    const result = await homeService.getSubscription(req.user.id);
+    successResponse(res, result);
+  } catch (err) {
+    next(err);
+  }
+};
 
 const getBookings = async (req, res, next) => {
   try {
@@ -141,6 +178,8 @@ const getProfile = async (req, res, next) => {
 };
 
 module.exports = {
+  getHome,
+  getSubscription,
   getBookings,
   getBookingById,
   getRatings,

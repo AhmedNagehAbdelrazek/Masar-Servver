@@ -4320,6 +4320,235 @@
               ]
             },
             {
+              "name": "Get Driver Home Screen",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "exec": [
+                      "pm.environment.get('access_token') ? pm.request.headers.add({ key: 'Authorization', value: 'Bearer ' + pm.environment.get('access_token') }) : console.warn('No access_token set');"
+                    ],
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Responds successfully', function () {",
+                      "    pm.response.to.be.oneOf([200, 201]);",
+                      "});",
+                      "pm.test('Home payload has driver, subscription, next_trip, summary, recent_bookings', function () {",
+                      "    const body = pm.response.json();",
+                      "    pm.expect(body).to.be.an('object');",
+                      "    pm.expect(body.driver).to.be.an('object');",
+                      "    pm.expect(body.next_trip).to.exist;",
+                      "    pm.expect(body.summary).to.be.an('object');",
+                      "    pm.expect(body.recent_bookings).to.be.an('array');",
+                      "});"
+                    ],
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/driver/home",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "driver",
+                    "home"
+                  ]
+                },
+                "description": "Combined driver home screen payload: profile, subscription, next trip with passengers, summary stats, recent bookings.\n\nRequires a verified, non-suspended/banned driver (403 otherwise). Cached in Redis for 30s; invalidated on trip start."
+              },
+              "response": [
+                {
+                  "name": "Success",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{base_url}}/driver/home",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "driver",
+                        "home"
+                      ]
+                    },
+                    "description": "Combined driver home screen payload."
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json",
+                      "type": "text"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n  \"driver\": {\n    \"driver_id\": \"00000000-0000-0000-0000-000000000001\",\n    \"full_name\": \"Ahmad Al\",\n    \"profile_picture_url\": null,\n    \"rating\": 4.7,\n    \"total_trips_completed\": 12,\n    \"phone\": \"+962790000000\"\n  },\n  \"subscription\": {\n    \"tier\": \"pro\",\n    \"price\": 16,\n    \"currency\": \"JOD\",\n    \"expires_at\": \"2026-08-30T23:59:59.000Z\",\n    \"days_remaining\": 19\n  },\n  \"next_trip\": {\n    \"trip_id\": \"t_456\",\n    \"origin_city\": \"Amman\",\n    \"origin_area\": null,\n    \"destination_city\": \"Irbid\",\n    \"destination_area\": null,\n    \"departure_time\": \"2026-08-11T08:30:00.000Z\",\n    \"fare_per_seat\": 5,\n    \"currency\": \"JOD\",\n    \"total_seats\": 4,\n    \"available_seats\": 1,\n    \"booked_seats_count\": 1,\n    \"vehicle\": {\n      \"make_model\": \"Toyota Camry\",\n      \"year\": 2023,\n      \"plate_number\": \"12345\",\n      \"color\": \"White\"\n    },\n    \"status\": \"published\",\n    \"passengers\": [\n      {\n        \"booking_id\": \"b_789\",\n        \"passenger_name\": \"محمد خالد\",\n        \"seats_booked\": 1,\n        \"seat_numbers\": [2]\n      }\n    ],\n    \"can_start\": true\n  },\n  \"summary\": {\n    \"completed_trips_today\": 2,\n    \"reserved_seats_for_next_trip\": 1,\n    \"trips_today\": 3\n  },\n  \"recent_bookings\": [\n    {\n      \"booking_id\": \"b_789\",\n      \"trip\": {\n        \"trip_id\": \"t_456\",\n        \"origin_city\": \"Amman\",\n        \"destination_city\": \"Irbid\",\n        \"departure_time\": \"2026-08-11T08:30:00.000Z\"\n      },\n      \"passenger_name\": \"محمد خالد\",\n      \"seats_booked\": 1,\n      \"seat_numbers\": [2],\n      \"agreed_fare\": 5,\n      \"status\": \"confirmed\",\n      \"created_at\": \"2026-08-10T10:00:00.000Z\"\n    }\n  ]\n}"
+                },
+                {
+                  "name": "Forbidden",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{base_url}}/driver/home",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "driver",
+                        "home"
+                      ]
+                    },
+                    "description": "Combined driver home screen payload."
+                  },
+                  "status": "Forbidden",
+                  "code": 403,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json",
+                      "type": "text"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n  \"status\": \"error\",\n  \"message\": \"Account must be verified and active to access this resource.\",\n  \"code\": \"FORBIDDEN\"\n}"
+                }
+              ]
+            },
+            {
+              "name": "Get Driver Subscription",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "exec": [
+                      "pm.environment.get('access_token') ? pm.request.headers.add({ key: 'Authorization', value: 'Bearer ' + pm.environment.get('access_token') }) : console.warn('No access_token set');"
+                    ],
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Responds successfully', function () {",
+                      "    pm.response.to.be.oneOf([200, 201]);",
+                      "});",
+                      "pm.test('Subscription payload shape', function () {",
+                      "    const body = pm.response.json();",
+                      "    pm.expect(body).to.be.an('object');",
+                      "    pm.expect(body.history).to.be.an('array');",
+                      "    if (body.subscription) {",
+                      "        pm.expect(body.subscription.tier).to.be.a('string');",
+                      "        pm.expect(body.subscription.currency).to.equal('JOD');",
+                      "    }",
+                      "});"
+                    ],
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/driver/subscription",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "driver",
+                    "subscription"
+                  ]
+                },
+                "description": "Current subscription plan (tier/price/currency/expiry/days_remaining/balance) plus the driver's subscription history.\n\nRequires a verified, non-suspended/banned driver (403 otherwise)."
+              },
+              "response": [
+                {
+                  "name": "Success",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{base_url}}/driver/subscription",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "driver",
+                        "subscription"
+                      ]
+                    },
+                    "description": "Current subscription plan + history."
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json",
+                      "type": "text"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n  \"subscription\": {\n    \"tier\": \"pro\",\n    \"price\": 16,\n    \"currency\": \"JOD\",\n    \"expires_at\": \"2026-08-30T23:59:59.000Z\",\n    \"days_remaining\": 19,\n    \"balance\": 12.4,\n    \"plan_name\": \"Pro\"\n  },\n  \"history\": [\n    {\n      \"id\": \"s_1\",\n      \"plan_name\": \"Pro\",\n      \"period_days\": 30,\n      \"balance\": 12.4,\n      \"status\": \"active\",\n      \"created_at\": \"2026-07-16T10:00:00.000Z\",\n      \"expires_at\": \"2026-08-30T23:59:59.000Z\"\n    }\n  ]\n}"
+                },
+                {
+                  "name": "Forbidden",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{base_url}}/driver/subscription",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "driver",
+                        "subscription"
+                      ]
+                    },
+                    "description": "Current subscription plan + history."
+                  },
+                  "status": "Forbidden",
+                  "code": 403,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json",
+                      "type": "text"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n  \"status\": \"error\",\n  \"message\": \"Account must be verified and active to access this resource.\",\n  \"code\": \"FORBIDDEN\"\n}"
+                }
+              ]
+            },
+            {
               "name": "Get Earnings Summary",
               "event": [
                 {
