@@ -147,6 +147,16 @@ const TEMPLATES = {
       body: 'Your {subject} could not be verified. Reason: {reason}. Please resubmit the correct documents.',
     },
   },
+  ADMIN_VERIFICATION_NEW: {
+    ar: {
+      title: 'طلب توثيق جديد',
+      body: 'قام السائق {driver_name} بإرسال طلب توثيق جديد للمراجعة.',
+    },
+    en: {
+      title: 'New verification request',
+      body: 'Driver {driver_name} submitted a new verification request for review.',
+    },
+  },
 };
 
 function interpolate(template, vars = {}) {

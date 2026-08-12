@@ -136,6 +136,23 @@ const PAYMENT_METHOD_TYPE = {
   MOBILE_MONEY: 'mobile_money',
 };
 
+const VERIFICATION_STATUS = {
+  UNVERIFIED: 'unverified',
+  PENDING: 'pending',
+  REJECTED: 'rejected',
+  APPROVED: 'approved',
+};
+
+const VERIFICATION_FIELD_KEYS = [
+  'national_id',
+  'license',
+  'personal_photo',
+  'vehicle_registration',
+  'vehicle_photo',
+  'vehicle_details',
+  'personal_details',
+];
+
 const FREE_OFFER_TYPE = {
   TRIPS: 'trips',
   CREDIT: 'credit',
@@ -188,6 +205,8 @@ module.exports = {
   SUBSCRIPTION_STATUS,
   PLAN_STATUS,
   PAYMENT_METHOD_TYPE,
+  VERIFICATION_STATUS,
+  VERIFICATION_FIELD_KEYS,
   FREE_OFFER_TYPE,
   PAGINATION,
   ADMIN_RESOURCES,

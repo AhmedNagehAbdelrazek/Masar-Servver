@@ -582,6 +582,12 @@ async function submitVehicle(userId, data) {
     throw ApiErrors.conflict('A vehicle with this plate number already exists');
   }
 
+  // One vehicle per driver
+  const ownedVehicle = await Vehicle.findOne({ where: { driverId: userId } });
+  if (ownedVehicle) {
+    throw ApiErrors.validation('You already have a registered vehicle. Update it instead.');
+  }
+
   const vehicle = await Vehicle.create({
     driverId: userId,
     vehicleType: data.vehicleType,

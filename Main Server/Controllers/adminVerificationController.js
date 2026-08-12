@@ -1,10 +1,10 @@
 const verificationService = require('../Services/verificationService');
-const { successResponse } = require('../utils/httpResponse');
+const { successResponse, envelopeResponse } = require('../utils/httpResponse');
 
 const getQueue = async (req, res, next) => {
   try {
     const result = await verificationService.getQueue(req.query);
-    successResponse(res, result);
+    envelopeResponse(res, result);
   } catch (err) {
     next(err);
   }
@@ -21,7 +21,12 @@ const approveDriver = async (req, res, next) => {
 
 const rejectDriver = async (req, res, next) => {
   try {
-    const result = await verificationService.rejectDriver(req.user.id, req.params.driver_id, req.body.reason);
+    const result = await verificationService.rejectDriver(
+      req.user.id,
+      req.params.driver_id,
+      req.body.reason,
+      req.body.fields_to_fix
+    );
     successResponse(res, result);
   } catch (err) {
     next(err);
@@ -39,7 +44,12 @@ const approveVehicle = async (req, res, next) => {
 
 const rejectVehicle = async (req, res, next) => {
   try {
-    const result = await verificationService.rejectVehicle(req.user.id, req.params.vehicle_id, req.body.reason);
+    const result = await verificationService.rejectVehicle(
+      req.user.id,
+      req.params.vehicle_id,
+      req.body.reason,
+      req.body.fields_to_fix
+    );
     successResponse(res, result);
   } catch (err) {
     next(err);

@@ -230,12 +230,6 @@
                     "field": "model_year",
                     "seqType": "Sequelize.SMALLINT"
                 },
-                "plateNumber": {
-                    "allowNull": false,
-                    "unique": true,
-                    "field": "plate_number",
-                    "seqType": "Sequelize.STRING(20)"
-                },
                 "color": {
                     "allowNull": true,
                     "field": "color",
@@ -2532,5 +2526,5 @@
             }
         }
     },
-    "revision": 9
+    "revision": 12
 }

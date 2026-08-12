@@ -3,6 +3,7 @@ const User = require('./User');
 const UploadedImage = require('./UploadedImage');
 const Vehicle = require('./Vehicle');
 const DriverProfile = require('./DriverProfile');
+const VerificationStatusChange = require('./VerificationStatusChange');
 const PassengerProfile = require('./PassengerProfile');
 const Trip = require('./Trip');
 const TripAttribute = require('./TripAttribute');
@@ -32,8 +33,12 @@ DriverProfile.belongsTo(User, { foreignKey: 'driver_id', as: 'driver' });
 User.hasOne(PassengerProfile, { foreignKey: 'passenger_id', as: 'passengerProfile' });
 PassengerProfile.belongsTo(User, { foreignKey: 'passenger_id', as: 'passenger' });
 
-User.hasMany(Vehicle, { foreignKey: 'driver_id', as: 'vehicles' });
-Vehicle.belongsTo(User, { foreignKey: 'driver_id', as: 'driver' });
+User.hasOne(Vehicle, { foreignKey: 'driverId', as: 'vehicle' });
+Vehicle.belongsTo(User, { foreignKey: 'driverId', as: 'driver' });
+
+User.hasMany(VerificationStatusChange, { foreignKey: 'driver_id', as: 'verificationStatusChanges' });
+VerificationStatusChange.belongsTo(User, { foreignKey: 'driver_id', as: 'driver' });
+VerificationStatusChange.belongsTo(User, { foreignKey: 'changed_by', as: 'changedByUser' });
 
 User.hasMany(Trip, { foreignKey: 'driver_id', as: 'trips' });
 Trip.belongsTo(User, { foreignKey: 'driver_id', as: 'driver' });
@@ -127,6 +132,7 @@ module.exports = {
   UploadedImage,
   Vehicle,
   DriverProfile,
+  VerificationStatusChange,
   PassengerProfile,
   Trip,
   TripAttribute,
