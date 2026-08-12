@@ -1,10 +1,11 @@
 {
   "info": {
-    "_postman_id": "1e71f58b-2606-4341-9411-2bd20399c38d",
+    "_postman_id": "3c9af235-e3c3-4606-a0e2-9d02953151e6",
     "name": "Masar API",
     "description": "Complete API collection for the Masar ride-sharing platform (Driver Flow Audit reorganization, 2026-08-01).\n\nBase URL: {{base_url}} (default http://localhost:8000/api).\n\n## Folder organization\n- **Auth (shared)** — registration, login, tokens, forgot password, current user.\n- **Driver** — Profile & Vehicle, Verification (spec 006: status / submit / resubmit), Trip Management, Dashboard, Bookings, Communication, Ratings & Reviews, Complaints, Penalties, Notifications, Subscription & Earnings.\n- **Passenger** — Trip Discovery, Booking, Tracking, Ratings, Complaints, Request Board, Favorites.\n- **Admin** — Subscription Management, Verification Queue, Users Management, Trip Moderation, Arbitration, Penalties, Reports & Analytics.\n\n## Notes\n- Requests marked **PROPOSED** (in the description) are not implemented yet; their response examples are proposed designs.\n- Every request carries a success + error example.\n- Verification endpoints use the `{ \"status\": \"success\", \"data\": {...} }` envelope; admin approve/reject return the raw `{ \"driver_id\" | \"vehicle_id\", ... }` payload.\n- Token-setting tests on registration/login flows populate {{access_token}}/{{refresh_token}} automatically.\n- Error envelope: `{ \"status\": \"error\", \"message\": \"...\", \"code\": \"...\" }`.\n\n## Free Plan\n- The free plan is **automatically assigned** to every new driver at signup — no manual subscription required.\n- Drivers **cannot** subscribe to the free plan manually (`422 FREE_PLAN_NOT_SUBSCRIBABLE`).\n- The admin can create/update/deactivate the free plan via Admin > Subscription Management.\n- The free plan's `free_offer` configures the number of free trips (`{ \"type\": \"trips\", \"value\": N }`).\n- Once free trips are exhausted, the driver must subscribe to a paid plan to continue.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "_exporter_id": "28639752"
+    "_exporter_id": "28639752",
+    "_collection_link": "https://go.postman.co/collection/28639752-3c9af235-e3c3-4606-a0e2-9d02953151e6?source=collection_link"
   },
   "item": [
     {
@@ -650,7 +651,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "// Driver - account\n\n{\n  \"phone\": \"+962791234565\", // full phone with country code\n  \"password\": \"NewPass@1234\"\n}\n\n// Admin - account\n\n// {\n//   \"phone\": \"+962700000099\", // full phone with country code\n//   \"password\": \"93k40@87UR!gY\"\n// }"
+                  "raw": "// Driver - account\n\n{\n  \"phone\": \"+962791234565\", // full phone with country code\n  \"password\": \"Test@1234\"\n}\n\n// Admin - account\n\n// {\n//   \"phone\": \"+962700000099\", // full phone with country code\n//   \"password\": \"93k40@87UR!gY\"\n// }"
                 },
                 "url": {
                   "raw": "{{base_url}}/auth/login",
@@ -1789,6 +1790,494 @@
           "name": "Profile & Vehicle",
           "item": [
             {
+              "name": "Verification",
+              "item": [
+                {
+                  "name": "Get Verification Status",
+                  "event": [
+                    {
+                      "listen": "prerequest",
+                      "script": {
+                        "exec": [
+                          "pm.environment.get('access_token') ? pm.request.headers.add({ key: 'Authorization', value: 'Bearer ' + pm.environment.get('access_token') }) : console.warn('No access_token set');"
+                        ],
+                        "type": "text/javascript",
+                        "packages": {},
+                        "requests": {}
+                      }
+                    },
+                    {
+                      "listen": "test",
+                      "script": {
+                        "exec": [
+                          "pm.test('Responds successfully', function () {",
+                          "    pm.response.to.be.oneOf([200, 201]);",
+                          "});",
+                          "pm.test('Returns a JSON body', function () {",
+                          "    pm.expect(pm.response.json()).to.be.an('object');",
+                          "});"
+                        ],
+                        "type": "text/javascript",
+                        "packages": {},
+                        "requests": {}
+                      }
+                    }
+                  ],
+                  "request": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      },
+                      {
+                        "key": "Authorization",
+                        "value": "Bearer {{access_token}}"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{base_url}}/driver/verification-status",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "driver",
+                        "verification-status"
+                      ]
+                    },
+                    "description": "Check the driver's verification state and what the driver UI should show.\n\nRequires role `driver`.\n\n`data.status` fields\n- `value` — one of `unverified` | `pending` | `rejected` | `approved`\n- `can_edit` — `false` while pending or approved (locked); `true` when unverified/rejected so the driver can (re)submit\n- `submitted_at` / `rejected_at` / `rejection_reason` / `fields_to_fix`\n\nWhen `rejected`, `data.driver` / `data.vehicle` return the latest submission values so the form can be pre-populated for resubmit.\n\n**Note**: `fields_to_fix` uses stable keys — `national_id`, `license`, `personal_photo`, `vehicle_registration`, `vehicle_photo`, `vehicle_details`, `personal_details`.\n\n**Success envelope**: `{ \"status\": \"success\", \"data\": { ... } }`."
+                  },
+                  "response": [
+                    {
+                      "name": "Success (rejected - resubmit allowed)",
+                      "originalRequest": {
+                        "method": "GET",
+                        "header": [
+                          {
+                            "key": "Content-Type",
+                            "value": "application/json"
+                          },
+                          {
+                            "key": "Authorization",
+                            "value": "Bearer {{access_token}}"
+                          }
+                        ],
+                        "url": {
+                          "raw": "{{base_url}}/driver/verification-status",
+                          "host": [
+                            "{{base_url}}"
+                          ],
+                          "path": [
+                            "driver",
+                            "verification-status"
+                          ]
+                        },
+                        "description": "Check the driver's verification state and what the driver UI should show.\n\nRequires role `driver`.\n\n`data.status` fields\n- `value` — one of `unverified` | `pending` | `rejected` | `approved`\n- `can_edit` — `false` while pending or approved (locked); `true` when unverified/rejected so the driver can (re)submit\n- `submitted_at` / `rejected_at` / `rejection_reason` / `fields_to_fix`\n\nWhen `rejected`, `data.driver` / `data.vehicle` return the latest submission values so the form can be pre-populated for resubmit.\n\n**Note**: `fields_to_fix` uses stable keys — `national_id`, `license`, `personal_photo`, `vehicle_registration`, `vehicle_photo`, `vehicle_details`, `personal_details`.\n\n**Success envelope**: `{ \"status\": \"success\", \"data\": { ... } }`."
+                      },
+                      "status": "OK",
+                      "code": 200,
+                      "_postman_previewlanguage": "json",
+                      "header": [
+                        {
+                          "key": "Content-Type",
+                          "value": "application/json",
+                          "type": "text"
+                        }
+                      ],
+                      "cookie": [],
+                      "body": "{\n  \"status\": \"success\",\n  \"data\": {\n    \"status\": {\n      \"value\": \"rejected\",\n      \"can_edit\": true,\n      \"submitted_at\": \"2026-08-01T09:30:00.000Z\",\n      \"rejected_at\": \"2026-08-09T14:00:00.000Z\",\n      \"rejection_reason\": \"الوثائق غير واضحة\",\n      \"fields_to_fix\": [\"license\", \"vehicle_photo\"]\n    },\n    \"driver\": {\n      \"full_name\": \"Ali Ahmed\",\n      \"national_id\": \"1234567890\",\n      \"license_number\": \"L-12345\",\n      \"license_expiry\": \"2028-06-30\",\n      \"user_identification_front\": 101,\n      \"user_identification_back\": 102,\n      \"lincese_front\": 103,\n      \"lincese_back\": 104,\n      \"personal_image_with_id\": 105\n    },\n    \"vehicle\": {\n      \"id\": \"vehicle-uuid\",\n      \"manufacturer\": \"Toyota\",\n      \"model\": \"Camry\",\n      \"vehicle_type\": \"sedan\",\n      \"model_year\": 2022,\n      \"plate_number\": \"ABC-123\",\n      \"code_number\": \"88-99\",\n      \"color\": \"white\",\n      \"seats\": 4,\n      \"registration_doc_front\": 106,\n      \"registration_doc_back\": 107,\n      \"vehicle_photo_front\": 108,\n      \"vehicle_photo_back\": 109\n    }\n  }\n}"
+                    },
+                    {
+                      "name": "Unauthorized",
+                      "originalRequest": {
+                        "method": "GET",
+                        "header": [
+                          {
+                            "key": "Content-Type",
+                            "value": "application/json"
+                          },
+                          {
+                            "key": "Authorization",
+                            "value": "Bearer {{access_token}}"
+                          }
+                        ],
+                        "url": {
+                          "raw": "{{base_url}}/driver/verification-status",
+                          "host": [
+                            "{{base_url}}"
+                          ],
+                          "path": [
+                            "driver",
+                            "verification-status"
+                          ]
+                        },
+                        "description": "Check the driver's verification state and what the driver UI should show.\n\nRequires role `driver`.\n\n`data.status` fields\n- `value` — one of `unverified` | `pending` | `rejected` | `approved`\n- `can_edit` — `false` while pending or approved (locked); `true` when unverified/rejected so the driver can (re)submit\n- `submitted_at` / `rejected_at` / `rejection_reason` / `fields_to_fix`\n\nWhen `rejected`, `data.driver` / `data.vehicle` return the latest submission values so the form can be pre-populated for resubmit.\n\n**Note**: `fields_to_fix` uses stable keys — `national_id`, `license`, `personal_photo`, `vehicle_registration`, `vehicle_photo`, `vehicle_details`, `personal_details`.\n\n**Success envelope**: `{ \"status\": \"success\", \"data\": { ... } }`."
+                      },
+                      "status": "Unauthorized",
+                      "code": 401,
+                      "_postman_previewlanguage": "json",
+                      "header": [
+                        {
+                          "key": "Content-Type",
+                          "value": "application/json",
+                          "type": "text"
+                        }
+                      ],
+                      "cookie": [],
+                      "body": "{\n  \"status\": \"error\",\n  \"message\": \"Unauthorized\",\n  \"code\": \"UNAUTHORIZED\"\n}"
+                    }
+                  ]
+                },
+                {
+                  "name": "Get Verification Submission (prefill)",
+                  "event": [
+                    {
+                      "listen": "prerequest",
+                      "script": {
+                        "exec": [
+                          "pm.environment.get('access_token') ? pm.request.headers.add({ key: 'Authorization', value: 'Bearer ' + pm.environment.get('access_token') }) : console.warn('No access_token set');"
+                        ],
+                        "type": "text/javascript",
+                        "packages": {},
+                        "requests": {}
+                      }
+                    },
+                    {
+                      "listen": "test",
+                      "script": {
+                        "exec": [
+                          "pm.test('Responds successfully', function () {",
+                          "    pm.response.to.be.oneOf([200, 201]);",
+                          "});",
+                          "pm.test('Returns a JSON body', function () {",
+                          "    pm.expect(pm.response.json()).to.be.an('object');",
+                          "});"
+                        ],
+                        "type": "text/javascript",
+                        "packages": {},
+                        "requests": {}
+                      }
+                    }
+                  ],
+                  "request": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      },
+                      {
+                        "key": "Authorization",
+                        "value": "Bearer {{access_token}}"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{base_url}}/driver/verification",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "driver",
+                        "verification"
+                      ]
+                    },
+                    "description": "Fetch the editable submission payload — exactly what the edit form pre-fills.\n\nRequires role `driver`.\n\nField keys match the `PUT /driver/verification` request body 1:1 so the form can round-trip. `driver` / `vehicle` are null-valued for a first-time submitter; for `pending`/`approved` drivers this returns the locked record (read-only).\n\n**Success envelope**: `{ \"status\": \"success\", \"data\": { \"driver\": { ... }, \"vehicle\": { ... } } }`."
+                  },
+                  "response": [
+                    {
+                      "name": "Success",
+                      "originalRequest": {
+                        "method": "GET",
+                        "header": [
+                          {
+                            "key": "Content-Type",
+                            "value": "application/json"
+                          },
+                          {
+                            "key": "Authorization",
+                            "value": "Bearer {{access_token}}"
+                          }
+                        ],
+                        "url": {
+                          "raw": "{{base_url}}/driver/verification",
+                          "host": [
+                            "{{base_url}}"
+                          ],
+                          "path": [
+                            "driver",
+                            "verification"
+                          ]
+                        },
+                        "description": "Fetch the editable submission payload — exactly what the edit form pre-fills.\n\nRequires role `driver`.\n\nField keys match the `PUT /driver/verification` request body 1:1 so the form can round-trip. `driver` / `vehicle` are null-valued for a first-time submitter; for `pending`/`approved` drivers this returns the locked record (read-only).\n\n**Success envelope**: `{ \"status\": \"success\", \"data\": { \"driver\": { ... }, \"vehicle\": { ... } } }`."
+                      },
+                      "status": "OK",
+                      "code": 200,
+                      "_postman_previewlanguage": "json",
+                      "header": [
+                        {
+                          "key": "Content-Type",
+                          "value": "application/json",
+                          "type": "text"
+                        }
+                      ],
+                      "cookie": [],
+                      "body": "{\n  \"status\": \"success\",\n  \"data\": {\n    \"driver\": {\n      \"full_name\": \"Ali Ahmed\",\n      \"national_id\": \"1234567890\",\n      \"license_number\": \"L-12345\",\n      \"license_expiry\": \"2028-06-30\",\n      \"user_identification_front\": 101,\n      \"user_identification_back\": 102,\n      \"lincese_front\": 103,\n      \"lincese_back\": 104,\n      \"personal_image_with_id\": 105\n    },\n    \"vehicle\": {\n      \"id\": \"vehicle-uuid\",\n      \"manufacturer\": \"Toyota\",\n      \"model\": \"Camry\",\n      \"vehicle_type\": \"sedan\",\n      \"model_year\": 2022,\n      \"plate_number\": \"ABC-123\",\n      \"code_number\": \"88-99\",\n      \"color\": \"white\",\n      \"seats\": 4,\n      \"registration_doc_front\": 106,\n      \"registration_doc_back\": 107,\n      \"vehicle_photo_front\": 108,\n      \"vehicle_photo_back\": 109\n    }\n  }\n}"
+                    },
+                    {
+                      "name": "Unauthorized",
+                      "originalRequest": {
+                        "method": "GET",
+                        "header": [
+                          {
+                            "key": "Content-Type",
+                            "value": "application/json"
+                          },
+                          {
+                            "key": "Authorization",
+                            "value": "Bearer {{access_token}}"
+                          }
+                        ],
+                        "url": {
+                          "raw": "{{base_url}}/driver/verification",
+                          "host": [
+                            "{{base_url}}"
+                          ],
+                          "path": [
+                            "driver",
+                            "verification"
+                          ]
+                        },
+                        "description": "Fetch the editable submission payload — exactly what the edit form pre-fills.\n\nRequires role `driver`.\n\nField keys match the `PUT /driver/verification` request body 1:1 so the form can round-trip. `driver` / `vehicle` are null-valued for a first-time submitter; for `pending`/`approved` drivers this returns the locked record (read-only).\n\n**Success envelope**: `{ \"status\": \"success\", \"data\": { \"driver\": { ... }, \"vehicle\": { ... } } }`."
+                      },
+                      "status": "Unauthorized",
+                      "code": 401,
+                      "_postman_previewlanguage": "json",
+                      "header": [
+                        {
+                          "key": "Content-Type",
+                          "value": "application/json",
+                          "type": "text"
+                        }
+                      ],
+                      "cookie": [],
+                      "body": "{\n  \"status\": \"error\",\n  \"message\": \"Unauthorized\",\n  \"code\": \"UNAUTHORIZED\"\n}"
+                    }
+                  ]
+                },
+                {
+                  "name": "Submit / Resubmit Verification",
+                  "event": [
+                    {
+                      "listen": "prerequest",
+                      "script": {
+                        "exec": [
+                          "pm.environment.get('access_token') ? pm.request.headers.add({ key: 'Authorization', value: 'Bearer ' + pm.environment.get('access_token') }) : console.warn('No access_token set');"
+                        ],
+                        "type": "text/javascript",
+                        "packages": {},
+                        "requests": {}
+                      }
+                    },
+                    {
+                      "listen": "test",
+                      "script": {
+                        "exec": [
+                          "pm.test('Responds successfully', function () {",
+                          "    pm.response.to.be.oneOf([200, 201]);",
+                          "});",
+                          "pm.test('Returns a JSON body', function () {",
+                          "    pm.expect(pm.response.json()).to.be.an('object');",
+                          "});"
+                        ],
+                        "type": "text/javascript",
+                        "packages": {},
+                        "requests": {}
+                      }
+                    }
+                  ],
+                  "request": {
+                    "method": "PUT",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      },
+                      {
+                        "key": "Authorization",
+                        "value": "Bearer {{access_token}}"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"full_name\": \"Ali Ahmed\",              // optional string — updates users.full_name\n  \"national_id\": \"1234567890\",           // optional string\n  \"license_number\": \"L-12345\",           // optional string\n  \"license_expiry\": \"2028-06-30\",        // optional date-only\n  \"user_identification_front\": 101,      // optional — uploaded_images id (positive int)\n  \"user_identification_back\": 102,       // optional — uploaded_images id\n  \"lincese_front\": 103,                  // optional — uploaded_images id\n  \"lincese_back\": 104,                   // optional — uploaded_images id\n  \"personal_image_with_id\": 105,         // optional — uploaded_images id\n  \"vehicle\": {\n    \"manufacturer\": \"Toyota\",            // required string\n    \"model\": \"Camry\",                    // required string\n    \"vehicle_type\": \"sedan\",             // required — sedan | suv | van | bus | hatchback\n    \"model_year\": 2022,                  // optional int — within the last 10 years\n    \"plate_number\": \"ABC-123\",           // required string — unique in DB\n    \"code_number\": \"88-99\",              // optional string\n    \"color\": \"white\",                    // optional string\n    \"seats\": 4,                          // required int — 1..50\n    \"registration_doc_front\": 106,       // optional — uploaded_images id\n    \"registration_doc_back\": 107,        // optional — uploaded_images id\n    \"vehicle_photo_front\": 108,          // optional — uploaded_images id\n    \"vehicle_photo_back\": 109            // optional — uploaded_images id\n  }\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{base_url}}/driver/verification",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "driver",
+                        "verification"
+                      ]
+                    },
+                    "description": "Submit (or resubmit after a rejection) the driver identity + single vehicle package.\n\nRequires role `driver`.\n\n- Idempotent upsert: the profile is created/updated and the driver's single vehicle is updated in place — never duplicated.\n- On success the state becomes `pending` and `can_edit` turns `false` until an admin decides.\n- Omitted optional fields keep their previous values (partial resubmit). `phone` cannot be changed during verification.\n- The vehicle document ids (`registration_doc_front` etc.) must reference existing uploaded images.\n\n**State guards**\n- `409 CONFLICT` — already `pending` (\"already under review\")\n- `403 FORBIDDEN` — already `approved` (locked; contact support)\n- `422 VALIDATION_ERROR` — missing required vehicle fields, invalid types/ids, duplicate `plate_number`, or unknown document ids\n\n**Success envelope**: `{ \"status\": \"success\", \"data\": { \"status\": \"pending\", \"submitted_at\": \"...\" } }`."
+                  },
+                  "response": [
+                    {
+                      "name": "Success",
+                      "originalRequest": {
+                        "method": "PUT",
+                        "header": [
+                          {
+                            "key": "Content-Type",
+                            "value": "application/json"
+                          },
+                          {
+                            "key": "Authorization",
+                            "value": "Bearer {{access_token}}"
+                          }
+                        ],
+                        "body": {
+                          "mode": "raw",
+                          "raw": "{\n  \"full_name\": \"Ali Ahmed\",              // optional string — updates users.full_name\n  \"national_id\": \"1234567890\",           // optional string\n  \"license_number\": \"L-12345\",           // optional string\n  \"license_expiry\": \"2028-06-30\",        // optional date-only\n  \"user_identification_front\": 101,      // optional — uploaded_images id (positive int)\n  \"user_identification_back\": 102,       // optional — uploaded_images id\n  \"lincese_front\": 103,                  // optional — uploaded_images id\n  \"lincese_back\": 104,                   // optional — uploaded_images id\n  \"personal_image_with_id\": 105,         // optional — uploaded_images id\n  \"vehicle\": {\n    \"manufacturer\": \"Toyota\",            // required string\n    \"model\": \"Camry\",                    // required string\n    \"vehicle_type\": \"sedan\",             // required — sedan | suv | van | bus | hatchback\n    \"model_year\": 2022,                  // optional int — within the last 10 years\n    \"plate_number\": \"ABC-123\",           // required string — unique in DB\n    \"code_number\": \"88-99\",              // optional string\n    \"color\": \"white\",                    // optional string\n    \"seats\": 4,                          // required int — 1..50\n    \"registration_doc_front\": 106,       // optional — uploaded_images id\n    \"registration_doc_back\": 107,        // optional — uploaded_images id\n    \"vehicle_photo_front\": 108,          // optional — uploaded_images id\n    \"vehicle_photo_back\": 109            // optional — uploaded_images id\n  }\n}",
+                          "options": {
+                            "raw": {
+                              "language": "json"
+                            }
+                          }
+                        },
+                        "url": {
+                          "raw": "{{base_url}}/driver/verification",
+                          "host": [
+                            "{{base_url}}"
+                          ],
+                          "path": [
+                            "driver",
+                            "verification"
+                          ]
+                        },
+                        "description": "Submit (or resubmit after a rejection) the driver identity + single vehicle package.\n\nRequires role `driver`.\n\n- Idempotent upsert: the profile is created/updated and the driver's single vehicle is updated in place — never duplicated.\n- On success the state becomes `pending` and `can_edit` turns `false` until an admin decides.\n- Omitted optional fields keep their previous values (partial resubmit). `phone` cannot be changed during verification.\n- The vehicle document ids (`registration_doc_front` etc.) must reference existing uploaded images.\n\n**State guards**\n- `409 CONFLICT` — already `pending` (\"already under review\")\n- `403 FORBIDDEN` — already `approved` (locked; contact support)\n- `422 VALIDATION_ERROR` — missing required vehicle fields, invalid types/ids, duplicate `plate_number`, or unknown document ids\n\n**Success envelope**: `{ \"status\": \"success\", \"data\": { \"status\": \"pending\", \"submitted_at\": \"...\" } }`."
+                      },
+                      "status": "OK",
+                      "code": 200,
+                      "_postman_previewlanguage": "json",
+                      "header": [
+                        {
+                          "key": "Content-Type",
+                          "value": "application/json",
+                          "type": "text"
+                        }
+                      ],
+                      "cookie": [],
+                      "body": "{\n  \"status\": \"success\",\n  \"data\": {\n    \"status\": \"pending\",\n    \"submitted_at\": \"2026-08-10T12:00:00.000Z\"\n  }\n}"
+                    },
+                    {
+                      "name": "Conflict (already pending)",
+                      "originalRequest": {
+                        "method": "PUT",
+                        "header": [
+                          {
+                            "key": "Content-Type",
+                            "value": "application/json"
+                          },
+                          {
+                            "key": "Authorization",
+                            "value": "Bearer {{access_token}}"
+                          }
+                        ],
+                        "body": {
+                          "mode": "raw",
+                          "raw": "{\n  \"full_name\": \"Ali Ahmed\",              // optional string — updates users.full_name\n  \"national_id\": \"1234567890\",           // optional string\n  \"license_number\": \"L-12345\",           // optional string\n  \"license_expiry\": \"2028-06-30\",        // optional date-only\n  \"user_identification_front\": 101,      // optional — uploaded_images id (positive int)\n  \"user_identification_back\": 102,       // optional — uploaded_images id\n  \"lincese_front\": 103,                  // optional — uploaded_images id\n  \"lincese_back\": 104,                   // optional — uploaded_images id\n  \"personal_image_with_id\": 105,         // optional — uploaded_images id\n  \"vehicle\": {\n    \"manufacturer\": \"Toyota\",            // required string\n    \"model\": \"Camry\",                    // required string\n    \"vehicle_type\": \"sedan\",             // required — sedan | suv | van | bus | hatchback\n    \"model_year\": 2022,                  // optional int — within the last 10 years\n    \"plate_number\": \"ABC-123\",           // required string — unique in DB\n    \"code_number\": \"88-99\",              // optional string\n    \"color\": \"white\",                    // optional string\n    \"seats\": 4,                          // required int — 1..50\n    \"registration_doc_front\": 106,       // optional — uploaded_images id\n    \"registration_doc_back\": 107,        // optional — uploaded_images id\n    \"vehicle_photo_front\": 108,          // optional — uploaded_images id\n    \"vehicle_photo_back\": 109            // optional — uploaded_images id\n  }\n}",
+                          "options": {
+                            "raw": {
+                              "language": "json"
+                            }
+                          }
+                        },
+                        "url": {
+                          "raw": "{{base_url}}/driver/verification",
+                          "host": [
+                            "{{base_url}}"
+                          ],
+                          "path": [
+                            "driver",
+                            "verification"
+                          ]
+                        },
+                        "description": "Submit (or resubmit after a rejection) the driver identity + single vehicle package.\n\nRequires role `driver`.\n\n- Idempotent upsert: the profile is created/updated and the driver's single vehicle is updated in place — never duplicated.\n- On success the state becomes `pending` and `can_edit` turns `false` until an admin decides.\n- Omitted optional fields keep their previous values (partial resubmit). `phone` cannot be changed during verification.\n- The vehicle document ids (`registration_doc_front` etc.) must reference existing uploaded images.\n\n**State guards**\n- `409 CONFLICT` — already `pending` (\"already under review\")\n- `403 FORBIDDEN` — already `approved` (locked; contact support)\n- `422 VALIDATION_ERROR` — missing required vehicle fields, invalid types/ids, duplicate `plate_number`, or unknown document ids\n\n**Success envelope**: `{ \"status\": \"success\", \"data\": { \"status\": \"pending\", \"submitted_at\": \"...\" } }`."
+                      },
+                      "status": "Conflict",
+                      "code": 409,
+                      "_postman_previewlanguage": "json",
+                      "header": [
+                        {
+                          "key": "Content-Type",
+                          "value": "application/json",
+                          "type": "text"
+                        }
+                      ],
+                      "cookie": [],
+                      "body": "{\n  \"status\": \"error\",\n  \"message\": \"Your verification application is already under review.\",\n  \"code\": \"CONFLICT\"\n}"
+                    },
+                    {
+                      "name": "Validation (plate number duplicate)",
+                      "originalRequest": {
+                        "method": "PUT",
+                        "header": [
+                          {
+                            "key": "Content-Type",
+                            "value": "application/json"
+                          },
+                          {
+                            "key": "Authorization",
+                            "value": "Bearer {{access_token}}"
+                          }
+                        ],
+                        "body": {
+                          "mode": "raw",
+                          "raw": "{\n  \"full_name\": \"Ali Ahmed\",              // optional string — updates users.full_name\n  \"national_id\": \"1234567890\",           // optional string\n  \"license_number\": \"L-12345\",           // optional string\n  \"license_expiry\": \"2028-06-30\",        // optional date-only\n  \"user_identification_front\": 101,      // optional — uploaded_images id (positive int)\n  \"user_identification_back\": 102,       // optional — uploaded_images id\n  \"lincese_front\": 103,                  // optional — uploaded_images id\n  \"lincese_back\": 104,                   // optional — uploaded_images id\n  \"personal_image_with_id\": 105,         // optional — uploaded_images id\n  \"vehicle\": {\n    \"manufacturer\": \"Toyota\",            // required string\n    \"model\": \"Camry\",                    // required string\n    \"vehicle_type\": \"sedan\",             // required — sedan | suv | van | bus | hatchback\n    \"model_year\": 2022,                  // optional int — within the last 10 years\n    \"plate_number\": \"ABC-123\",           // required string — unique in DB\n    \"code_number\": \"88-99\",              // optional string\n    \"color\": \"white\",                    // optional string\n    \"seats\": 4,                          // required int — 1..50\n    \"registration_doc_front\": 106,       // optional — uploaded_images id\n    \"registration_doc_back\": 107,        // optional — uploaded_images id\n    \"vehicle_photo_front\": 108,          // optional — uploaded_images id\n    \"vehicle_photo_back\": 109            // optional — uploaded_images id\n  }\n}",
+                          "options": {
+                            "raw": {
+                              "language": "json"
+                            }
+                          }
+                        },
+                        "url": {
+                          "raw": "{{base_url}}/driver/verification",
+                          "host": [
+                            "{{base_url}}"
+                          ],
+                          "path": [
+                            "driver",
+                            "verification"
+                          ]
+                        },
+                        "description": "Submit (or resubmit after a rejection) the driver identity + single vehicle package.\n\nRequires role `driver`.\n\n- Idempotent upsert: the profile is created/updated and the driver's single vehicle is updated in place — never duplicated.\n- On success the state becomes `pending` and `can_edit` turns `false` until an admin decides.\n- Omitted optional fields keep their previous values (partial resubmit). `phone` cannot be changed during verification.\n- The vehicle document ids (`registration_doc_front` etc.) must reference existing uploaded images.\n\n**State guards**\n- `409 CONFLICT` — already `pending` (\"already under review\")\n- `403 FORBIDDEN` — already `approved` (locked; contact support)\n- `422 VALIDATION_ERROR` — missing required vehicle fields, invalid types/ids, duplicate `plate_number`, or unknown document ids\n\n**Success envelope**: `{ \"status\": \"success\", \"data\": { \"status\": \"pending\", \"submitted_at\": \"...\" } }`."
+                      },
+                      "status": "Unprocessable Entity",
+                      "code": 422,
+                      "_postman_previewlanguage": "json",
+                      "header": [
+                        {
+                          "key": "Content-Type",
+                          "value": "application/json",
+                          "type": "text"
+                        }
+                      ],
+                      "cookie": [],
+                      "body": "{\n  \"status\": \"error\",\n  \"message\": \"This plate number is already registered to another vehicle.\",\n  \"code\": \"VALIDATION_ERROR\"\n}"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
               "name": "Get Onboarding Status",
               "event": [
                 {
@@ -2574,7 +3063,9 @@
                         {
                           "key": "file",
                           "type": "file",
-                          "src": "/C:/Users/Laptop/Downloads/Driver Trip Publishing Flow.png"
+                          "src": [
+                            "/C:/Users/Laptop/Downloads/Driver Trip Publishing Flow.png"
+                          ]
                         }
                       ]
                     },
@@ -2618,7 +3109,9 @@
                         {
                           "key": "file",
                           "type": "file",
-                          "src": "/C:/Users/Laptop/Downloads/Driver Trip Publishing Flow.png"
+                          "src": [
+                            "/C:/Users/Laptop/Downloads/Driver Trip Publishing Flow.png"
+                          ]
                         }
                       ]
                     },
@@ -3113,494 +3606,6 @@
                   ],
                   "cookie": [],
                   "body": "{\n  \"status\": \"error\",\n  \"message\": \"You can only update your own vehicles\",\n  \"code\": \"FORBIDDEN\"\n}"
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "name": "Verification",
-          "item": [
-            {
-              "name": "Get Verification Status",
-              "event": [
-                {
-                  "listen": "prerequest",
-                  "script": {
-                    "exec": [
-                      "pm.environment.get('access_token') ? pm.request.headers.add({ key: 'Authorization', value: 'Bearer ' + pm.environment.get('access_token') }) : console.warn('No access_token set');"
-                    ],
-                    "type": "text/javascript",
-                    "packages": {},
-                    "requests": {}
-                  }
-                },
-                {
-                  "listen": "test",
-                  "script": {
-                    "exec": [
-                      "pm.test('Responds successfully', function () {",
-                      "    pm.response.to.be.oneOf([200, 201]);",
-                      "});",
-                      "pm.test('Returns a JSON body', function () {",
-                      "    pm.expect(pm.response.json()).to.be.an('object');",
-                      "});"
-                    ],
-                    "type": "text/javascript",
-                    "packages": {},
-                    "requests": {}
-                  }
-                }
-              ],
-              "request": {
-                "method": "GET",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  },
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{access_token}}"
-                  }
-                ],
-                "url": {
-                  "raw": "{{base_url}}/driver/verification-status",
-                  "host": [
-                    "{{base_url}}"
-                  ],
-                  "path": [
-                    "driver",
-                    "verification-status"
-                  ]
-                },
-                "description": "Check the driver's verification state and what the driver UI should show.\n\nRequires role `driver`.\n\n`data.status` fields\n- `value` — one of `unverified` | `pending` | `rejected` | `approved`\n- `can_edit` — `false` while pending or approved (locked); `true` when unverified/rejected so the driver can (re)submit\n- `submitted_at` / `rejected_at` / `rejection_reason` / `fields_to_fix`\n\nWhen `rejected`, `data.driver` / `data.vehicle` return the latest submission values so the form can be pre-populated for resubmit.\n\n**Note**: `fields_to_fix` uses stable keys — `national_id`, `license`, `personal_photo`, `vehicle_registration`, `vehicle_photo`, `vehicle_details`, `personal_details`.\n\n**Success envelope**: `{ \"status\": \"success\", \"data\": { ... } }`."
-              },
-              "response": [
-                {
-                  "name": "Success (rejected - resubmit allowed)",
-                  "originalRequest": {
-                    "method": "GET",
-                    "header": [
-                      {
-                        "key": "Content-Type",
-                        "value": "application/json"
-                      },
-                      {
-                        "key": "Authorization",
-                        "value": "Bearer {{access_token}}"
-                      }
-                    ],
-                    "url": {
-                      "raw": "{{base_url}}/driver/verification-status",
-                      "host": [
-                        "{{base_url}}"
-                      ],
-                      "path": [
-                        "driver",
-                        "verification-status"
-                      ]
-                    },
-                    "description": "Check the driver's verification state and what the driver UI should show.\n\nRequires role `driver`.\n\n`data.status` fields\n- `value` — one of `unverified` | `pending` | `rejected` | `approved`\n- `can_edit` — `false` while pending or approved (locked); `true` when unverified/rejected so the driver can (re)submit\n- `submitted_at` / `rejected_at` / `rejection_reason` / `fields_to_fix`\n\nWhen `rejected`, `data.driver` / `data.vehicle` return the latest submission values so the form can be pre-populated for resubmit.\n\n**Note**: `fields_to_fix` uses stable keys — `national_id`, `license`, `personal_photo`, `vehicle_registration`, `vehicle_photo`, `vehicle_details`, `personal_details`.\n\n**Success envelope**: `{ \"status\": \"success\", \"data\": { ... } }`."
-                  },
-                  "status": "OK",
-                  "code": 200,
-                  "_postman_previewlanguage": "json",
-                  "header": [
-                    {
-                      "key": "Content-Type",
-                      "value": "application/json",
-                      "type": "text"
-                    }
-                  ],
-                  "cookie": [],
-                  "body": "{\n  \"status\": \"success\",\n  \"data\": {\n    \"status\": {\n      \"value\": \"rejected\",\n      \"can_edit\": true,\n      \"submitted_at\": \"2026-08-01T09:30:00.000Z\",\n      \"rejected_at\": \"2026-08-09T14:00:00.000Z\",\n      \"rejection_reason\": \"الوثائق غير واضحة\",\n      \"fields_to_fix\": [\"license\", \"vehicle_photo\"]\n    },\n    \"driver\": {\n      \"full_name\": \"Ali Ahmed\",\n      \"national_id\": \"1234567890\",\n      \"license_number\": \"L-12345\",\n      \"license_expiry\": \"2028-06-30\",\n      \"user_identification_front\": 101,\n      \"user_identification_back\": 102,\n      \"lincese_front\": 103,\n      \"lincese_back\": 104,\n      \"personal_image_with_id\": 105\n    },\n    \"vehicle\": {\n      \"id\": \"vehicle-uuid\",\n      \"manufacturer\": \"Toyota\",\n      \"model\": \"Camry\",\n      \"vehicle_type\": \"sedan\",\n      \"model_year\": 2022,\n      \"plate_number\": \"ABC-123\",\n      \"code_number\": \"88-99\",\n      \"color\": \"white\",\n      \"seats\": 4,\n      \"registration_doc_front\": 106,\n      \"registration_doc_back\": 107,\n      \"vehicle_photo_front\": 108,\n      \"vehicle_photo_back\": 109\n    }\n  }\n}"
-                },
-                {
-                  "name": "Unauthorized",
-                  "originalRequest": {
-                    "method": "GET",
-                    "header": [
-                      {
-                        "key": "Content-Type",
-                        "value": "application/json"
-                      },
-                      {
-                        "key": "Authorization",
-                        "value": "Bearer {{access_token}}"
-                      }
-                    ],
-                    "url": {
-                      "raw": "{{base_url}}/driver/verification-status",
-                      "host": [
-                        "{{base_url}}"
-                      ],
-                      "path": [
-                        "driver",
-                        "verification-status"
-                      ]
-                    },
-                    "description": "Check the driver's verification state and what the driver UI should show.\n\nRequires role `driver`.\n\n`data.status` fields\n- `value` — one of `unverified` | `pending` | `rejected` | `approved`\n- `can_edit` — `false` while pending or approved (locked); `true` when unverified/rejected so the driver can (re)submit\n- `submitted_at` / `rejected_at` / `rejection_reason` / `fields_to_fix`\n\nWhen `rejected`, `data.driver` / `data.vehicle` return the latest submission values so the form can be pre-populated for resubmit.\n\n**Note**: `fields_to_fix` uses stable keys — `national_id`, `license`, `personal_photo`, `vehicle_registration`, `vehicle_photo`, `vehicle_details`, `personal_details`.\n\n**Success envelope**: `{ \"status\": \"success\", \"data\": { ... } }`."
-                  },
-                  "status": "Unauthorized",
-                  "code": 401,
-                  "_postman_previewlanguage": "json",
-                  "header": [
-                    {
-                      "key": "Content-Type",
-                      "value": "application/json",
-                      "type": "text"
-                    }
-                  ],
-                  "cookie": [],
-                  "body": "{\n  \"status\": \"error\",\n  \"message\": \"Unauthorized\",\n  \"code\": \"UNAUTHORIZED\"\n}"
-                }
-              ]
-            },
-            {
-              "name": "Get Verification Submission (prefill)",
-              "event": [
-                {
-                  "listen": "prerequest",
-                  "script": {
-                    "exec": [
-                      "pm.environment.get('access_token') ? pm.request.headers.add({ key: 'Authorization', value: 'Bearer ' + pm.environment.get('access_token') }) : console.warn('No access_token set');"
-                    ],
-                    "type": "text/javascript",
-                    "packages": {},
-                    "requests": {}
-                  }
-                },
-                {
-                  "listen": "test",
-                  "script": {
-                    "exec": [
-                      "pm.test('Responds successfully', function () {",
-                      "    pm.response.to.be.oneOf([200, 201]);",
-                      "});",
-                      "pm.test('Returns a JSON body', function () {",
-                      "    pm.expect(pm.response.json()).to.be.an('object');",
-                      "});"
-                    ],
-                    "type": "text/javascript",
-                    "packages": {},
-                    "requests": {}
-                  }
-                }
-              ],
-              "request": {
-                "method": "GET",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  },
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{access_token}}"
-                  }
-                ],
-                "url": {
-                  "raw": "{{base_url}}/driver/verification",
-                  "host": [
-                    "{{base_url}}"
-                  ],
-                  "path": [
-                    "driver",
-                    "verification"
-                  ]
-                },
-                "description": "Fetch the editable submission payload — exactly what the edit form pre-fills.\n\nRequires role `driver`.\n\nField keys match the `PUT /driver/verification` request body 1:1 so the form can round-trip. `driver` / `vehicle` are null-valued for a first-time submitter; for `pending`/`approved` drivers this returns the locked record (read-only).\n\n**Success envelope**: `{ \"status\": \"success\", \"data\": { \"driver\": { ... }, \"vehicle\": { ... } } }`."
-              },
-              "response": [
-                {
-                  "name": "Success",
-                  "originalRequest": {
-                    "method": "GET",
-                    "header": [
-                      {
-                        "key": "Content-Type",
-                        "value": "application/json"
-                      },
-                      {
-                        "key": "Authorization",
-                        "value": "Bearer {{access_token}}"
-                      }
-                    ],
-                    "url": {
-                      "raw": "{{base_url}}/driver/verification",
-                      "host": [
-                        "{{base_url}}"
-                      ],
-                      "path": [
-                        "driver",
-                        "verification"
-                      ]
-                    },
-                    "description": "Fetch the editable submission payload — exactly what the edit form pre-fills.\n\nRequires role `driver`.\n\nField keys match the `PUT /driver/verification` request body 1:1 so the form can round-trip. `driver` / `vehicle` are null-valued for a first-time submitter; for `pending`/`approved` drivers this returns the locked record (read-only).\n\n**Success envelope**: `{ \"status\": \"success\", \"data\": { \"driver\": { ... }, \"vehicle\": { ... } } }`."
-                  },
-                  "status": "OK",
-                  "code": 200,
-                  "_postman_previewlanguage": "json",
-                  "header": [
-                    {
-                      "key": "Content-Type",
-                      "value": "application/json",
-                      "type": "text"
-                    }
-                  ],
-                  "cookie": [],
-                  "body": "{\n  \"status\": \"success\",\n  \"data\": {\n    \"driver\": {\n      \"full_name\": \"Ali Ahmed\",\n      \"national_id\": \"1234567890\",\n      \"license_number\": \"L-12345\",\n      \"license_expiry\": \"2028-06-30\",\n      \"user_identification_front\": 101,\n      \"user_identification_back\": 102,\n      \"lincese_front\": 103,\n      \"lincese_back\": 104,\n      \"personal_image_with_id\": 105\n    },\n    \"vehicle\": {\n      \"id\": \"vehicle-uuid\",\n      \"manufacturer\": \"Toyota\",\n      \"model\": \"Camry\",\n      \"vehicle_type\": \"sedan\",\n      \"model_year\": 2022,\n      \"plate_number\": \"ABC-123\",\n      \"code_number\": \"88-99\",\n      \"color\": \"white\",\n      \"seats\": 4,\n      \"registration_doc_front\": 106,\n      \"registration_doc_back\": 107,\n      \"vehicle_photo_front\": 108,\n      \"vehicle_photo_back\": 109\n    }\n  }\n}"
-                },
-                {
-                  "name": "Unauthorized",
-                  "originalRequest": {
-                    "method": "GET",
-                    "header": [
-                      {
-                        "key": "Content-Type",
-                        "value": "application/json"
-                      },
-                      {
-                        "key": "Authorization",
-                        "value": "Bearer {{access_token}}"
-                      }
-                    ],
-                    "url": {
-                      "raw": "{{base_url}}/driver/verification",
-                      "host": [
-                        "{{base_url}}"
-                      ],
-                      "path": [
-                        "driver",
-                        "verification"
-                      ]
-                    },
-                    "description": "Fetch the editable submission payload — exactly what the edit form pre-fills.\n\nRequires role `driver`.\n\nField keys match the `PUT /driver/verification` request body 1:1 so the form can round-trip. `driver` / `vehicle` are null-valued for a first-time submitter; for `pending`/`approved` drivers this returns the locked record (read-only).\n\n**Success envelope**: `{ \"status\": \"success\", \"data\": { \"driver\": { ... }, \"vehicle\": { ... } } }`."
-                  },
-                  "status": "Unauthorized",
-                  "code": 401,
-                  "_postman_previewlanguage": "json",
-                  "header": [
-                    {
-                      "key": "Content-Type",
-                      "value": "application/json",
-                      "type": "text"
-                    }
-                  ],
-                  "cookie": [],
-                  "body": "{\n  \"status\": \"error\",\n  \"message\": \"Unauthorized\",\n  \"code\": \"UNAUTHORIZED\"\n}"
-                }
-              ]
-            },
-            {
-              "name": "Submit / Resubmit Verification",
-              "event": [
-                {
-                  "listen": "prerequest",
-                  "script": {
-                    "exec": [
-                      "pm.environment.get('access_token') ? pm.request.headers.add({ key: 'Authorization', value: 'Bearer ' + pm.environment.get('access_token') }) : console.warn('No access_token set');"
-                    ],
-                    "type": "text/javascript",
-                    "packages": {},
-                    "requests": {}
-                  }
-                },
-                {
-                  "listen": "test",
-                  "script": {
-                    "exec": [
-                      "pm.test('Responds successfully', function () {",
-                      "    pm.response.to.be.oneOf([200, 201]);",
-                      "});",
-                      "pm.test('Returns a JSON body', function () {",
-                      "    pm.expect(pm.response.json()).to.be.an('object');",
-                      "});"
-                    ],
-                    "type": "text/javascript",
-                    "packages": {},
-                    "requests": {}
-                  }
-                }
-              ],
-              "request": {
-                "method": "PUT",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  },
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{access_token}}"
-                  }
-                ],
-                "url": {
-                  "raw": "{{base_url}}/driver/verification",
-                  "host": [
-                    "{{base_url}}"
-                  ],
-                  "path": [
-                    "driver",
-                    "verification"
-                  ]
-                },
-                "description": "Submit (or resubmit after a rejection) the driver identity + single vehicle package.\n\nRequires role `driver`.\n\n- Idempotent upsert: the profile is created/updated and the driver's single vehicle is updated in place — never duplicated.\n- On success the state becomes `pending` and `can_edit` turns `false` until an admin decides.\n- Omitted optional fields keep their previous values (partial resubmit). `phone` cannot be changed during verification.\n- The vehicle document ids (`registration_doc_front` etc.) must reference existing uploaded images.\n\n**State guards**\n- `409 CONFLICT` — already `pending` (\"already under review\")\n- `403 FORBIDDEN` — already `approved` (locked; contact support)\n- `422 VALIDATION_ERROR` — missing required vehicle fields, invalid types/ids, duplicate `plate_number`, or unknown document ids\n\n**Success envelope**: `{ \"status\": \"success\", \"data\": { \"status\": \"pending\", \"submitted_at\": \"...\" } }`.",
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"full_name\": \"Ali Ahmed\",              // optional string — updates users.full_name\n  \"national_id\": \"1234567890\",           // optional string\n  \"license_number\": \"L-12345\",           // optional string\n  \"license_expiry\": \"2028-06-30\",        // optional date-only\n  \"user_identification_front\": 101,      // optional — uploaded_images id (positive int)\n  \"user_identification_back\": 102,       // optional — uploaded_images id\n  \"lincese_front\": 103,                  // optional — uploaded_images id\n  \"lincese_back\": 104,                   // optional — uploaded_images id\n  \"personal_image_with_id\": 105,         // optional — uploaded_images id\n  \"vehicle\": {\n    \"manufacturer\": \"Toyota\",            // required string\n    \"model\": \"Camry\",                    // required string\n    \"vehicle_type\": \"sedan\",             // required — sedan | suv | van | bus | hatchback\n    \"model_year\": 2022,                  // optional int — within the last 10 years\n    \"plate_number\": \"ABC-123\",           // required string — unique in DB\n    \"code_number\": \"88-99\",              // optional string\n    \"color\": \"white\",                    // optional string\n    \"seats\": 4,                          // required int — 1..50\n    \"registration_doc_front\": 106,       // optional — uploaded_images id\n    \"registration_doc_back\": 107,        // optional — uploaded_images id\n    \"vehicle_photo_front\": 108,          // optional — uploaded_images id\n    \"vehicle_photo_back\": 109            // optional — uploaded_images id\n  }\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                }
-              },
-              "response": [
-                {
-                  "name": "Success",
-                  "originalRequest": {
-                    "method": "PUT",
-                    "header": [
-                      {
-                        "key": "Content-Type",
-                        "value": "application/json"
-                      },
-                      {
-                        "key": "Authorization",
-                        "value": "Bearer {{access_token}}"
-                      }
-                    ],
-                    "url": {
-                      "raw": "{{base_url}}/driver/verification",
-                      "host": [
-                        "{{base_url}}"
-                      ],
-                      "path": [
-                        "driver",
-                        "verification"
-                      ]
-                    },
-                    "description": "Submit (or resubmit after a rejection) the driver identity + single vehicle package.\n\nRequires role `driver`.\n\n- Idempotent upsert: the profile is created/updated and the driver's single vehicle is updated in place — never duplicated.\n- On success the state becomes `pending` and `can_edit` turns `false` until an admin decides.\n- Omitted optional fields keep their previous values (partial resubmit). `phone` cannot be changed during verification.\n- The vehicle document ids (`registration_doc_front` etc.) must reference existing uploaded images.\n\n**State guards**\n- `409 CONFLICT` — already `pending` (\"already under review\")\n- `403 FORBIDDEN` — already `approved` (locked; contact support)\n- `422 VALIDATION_ERROR` — missing required vehicle fields, invalid types/ids, duplicate `plate_number`, or unknown document ids\n\n**Success envelope**: `{ \"status\": \"success\", \"data\": { \"status\": \"pending\", \"submitted_at\": \"...\" } }`.",
-                    "body": {
-                      "mode": "raw",
-                      "raw": "{\n  \"full_name\": \"Ali Ahmed\",              // optional string — updates users.full_name\n  \"national_id\": \"1234567890\",           // optional string\n  \"license_number\": \"L-12345\",           // optional string\n  \"license_expiry\": \"2028-06-30\",        // optional date-only\n  \"user_identification_front\": 101,      // optional — uploaded_images id (positive int)\n  \"user_identification_back\": 102,       // optional — uploaded_images id\n  \"lincese_front\": 103,                  // optional — uploaded_images id\n  \"lincese_back\": 104,                   // optional — uploaded_images id\n  \"personal_image_with_id\": 105,         // optional — uploaded_images id\n  \"vehicle\": {\n    \"manufacturer\": \"Toyota\",            // required string\n    \"model\": \"Camry\",                    // required string\n    \"vehicle_type\": \"sedan\",             // required — sedan | suv | van | bus | hatchback\n    \"model_year\": 2022,                  // optional int — within the last 10 years\n    \"plate_number\": \"ABC-123\",           // required string — unique in DB\n    \"code_number\": \"88-99\",              // optional string\n    \"color\": \"white\",                    // optional string\n    \"seats\": 4,                          // required int — 1..50\n    \"registration_doc_front\": 106,       // optional — uploaded_images id\n    \"registration_doc_back\": 107,        // optional — uploaded_images id\n    \"vehicle_photo_front\": 108,          // optional — uploaded_images id\n    \"vehicle_photo_back\": 109            // optional — uploaded_images id\n  }\n}",
-                      "options": {
-                        "raw": {
-                          "language": "json"
-                        }
-                      }
-                    }
-                  },
-                  "status": "OK",
-                  "code": 200,
-                  "_postman_previewlanguage": "json",
-                  "header": [
-                    {
-                      "key": "Content-Type",
-                      "value": "application/json",
-                      "type": "text"
-                    }
-                  ],
-                  "cookie": [],
-                  "body": "{\n  \"status\": \"success\",\n  \"data\": {\n    \"status\": \"pending\",\n    \"submitted_at\": \"2026-08-10T12:00:00.000Z\"\n  }\n}"
-                },
-                {
-                  "name": "Conflict (already pending)",
-                  "originalRequest": {
-                    "method": "PUT",
-                    "header": [
-                      {
-                        "key": "Content-Type",
-                        "value": "application/json"
-                      },
-                      {
-                        "key": "Authorization",
-                        "value": "Bearer {{access_token}}"
-                      }
-                    ],
-                    "url": {
-                      "raw": "{{base_url}}/driver/verification",
-                      "host": [
-                        "{{base_url}}"
-                      ],
-                      "path": [
-                        "driver",
-                        "verification"
-                      ]
-                    },
-                    "description": "Submit (or resubmit after a rejection) the driver identity + single vehicle package.\n\nRequires role `driver`.\n\n- Idempotent upsert: the profile is created/updated and the driver's single vehicle is updated in place — never duplicated.\n- On success the state becomes `pending` and `can_edit` turns `false` until an admin decides.\n- Omitted optional fields keep their previous values (partial resubmit). `phone` cannot be changed during verification.\n- The vehicle document ids (`registration_doc_front` etc.) must reference existing uploaded images.\n\n**State guards**\n- `409 CONFLICT` — already `pending` (\"already under review\")\n- `403 FORBIDDEN` — already `approved` (locked; contact support)\n- `422 VALIDATION_ERROR` — missing required vehicle fields, invalid types/ids, duplicate `plate_number`, or unknown document ids\n\n**Success envelope**: `{ \"status\": \"success\", \"data\": { \"status\": \"pending\", \"submitted_at\": \"...\" } }`.",
-                    "body": {
-                      "mode": "raw",
-                      "raw": "{\n  \"full_name\": \"Ali Ahmed\",              // optional string — updates users.full_name\n  \"national_id\": \"1234567890\",           // optional string\n  \"license_number\": \"L-12345\",           // optional string\n  \"license_expiry\": \"2028-06-30\",        // optional date-only\n  \"user_identification_front\": 101,      // optional — uploaded_images id (positive int)\n  \"user_identification_back\": 102,       // optional — uploaded_images id\n  \"lincese_front\": 103,                  // optional — uploaded_images id\n  \"lincese_back\": 104,                   // optional — uploaded_images id\n  \"personal_image_with_id\": 105,         // optional — uploaded_images id\n  \"vehicle\": {\n    \"manufacturer\": \"Toyota\",            // required string\n    \"model\": \"Camry\",                    // required string\n    \"vehicle_type\": \"sedan\",             // required — sedan | suv | van | bus | hatchback\n    \"model_year\": 2022,                  // optional int — within the last 10 years\n    \"plate_number\": \"ABC-123\",           // required string — unique in DB\n    \"code_number\": \"88-99\",              // optional string\n    \"color\": \"white\",                    // optional string\n    \"seats\": 4,                          // required int — 1..50\n    \"registration_doc_front\": 106,       // optional — uploaded_images id\n    \"registration_doc_back\": 107,        // optional — uploaded_images id\n    \"vehicle_photo_front\": 108,          // optional — uploaded_images id\n    \"vehicle_photo_back\": 109            // optional — uploaded_images id\n  }\n}",
-                      "options": {
-                        "raw": {
-                          "language": "json"
-                        }
-                      }
-                    }
-                  },
-                  "status": "Conflict",
-                  "code": 409,
-                  "_postman_previewlanguage": "json",
-                  "header": [
-                    {
-                      "key": "Content-Type",
-                      "value": "application/json",
-                      "type": "text"
-                    }
-                  ],
-                  "cookie": [],
-                  "body": "{\n  \"status\": \"error\",\n  \"message\": \"Your verification application is already under review.\",\n  \"code\": \"CONFLICT\"\n}"
-                },
-                {
-                  "name": "Validation (plate number duplicate)",
-                  "originalRequest": {
-                    "method": "PUT",
-                    "header": [
-                      {
-                        "key": "Content-Type",
-                        "value": "application/json"
-                      },
-                      {
-                        "key": "Authorization",
-                        "value": "Bearer {{access_token}}"
-                      }
-                    ],
-                    "url": {
-                      "raw": "{{base_url}}/driver/verification",
-                      "host": [
-                        "{{base_url}}"
-                      ],
-                      "path": [
-                        "driver",
-                        "verification"
-                      ]
-                    },
-                    "description": "Submit (or resubmit after a rejection) the driver identity + single vehicle package.\n\nRequires role `driver`.\n\n- Idempotent upsert: the profile is created/updated and the driver's single vehicle is updated in place — never duplicated.\n- On success the state becomes `pending` and `can_edit` turns `false` until an admin decides.\n- Omitted optional fields keep their previous values (partial resubmit). `phone` cannot be changed during verification.\n- The vehicle document ids (`registration_doc_front` etc.) must reference existing uploaded images.\n\n**State guards**\n- `409 CONFLICT` — already `pending` (\"already under review\")\n- `403 FORBIDDEN` — already `approved` (locked; contact support)\n- `422 VALIDATION_ERROR` — missing required vehicle fields, invalid types/ids, duplicate `plate_number`, or unknown document ids\n\n**Success envelope**: `{ \"status\": \"success\", \"data\": { \"status\": \"pending\", \"submitted_at\": \"...\" } }`.",
-                    "body": {
-                      "mode": "raw",
-                      "raw": "{\n  \"full_name\": \"Ali Ahmed\",              // optional string — updates users.full_name\n  \"national_id\": \"1234567890\",           // optional string\n  \"license_number\": \"L-12345\",           // optional string\n  \"license_expiry\": \"2028-06-30\",        // optional date-only\n  \"user_identification_front\": 101,      // optional — uploaded_images id (positive int)\n  \"user_identification_back\": 102,       // optional — uploaded_images id\n  \"lincese_front\": 103,                  // optional — uploaded_images id\n  \"lincese_back\": 104,                   // optional — uploaded_images id\n  \"personal_image_with_id\": 105,         // optional — uploaded_images id\n  \"vehicle\": {\n    \"manufacturer\": \"Toyota\",            // required string\n    \"model\": \"Camry\",                    // required string\n    \"vehicle_type\": \"sedan\",             // required — sedan | suv | van | bus | hatchback\n    \"model_year\": 2022,                  // optional int — within the last 10 years\n    \"plate_number\": \"ABC-123\",           // required string — unique in DB\n    \"code_number\": \"88-99\",              // optional string\n    \"color\": \"white\",                    // optional string\n    \"seats\": 4,                          // required int — 1..50\n    \"registration_doc_front\": 106,       // optional — uploaded_images id\n    \"registration_doc_back\": 107,        // optional — uploaded_images id\n    \"vehicle_photo_front\": 108,          // optional — uploaded_images id\n    \"vehicle_photo_back\": 109            // optional — uploaded_images id\n  }\n}",
-                      "options": {
-                        "raw": {
-                          "language": "json"
-                        }
-                      }
-                    }
-                  },
-                  "status": "Unprocessable Entity",
-                  "code": 422,
-                  "_postman_previewlanguage": "json",
-                  "header": [
-                    {
-                      "key": "Content-Type",
-                      "value": "application/json",
-                      "type": "text"
-                    }
-                  ],
-                  "cookie": [],
-                  "body": "{\n  \"status\": \"error\",\n  \"message\": \"This plate number is already registered to another vehicle.\",\n  \"code\": \"VALIDATION_ERROR\"\n}"
                 }
               ]
             }
