@@ -29,4 +29,8 @@ router.get('/stats', protect, roleGuard(['driver']), c.getStats);
 // Aggregated profile (driver only)
 router.get('/profile', protect, roleGuard(['driver']), c.getProfile);
 
+// Driver home screen (driver, verified, active) + subscription details
+router.get('/home', protect, roleGuard(['driver']), c.getHome);
+router.get('/subscription', protect, roleGuard(['driver']), c.getSubscription);
+
 module.exports = router;

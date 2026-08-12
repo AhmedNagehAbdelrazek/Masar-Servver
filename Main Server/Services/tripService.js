@@ -15,6 +15,8 @@ const { TRIP_STATUS, GENDER_PREFERENCE, BOOKING_STATUS, FREE_OFFER_TYPE } = requ
 const commissionService = require('./commissionService');
 const notificationService = require('./notificationService');
 const { releaseSeatLock } = require('../utils/seatLock');
+const homeService = require('./homeService');
+const { seatNumbersFor } = require('../utils/seatSerializer');
 
 /**
  * US3 minimum-balance gate. Rejects with NO_ACTIVE_PLAN when the driver has
@@ -224,7 +226,9 @@ const createTrip = async (driverId, data) => {
 };
 
 /**
- * Get trip by ID with seats and stops
+ * Get trip by ID with seats and stops (US3). Confirmed passengers are
+ * serialized into a `passengers` array; `_participantIds` lets the controller
+ * gate passenger PII to the driver / confirmed passengers only.
  */
 const getTripById = async (tripId) => {
   const trip = await Trip.findByPk(tripId, {
@@ -233,10 +237,29 @@ const getTripById = async (tripId) => {
       { model: TripStop, as: 'stops' },
       { model: TripAttribute, as: 'attributes' },
       { model: Vehicle, as: 'vehicle' },
+      {
+        model: Booking,
+        as: 'bookings',
+        where: { status: BOOKING_STATUS.CONFIRMED },
+        required: false,
+        include: [{ model: User, as: 'passenger' }],
+      },
     ],
   });
   if (!trip) throw ApiErrors.notFound('Trip not found');
-  return trip;
+
+  const data = trip.toJSON();
+  const confirmedBookings = data.bookings || [];
+  data.passengers = confirmedBookings.map((b) => ({
+    booking_id: b.id,
+    passenger_name: b.passenger ? b.passenger.fullName : 'Passenger',
+    seats_booked: b.seatsBooked,
+    seat_numbers: seatNumbersFor(b),
+    status: b.status,
+  }));
+  data._participantIds = [data.driverId, ...confirmedBookings.map((b) => b.passengerId)];
+  delete data.bookings;
+  return data;
 };
 
 /**
@@ -320,6 +343,17 @@ const startTrip = async (driverId, tripId) => {
     throw ApiErrors.custom('Trip cannot be started from its current status.', 422, 'INVALID_TRIP_STATUS');
   }
 
+  // US2: departure window — reject starting more than 1 hour before departure.
+  const now = Date.now();
+  const START_WINDOW_MS = 60 * 60 * 1000;
+  if (trip.departureTime.getTime() - now > START_WINDOW_MS) {
+    throw ApiErrors.custom(
+      'Trip cannot be started yet. It can only be started within one hour before departure.',
+      400,
+      'TOO_EARLY_TO_START'
+    );
+  }
+
   const { current, minimum, totalBalance } = await commissionService.getGatingSnapshot(
     driverId,
     trip.farePerSeat
@@ -348,10 +382,32 @@ const startTrip = async (driverId, tripId) => {
 
   await trip.update({ status: TRIP_STATUS.IN_PROGRESS });
 
+  // US2: best-effort notify confirmed passengers that the trip has started.
+  try {
+    await notificationService.notifyConfirmedPassengers(
+      [trip.id],
+      'TRIP_STARTED',
+      { data: { trip_id: trip.id } }
+    );
+  } catch (err) {
+    console.warn('[tripService] TRIP_STARTED notification failed:', err.message);
+  }
+
+  // US2: drop the cached home payload so it reflects the new trip status.
+  try {
+    await homeService.invalidateHomeCache(driverId);
+  } catch (err) {
+    console.warn('[tripService] home cache invalidation failed:', err.message);
+  }
+
+  const trackingLink =
+    `${process.env.SOCKET_TRACKING_BASE_URL || 'wss://api.masar.app/socket.io'}?trip=${trip.id}`;
+
   return {
     trip_id: trip.id,
     status: trip.status,
     message: 'Trip started successfully!',
+    tracking_link: trackingLink,
   };
 };
 

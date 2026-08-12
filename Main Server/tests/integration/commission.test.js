@@ -34,11 +34,19 @@ function getFutureDate(daysAhead = 1) {
   return d.toISOString().split('T')[0];
 }
 
+function getStartableDeparture() {
+  const d = new Date(Date.now() + 30 * 60 * 1000);
+  const pad = (n) => String(n).padStart(2, '0');
+  const date = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  const time = `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  return { date, time };
+}
+
 const VALID_BODY = {
   origin_city: 'Amman',
   destination_city: 'Irbid',
-  departure_date: getFutureDate(1),
-  departure_time: '14:00',
+  departure_date: getStartableDeparture().date,
+  departure_time: getStartableDeparture().time,
   type_of_trip: 'once',
   fare_per_seat: '15.00',
   seats: [

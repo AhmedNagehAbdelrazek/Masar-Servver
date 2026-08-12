@@ -127,6 +127,16 @@ const TEMPLATES = {
       body: 'Your trip {route} was cancelled. Your booking has been refunded.',
     },
   },
+  TRIP_STARTED: {
+    ar: {
+      title: 'انطلقت رحلتك',
+      body: 'انطلقت رحلتك. يمكنك متابعة موقع الرحلة {trip_id}.',
+    },
+    en: {
+      title: 'Your trip has started',
+      body: 'Your trip has started. You can track it live: {trip_id}.',
+    },
+  },
   VERIFICATION_APPROVED: {
     ar: {
       title: 'تم توثيق حسابك',

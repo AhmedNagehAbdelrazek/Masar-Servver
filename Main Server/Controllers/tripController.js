@@ -13,6 +13,12 @@ const createTrip = async (req, res, next) => {
 const getTripById = async (req, res, next) => {
   try {
     const trip = await tripService.getTripById(req.params.trip_id);
+    const isParticipant =
+      Array.isArray(trip._participantIds) && trip._participantIds.includes(req.user.id);
+    delete trip._participantIds;
+    if (!isParticipant) {
+      delete trip.passengers;
+    }
     successResponse(res, trip);
   } catch (err) {
     next(err);
