@@ -14,6 +14,7 @@ Vehicle.init(
         driverId: {
             type: DataTypes.UUID,
             allowNull: false,
+            unique: true,
         },
         manufacturer: {
             type: DataTypes.STRING(80),
@@ -87,6 +88,14 @@ Vehicle.init(
         },
         verificationNotes: {
             type: DataTypes.TEXT,
+            allowNull: true,
+        },
+        verificationRejectionReason: {
+            type: DataTypes.TEXT,
+            allowNull: true,
+        },
+        verificationRejectedAt: {
+            type: DataTypes.DATE,
             allowNull: true,
         },
         verifiedBy: {

@@ -70,6 +70,37 @@
                     "field": "is_verified",
                     "seqType": "Sequelize.BOOLEAN"
                 },
+                "verificationStatus": {
+                    "allowNull": false,
+                    "defaultValue": {
+                        "value": "unverified"
+                    },
+                    "field": "verification_status",
+                    "seqType": "Sequelize.ENUM('unverified', 'pending', 'rejected', 'approved')"
+                },
+                "verificationSubmittedAt": {
+                    "allowNull": true,
+                    "field": "verification_submitted_at",
+                    "seqType": "Sequelize.DATE"
+                },
+                "verificationRejectedAt": {
+                    "allowNull": true,
+                    "field": "verification_rejected_at",
+                    "seqType": "Sequelize.DATE"
+                },
+                "verificationRejectionReason": {
+                    "allowNull": true,
+                    "field": "verification_rejection_reason",
+                    "seqType": "Sequelize.TEXT"
+                },
+                "verificationRejectionFields": {
+                    "allowNull": true,
+                    "defaultValue": {
+                        "value": []
+                    },
+                    "field": "verification_rejection_fields",
+                    "seqType": "Sequelize.JSONB"
+                },
                 "avgRating": {
                     "defaultValue": {
                         "value": 0
@@ -207,7 +238,14 @@
                 },
                 "driverId": {
                     "allowNull": false,
+                    "unique": true,
                     "field": "driver_id",
+                    "references": {
+                        "model": "users",
+                        "key": "id"
+                    },
+                    "onDelete": "CASCADE",
+                    "onUpdate": "CASCADE",
                     "seqType": "Sequelize.UUID"
                 },
                 "manufacturer": {
@@ -229,6 +267,17 @@
                     "allowNull": true,
                     "field": "model_year",
                     "seqType": "Sequelize.SMALLINT"
+                },
+                "plateNumber": {
+                    "allowNull": false,
+                    "unique": true,
+                    "field": "plate_number",
+                    "seqType": "Sequelize.STRING(20)"
+                },
+                "codeNumber": {
+                    "allowNull": true,
+                    "field": "code_number",
+                    "seqType": "Sequelize.STRING(20)"
                 },
                 "color": {
                     "allowNull": true,
@@ -289,6 +338,16 @@
                     "field": "verification_notes",
                     "seqType": "Sequelize.TEXT"
                 },
+                "verificationRejectionReason": {
+                    "allowNull": true,
+                    "field": "verification_rejection_reason",
+                    "seqType": "Sequelize.TEXT"
+                },
+                "verificationRejectedAt": {
+                    "allowNull": true,
+                    "field": "verification_rejected_at",
+                    "seqType": "Sequelize.DATE"
+                },
                 "verifiedBy": {
                     "allowNull": true,
                     "field": "verified_by",
@@ -308,17 +367,6 @@
                     "allowNull": false,
                     "field": "updatedat",
                     "seqType": "Sequelize.DATE"
-                },
-                "driver_id": {
-                    "allowNull": true,
-                    "references": {
-                        "model": "users",
-                        "key": "id"
-                    },
-                    "onDelete": "SET NULL",
-                    "onUpdate": "CASCADE",
-                    "field": "driver_id",
-                    "seqType": "Sequelize.UUID"
                 }
             },
             "indexes": []
@@ -470,6 +518,78 @@
                     "onDelete": "SET NULL",
                     "onUpdate": "CASCADE",
                     "field": "driver_id",
+                    "seqType": "Sequelize.UUID"
+                }
+            },
+            "indexes": []
+        },
+        "verification_status_changes": {
+            "tableName": "verification_status_changes",
+            "schema": {
+                "id": {
+                    "defaultValue": {
+                        "internal": true,
+                        "value": "Sequelize.UUIDV4"
+                    },
+                    "primaryKey": true,
+                    "field": "id",
+                    "seqType": "Sequelize.UUID"
+                },
+                "driverId": {
+                    "allowNull": false,
+                    "field": "driver_id",
+                    "seqType": "Sequelize.UUID"
+                },
+                "fromStatus": {
+                    "allowNull": true,
+                    "field": "from_status",
+                    "seqType": "Sequelize.ENUM('unverified', 'pending', 'rejected', 'approved')"
+                },
+                "toStatus": {
+                    "allowNull": false,
+                    "field": "to_status",
+                    "seqType": "Sequelize.ENUM('unverified', 'pending', 'rejected', 'approved')"
+                },
+                "reason": {
+                    "allowNull": true,
+                    "field": "reason",
+                    "seqType": "Sequelize.TEXT"
+                },
+                "markedFields": {
+                    "allowNull": true,
+                    "field": "marked_fields",
+                    "seqType": "Sequelize.JSONB"
+                },
+                "changedBy": {
+                    "allowNull": true,
+                    "field": "changed_by",
+                    "seqType": "Sequelize.UUID"
+                },
+                "createdat": {
+                    "allowNull": false,
+                    "field": "createdat",
+                    "seqType": "Sequelize.DATE"
+                },
+                "driver_id": {
+                    "allowNull": true,
+                    "references": {
+                        "model": "users",
+                        "key": "id"
+                    },
+                    "onDelete": "SET NULL",
+                    "onUpdate": "CASCADE",
+                    "field": "driver_id",
+                    "seqType": "Sequelize.UUID"
+                },
+                "changed_by": {
+                    "allowNull": true,
+                    "references": {
+                        "model": "users",
+                        "key": "id"
+                    },
+                    "onDelete": "SET NULL",
+                    "onUpdate": "CASCADE",
+                    "field": "changed_by",
                     "seqType": "Sequelize.UUID"
                 }
             },

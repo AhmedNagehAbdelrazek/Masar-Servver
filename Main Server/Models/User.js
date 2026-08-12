@@ -1,6 +1,6 @@
 const { Model, DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
-const { ROLES, GENDER, USER_STATUS } = require('../config/constants');
+const { ROLES, GENDER, USER_STATUS, VERIFICATION_STATUS } = require('../config/constants');
 
 class User extends Model { }
 
@@ -54,6 +54,28 @@ User.init(
             type: DataTypes.BOOLEAN,
             allowNull: false,
             defaultValue: false,
+        },
+        verificationStatus: {
+            type: DataTypes.ENUM(Object.values(VERIFICATION_STATUS)),
+            allowNull: false,
+            defaultValue: VERIFICATION_STATUS.UNVERIFIED,
+        },
+        verificationSubmittedAt: {
+            type: DataTypes.DATE,
+            allowNull: true,
+        },
+        verificationRejectedAt: {
+            type: DataTypes.DATE,
+            allowNull: true,
+        },
+        verificationRejectionReason: {
+            type: DataTypes.TEXT,
+            allowNull: true,
+        },
+        verificationRejectionFields: {
+            type: DataTypes.JSONB,
+            allowNull: true,
+            defaultValue: [],
         },
         avgRating: {
             type: DataTypes.NUMERIC(2, 1),
