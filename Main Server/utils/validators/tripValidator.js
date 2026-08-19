@@ -274,6 +274,18 @@ const updateTripValidation = [
     .isISO8601().withMessage('Estimated arrival must be a valid ISO-8601 datetime'),
 ];
 
+const cancelTripValidation = [
+  param('trip_id').isUUID().withMessage('Trip ID must be a valid UUID'),
+  body('reason')
+    .trim()
+    .notEmpty().withMessage('Cancellation reason is required')
+    .isLength({ max: 500 }).withMessage('Reason must be at most 500 characters'),
+  body('note')
+    .optional()
+    .trim()
+    .isLength({ max: 500 }).withMessage('Note must be at most 500 characters'),
+];
+
 module.exports = {
   createTripValidation,
   searchAvailableTripsValidation,
@@ -281,4 +293,5 @@ module.exports = {
   releaseSeatLockValidation,
   updateTripValidation,
   tripParamValidation,
+  cancelTripValidation,
 };

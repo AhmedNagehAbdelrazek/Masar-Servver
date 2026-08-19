@@ -158,6 +158,77 @@ const FREE_OFFER_TYPE = {
   CREDIT: 'credit',
 };
 
+const PENALTY_SEVERITY = {
+  MINOR: 'minor',
+  MODERATE: 'moderate',
+  MAJOR: 'major',
+};
+
+const PENALTY_CATEGORY = {
+  GENERAL: 'general',
+  TRIP_CANCELLATION: 'trip_cancellation',
+  NO_SHOW: 'no_show',
+  MISCONDUCT: 'misconduct',
+  FRAUD: 'fraud',
+};
+
+const CANCELLATION_ESCALATION = {
+  WARNING_MIN: 3,
+  WARNING_MAX: 4,
+  SUSPENSION_7D_MIN: 5,
+  SUSPENSION_7D_MAX: 6,
+  SUSPENSION_30D_MIN: 7,
+};
+
+const NOTIFICATION_TYPE = {
+  BOOKING_CONFIRMED: 'booking_confirmed',
+  BOOKING_CANCELLED: 'booking_cancelled',
+  TRIP_REMINDER: 'trip_reminder',
+  TRIP_CANCELLED: 'trip_cancelled',
+  DRIVER_OFFER: 'driver_offer',
+  RIDE_REQUEST_REPLY: 'ride_request_reply',
+  NEW_MESSAGE: 'new_message',
+  RATING_RECEIVED: 'rating_received',
+  DELAY_REPORT: 'delay_report',
+  SOS_ALERT: 'sos_alert',
+  ENFORCEMENT_ACTION: 'enforcement_action',
+  SUBSCRIPTION_EXPIRING: 'subscription_expiring',
+  SYSTEM_ANNOUNCEMENT: 'system_announcement',
+};
+
+const NOTIFICATION_TYPE_LABELS = {
+  ar: {
+    booking_confirmed: 'تأكيد الحجز',
+    booking_cancelled: 'إلغاء الحجز',
+    trip_reminder: 'تذكير الرحلة',
+    trip_cancelled: 'إلغاء الرحلة',
+    driver_offer: 'عرض السائق',
+    ride_request_reply: 'رد على طلب الرحلة',
+    new_message: 'رسائل جديدة',
+    rating_received: 'تقييم جديد',
+    delay_report: 'بلاغ تأخير',
+    sos_alert: 'تنبيه طوارئ',
+    enforcement_action: 'إجراء إنضباطي',
+    subscription_expiring: 'اشتراك ينتهي قريباً',
+    system_announcement: 'إعلانات النظام',
+  },
+  en: {
+    booking_confirmed: 'Booking confirmed',
+    booking_cancelled: 'Booking cancelled',
+    trip_reminder: 'Trip reminder',
+    trip_cancelled: 'Trip cancelled',
+    driver_offer: 'Driver offer',
+    ride_request_reply: 'Ride request reply',
+    new_message: 'New message',
+    rating_received: 'Rating received',
+    delay_report: 'Delay report',
+    sos_alert: 'SOS alert',
+    enforcement_action: 'Enforcement action',
+    subscription_expiring: 'Subscription expiring',
+    system_announcement: 'System announcement',
+  },
+};
+
 const SIGNUP_ROLES = [ROLES.PASSENGER, ROLES.RIDER];
 
 // THE RESOURCES AND ACTIONS THAT THE ADMIN CAN GIVE THEM WITH EACH ROLE LIKE [{resource: 'trip', actions: ['create', 'read', 'update', 'delete']}]; 
@@ -208,6 +279,11 @@ module.exports = {
   VERIFICATION_STATUS,
   VERIFICATION_FIELD_KEYS,
   FREE_OFFER_TYPE,
+  PENALTY_SEVERITY,
+  PENALTY_CATEGORY,
+  CANCELLATION_ESCALATION,
+  NOTIFICATION_TYPE,
+  NOTIFICATION_TYPE_LABELS,
   PAGINATION,
   ADMIN_RESOURCES,
   ADMIN_ACTIONS,

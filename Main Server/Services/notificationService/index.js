@@ -168,6 +168,16 @@ const TEMPLATES = {
       body: 'Driver {driver_name} submitted a new verification request for review.',
     },
   },
+  PENALTY_ISSUED: {
+    ar: {
+      title: 'تم تسجيل مخالفة',
+      body: 'تم تسجيل {severity} بسبب: {reason}. يرجى مراجعة سياسة المنصة.',
+    },
+    en: {
+      title: 'Penalty issued',
+      body: 'A {severity} penalty has been recorded: {reason}. Please review the platform policy.',
+    },
+  },
 };
 
 function interpolate(template, vars = {}) {
@@ -200,8 +210,24 @@ async function sendToUser(user, type, { channels = ['in_app'], vars = {}, data =
     body: interpolate(entry.body, vars),
   };
 
+  // Check user's notification settings to filter channels
+  let allowedChannels = [...channels];
+  try {
+    const { NotificationSetting } = require('../../Models');
+    const setting = await NotificationSetting.findOne({
+      where: { userId: user.id, notificationType: type },
+    });
+    if (setting) {
+      if (!setting.enabledInApp) allowedChannels = allowedChannels.filter((c) => c !== 'in_app');
+      if (!setting.enabledPush) allowedChannels = allowedChannels.filter((c) => c !== 'push');
+    }
+  } catch (err) {
+    // If settings lookup fails, proceed with original channels (fail-open)
+    console.warn('[notification] settings check failed:', err.message);
+  }
+
   const results = {};
-  if (channels.includes('sms')) {
+  if (allowedChannels.includes('sms')) {
     try {
       await sms.send(user, message);
       results.sms = true;
@@ -210,7 +236,7 @@ async function sendToUser(user, type, { channels = ['in_app'], vars = {}, data =
       console.warn('[notification] sms failed:', err.message);
     }
   }
-  if (channels.includes('push')) {
+  if (allowedChannels.includes('push')) {
     try {
       await push.send(user, message, data);
       results.push = true;
@@ -219,7 +245,7 @@ async function sendToUser(user, type, { channels = ['in_app'], vars = {}, data =
       console.warn('[notification] push failed:', err.message);
     }
   }
-  if (channels.includes('in_app')) {
+  if (allowedChannels.includes('in_app')) {
     try {
       results.in_app = await inApp.send(user, message, data);
     } catch (err) {

@@ -1,23 +1,20 @@
-const { query, param } = require('express-validator');
+const { body } = require('express-validator');
+const { NOTIFICATION_TYPE } = require('../../config/constants');
 
-const notificationListValidation = [
-  query('unread')
+const VALID_TYPES = Object.values(NOTIFICATION_TYPE);
+
+const updateNotificationSettingsValidation = [
+  body('settings')
+    .isArray({ min: 1 }).withMessage('Settings must be a non-empty array'),
+  body('settings.*.type')
+    .notEmpty().withMessage('Notification type is required')
+    .isIn(VALID_TYPES).withMessage(`Notification type must be one of: ${VALID_TYPES.join(', ')}`),
+  body('settings.*.enabled_in_app')
     .optional()
-    .isIn(['true', 'false']).withMessage('unread must be true or false'),
-  query('page')
+    .isBoolean().withMessage('enabled_in_app must be a boolean'),
+  body('settings.*.enabled_push')
     .optional()
-    .isInt({ min: 1 }).withMessage('Page must be a positive integer'),
-  query('limit')
-    .optional()
-    .isInt({ min: 1, max: 100 }).withMessage('Limit must be an integer between 1 and 100'),
+    .isBoolean().withMessage('enabled_push must be a boolean'),
 ];
 
-const notificationParamValidation = [
-  param('notification_id')
-    .isUUID().withMessage('Notification ID must be a valid UUID'),
-];
-
-module.exports = {
-  notificationListValidation,
-  notificationParamValidation,
-};
+module.exports = { updateNotificationSettingsValidation };

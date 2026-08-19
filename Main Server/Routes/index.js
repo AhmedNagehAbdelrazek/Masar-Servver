@@ -15,6 +15,7 @@ const driverVerificationRoutes = require('./driverVerificationRoutes');
 const ratingRoutes = require('./ratingRoutes');
 const complaintRoutes = require('./complaintRoutes');
 const notificationRoutes = require('./notificationRoutes');
+const notificationSettingRoutes = require('./notificationSettingRoutes');
 const vehicleRoutes = require('./vehicleRoutes');
 const adminVerificationRoutes = require('./adminVerificationRoutes');
 const adminModerationRoutes = require('./adminModerationRoutes');
@@ -36,6 +37,7 @@ router.use('/admin', adminModerationRoutes);
 router.use('/ratings', ratingRoutes);
 router.use('/complaints', complaintRoutes);
 router.use('/notifications', notificationRoutes);
+router.use('/settings/notifications', notificationSettingRoutes);
 router.use('/vehicles', vehicleRoutes);
 
 module.exports = router;

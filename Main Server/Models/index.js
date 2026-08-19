@@ -25,6 +25,7 @@ const SubscriptionTransaction = require('./SubscriptionTransaction');
 const SubscriptionPlan = require('./SubscriptionPlan');
 const DriverSubscription = require('./DriverSubscription');
 const PaymentMethod = require('./PaymentMethod');
+const NotificationSetting = require('./NotificationSetting');
 
 // ===== USER RELATIONS =====
 User.hasOne(DriverProfile, { foreignKey: 'driver_id', as: 'driverProfile' });
@@ -126,6 +127,10 @@ DriverSubscription.belongsTo(SubscriptionPlan, { foreignKey: 'plan_id', as: 'pla
 SubscriptionPlan.hasMany(DriverSubscription, { foreignKey: 'plan_id', as: 'subscriptions' });
 DriverSubscription.belongsTo(UploadedImage, { foreignKey: 'screenshot_id', as: 'screenshot' });
 
+// ===== NOTIFICATION SETTINGS RELATIONS =====
+User.hasMany(NotificationSetting, { foreignKey: 'user_id', as: 'notificationSettings' });
+NotificationSetting.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+
 module.exports = {
   sequelize,
   User,
@@ -154,4 +159,5 @@ module.exports = {
   SubscriptionPlan,
   DriverSubscription,
   PaymentMethod,
+  NotificationSetting,
 };

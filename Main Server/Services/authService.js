@@ -227,6 +227,14 @@ async function registerPassword(authHeader, password) {
     }
   }
 
+  // Initialize default notification settings for all new users.
+  try {
+    const { initializeDefaults } = require('./notificationSettingService');
+    await initializeDefaults(user.id);
+  } catch (err) {
+    console.warn('[authService] failed to initialize notification settings:', err.message);
+  }
+
   const accessToken = generateAccessToken(user);
   const { token: refreshToken, jti } = generateRefreshToken(user);
   await storeRefreshToken(user.id, jti);

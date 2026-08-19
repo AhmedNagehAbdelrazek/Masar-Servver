@@ -1,11 +1,11 @@
 {
   "info": {
-    "_postman_id": "3c9af235-e3c3-4606-a0e2-9d02953151e6",
+    "_postman_id": "78769432-7e48-4dd1-801a-199c23155feb",
     "name": "Masar API",
-    "description": "Complete API collection for the Masar ride-sharing platform (Driver Flow Audit reorganization, 2026-08-01).\n\nBase URL: {{base_url}} (default http://localhost:8000/api).\n\n## Folder organization\n- **Auth (shared)** — registration, login, tokens, forgot password, current user.\n- **Driver** — Profile & Vehicle, Verification (spec 006: status / submit / resubmit), Trip Management, Dashboard, Bookings, Communication, Ratings & Reviews, Complaints, Penalties, Notifications, Subscription & Earnings.\n- **Passenger** — Trip Discovery, Booking, Tracking, Ratings, Complaints, Request Board, Favorites.\n- **Admin** — Subscription Management, Verification Queue, Users Management, Trip Moderation, Arbitration, Penalties, Reports & Analytics.\n\n## Notes\n- Requests marked **PROPOSED** (in the description) are not implemented yet; their response examples are proposed designs.\n- Every request carries a success + error example.\n- Verification endpoints use the `{ \"status\": \"success\", \"data\": {...} }` envelope; admin approve/reject return the raw `{ \"driver_id\" | \"vehicle_id\", ... }` payload.\n- Token-setting tests on registration/login flows populate {{access_token}}/{{refresh_token}} automatically.\n- Error envelope: `{ \"status\": \"error\", \"message\": \"...\", \"code\": \"...\" }`.\n\n## Free Plan\n- The free plan is **automatically assigned** to every new driver at signup — no manual subscription required.\n- Drivers **cannot** subscribe to the free plan manually (`422 FREE_PLAN_NOT_SUBSCRIBABLE`).\n- The admin can create/update/deactivate the free plan via Admin > Subscription Management.\n- The free plan's `free_offer` configures the number of free trips (`{ \"type\": \"trips\", \"value\": N }`).\n- Once free trips are exhausted, the driver must subscribe to a paid plan to continue.",
+    "description": "Complete API collection for the Masar ride-sharing platform (Driver Flow Audit reorganization, 2026-08-01 + Feature 008: Trip Details, Cancellation & Notification Settings).\n\nBase URL: {{base_url}} (default http://localhost:8000/api).\n\n## Folder organization\n- **Auth (shared)** — registration, login, tokens, forgot password, current user.\n- **Driver** — Profile & Vehicle, Verification (spec 006: status / submit / resubmit), Trip Management (incl. Get Trip Details, Cancel Trip with Penalty), Dashboard, Bookings, Communication, Ratings & Reviews, Complaints, Penalties, Notifications, Notification Settings, Subscription & Earnings.\n- **Passenger** — Trip Discovery, Booking, Tracking, Ratings, Complaints, Request Board, Favorites.\n- **Admin** — Subscription Management, Verification Queue, Users Management, Trip Moderation, Arbitration, Penalties, Reports & Analytics.\n\n## Feature 008 — Trip Details, Cancellation & Notification Settings\n- **GET /trips/:trip_id** — Enhanced with full driver profile, vehicle info, waypoints, attributes, and passenger booking details. Access restricted to trip participants (driver, confirmed passengers, admins).\n- **POST /trips/:trip_id/cancel** — New penalty-aware cancellation. Requires reason + optional note. Only allowed when no confirmed bookings exist. Creates penalty record and applies automatic escalation (warning → 7d suspension → 30d suspension). Bans never auto-created.\n- **GET /settings/notifications** — Returns all notification types with enabled/disabled state per channel (in_app, push). Falls back to defaults if no settings exist.\n- **PUT /settings/notifications** — Upserts notification preferences. Only provided types are updated.\n\n## Notes\n- Requests marked **PROPOSED** (in the description) are not implemented yet; their response examples are proposed designs.\n- Every request carries a success + error example.\n- Verification endpoints use the `{ \"status\": \"success\", \"data\": {...} }` envelope; admin approve/reject return the raw `{ \"driver_id\" | \"vehicle_id\", ... }` payload.\n- Token-setting tests on registration/login flows populate {{access_token}}/{{refresh_token}} automatically.\n- Error envelope: `{ \"status\": \"error\", \"message\": \"...\", \"code\": \"...\" }`.\n\n## Free Plan\n- The free plan is **automatically assigned** to every new driver at signup — no manual subscription required.\n- Drivers **cannot** subscribe to the free plan manually (`422 FREE_PLAN_NOT_SUBSCRIBABLE`).\n- The admin can create/update/deactivate the free plan via Admin > Subscription Management.\n- The free plan's `free_offer` configures the number of free trips (`{ \"type\": \"trips\", \"value\": N }`).\n- Once free trips are exhausted, the driver must subscribe to a paid plan to continue.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "_exporter_id": "28639752",
-    "_collection_link": "https://go.postman.co/collection/28639752-3c9af235-e3c3-4606-a0e2-9d02953151e6?source=collection_link"
+    "_collection_link": "https://go.postman.co/collection/28639752-78769432-7e48-4dd1-801a-199c23155feb?source=collection_link"
   },
   "item": [
     {
@@ -2987,161 +2987,6 @@
               ]
             },
             {
-              "name": "Upload Image",
-              "event": [
-                {
-                  "listen": "prerequest",
-                  "script": {
-                    "exec": [
-                      "pm.environment.get('access_token') ? pm.request.headers.add({ key: 'Authorization', value: 'Bearer ' + pm.environment.get('access_token') }) : console.warn('No access_token set');"
-                    ],
-                    "type": "text/javascript",
-                    "packages": {},
-                    "requests": {}
-                  }
-                },
-                {
-                  "listen": "test",
-                  "script": {
-                    "exec": [
-                      "pm.test('Status code is 2xx or 4xx', function () {",
-                      "  pm.expect(pm.response.code).to.be.oneOf([200, 201, 204, 400, 401, 403, 404, 409, 422, 500]);",
-                      "});",
-                      "pm.test('Response is valid JSON', function () {",
-                      "  pm.response.to.be.json;",
-                      "});"
-                    ],
-                    "type": "text/javascript",
-                    "packages": {},
-                    "requests": {}
-                  }
-                }
-              ],
-              "request": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{access_token}}"
-                  }
-                ],
-                "body": {
-                  "mode": "formdata",
-                  "formdata": [
-                    {
-                      "key": "file",
-                      "type": "file",
-                      "src": "/C:/Users/Laptop/Downloads/Driver Trip Publishing Flow.png"
-                    }
-                  ]
-                },
-                "url": {
-                  "raw": "{{base_url}}/upload",
-                  "host": [
-                    "{{base_url}}"
-                  ],
-                  "path": [
-                    "upload"
-                  ]
-                },
-                "description": "Upload an image file (multipart/form-data). Returns an image ID used by the onboarding endpoints and subscription `screenshot_id`.\n\n**Form field**\n- `file` *(file, required)* — select an image from the `file` value picker."
-              },
-              "response": [
-                {
-                  "name": "Success",
-                  "originalRequest": {
-                    "method": "POST",
-                    "header": [
-                      {
-                        "key": "Authorization",
-                        "value": "Bearer {{access_token}}"
-                      }
-                    ],
-                    "body": {
-                      "mode": "formdata",
-                      "formdata": [
-                        {
-                          "key": "file",
-                          "type": "file",
-                          "src": [
-                            "/C:/Users/Laptop/Downloads/Driver Trip Publishing Flow.png"
-                          ]
-                        }
-                      ]
-                    },
-                    "url": {
-                      "raw": "{{base_url}}/upload",
-                      "host": [
-                        "{{base_url}}"
-                      ],
-                      "path": [
-                        "upload"
-                      ]
-                    },
-                    "description": "Upload an image file (multipart/form-data). Returns an image ID used by the onboarding endpoints and subscription `screenshot_id`.\n\n**Form field**\n- `file` *(file, required)* — select an image from the `file` value picker."
-                  },
-                  "status": "OK",
-                  "code": 200,
-                  "_postman_previewlanguage": "json",
-                  "header": [
-                    {
-                      "key": "Content-Type",
-                      "value": "application/json",
-                      "type": "text"
-                    }
-                  ],
-                  "cookie": [],
-                  "body": "{\n  \"image\": {\n    \"id\": 10,\n    \"url\": \"https://cdn.example.com/uploads/abc.png\",\n    \"filename\": \"abc.png\",\n    \"mimetype\": \"image/png\",\n    \"size\": 24576\n  }\n}"
-                },
-                {
-                  "name": "Validation",
-                  "originalRequest": {
-                    "method": "POST",
-                    "header": [
-                      {
-                        "key": "Authorization",
-                        "value": "Bearer {{access_token}}"
-                      }
-                    ],
-                    "body": {
-                      "mode": "formdata",
-                      "formdata": [
-                        {
-                          "key": "file",
-                          "type": "file",
-                          "src": [
-                            "/C:/Users/Laptop/Downloads/Driver Trip Publishing Flow.png"
-                          ]
-                        }
-                      ]
-                    },
-                    "url": {
-                      "raw": "{{base_url}}/upload",
-                      "host": [
-                        "{{base_url}}"
-                      ],
-                      "path": [
-                        "upload"
-                      ]
-                    },
-                    "description": "Upload an image file (multipart/form-data). Returns an image ID used by the onboarding endpoints and subscription `screenshot_id`.\n\n**Form field**\n- `file` *(file, required)* — select an image from the `file` value picker."
-                  },
-                  "status": "Unprocessable Entity",
-                  "code": 422,
-                  "_postman_previewlanguage": "json",
-                  "header": [
-                    {
-                      "key": "Content-Type",
-                      "value": "application/json",
-                      "type": "text"
-                    }
-                  ],
-                  "cookie": [],
-                  "body": "{\n  \"status\": \"error\",\n  \"message\": \"Only image files are allowed\",\n  \"code\": \"VALIDATION_ERROR\"\n}"
-                }
-              ]
-            },
-            {
               "name": "Get Full Driver Profile",
               "event": [
                 {
@@ -3623,7 +3468,9 @@
                     "exec": [
                       "pm.environment.get('access_token') ? pm.request.headers.add({ key: 'Authorization', value: 'Bearer ' + pm.environment.get('access_token') }) : console.warn('No access_token set');"
                     ],
-                    "type": "text/javascript"
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
                   }
                 },
                 {
@@ -3633,7 +3480,9 @@
                       "pm.test('Trip created', function () { pm.response.to.have.status(201); });",
                       "if (pm.response.code === 201) { const j = pm.response.json(); pm.collectionVariables.set('trip_id', j.trip_id); }"
                     ],
-                    "type": "text/javascript"
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
                   }
                 }
               ],
@@ -3647,7 +3496,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"origin_city\": \"Amman\", // string\n  \"origin_area\": \"Abdoun\", // string\n  \"origin_lat\": \"31.9500\", // decimal degrees\n  \"origin_lng\": \"35.9100\", // decimal degrees\n  \"destination_city\": \"Irbid\", // string\n  \"destination_area\": \"Downtown\", // string\n  \"destination_lat\": \"32.5500\", // decimal degrees\n  \"destination_lng\": \"35.8500\", // decimal degrees\n  \"departure_date\": \"2026-08-15\", // ISO date\n  \"departure_time\": \"14:00\", // HH:MM 24h\n  \"type_of_trip\": \"once\", // \"once\" | \"repeated\"\n  \"fare_per_seat\": \"15.50\", // number ≥ 0 (JOD)\n  \"seats\": [\n    { \"seat_number\": 1, \"type\": \"driver\" }, // \"driver\" | \"available\" | \"unavailable\"\n    { \"seat_number\": 2, \"type\": \"available\" },\n    { \"seat_number\": 3, \"type\": \"available\" },\n    { \"seat_number\": 4, \"type\": \"unavailable\" }\n  ],\n  \"instructions\": [\"No smoking please\"], // optional string[]\n  \"additional_instructions\": \"Bring water\", // optional string\n  \"waypoints\": [\n    { \"stop_name\": \"Khalda\", \"stop_lat\": \"31.9600\", \"stop_lng\": \"35.9000\" } // optional stops\n  ]\n}"
+                  "raw": "{\n  \"origin_city\": \"Amman\", // string\n  \"origin_area\": \"Abdoun\", // string\n  \"origin_lat\": \"31.9500\", // decimal degrees\n  \"origin_lng\": \"35.9100\", // decimal degrees\n  \"destination_city\": \"Irbid\", // string\n  \"destination_area\": \"Downtown\", // string\n  \"destination_lat\": \"32.5500\", // decimal degrees\n  \"destination_lng\": \"35.8500\", // decimal degrees\n  \"departure_date\": \"2026-08-15\", // ISO date\n  \"departure_time\": \"14:00\", // HH:MM 24h\n  \"type_of_trip\": \"once\", // \"once\" | \"repeated\"\n  \"fare_per_seat\": \"15.50\", // number ≥ 0 (JOD)\n  \"allowed_type\":\"all\", // \"all\" | \"women_only\" | \"men_only\"\n  \"seats\": [\n    { \"seat_number\": 1, \"type\": \"driver\" }, // \"driver\" | \"available\" | \"unavailable\"\n    { \"seat_number\": 2, \"type\": \"available\" },\n    { \"seat_number\": 3, \"type\": \"available\" },\n    { \"seat_number\": 4, \"type\": \"unavailable\" }\n  ],\n  \"instructions\": [\"No smoking please\"], // optional string[]\n  \"additional_instructions\": \"Bring water\", // optional string\n  \"waypoints\": [\n    { \"stop_name\": \"Khalda\", \"stop_lat\": \"31.9600\", \"stop_lng\": \"35.9000\" } // optional stops\n  ]\n}"
                 },
                 "url": {
                   "raw": "{{base_url}}/trips",
@@ -3748,7 +3597,9 @@
                     "exec": [
                       "pm.environment.get('access_token') ? pm.request.headers.add({ key: 'Authorization', value: 'Bearer ' + pm.environment.get('access_token') }) : console.warn('No access_token set');"
                     ],
-                    "type": "text/javascript"
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
                   }
                 }
               ],
@@ -3762,7 +3613,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"origin_city\": \"Amman\", // string\n  \"origin_area\": \"Abdoun\", // string\n  \"origin_lat\": \"31.9500\", // decimal degrees\n  \"origin_lng\": \"35.9100\", // decimal degrees\n  \"destination_city\": \"Irbid\", // string\n  \"destination_area\": \"Downtown\", // string\n  \"destination_lat\": \"32.5500\", // decimal degrees\n  \"destination_lng\": \"35.8500\", // decimal degrees\n  \"departure_date\": \"2026-08-15\", // ISO date\n  \"departure_time\": \"14:00\", // HH:MM 24h\n  \"type_of_trip\": \"repeated\", // \"once\" | \"repeated\"\n  \"repeated_days\": [1, 3, 5], // days of week (0=Sun ... 6=Sat)\n  \"repeated_end_date\": \"2026-09-30\", // ISO date — last occurrence\n  \"fare_per_seat\": \"15.50\", // number ≥ 0 (JOD)\n  \"seats\": [\n    { \"seat_number\": 1, \"type\": \"driver\" }, // \"driver\" | \"available\" | \"unavailable\"\n    { \"seat_number\": 2, \"type\": \"available\" },\n    { \"seat_number\": 3, \"type\": \"available\" },\n    { \"seat_number\": 4, \"type\": \"unavailable\" }\n  ],\n  \"instructions\": [\"No smoking please\"], // optional string[]\n  \"waypoints\": [\n    { \"stop_name\": \"Khalda\", \"stop_lat\": \"31.9600\", \"stop_lng\": \"35.9000\" } // optional stops\n  ]\n}"
+                  "raw": "{\n  \"origin_city\": \"Amman\", // string\n  \"origin_area\": \"Abdoun\", // string\n  \"origin_lat\": \"31.9500\", // decimal degrees\n  \"origin_lng\": \"35.9100\", // decimal degrees\n  \"destination_city\": \"Irbid\", // string\n  \"destination_area\": \"Downtown\", // string\n  \"destination_lat\": \"32.5500\", // decimal degrees\n  \"destination_lng\": \"35.8500\", // decimal degrees\n  \"departure_date\": \"2026-08-15\", // ISO date\n  \"departure_time\": \"14:00\", // HH:MM 24h\n  \"type_of_trip\": \"repeated\", // \"once\" | \"repeated\"\n  \"repeated_days\": [1, 3, 5], // days of week (0=Sun ... 6=Sat)\n  \"repeated_end_date\": \"2026-09-30\", // ISO date — last occurrence\n  \"fare_per_seat\": \"15.50\", // number ≥ 0 (JOD)\n  \"allowed_type\":\"all\", // \"all\" | \"women_only\" | \"men_only\"\n  \"seats\": [\n    { \"seat_number\": 1, \"type\": \"driver\" }, // \"driver\" | \"available\" | \"unavailable\"\n    { \"seat_number\": 2, \"type\": \"available\" },\n    { \"seat_number\": 3, \"type\": \"available\" },\n    { \"seat_number\": 4, \"type\": \"unavailable\" }\n  ],\n  \"instructions\": [\"No smoking please\"], // optional string[]\n  \"waypoints\": [\n    { \"stop_name\": \"Khalda\", \"stop_lat\": \"31.9600\", \"stop_lng\": \"35.9000\" } // optional stops\n  ]\n}"
                 },
                 "url": {
                   "raw": "{{base_url}}/trips",
@@ -4695,6 +4546,495 @@
                   ],
                   "cookie": [],
                   "body": "{\n  \"status\": \"error\",\n  \"message\": \"Trip not found\",\n  \"code\": \"NOT_FOUND\"\n}"
+                }
+              ]
+            },
+            {
+              "name": "Get Trip Details",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "exec": [
+                      "pm.environment.get('access_token') ? pm.request.headers.add({ key: 'Authorization', value: 'Bearer ' + pm.environment.get('access_token') }) : console.warn('No access_token set');"
+                    ],
+                    "type": "text/javascript"
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Trip details returned', function () { pm.response.to.have.status(200); });",
+                      "pm.test('Has trip object', function () { pm.expect(pm.response.json().trip).to.be.an('object'); });",
+                      "pm.test('Has passengers array', function () { pm.expect(pm.response.json().passengers).to.be.an('array'); });"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/trips/{{trip_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "trips",
+                    "{{trip_id}}"
+                  ]
+                },
+                "description": "Get full trip details including driver profile, vehicle info, waypoints, attributes, and confirmed passengers with booking details.\n\nAccess: trip driver, confirmed passengers, or admins only. Returns 403 for unrelated users.\n\n**Path params:**\n- `trip_id` (UUID, required) — the trip ID."
+              },
+              "response": [
+                {
+                  "name": "Success",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "Authorization",
+                        "value": "Bearer {{access_token}}",
+                        "type": "text"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{base_url}}/trips/{{trip_id}}",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "trips",
+                        "{{trip_id}}"
+                      ]
+                    },
+                    "description": "Get full trip details including driver profile, vehicle info, waypoints, attributes, and confirmed passengers with booking details.\n\nAccess: trip driver, confirmed passengers, or admins only. Returns 403 for unrelated users.\n\n**Path params:**\n- `trip_id` (UUID, required) — the trip ID."
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json",
+                      "type": "text"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n  \"trip\": {\n    \"trip_id\": \"00000000-0000-0000-0000-000000000090\",\n    \"driver\": {\n      \"id\": \"00000000-0000-0000-0000-000000000001\",\n      \"full_name\": \"Ahmad Al\",\n      \"phone\": \"+962791234565\",\n      \"rating\": 4.5,\n      \"profile_picture_url\": null\n    },\n    \"vehicle\": {\n      \"vehicle_id\": \"00000000-0000-0000-0000-000000000010\",\n      \"make_model\": \"Toyota Camry\",\n      \"year\": 2023,\n      \"plate_number\": \"1234-JO\",\n      \"color\": \"White\",\n      \"total_seats\": 4\n    },\n    \"origin\": { \"city\": \"Amman\", \"area\": \"Abdoun\", \"lat\": 31.95, \"lng\": 35.91 },\n    \"destination\": { \"city\": \"Irbid\", \"area\": \"Downtown\", \"lat\": 32.55, \"lng\": 35.85 },\n    \"departure_time\": \"2026-09-01T14:00:00.000Z\",\n    \"fare_per_seat\": 15.5,\n    \"currency\": \"JOD\",\n    \"total_seats\": 4,\n    \"available_seats\": 2,\n    \"status\": \"published\",\n    \"is_recurring\": false,\n    \"recurrence_days\": null,\n    \"recurrence_end_date\": null,\n    \"gender_preference\": \"all\",\n    \"attributes\": [\n      { \"key\": \"ac\", \"value\": true },\n      { \"key\": \"smoking_allowed\", \"value\": false }\n    ],\n    \"waypoints\": [\n      { \"stop_name\": \"Khalda\", \"stop_lat\": 31.96, \"stop_lng\": 35.9 }\n    ],\n    \"instructions\": [\"No smoking please\"],\n    \"additional_instructions\": \"Bring water\",\n    \"created_at\": \"2026-08-30T10:00:00.000Z\"\n  },\n  \"passengers\": [\n    {\n      \"booking_id\": \"00000000-0000-0000-0000-000000000050\",\n      \"passenger\": {\n        \"id\": \"00000000-0000-0000-0000-000000000002\",\n        \"full_name\": \"Sara Ahmed\",\n        \"phone\": \"+962792345678\",\n        \"rating\": 4.8,\n        \"profile_picture_url\": null\n      },\n      \"seats_booked\": 1,\n      \"seat_numbers\": [2],\n      \"agreed_fare\": 15.5,\n      \"booking_status\": \"confirmed\",\n      \"dropoff_place\": \"Irbid Downtown\",\n      \"dropoff_deadline\": null,\n      \"created_at\": \"2026-08-30T12:00:00.000Z\"\n    }\n  ]\n}"
+                },
+                {
+                  "name": "Forbidden",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "Authorization",
+                        "value": "Bearer {{access_token}}",
+                        "type": "text"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{base_url}}/trips/{{trip_id}}",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "trips",
+                        "{{trip_id}}"
+                      ]
+                    },
+                    "description": "Get full trip details including driver profile, vehicle info, waypoints, attributes, and confirmed passengers with booking details.\n\nAccess: trip driver, confirmed passengers, or admins only. Returns 403 for unrelated users.\n\n**Path params:**\n- `trip_id` (UUID, required) — the trip ID."
+                  },
+                  "status": "Forbidden",
+                  "code": 403,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json",
+                      "type": "text"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n  \"status\": \"error\",\n  \"message\": \"You do not have access to this trip\",\n  \"code\": \"FORBIDDEN\"\n}"
+                },
+                {
+                  "name": "Not Found",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "Authorization",
+                        "value": "Bearer {{access_token}}",
+                        "type": "text"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{base_url}}/trips/{{trip_id}}",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "trips",
+                        "{{trip_id}}"
+                      ]
+                    },
+                    "description": "Get full trip details including driver profile, vehicle info, waypoints, attributes, and confirmed passengers with booking details.\n\nAccess: trip driver, confirmed passengers, or admins only. Returns 403 for unrelated users.\n\n**Path params:**\n- `trip_id` (UUID, required) — the trip ID."
+                  },
+                  "status": "Not Found",
+                  "code": 404,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json",
+                      "type": "text"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n  \"status\": \"error\",\n  \"message\": \"Trip not found\",\n  \"code\": \"NOT_FOUND\"\n}"
+                }
+              ]
+            },
+            {
+              "name": "Cancel Trip with Penalty",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "exec": [
+                      "pm.environment.get('access_token') ? pm.request.headers.add({ key: 'Authorization', value: 'Bearer ' + pm.environment.get('access_token') }) : console.warn('No access_token set');"
+                    ],
+                    "type": "text/javascript"
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Trip cancelled with penalty', function () { pm.response.to.have.status(200); });",
+                      "pm.test('Has penalty_id', function () { pm.expect(pm.response.json().penalty_id).to.exist; });"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"reason\": \"Personal emergency\",\n  \"note\": \"Will resume tomorrow\" // optional\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/trips/{{trip_id}}/cancel",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "trips",
+                    "{{trip_id}}",
+                    "cancel"
+                  ]
+                },
+                "description": "Cancel a trip with automatic penalty recording (US2).\n\n**Access:** Driver who owns the trip only.\n\n**Guards:**\n- Trip status must be `published` or `full`\n- Zero confirmed bookings (rejects with 409 if any exist)\n\n**Behavior:**\n- Sets trip status to `cancelled`\n- Creates a penalty record with `penaltyType: trip_cancellation`\n- Applies escalation: 3–4 cancels/30d = warning, 5–6 = 7-day suspension, 7+ = 30-day suspension\n- Bans are never auto-created\n- Notifies passengers via `TRIP_CANCELLED`\n\n**Body fields:**\n- `reason` *(string, required, max 500)* — cancellation reason\n- `note` *(string, optional, max 500)* — additional note"
+              },
+              "response": [
+                {
+                  "name": "Success",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Authorization",
+                        "value": "Bearer {{access_token}}",
+                        "type": "text"
+                      },
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json",
+                        "type": "text"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"reason\": \"Personal emergency\",\n  \"note\": \"Will resume tomorrow\" // optional\n}"
+                    },
+                    "url": {
+                      "raw": "{{base_url}}/trips/{{trip_id}}/cancel",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "trips",
+                        "{{trip_id}}",
+                        "cancel"
+                      ]
+                    },
+                    "description": "Cancel a trip with automatic penalty recording (US2).\n\n**Access:** Driver who owns the trip only.\n\n**Guards:**\n- Trip status must be `published` or `full`\n- Zero confirmed bookings (rejects with 409 if any exist)\n\n**Behavior:**\n- Sets trip status to `cancelled`\n- Creates a penalty record with `penaltyType: trip_cancellation`\n- Applies escalation: 3–4 cancels/30d = warning, 5–6 = 7-day suspension, 7+ = 30-day suspension\n- Bans are never auto-created\n- Notifies passengers via `TRIP_CANCELLED`\n\n**Body fields:**\n- `reason` *(string, required, max 500)* — cancellation reason\n- `note` *(string, optional, max 500)* — additional note"
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json",
+                      "type": "text"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n  \"message\": \"Trip cancelled successfully. This cancellation has been recorded.\",\n  \"trip_id\": \"00000000-0000-0000-0000-000000000090\",\n  \"status\": \"cancelled\",\n  \"penalty_id\": \"00000000-0000-0000-0000-000000000060\",\n  \"penalty_type\": \"minor\"\n}"
+                },
+                {
+                  "name": "Conflict - Has Bookings",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Authorization",
+                        "value": "Bearer {{access_token}}",
+                        "type": "text"
+                      },
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json",
+                        "type": "text"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"reason\": \"Personal emergency\",\n  \"note\": \"Will resume tomorrow\" // optional\n}"
+                    },
+                    "url": {
+                      "raw": "{{base_url}}/trips/{{trip_id}}/cancel",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "trips",
+                        "{{trip_id}}",
+                        "cancel"
+                      ]
+                    },
+                    "description": "Cancel a trip with automatic penalty recording (US2).\n\n**Access:** Driver who owns the trip only.\n\n**Guards:**\n- Trip status must be `published` or `full`\n- Zero confirmed bookings (rejects with 409 if any exist)\n\n**Behavior:**\n- Sets trip status to `cancelled`\n- Creates a penalty record with `penaltyType: trip_cancellation`\n- Applies escalation: 3–4 cancels/30d = warning, 5–6 = 7-day suspension, 7+ = 30-day suspension\n- Bans are never auto-created\n- Notifies passengers via `TRIP_CANCELLED`\n\n**Body fields:**\n- `reason` *(string, required, max 500)* — cancellation reason\n- `note` *(string, optional, max 500)* — additional note"
+                  },
+                  "status": "Conflict",
+                  "code": 409,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json",
+                      "type": "text"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n  \"status\": \"error\",\n  \"message\": \"Cannot cancel trip. There are confirmed bookings. Please contact support.\",\n  \"code\": \"CONFLICT\"\n}"
+                },
+                {
+                  "name": "Conflict - Already Cancelled",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Authorization",
+                        "value": "Bearer {{access_token}}",
+                        "type": "text"
+                      },
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json",
+                        "type": "text"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"reason\": \"Personal emergency\",\n  \"note\": \"Will resume tomorrow\" // optional\n}"
+                    },
+                    "url": {
+                      "raw": "{{base_url}}/trips/{{trip_id}}/cancel",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "trips",
+                        "{{trip_id}}",
+                        "cancel"
+                      ]
+                    },
+                    "description": "Cancel a trip with automatic penalty recording (US2).\n\n**Access:** Driver who owns the trip only.\n\n**Guards:**\n- Trip status must be `published` or `full`\n- Zero confirmed bookings (rejects with 409 if any exist)\n\n**Behavior:**\n- Sets trip status to `cancelled`\n- Creates a penalty record with `penaltyType: trip_cancellation`\n- Applies escalation: 3–4 cancels/30d = warning, 5–6 = 7-day suspension, 7+ = 30-day suspension\n- Bans are never auto-created\n- Notifies passengers via `TRIP_CANCELLED`\n\n**Body fields:**\n- `reason` *(string, required, max 500)* — cancellation reason\n- `note` *(string, optional, max 500)* — additional note"
+                  },
+                  "status": "Conflict",
+                  "code": 409,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json",
+                      "type": "text"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n  \"status\": \"error\",\n  \"message\": \"Trip is already cancelled.\",\n  \"code\": \"CONFLICT\"\n}"
+                },
+                {
+                  "name": "Conflict - Trip Started",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Authorization",
+                        "value": "Bearer {{access_token}}",
+                        "type": "text"
+                      },
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json",
+                        "type": "text"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"reason\": \"Personal emergency\",\n  \"note\": \"Will resume tomorrow\" // optional\n}"
+                    },
+                    "url": {
+                      "raw": "{{base_url}}/trips/{{trip_id}}/cancel",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "trips",
+                        "{{trip_id}}",
+                        "cancel"
+                      ]
+                    },
+                    "description": "Cancel a trip with automatic penalty recording (US2).\n\n**Access:** Driver who owns the trip only.\n\n**Guards:**\n- Trip status must be `published` or `full`\n- Zero confirmed bookings (rejects with 409 if any exist)\n\n**Behavior:**\n- Sets trip status to `cancelled`\n- Creates a penalty record with `penaltyType: trip_cancellation`\n- Applies escalation: 3–4 cancels/30d = warning, 5–6 = 7-day suspension, 7+ = 30-day suspension\n- Bans are never auto-created\n- Notifies passengers via `TRIP_CANCELLED`\n\n**Body fields:**\n- `reason` *(string, required, max 500)* — cancellation reason\n- `note` *(string, optional, max 500)* — additional note"
+                  },
+                  "status": "Conflict",
+                  "code": 409,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json",
+                      "type": "text"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n  \"status\": \"error\",\n  \"message\": \"Trip is already ongoing or completed. Cannot cancel.\",\n  \"code\": \"CONFLICT\"\n}"
+                },
+                {
+                  "name": "Forbidden - Not Owner",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Authorization",
+                        "value": "Bearer {{access_token}}",
+                        "type": "text"
+                      },
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json",
+                        "type": "text"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"reason\": \"Personal emergency\",\n  \"note\": \"Will resume tomorrow\" // optional\n}"
+                    },
+                    "url": {
+                      "raw": "{{base_url}}/trips/{{trip_id}}/cancel",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "trips",
+                        "{{trip_id}}",
+                        "cancel"
+                      ]
+                    },
+                    "description": "Cancel a trip with automatic penalty recording (US2).\n\n**Access:** Driver who owns the trip only.\n\n**Guards:**\n- Trip status must be `published` or `full`\n- Zero confirmed bookings (rejects with 409 if any exist)\n\n**Behavior:**\n- Sets trip status to `cancelled`\n- Creates a penalty record with `penaltyType: trip_cancellation`\n- Applies escalation: 3–4 cancels/30d = warning, 5–6 = 7-day suspension, 7+ = 30-day suspension\n- Bans are never auto-created\n- Notifies passengers via `TRIP_CANCELLED`\n\n**Body fields:**\n- `reason` *(string, required, max 500)* — cancellation reason\n- `note` *(string, optional, max 500)* — additional note"
+                  },
+                  "status": "Forbidden",
+                  "code": 403,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json",
+                      "type": "text"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n  \"status\": \"error\",\n  \"message\": \"You can only cancel your own trips\",\n  \"code\": \"FORBIDDEN\"\n}"
+                },
+                {
+                  "name": "Validation Error - Missing Reason",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Authorization",
+                        "value": "Bearer {{access_token}}",
+                        "type": "text"
+                      },
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json",
+                        "type": "text"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"reason\": \"Personal emergency\",\n  \"note\": \"Will resume tomorrow\" // optional\n}"
+                    },
+                    "url": {
+                      "raw": "{{base_url}}/trips/{{trip_id}}/cancel",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "trips",
+                        "{{trip_id}}",
+                        "cancel"
+                      ]
+                    },
+                    "description": "Cancel a trip with automatic penalty recording (US2).\n\n**Access:** Driver who owns the trip only.\n\n**Guards:**\n- Trip status must be `published` or `full`\n- Zero confirmed bookings (rejects with 409 if any exist)\n\n**Behavior:**\n- Sets trip status to `cancelled`\n- Creates a penalty record with `penaltyType: trip_cancellation`\n- Applies escalation: 3–4 cancels/30d = warning, 5–6 = 7-day suspension, 7+ = 30-day suspension\n- Bans are never auto-created\n- Notifies passengers via `TRIP_CANCELLED`\n\n**Body fields:**\n- `reason` *(string, required, max 500)* — cancellation reason\n- `note` *(string, optional, max 500)* — additional note"
+                  },
+                  "status": "Unprocessable Entity",
+                  "code": 422,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json",
+                      "type": "text"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n  \"status\": \"error\",\n  \"message\": \"Cancellation reason is required\",\n  \"code\": \"VALIDATION_ERROR\"\n}"
                 }
               ]
             }
@@ -5831,464 +6171,6 @@
           ]
         },
         {
-          "name": "Communication",
-          "item": [
-            {
-              "name": "Get Chat History",
-              "event": [
-                {
-                  "listen": "prerequest",
-                  "script": {
-                    "exec": [
-                      "pm.environment.get('access_token') ? pm.request.headers.add({ key: 'Authorization', value: 'Bearer ' + pm.environment.get('access_token') }) : console.warn('No access_token set');"
-                    ],
-                    "type": "text/javascript",
-                    "packages": {},
-                    "requests": {}
-                  }
-                },
-                {
-                  "listen": "test",
-                  "script": {
-                    "exec": [
-                      "pm.test('Responds successfully', function () {",
-                      "    pm.response.to.be.oneOf([200, 201]);",
-                      "});",
-                      "pm.test('Returns a JSON body', function () {",
-                      "    pm.expect(pm.response.json()).to.be.an('object');",
-                      "});"
-                    ],
-                    "type": "text/javascript",
-                    "packages": {},
-                    "requests": {}
-                  }
-                }
-              ],
-              "request": {
-                "method": "GET",
-                "header": [
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{access_token}}",
-                    "type": "text"
-                  },
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json",
-                    "type": "text"
-                  }
-                ],
-                "url": {
-                  "raw": "{{base_url}}/chat/%7B%7Bbooking_id%7D%7D",
-                  "host": [
-                    "{{base_url}}"
-                  ],
-                  "path": [
-                    "chat",
-                    "%7B%7Bbooking_id%7D%7D"
-                  ]
-                },
-                "description": "PROPOSED (Phase 2). Retrieve chat history for a booking."
-              },
-              "response": [
-                {
-                  "name": "Success",
-                  "originalRequest": {
-                    "method": "GET",
-                    "header": [
-                      {
-                        "key": "Authorization",
-                        "value": "Bearer {{access_token}}",
-                        "type": "text"
-                      },
-                      {
-                        "key": "Content-Type",
-                        "value": "application/json",
-                        "type": "text"
-                      }
-                    ],
-                    "url": {
-                      "raw": "{{base_url}}/chat/%7B%7Bbooking_id%7D%7D",
-                      "host": [
-                        "{{base_url}}"
-                      ],
-                      "path": [
-                        "chat",
-                        "%7B%7Bbooking_id%7D%7D"
-                      ]
-                    },
-                    "description": "PROPOSED (Phase 2). Retrieve chat history for a booking."
-                  },
-                  "status": "OK",
-                  "code": 200,
-                  "_postman_previewlanguage": "json",
-                  "header": [
-                    {
-                      "key": "Content-Type",
-                      "value": "application/json",
-                      "type": "text"
-                    }
-                  ],
-                  "cookie": [],
-                  "body": "{\n  \"messages\": [\n    {\n      \"id\": \"00000000-0000-0000-0000-000000000050\",\n      \"sender_id\": \"00000000-0000-0000-0000-000000000002\",\n      \"body\": \"Will you be on time?\",\n      \"created_at\": \"2026-08-30T09:00:00.000Z\"\n    }\n  ]\n}"
-                },
-                {
-                  "name": "Forbidden",
-                  "originalRequest": {
-                    "method": "GET",
-                    "header": [
-                      {
-                        "key": "Authorization",
-                        "value": "Bearer {{access_token}}",
-                        "type": "text"
-                      },
-                      {
-                        "key": "Content-Type",
-                        "value": "application/json",
-                        "type": "text"
-                      }
-                    ],
-                    "url": {
-                      "raw": "{{base_url}}/chat/%7B%7Bbooking_id%7D%7D",
-                      "host": [
-                        "{{base_url}}"
-                      ],
-                      "path": [
-                        "chat",
-                        "%7B%7Bbooking_id%7D%7D"
-                      ]
-                    },
-                    "description": "PROPOSED (Phase 2). Retrieve chat history for a booking."
-                  },
-                  "status": "Forbidden",
-                  "code": 403,
-                  "_postman_previewlanguage": "json",
-                  "header": [
-                    {
-                      "key": "Content-Type",
-                      "value": "application/json",
-                      "type": "text"
-                    }
-                  ],
-                  "cookie": [],
-                  "body": "{\n  \"status\": \"error\",\n  \"message\": \"Not part of this booking\",\n  \"code\": \"FORBIDDEN\"\n}"
-                }
-              ]
-            },
-            {
-              "name": "Send Message",
-              "event": [
-                {
-                  "listen": "prerequest",
-                  "script": {
-                    "exec": [
-                      "pm.environment.get('access_token') ? pm.request.headers.add({ key: 'Authorization', value: 'Bearer ' + pm.environment.get('access_token') }) : console.warn('No access_token set');"
-                    ],
-                    "type": "text/javascript",
-                    "packages": {},
-                    "requests": {}
-                  }
-                },
-                {
-                  "listen": "test",
-                  "script": {
-                    "exec": [
-                      "pm.test('Responds successfully', function () {",
-                      "    pm.response.to.be.oneOf([200, 201]);",
-                      "});",
-                      "pm.test('Returns a JSON body', function () {",
-                      "    pm.expect(pm.response.json()).to.be.an('object');",
-                      "});"
-                    ],
-                    "type": "text/javascript",
-                    "packages": {},
-                    "requests": {}
-                  }
-                }
-              ],
-              "request": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{access_token}}",
-                    "type": "text"
-                  },
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json",
-                    "type": "text"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"body\": \"On my way\" // string — message text\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                },
-                "url": {
-                  "raw": "{{base_url}}/chat/%7B%7Bbooking_id%7D%7D",
-                  "host": [
-                    "{{base_url}}"
-                  ],
-                  "path": [
-                    "chat",
-                    "%7B%7Bbooking_id%7D%7D"
-                  ]
-                },
-                "description": "PROPOSED (Phase 2). Send a message."
-              },
-              "response": [
-                {
-                  "name": "Success",
-                  "originalRequest": {
-                    "method": "POST",
-                    "header": [
-                      {
-                        "key": "Authorization",
-                        "value": "Bearer {{access_token}}",
-                        "type": "text"
-                      },
-                      {
-                        "key": "Content-Type",
-                        "value": "application/json",
-                        "type": "text"
-                      }
-                    ],
-                    "body": {
-                      "mode": "raw",
-                      "raw": "{\n  \"body\": \"On my way\" // string — message text\n}",
-                      "options": {
-                        "raw": {
-                          "language": "json"
-                        }
-                      }
-                    },
-                    "url": {
-                      "raw": "{{base_url}}/chat/%7B%7Bbooking_id%7D%7D",
-                      "host": [
-                        "{{base_url}}"
-                      ],
-                      "path": [
-                        "chat",
-                        "%7B%7Bbooking_id%7D%7D"
-                      ]
-                    },
-                    "description": "PROPOSED (Phase 2). Send a message."
-                  },
-                  "status": "Created",
-                  "code": 201,
-                  "_postman_previewlanguage": "json",
-                  "header": [
-                    {
-                      "key": "Content-Type",
-                      "value": "application/json",
-                      "type": "text"
-                    }
-                  ],
-                  "cookie": [],
-                  "body": "{\n  \"message\": {\n    \"id\": \"00000000-0000-0000-0000-000000000051\",\n    \"sender_id\": \"00000000-0000-0000-0000-000000000001\",\n    \"body\": \"On my way\",\n    \"created_at\": \"2026-08-30T09:05:00.000Z\"\n  }\n}"
-                },
-                {
-                  "name": "Validation",
-                  "originalRequest": {
-                    "method": "POST",
-                    "header": [
-                      {
-                        "key": "Authorization",
-                        "value": "Bearer {{access_token}}",
-                        "type": "text"
-                      },
-                      {
-                        "key": "Content-Type",
-                        "value": "application/json",
-                        "type": "text"
-                      }
-                    ],
-                    "body": {
-                      "mode": "raw",
-                      "raw": "{\n  \"body\": \"On my way\" // string — message text\n}",
-                      "options": {
-                        "raw": {
-                          "language": "json"
-                        }
-                      }
-                    },
-                    "url": {
-                      "raw": "{{base_url}}/chat/%7B%7Bbooking_id%7D%7D",
-                      "host": [
-                        "{{base_url}}"
-                      ],
-                      "path": [
-                        "chat",
-                        "%7B%7Bbooking_id%7D%7D"
-                      ]
-                    },
-                    "description": "PROPOSED (Phase 2). Send a message."
-                  },
-                  "status": "Unprocessable Entity",
-                  "code": 422,
-                  "_postman_previewlanguage": "json",
-                  "header": [
-                    {
-                      "key": "Content-Type",
-                      "value": "application/json",
-                      "type": "text"
-                    }
-                  ],
-                  "cookie": [],
-                  "body": "{\n  \"status\": \"error\",\n  \"message\": \"Message cannot be empty\",\n  \"code\": \"VALIDATION_ERROR\"\n}"
-                }
-              ]
-            },
-            {
-              "name": "Initiate Call",
-              "event": [
-                {
-                  "listen": "prerequest",
-                  "script": {
-                    "exec": [
-                      "pm.environment.get('access_token') ? pm.request.headers.add({ key: 'Authorization', value: 'Bearer ' + pm.environment.get('access_token') }) : console.warn('No access_token set');"
-                    ],
-                    "type": "text/javascript",
-                    "packages": {},
-                    "requests": {}
-                  }
-                },
-                {
-                  "listen": "test",
-                  "script": {
-                    "exec": [
-                      "pm.test('Responds successfully', function () {",
-                      "    pm.response.to.be.oneOf([200, 201]);",
-                      "});",
-                      "pm.test('Returns a JSON body', function () {",
-                      "    pm.expect(pm.response.json()).to.be.an('object');",
-                      "});"
-                    ],
-                    "type": "text/javascript",
-                    "packages": {},
-                    "requests": {}
-                  }
-                }
-              ],
-              "request": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{access_token}}",
-                    "type": "text"
-                  },
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json",
-                    "type": "text"
-                  }
-                ],
-                "url": {
-                  "raw": "{{base_url}}/calls/%7B%7Bbooking_id%7D%7D",
-                  "host": [
-                    "{{base_url}}"
-                  ],
-                  "path": [
-                    "calls",
-                    "%7B%7Bbooking_id%7D%7D"
-                  ]
-                },
-                "description": "PROPOSED (Phase 2). Initiate a masked call."
-              },
-              "response": [
-                {
-                  "name": "Success",
-                  "originalRequest": {
-                    "method": "POST",
-                    "header": [
-                      {
-                        "key": "Authorization",
-                        "value": "Bearer {{access_token}}",
-                        "type": "text"
-                      },
-                      {
-                        "key": "Content-Type",
-                        "value": "application/json",
-                        "type": "text"
-                      }
-                    ],
-                    "url": {
-                      "raw": "{{base_url}}/calls/%7B%7Bbooking_id%7D%7D",
-                      "host": [
-                        "{{base_url}}"
-                      ],
-                      "path": [
-                        "calls",
-                        "%7B%7Bbooking_id%7D%7D"
-                      ]
-                    },
-                    "description": "PROPOSED (Phase 2). Initiate a masked call."
-                  },
-                  "status": "OK",
-                  "code": 200,
-                  "_postman_previewlanguage": "json",
-                  "header": [
-                    {
-                      "key": "Content-Type",
-                      "value": "application/json",
-                      "type": "text"
-                    }
-                  ],
-                  "cookie": [],
-                  "body": "{\n  \"call\": {\n    \"session\": \"call-session-1\",\n    \"masked_peer\": \"+962****001\"\n  }\n}"
-                },
-                {
-                  "name": "Not found",
-                  "originalRequest": {
-                    "method": "POST",
-                    "header": [
-                      {
-                        "key": "Authorization",
-                        "value": "Bearer {{access_token}}",
-                        "type": "text"
-                      },
-                      {
-                        "key": "Content-Type",
-                        "value": "application/json",
-                        "type": "text"
-                      }
-                    ],
-                    "url": {
-                      "raw": "{{base_url}}/calls/%7B%7Bbooking_id%7D%7D",
-                      "host": [
-                        "{{base_url}}"
-                      ],
-                      "path": [
-                        "calls",
-                        "%7B%7Bbooking_id%7D%7D"
-                      ]
-                    },
-                    "description": "PROPOSED (Phase 2). Initiate a masked call."
-                  },
-                  "status": "Not Found",
-                  "code": 404,
-                  "_postman_previewlanguage": "json",
-                  "header": [
-                    {
-                      "key": "Content-Type",
-                      "value": "application/json",
-                      "type": "text"
-                    }
-                  ],
-                  "cookie": [],
-                  "body": "{\n  \"status\": \"error\",\n  \"message\": \"Booking not found\",\n  \"code\": \"NOT_FOUND\"\n}"
-                }
-              ]
-            }
-          ]
-        },
-        {
           "name": "Ratings & Reviews",
           "item": [
             {
@@ -7056,295 +6938,6 @@
                   ],
                   "cookie": [],
                   "body": "{\n  \"status\": \"error\",\n  \"message\": \"Unauthorized\",\n  \"code\": \"UNAUTHORIZED\"\n}"
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "name": "Notifications",
-          "item": [
-            {
-              "name": "List Notifications",
-              "event": [
-                {
-                  "listen": "prerequest",
-                  "script": {
-                    "exec": [
-                      "pm.environment.get('access_token') ? pm.request.headers.add({ key: 'Authorization', value: 'Bearer ' + pm.environment.get('access_token') }) : console.warn('No access_token set');"
-                    ],
-                    "type": "text/javascript",
-                    "packages": {},
-                    "requests": {}
-                  }
-                },
-                {
-                  "listen": "test",
-                  "script": {
-                    "exec": [
-                      "pm.test('Responds successfully', function () {",
-                      "    pm.response.to.be.oneOf([200, 201]);",
-                      "});",
-                      "pm.test('Returns a JSON body', function () {",
-                      "    pm.expect(pm.response.json()).to.be.an('object');",
-                      "});"
-                    ],
-                    "type": "text/javascript",
-                    "packages": {},
-                    "requests": {}
-                  }
-                }
-              ],
-              "request": {
-                "method": "GET",
-                "header": [
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{access_token}}",
-                    "type": "text"
-                  },
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json",
-                    "type": "text"
-                  }
-                ],
-                "url": {
-                  "raw": "{{base_url}}/notifications",
-                  "host": [
-                    "{{base_url}}"
-                  ],
-                  "path": [
-                    "notifications"
-                  ]
-                },
-                "description": "PROPOSED. In-app notifications."
-              },
-              "response": [
-                {
-                  "name": "Success",
-                  "originalRequest": {
-                    "method": "GET",
-                    "header": [
-                      {
-                        "key": "Authorization",
-                        "value": "Bearer {{access_token}}",
-                        "type": "text"
-                      },
-                      {
-                        "key": "Content-Type",
-                        "value": "application/json",
-                        "type": "text"
-                      }
-                    ],
-                    "url": {
-                      "raw": "{{base_url}}/notifications",
-                      "host": [
-                        "{{base_url}}"
-                      ],
-                      "path": [
-                        "notifications"
-                      ]
-                    },
-                    "description": "PROPOSED. In-app notifications."
-                  },
-                  "status": "OK",
-                  "code": 200,
-                  "_postman_previewlanguage": "json",
-                  "header": [
-                    {
-                      "key": "Content-Type",
-                      "value": "application/json",
-                      "type": "text"
-                    }
-                  ],
-                  "cookie": [],
-                  "body": "{\n  \"notifications\": [\n    {\n      \"id\": \"00000000-0000-0000-0000-000000000090\",\n      \"type\": \"TRIP_REMINDER\",\n      \"title\": \"Reminder\",\n      \"body\": \"Trip in 2 hours\",\n      \"is_read\": false,\n      \"created_at\": \"2026-08-31T06:00:00.000Z\"\n    }\n  ],\n  \"pagination\": {\n    \"page\": 1,\n    \"limit\": 20,\n    \"total\": 1,\n    \"total_pages\": 1\n  }\n}"
-                },
-                {
-                  "name": "Unauthorized",
-                  "originalRequest": {
-                    "method": "GET",
-                    "header": [
-                      {
-                        "key": "Authorization",
-                        "value": "Bearer {{access_token}}",
-                        "type": "text"
-                      },
-                      {
-                        "key": "Content-Type",
-                        "value": "application/json",
-                        "type": "text"
-                      }
-                    ],
-                    "url": {
-                      "raw": "{{base_url}}/notifications",
-                      "host": [
-                        "{{base_url}}"
-                      ],
-                      "path": [
-                        "notifications"
-                      ]
-                    },
-                    "description": "PROPOSED. In-app notifications."
-                  },
-                  "status": "Unauthorized",
-                  "code": 401,
-                  "_postman_previewlanguage": "json",
-                  "header": [
-                    {
-                      "key": "Content-Type",
-                      "value": "application/json",
-                      "type": "text"
-                    }
-                  ],
-                  "cookie": [],
-                  "body": "{\n  \"status\": \"error\",\n  \"message\": \"Unauthorized\",\n  \"code\": \"UNAUTHORIZED\"\n}"
-                }
-              ]
-            },
-            {
-              "name": "Mark Notification Read",
-              "event": [
-                {
-                  "listen": "prerequest",
-                  "script": {
-                    "exec": [
-                      "pm.environment.get('access_token') ? pm.request.headers.add({ key: 'Authorization', value: 'Bearer ' + pm.environment.get('access_token') }) : console.warn('No access_token set');"
-                    ],
-                    "type": "text/javascript",
-                    "packages": {},
-                    "requests": {}
-                  }
-                },
-                {
-                  "listen": "test",
-                  "script": {
-                    "exec": [
-                      "pm.test('Responds successfully', function () {",
-                      "    pm.response.to.be.oneOf([200, 201]);",
-                      "});",
-                      "pm.test('Returns a JSON body', function () {",
-                      "    pm.expect(pm.response.json()).to.be.an('object');",
-                      "});"
-                    ],
-                    "type": "text/javascript",
-                    "packages": {},
-                    "requests": {}
-                  }
-                }
-              ],
-              "request": {
-                "method": "PUT",
-                "header": [
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{access_token}}",
-                    "type": "text"
-                  },
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json",
-                    "type": "text"
-                  }
-                ],
-                "url": {
-                  "raw": "{{base_url}}/notifications/%7B%7Bnotification_id%7D%7D/read",
-                  "host": [
-                    "{{base_url}}"
-                  ],
-                  "path": [
-                    "notifications",
-                    "%7B%7Bnotification_id%7D%7D",
-                    "read"
-                  ]
-                },
-                "description": "PROPOSED. Mark notification read."
-              },
-              "response": [
-                {
-                  "name": "Success",
-                  "originalRequest": {
-                    "method": "PUT",
-                    "header": [
-                      {
-                        "key": "Authorization",
-                        "value": "Bearer {{access_token}}",
-                        "type": "text"
-                      },
-                      {
-                        "key": "Content-Type",
-                        "value": "application/json",
-                        "type": "text"
-                      }
-                    ],
-                    "url": {
-                      "raw": "{{base_url}}/notifications/%7B%7Bnotification_id%7D%7D/read",
-                      "host": [
-                        "{{base_url}}"
-                      ],
-                      "path": [
-                        "notifications",
-                        "%7B%7Bnotification_id%7D%7D",
-                        "read"
-                      ]
-                    },
-                    "description": "PROPOSED. Mark notification read."
-                  },
-                  "status": "OK",
-                  "code": 200,
-                  "_postman_previewlanguage": "json",
-                  "header": [
-                    {
-                      "key": "Content-Type",
-                      "value": "application/json",
-                      "type": "text"
-                    }
-                  ],
-                  "cookie": [],
-                  "body": "{\n  \"notification\": {\n    \"id\": \"00000000-0000-0000-0000-000000000090\",\n    \"is_read\": true\n  }\n}"
-                },
-                {
-                  "name": "Not found",
-                  "originalRequest": {
-                    "method": "PUT",
-                    "header": [
-                      {
-                        "key": "Authorization",
-                        "value": "Bearer {{access_token}}",
-                        "type": "text"
-                      },
-                      {
-                        "key": "Content-Type",
-                        "value": "application/json",
-                        "type": "text"
-                      }
-                    ],
-                    "url": {
-                      "raw": "{{base_url}}/notifications/%7B%7Bnotification_id%7D%7D/read",
-                      "host": [
-                        "{{base_url}}"
-                      ],
-                      "path": [
-                        "notifications",
-                        "%7B%7Bnotification_id%7D%7D",
-                        "read"
-                      ]
-                    },
-                    "description": "PROPOSED. Mark notification read."
-                  },
-                  "status": "Not Found",
-                  "code": 404,
-                  "_postman_previewlanguage": "json",
-                  "header": [
-                    {
-                      "key": "Content-Type",
-                      "value": "application/json",
-                      "type": "text"
-                    }
-                  ],
-                  "cookie": [],
-                  "body": "{\n  \"status\": \"error\",\n  \"message\": \"Notification not found\",\n  \"code\": \"NOT_FOUND\"\n}"
                 }
               ]
             }
@@ -16203,6 +15796,1279 @@
                   "body": "{\n  \"status\": \"error\",\n  \"message\": \"Forbidden\",\n  \"code\": \"FORBIDDEN\"\n}"
                 }
               ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "User (common)",
+      "item": [
+        {
+          "name": "Notification Settings",
+          "item": [
+            {
+              "name": "Get Notification Settings",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "exec": [
+                      "pm.environment.get('access_token') ? pm.request.headers.add({ key: 'Authorization', value: 'Bearer ' + pm.environment.get('access_token') }) : console.warn('No access_token set');"
+                    ],
+                    "type": "text/javascript"
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Settings returned', function () { pm.response.to.have.status(200); });",
+                      "pm.test('Has settings array', function () { pm.expect(pm.response.json().settings).to.be.an('array'); });"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/settings/notifications",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "settings",
+                    "notifications"
+                  ]
+                },
+                "description": "Get notification settings for the authenticated user (US3).\n\nReturns all notification types with their enabled/disabled state for in-app and push channels. Falls back to defaults (all enabled) if no settings exist in DB.\n\n**Access:** Any authenticated user.\n\nNo body or query parameters."
+              },
+              "response": [
+                {
+                  "name": "Success",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "Authorization",
+                        "value": "Bearer {{access_token}}",
+                        "type": "text"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{base_url}}/settings/notifications",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "settings",
+                        "notifications"
+                      ]
+                    },
+                    "description": "Get notification settings for the authenticated user (US3).\n\nReturns all notification types with their enabled/disabled state for in-app and push channels. Falls back to defaults (all enabled) if no settings exist in DB.\n\n**Access:** Any authenticated user.\n\nNo body or query parameters."
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json",
+                      "type": "text"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n  \"settings\": [\n    { \"type\": \"booking_confirmed\", \"enabled_in_app\": true, \"enabled_push\": true },\n    { \"type\": \"booking_cancelled\", \"enabled_in_app\": true, \"enabled_push\": true },\n    { \"type\": \"trip_reminder\", \"enabled_in_app\": true, \"enabled_push\": true },\n    { \"type\": \"trip_cancelled\", \"enabled_in_app\": true, \"enabled_push\": true },\n    { \"type\": \"driver_offer\", \"enabled_in_app\": true, \"enabled_push\": true },\n    { \"type\": \"ride_request_reply\", \"enabled_in_app\": true, \"enabled_push\": true },\n    { \"type\": \"new_message\", \"enabled_in_app\": true, \"enabled_push\": true },\n    { \"type\": \"rating_received\", \"enabled_in_app\": true, \"enabled_push\": true },\n    { \"type\": \"delay_report\", \"enabled_in_app\": true, \"enabled_push\": true },\n    { \"type\": \"sos_alert\", \"enabled_in_app\": true, \"enabled_push\": true },\n    { \"type\": \"enforcement_action\", \"enabled_in_app\": true, \"enabled_push\": true },\n    { \"type\": \"subscription_expiring\", \"enabled_in_app\": true, \"enabled_push\": true },\n    { \"type\": \"system_announcement\", \"enabled_in_app\": true, \"enabled_push\": true }\n  ]\n}"
+                },
+                {
+                  "name": "Unauthorized",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "Authorization",
+                        "value": "Bearer {{access_token}}",
+                        "type": "text"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{base_url}}/settings/notifications",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "settings",
+                        "notifications"
+                      ]
+                    },
+                    "description": "Get notification settings for the authenticated user (US3).\n\nReturns all notification types with their enabled/disabled state for in-app and push channels. Falls back to defaults (all enabled) if no settings exist in DB.\n\n**Access:** Any authenticated user.\n\nNo body or query parameters."
+                  },
+                  "status": "Unauthorized",
+                  "code": 401,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json",
+                      "type": "text"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n  \"status\": \"error\",\n  \"message\": \"Unauthorized\",\n  \"code\": \"UNAUTHORIZED\"\n}"
+                }
+              ]
+            },
+            {
+              "name": "Update Notification Settings",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "exec": [
+                      "pm.environment.get('access_token') ? pm.request.headers.add({ key: 'Authorization', value: 'Bearer ' + pm.environment.get('access_token') }) : console.warn('No access_token set');"
+                    ],
+                    "type": "text/javascript"
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Settings updated', function () { pm.response.to.have.status(200); });",
+                      "pm.test('Has updated_count', function () { pm.expect(pm.response.json().updated_count).to.be.a('number'); });"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"settings\": [\n    { \"type\": \"trip_cancelled\", \"enabled_in_app\": true, \"enabled_push\": false },\n    { \"type\": \"new_message\", \"enabled_in_app\": false, \"enabled_push\": true }\n  ]\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/settings/notifications",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "settings",
+                    "notifications"
+                  ]
+                },
+                "description": "Update notification settings for the authenticated user (US3).\n\nUpserts only the provided notification types. Unspecified types remain unchanged.\n\n**Access:** Any authenticated user.\n\n**Body fields:**\n- `settings` *(array, required, min 1)* — array of setting objects:\n  - `type` *(string, required)* — one of: `booking_confirmed`, `booking_cancelled`, `trip_reminder`, `trip_cancelled`, `driver_offer`, `ride_request_reply`, `new_message`, `rating_received`, `delay_report`, `sos_alert`, `enforcement_action`, `subscription_expiring`, `system_announcement`\n  - `enabled_in_app` *(boolean, optional)* — enable/disable in-app channel\n  - `enabled_push` *(boolean, optional)* — enable/disable push channel"
+              },
+              "response": [
+                {
+                  "name": "Success",
+                  "originalRequest": {
+                    "method": "PUT",
+                    "header": [
+                      {
+                        "key": "Authorization",
+                        "value": "Bearer {{access_token}}",
+                        "type": "text"
+                      },
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json",
+                        "type": "text"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"settings\": [\n    { \"type\": \"trip_cancelled\", \"enabled_in_app\": true, \"enabled_push\": false },\n    { \"type\": \"new_message\", \"enabled_in_app\": false, \"enabled_push\": true }\n  ]\n}"
+                    },
+                    "url": {
+                      "raw": "{{base_url}}/settings/notifications",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "settings",
+                        "notifications"
+                      ]
+                    },
+                    "description": "Update notification settings for the authenticated user (US3).\n\nUpserts only the provided notification types. Unspecified types remain unchanged.\n\n**Access:** Any authenticated user.\n\n**Body fields:**\n- `settings` *(array, required, min 1)* — array of setting objects:\n  - `type` *(string, required)* — one of: `booking_confirmed`, `booking_cancelled`, `trip_reminder`, `trip_cancelled`, `driver_offer`, `ride_request_reply`, `new_message`, `rating_received`, `delay_report`, `sos_alert`, `enforcement_action`, `subscription_expiring`, `system_announcement`\n  - `enabled_in_app` *(boolean, optional)* — enable/disable in-app channel\n  - `enabled_push` *(boolean, optional)* — enable/disable push channel"
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json",
+                      "type": "text"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n  \"updated_count\": 2\n}"
+                },
+                {
+                  "name": "Validation Error - Empty Array",
+                  "originalRequest": {
+                    "method": "PUT",
+                    "header": [
+                      {
+                        "key": "Authorization",
+                        "value": "Bearer {{access_token}}",
+                        "type": "text"
+                      },
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json",
+                        "type": "text"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"settings\": [\n    { \"type\": \"trip_cancelled\", \"enabled_in_app\": true, \"enabled_push\": false },\n    { \"type\": \"new_message\", \"enabled_in_app\": false, \"enabled_push\": true }\n  ]\n}"
+                    },
+                    "url": {
+                      "raw": "{{base_url}}/settings/notifications",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "settings",
+                        "notifications"
+                      ]
+                    },
+                    "description": "Update notification settings for the authenticated user (US3).\n\nUpserts only the provided notification types. Unspecified types remain unchanged.\n\n**Access:** Any authenticated user.\n\n**Body fields:**\n- `settings` *(array, required, min 1)* — array of setting objects:\n  - `type` *(string, required)* — one of: `booking_confirmed`, `booking_cancelled`, `trip_reminder`, `trip_cancelled`, `driver_offer`, `ride_request_reply`, `new_message`, `rating_received`, `delay_report`, `sos_alert`, `enforcement_action`, `subscription_expiring`, `system_announcement`\n  - `enabled_in_app` *(boolean, optional)* — enable/disable in-app channel\n  - `enabled_push` *(boolean, optional)* — enable/disable push channel"
+                  },
+                  "status": "Unprocessable Entity",
+                  "code": 422,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json",
+                      "type": "text"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n  \"status\": \"error\",\n  \"message\": \"Settings must be a non-empty array\",\n  \"code\": \"VALIDATION_ERROR\"\n}"
+                },
+                {
+                  "name": "Validation Error - Invalid Type",
+                  "originalRequest": {
+                    "method": "PUT",
+                    "header": [
+                      {
+                        "key": "Authorization",
+                        "value": "Bearer {{access_token}}",
+                        "type": "text"
+                      },
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json",
+                        "type": "text"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"settings\": [\n    { \"type\": \"trip_cancelled\", \"enabled_in_app\": true, \"enabled_push\": false },\n    { \"type\": \"new_message\", \"enabled_in_app\": false, \"enabled_push\": true }\n  ]\n}"
+                    },
+                    "url": {
+                      "raw": "{{base_url}}/settings/notifications",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "settings",
+                        "notifications"
+                      ]
+                    },
+                    "description": "Update notification settings for the authenticated user (US3).\n\nUpserts only the provided notification types. Unspecified types remain unchanged.\n\n**Access:** Any authenticated user.\n\n**Body fields:**\n- `settings` *(array, required, min 1)* — array of setting objects:\n  - `type` *(string, required)* — one of: `booking_confirmed`, `booking_cancelled`, `trip_reminder`, `trip_cancelled`, `driver_offer`, `ride_request_reply`, `new_message`, `rating_received`, `delay_report`, `sos_alert`, `enforcement_action`, `subscription_expiring`, `system_announcement`\n  - `enabled_in_app` *(boolean, optional)* — enable/disable in-app channel\n  - `enabled_push` *(boolean, optional)* — enable/disable push channel"
+                  },
+                  "status": "Unprocessable Entity",
+                  "code": 422,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json",
+                      "type": "text"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n  \"status\": \"error\",\n  \"message\": \"Notification type must be one of: booking_confirmed, ...\",\n  \"code\": \"VALIDATION_ERROR\"\n}"
+                },
+                {
+                  "name": "Unauthorized",
+                  "originalRequest": {
+                    "method": "PUT",
+                    "header": [
+                      {
+                        "key": "Authorization",
+                        "value": "Bearer {{access_token}}",
+                        "type": "text"
+                      },
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json",
+                        "type": "text"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"settings\": [\n    { \"type\": \"trip_cancelled\", \"enabled_in_app\": true, \"enabled_push\": false },\n    { \"type\": \"new_message\", \"enabled_in_app\": false, \"enabled_push\": true }\n  ]\n}"
+                    },
+                    "url": {
+                      "raw": "{{base_url}}/settings/notifications",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "settings",
+                        "notifications"
+                      ]
+                    },
+                    "description": "Update notification settings for the authenticated user (US3).\n\nUpserts only the provided notification types. Unspecified types remain unchanged.\n\n**Access:** Any authenticated user.\n\n**Body fields:**\n- `settings` *(array, required, min 1)* — array of setting objects:\n  - `type` *(string, required)* — one of: `booking_confirmed`, `booking_cancelled`, `trip_reminder`, `trip_cancelled`, `driver_offer`, `ride_request_reply`, `new_message`, `rating_received`, `delay_report`, `sos_alert`, `enforcement_action`, `subscription_expiring`, `system_announcement`\n  - `enabled_in_app` *(boolean, optional)* — enable/disable in-app channel\n  - `enabled_push` *(boolean, optional)* — enable/disable push channel"
+                  },
+                  "status": "Unauthorized",
+                  "code": 401,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json",
+                      "type": "text"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n  \"status\": \"error\",\n  \"message\": \"Unauthorized\",\n  \"code\": \"UNAUTHORIZED\"\n}"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Communication",
+          "item": [
+            {
+              "name": "Get Chat History",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "exec": [
+                      "pm.environment.get('access_token') ? pm.request.headers.add({ key: 'Authorization', value: 'Bearer ' + pm.environment.get('access_token') }) : console.warn('No access_token set');"
+                    ],
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Responds successfully', function () {",
+                      "    pm.response.to.be.oneOf([200, 201]);",
+                      "});",
+                      "pm.test('Returns a JSON body', function () {",
+                      "    pm.expect(pm.response.json()).to.be.an('object');",
+                      "});"
+                    ],
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/chat/%7B%7Bbooking_id%7D%7D",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "chat",
+                    "%7B%7Bbooking_id%7D%7D"
+                  ]
+                },
+                "description": "PROPOSED (Phase 2). Retrieve chat history for a booking."
+              },
+              "response": [
+                {
+                  "name": "Success",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "Authorization",
+                        "value": "Bearer {{access_token}}",
+                        "type": "text"
+                      },
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json",
+                        "type": "text"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{base_url}}/chat/%7B%7Bbooking_id%7D%7D",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "chat",
+                        "%7B%7Bbooking_id%7D%7D"
+                      ]
+                    },
+                    "description": "PROPOSED (Phase 2). Retrieve chat history for a booking."
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json",
+                      "type": "text"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n  \"messages\": [\n    {\n      \"id\": \"00000000-0000-0000-0000-000000000050\",\n      \"sender_id\": \"00000000-0000-0000-0000-000000000002\",\n      \"body\": \"Will you be on time?\",\n      \"created_at\": \"2026-08-30T09:00:00.000Z\"\n    }\n  ]\n}"
+                },
+                {
+                  "name": "Forbidden",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "Authorization",
+                        "value": "Bearer {{access_token}}",
+                        "type": "text"
+                      },
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json",
+                        "type": "text"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{base_url}}/chat/%7B%7Bbooking_id%7D%7D",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "chat",
+                        "%7B%7Bbooking_id%7D%7D"
+                      ]
+                    },
+                    "description": "PROPOSED (Phase 2). Retrieve chat history for a booking."
+                  },
+                  "status": "Forbidden",
+                  "code": 403,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json",
+                      "type": "text"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n  \"status\": \"error\",\n  \"message\": \"Not part of this booking\",\n  \"code\": \"FORBIDDEN\"\n}"
+                }
+              ]
+            },
+            {
+              "name": "Send Message",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "exec": [
+                      "pm.environment.get('access_token') ? pm.request.headers.add({ key: 'Authorization', value: 'Bearer ' + pm.environment.get('access_token') }) : console.warn('No access_token set');"
+                    ],
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Responds successfully', function () {",
+                      "    pm.response.to.be.oneOf([200, 201]);",
+                      "});",
+                      "pm.test('Returns a JSON body', function () {",
+                      "    pm.expect(pm.response.json()).to.be.an('object');",
+                      "});"
+                    ],
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"body\": \"On my way\" // string — message text\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}/chat/%7B%7Bbooking_id%7D%7D",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "chat",
+                    "%7B%7Bbooking_id%7D%7D"
+                  ]
+                },
+                "description": "PROPOSED (Phase 2). Send a message."
+              },
+              "response": [
+                {
+                  "name": "Success",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Authorization",
+                        "value": "Bearer {{access_token}}",
+                        "type": "text"
+                      },
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json",
+                        "type": "text"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"body\": \"On my way\" // string — message text\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{base_url}}/chat/%7B%7Bbooking_id%7D%7D",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "chat",
+                        "%7B%7Bbooking_id%7D%7D"
+                      ]
+                    },
+                    "description": "PROPOSED (Phase 2). Send a message."
+                  },
+                  "status": "Created",
+                  "code": 201,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json",
+                      "type": "text"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n  \"message\": {\n    \"id\": \"00000000-0000-0000-0000-000000000051\",\n    \"sender_id\": \"00000000-0000-0000-0000-000000000001\",\n    \"body\": \"On my way\",\n    \"created_at\": \"2026-08-30T09:05:00.000Z\"\n  }\n}"
+                },
+                {
+                  "name": "Validation",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Authorization",
+                        "value": "Bearer {{access_token}}",
+                        "type": "text"
+                      },
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json",
+                        "type": "text"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"body\": \"On my way\" // string — message text\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{base_url}}/chat/%7B%7Bbooking_id%7D%7D",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "chat",
+                        "%7B%7Bbooking_id%7D%7D"
+                      ]
+                    },
+                    "description": "PROPOSED (Phase 2). Send a message."
+                  },
+                  "status": "Unprocessable Entity",
+                  "code": 422,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json",
+                      "type": "text"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n  \"status\": \"error\",\n  \"message\": \"Message cannot be empty\",\n  \"code\": \"VALIDATION_ERROR\"\n}"
+                }
+              ]
+            },
+            {
+              "name": "Initiate Call",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "exec": [
+                      "pm.environment.get('access_token') ? pm.request.headers.add({ key: 'Authorization', value: 'Bearer ' + pm.environment.get('access_token') }) : console.warn('No access_token set');"
+                    ],
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Responds successfully', function () {",
+                      "    pm.response.to.be.oneOf([200, 201]);",
+                      "});",
+                      "pm.test('Returns a JSON body', function () {",
+                      "    pm.expect(pm.response.json()).to.be.an('object');",
+                      "});"
+                    ],
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/calls/%7B%7Bbooking_id%7D%7D",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "calls",
+                    "%7B%7Bbooking_id%7D%7D"
+                  ]
+                },
+                "description": "PROPOSED (Phase 2). Initiate a masked call."
+              },
+              "response": [
+                {
+                  "name": "Success",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Authorization",
+                        "value": "Bearer {{access_token}}",
+                        "type": "text"
+                      },
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json",
+                        "type": "text"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{base_url}}/calls/%7B%7Bbooking_id%7D%7D",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "calls",
+                        "%7B%7Bbooking_id%7D%7D"
+                      ]
+                    },
+                    "description": "PROPOSED (Phase 2). Initiate a masked call."
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json",
+                      "type": "text"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n  \"call\": {\n    \"session\": \"call-session-1\",\n    \"masked_peer\": \"+962****001\"\n  }\n}"
+                },
+                {
+                  "name": "Not found",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Authorization",
+                        "value": "Bearer {{access_token}}",
+                        "type": "text"
+                      },
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json",
+                        "type": "text"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{base_url}}/calls/%7B%7Bbooking_id%7D%7D",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "calls",
+                        "%7B%7Bbooking_id%7D%7D"
+                      ]
+                    },
+                    "description": "PROPOSED (Phase 2). Initiate a masked call."
+                  },
+                  "status": "Not Found",
+                  "code": 404,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json",
+                      "type": "text"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n  \"status\": \"error\",\n  \"message\": \"Booking not found\",\n  \"code\": \"NOT_FOUND\"\n}"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Notifications",
+          "item": [
+            {
+              "name": "List Notifications",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "exec": [
+                      "pm.environment.get('access_token') ? pm.request.headers.add({ key: 'Authorization', value: 'Bearer ' + pm.environment.get('access_token') }) : console.warn('No access_token set');"
+                    ],
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Responds successfully', function () {",
+                      "    pm.response.to.be.oneOf([200, 201]);",
+                      "});",
+                      "pm.test('Returns a JSON body', function () {",
+                      "    pm.expect(pm.response.json()).to.be.an('object');",
+                      "});"
+                    ],
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/notifications",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "notifications"
+                  ]
+                },
+                "description": "PROPOSED. In-app notifications."
+              },
+              "response": [
+                {
+                  "name": "Success",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "Authorization",
+                        "value": "Bearer {{access_token}}",
+                        "type": "text"
+                      },
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json",
+                        "type": "text"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{base_url}}/notifications",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "notifications"
+                      ]
+                    },
+                    "description": "PROPOSED. In-app notifications."
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json",
+                      "type": "text"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n  \"notifications\": [\n    {\n      \"id\": \"00000000-0000-0000-0000-000000000090\",\n      \"type\": \"TRIP_REMINDER\",\n      \"title\": \"Reminder\",\n      \"body\": \"Trip in 2 hours\",\n      \"is_read\": false,\n      \"created_at\": \"2026-08-31T06:00:00.000Z\"\n    }\n  ],\n  \"pagination\": {\n    \"page\": 1,\n    \"limit\": 20,\n    \"total\": 1,\n    \"total_pages\": 1\n  }\n}"
+                },
+                {
+                  "name": "Unauthorized",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "Authorization",
+                        "value": "Bearer {{access_token}}",
+                        "type": "text"
+                      },
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json",
+                        "type": "text"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{base_url}}/notifications",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "notifications"
+                      ]
+                    },
+                    "description": "PROPOSED. In-app notifications."
+                  },
+                  "status": "Unauthorized",
+                  "code": 401,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json",
+                      "type": "text"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n  \"status\": \"error\",\n  \"message\": \"Unauthorized\",\n  \"code\": \"UNAUTHORIZED\"\n}"
+                }
+              ]
+            },
+            {
+              "name": "Mark Notification Read",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "exec": [
+                      "pm.environment.get('access_token') ? pm.request.headers.add({ key: 'Authorization', value: 'Bearer ' + pm.environment.get('access_token') }) : console.warn('No access_token set');"
+                    ],
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Responds successfully', function () {",
+                      "    pm.response.to.be.oneOf([200, 201]);",
+                      "});",
+                      "pm.test('Returns a JSON body', function () {",
+                      "    pm.expect(pm.response.json()).to.be.an('object');",
+                      "});"
+                    ],
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
+                  }
+                }
+              ],
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/notifications/:notification_id/read",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "notifications",
+                    ":notification_id",
+                    "read"
+                  ],
+                  "variable": [
+                    {
+                      "key": "notification_id",
+                      "value": ""
+                    }
+                  ]
+                },
+                "description": "PROPOSED. Mark notification read."
+              },
+              "response": [
+                {
+                  "name": "Success",
+                  "originalRequest": {
+                    "method": "PUT",
+                    "header": [
+                      {
+                        "key": "Authorization",
+                        "value": "Bearer {{access_token}}",
+                        "type": "text"
+                      },
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json",
+                        "type": "text"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{base_url}}/notifications/%7B%7Bnotification_id%7D%7D/read",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "notifications",
+                        "%7B%7Bnotification_id%7D%7D",
+                        "read"
+                      ]
+                    },
+                    "description": "PROPOSED. Mark notification read."
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json",
+                      "type": "text"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n  \"notification\": {\n    \"id\": \"00000000-0000-0000-0000-000000000090\",\n    \"is_read\": true\n  }\n}"
+                },
+                {
+                  "name": "Not found",
+                  "originalRequest": {
+                    "method": "PUT",
+                    "header": [
+                      {
+                        "key": "Authorization",
+                        "value": "Bearer {{access_token}}",
+                        "type": "text"
+                      },
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json",
+                        "type": "text"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{base_url}}/notifications/%7B%7Bnotification_id%7D%7D/read",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "notifications",
+                        "%7B%7Bnotification_id%7D%7D",
+                        "read"
+                      ]
+                    },
+                    "description": "PROPOSED. Mark notification read."
+                  },
+                  "status": "Not Found",
+                  "code": 404,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json",
+                      "type": "text"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n  \"status\": \"error\",\n  \"message\": \"Notification not found\",\n  \"code\": \"NOT_FOUND\"\n}"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Upload Image",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "pm.environment.get('access_token') ? pm.request.headers.add({ key: 'Authorization', value: 'Bearer ' + pm.environment.get('access_token') }) : console.warn('No access_token set');"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 2xx or 4xx', function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200, 201, 204, 400, 401, 403, 404, 409, 422, 500]);",
+                  "});",
+                  "pm.test('Response is valid JSON', function () {",
+                  "  pm.response.to.be.json;",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "/C:/Users/Laptop/Downloads/Driver Trip Publishing Flow.png"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/upload",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "upload"
+              ]
+            },
+            "description": "Upload an image file (multipart/form-data). Returns an image ID used by the onboarding endpoints and subscription `screenshot_id`.\n\n**Form field**\n- `file` *(file, required)* — select an image from the `file` value picker."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "file",
+                      "type": "file",
+                      "src": [
+                        "/C:/Users/Laptop/Downloads/Driver Trip Publishing Flow.png"
+                      ]
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{base_url}}/upload",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "upload"
+                  ]
+                },
+                "description": "Upload an image file (multipart/form-data). Returns an image ID used by the onboarding endpoints and subscription `screenshot_id`.\n\n**Form field**\n- `file` *(file, required)* — select an image from the `file` value picker."
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json",
+                  "type": "text"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"image\": {\n    \"id\": 10,\n    \"url\": \"https://cdn.example.com/uploads/abc.png\",\n    \"filename\": \"abc.png\",\n    \"mimetype\": \"image/png\",\n    \"size\": 24576\n  }\n}"
+            },
+            {
+              "name": "Validation",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "file",
+                      "type": "file",
+                      "src": [
+                        "/C:/Users/Laptop/Downloads/Driver Trip Publishing Flow.png"
+                      ]
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{base_url}}/upload",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "upload"
+                  ]
+                },
+                "description": "Upload an image file (multipart/form-data). Returns an image ID used by the onboarding endpoints and subscription `screenshot_id`.\n\n**Form field**\n- `file` *(file, required)* — select an image from the `file` value picker."
+              },
+              "status": "Unprocessable Entity",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json",
+                  "type": "text"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"status\": \"error\",\n  \"message\": \"Only image files are allowed\",\n  \"code\": \"VALIDATION_ERROR\"\n}"
             }
           ]
         }

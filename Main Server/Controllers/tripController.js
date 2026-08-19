@@ -1,6 +1,8 @@
 const tripService = require('../Services/tripService');
 const { successResponse } = require('../utils/httpResponse');
 const { markResource } = require('../Services/auditService');
+const { ApiErrors } = require('../utils/ApiError');
+const { ROLES } = require('../config/constants');
 
 const createTrip = async (req, res, next) => {
   try {
@@ -15,11 +17,12 @@ const createTrip = async (req, res, next) => {
 const getTripById = async (req, res, next) => {
   try {
     const trip = await tripService.getTripById(req.params.trip_id);
-    const isParticipant =
-      Array.isArray(trip._participantIds) && trip._participantIds.includes(req.user.id);
+    const participantIds = trip._participantIds || [];
+    const isAdmin = req.user.role === ROLES.ADMIN;
+    const isParticipant = isAdmin || participantIds.includes(req.user.id);
     delete trip._participantIds;
     if (!isParticipant) {
-      delete trip.passengers;
+      throw ApiErrors.forbidden('You do not have access to this trip');
     }
     successResponse(res, trip);
   } catch (err) {
@@ -101,6 +104,16 @@ const getTripAttributes = async (req, res, next) => {
   }
 };
 
+const cancelTripWithPenalty = async (req, res, next) => {
+  try {
+    const result = await tripService.cancelTripWithPenalty(req.user.id, req.params.trip_id, req.body);
+    markResource(res, { type: 'trip', id: result.trip_id });
+    successResponse(res, result, 200);
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   createTrip,
   getTripById,
@@ -110,5 +123,6 @@ module.exports = {
   completeTrip,
   updateTrip,
   cancelTrip,
+  cancelTripWithPenalty,
   getTripAttributes,
 };

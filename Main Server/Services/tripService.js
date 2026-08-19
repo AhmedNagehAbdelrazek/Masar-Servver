@@ -9,9 +9,10 @@ const {
   Booking,
   DriverSubscription,
   SubscriptionPlan,
+  Penalty,
 } = require('../Models');
 const { ApiErrors } = require('../utils/ApiError');
-const { TRIP_STATUS, GENDER_PREFERENCE, BOOKING_STATUS, FREE_OFFER_TYPE } = require('../config/constants');
+const { TRIP_STATUS, GENDER_PREFERENCE, BOOKING_STATUS, FREE_OFFER_TYPE, PENALTY_TYPES, PENALTY_CATEGORY, PENALTY_SEVERITY, CANCELLATION_ESCALATION } = require('../config/constants');
 const commissionService = require('./commissionService');
 const notificationService = require('./notificationService');
 const { releaseSeatLock } = require('../utils/seatLock');
@@ -256,23 +257,39 @@ function trackTripMutation({ action, driverId, tripId, payload = {} }) {
 }
 
 /**
- * Get trip by ID with seats and stops (US3). Confirmed passengers are
- * serialized into a `passengers` array; `_participantIds` lets the controller
- * gate passenger PII to the driver / confirmed passengers only.
+ * Get trip by ID with full details: driver profile, vehicle, waypoints,
+ * attributes, and confirmed passengers with their profiles and booking info.
+ * `_participantIds` lets the controller gate access to driver + confirmed
+ * passengers + admins.
  */
 const getTripById = async (tripId) => {
   const trip = await Trip.findByPk(tripId, {
     include: [
+      {
+        model: User,
+        as: 'driver',
+        attributes: ['id', 'fullName', 'phone', 'avgRating', 'avatarUrl'],
+      },
+      {
+        model: Vehicle,
+        as: 'vehicle',
+        attributes: ['id', 'manufacturer', 'model', 'modelYear', 'plateNumber', 'color', 'seats'],
+      },
       { model: TripSeat, as: 'seats' },
       { model: TripStop, as: 'stops' },
       { model: TripAttribute, as: 'attributes' },
-      { model: Vehicle, as: 'vehicle' },
       {
         model: Booking,
         as: 'bookings',
         where: { status: BOOKING_STATUS.CONFIRMED },
         required: false,
-        include: [{ model: User, as: 'passenger' }],
+        include: [
+          {
+            model: User,
+            as: 'passenger',
+            attributes: ['id', 'fullName', 'phone', 'avgRating', 'avatarUrl'],
+          },
+        ],
       },
     ],
   });
@@ -280,15 +297,117 @@ const getTripById = async (tripId) => {
 
   const data = trip.toJSON();
   const confirmedBookings = data.bookings || [];
+
+  data.trip = {
+    trip_id: data.id,
+    driver: data.driver
+      ? {
+          id: data.driver.id,
+          full_name: data.driver.fullName,
+          phone: data.driver.phone,
+          rating: Number(data.driver.avgRating) || 0,
+          profile_picture_url: data.driver.avatarUrl,
+        }
+      : null,
+    vehicle: data.vehicle
+      ? {
+          vehicle_id: data.vehicle.id,
+          make_model: `${data.vehicle.manufacturer} ${data.vehicle.model}`,
+          year: data.vehicle.modelYear,
+          plate_number: data.vehicle.plateNumber,
+          color: data.vehicle.color,
+          total_seats: data.vehicle.seats,
+        }
+      : null,
+    origin: {
+      city: data.originCity,
+      area: data.originArea,
+      lat: data.originLat ? Number(data.originLat) : null,
+      lng: data.originLng ? Number(data.originLng) : null,
+    },
+    destination: {
+      city: data.destinationCity,
+      area: data.destinationArea,
+      lat: data.destinationLat ? Number(data.destinationLat) : null,
+      lng: data.destinationLng ? Number(data.destinationLng) : null,
+    },
+    departure_time: data.departureTime,
+    fare_per_seat: Number(data.farePerSeat),
+    currency: data.currency || 'JOD',
+    total_seats: data.totalSeats,
+    available_seats: data.availableSeats,
+    status: data.status,
+    is_recurring: data.isRecurring,
+    recurrence_days: data.recurrenceDays,
+    recurrence_end_date: data.recurrenceEndDate,
+    gender_preference: data.genderPreference,
+    attributes: (data.attributes || []).map((a) => ({
+      key: a.attrKey,
+      value: a.attrValue === 'true',
+    })),
+    waypoints: (data.stops || []).map((s) => ({
+      stop_name: s.stopName,
+      stop_lat: s.stopLat ? Number(s.stopLat) : null,
+      stop_lng: s.stopLng ? Number(s.stopLng) : null,
+    })),
+    instructions: data.driverInstructions,
+    additional_instructions: data.additionalInstructions,
+    created_at: data.createdAt,
+  };
+
   data.passengers = confirmedBookings.map((b) => ({
     booking_id: b.id,
-    passenger_name: b.passenger ? b.passenger.fullName : 'Passenger',
+    passenger: b.passenger
+      ? {
+          id: b.passenger.id,
+          full_name: b.passenger.fullName,
+          phone: b.passenger.phone,
+          rating: Number(b.passenger.avgRating) || 0,
+          profile_picture_url: b.passenger.avatarUrl,
+        }
+      : null,
     seats_booked: b.seatsBooked,
     seat_numbers: seatNumbersFor(b),
-    status: b.status,
+    agreed_fare: Number(b.agreedFare),
+    booking_status: b.status,
+    dropoff_place: b.dropoffPlace,
+    dropoff_deadline: b.dropoffDeadline,
+    created_at: b.createdAt,
   }));
+
   data._participantIds = [data.driverId, ...confirmedBookings.map((b) => b.passengerId)];
+  delete data.driver;
+  delete data.vehicle;
   delete data.bookings;
+  delete data.originCity;
+  delete data.originArea;
+  delete data.originAddress;
+  delete data.originLat;
+  delete data.originLng;
+  delete data.destinationCity;
+  delete data.destinationArea;
+  delete data.destinationAddress;
+  delete data.destinationLat;
+  delete data.destinationLng;
+  delete data.farePerSeat;
+  delete data.totalSeats;
+  delete data.availableSeats;
+  delete data.genderPreference;
+  delete data.driverInstructions;
+  delete data.additionalInstructions;
+  delete data.isRecurring;
+  delete data.recurrenceDays;
+  delete data.recurrenceEndDate;
+  delete data.createdAt;
+  delete data.updatedAt;
+  delete data.isFeatured;
+  delete data.featuredUntil;
+  delete data.isBlockedByBalance;
+  delete data.isModerated;
+  delete data.moderationReason;
+  delete data.moderatedBy;
+  delete data.arrivalTime;
+
   return data;
 };
 
@@ -537,6 +656,7 @@ module.exports = {
   completeTrip,
   updateTrip,
   cancelTrip,
+  cancelTripWithPenalty,
   getTripAttributes,
 };
 
@@ -709,5 +829,173 @@ async function getTripAttributes(tripId) {
   return {
     trip_id: trip.id,
     attributes: attributes.map((a) => ({ attr_key: a.attrKey, attr_value: a.attrValue })),
+  };
+}
+
+/**
+ * Count the number of trip_cancellation penalties for a driver in the last 30 days.
+ */
+async function countRecentCancellations(driverId) {
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+  const count = await Penalty.count({
+    where: {
+      userId: driverId,
+      penaltyType: PENALTY_CATEGORY.TRIP_CANCELLATION,
+      createdAt: { [Op.gte]: thirtyDaysAgo },
+    },
+  });
+  return count;
+}
+
+/**
+ * Determine the escalation level based on cancellation count.
+ * Returns { severity, suspensionDays }.
+ */
+function getEscalationLevel(cancellationCount) {
+  if (cancellationCount >= CANCELLATION_ESCALATION.SUSPENSION_30D_MIN) {
+    return { severity: PENALTY_SEVERITY.MAJOR, suspensionDays: 30 };
+  }
+  if (cancellationCount >= CANCELLATION_ESCALATION.SUSPENSION_7D_MIN) {
+    return { severity: PENALTY_SEVERITY.MAJOR, suspensionDays: 7 };
+  }
+  if (cancellationCount >= CANCELLATION_ESCALATION.WARNING_MIN) {
+    return { severity: PENALTY_SEVERITY.MODERATE, suspensionDays: null };
+  }
+  return { severity: PENALTY_SEVERITY.MINOR, suspensionDays: null };
+}
+
+/**
+ * Apply escalation after a cancellation penalty: check 30-day window count,
+ * upgrade penalty severity, and apply suspension if needed.
+ */
+async function applyEscalation(penalty, driverId) {
+  const count = await countRecentCancellations(driverId);
+  const { severity, suspensionDays } = getEscalationLevel(count);
+
+  if (severity !== penalty.severity) {
+    const update = { severity };
+    if (suspensionDays) {
+      const endsAt = new Date();
+      endsAt.setDate(endsAt.getDate() + suspensionDays);
+      update.endsAt = endsAt;
+    }
+    await penalty.update(update);
+  }
+
+  if (suspensionDays) {
+    const endsAt = new Date();
+    endsAt.setDate(endsAt.getDate() + suspensionDays);
+    await User.update({ status: 'suspended' }, { where: { id: driverId } });
+
+    const driver = await User.findByPk(driverId);
+    if (driver) {
+      try {
+        await notificationService.sendToUser(driver, 'PENALTY_ISSUED', {
+          channels: ['in_app', 'push'],
+          vars: {
+            severity: `suspension (${suspensionDays} days)`,
+            reason: 'Repeated trip cancellations',
+          },
+          data: { penalty_id: penalty.id },
+        });
+      } catch (err) {
+        console.warn('[tripService] penalty notification failed:', err.message);
+      }
+    }
+  } else if (severity === PENALTY_SEVERITY.MODERATE) {
+    const driver = await User.findByPk(driverId);
+    if (driver) {
+      try {
+        await notificationService.sendToUser(driver, 'PENALTY_ISSUED', {
+          channels: ['in_app', 'push'],
+          vars: {
+            severity: 'warning',
+            reason: 'Repeated trip cancellations',
+          },
+          data: { penalty_id: penalty.id },
+        });
+      } catch (err) {
+        console.warn('[tripService] penalty notification failed:', err.message);
+      }
+    }
+  }
+
+  return { count, severity, suspensionDays };
+}
+
+/**
+ * Cancel a trip with penalty (new flow per spec 008).
+ * Only allowed when: driver owns trip, status is published/full, zero confirmed bookings.
+ * Creates a penalty record and applies escalation logic.
+ */
+async function cancelTripWithPenalty(driverId, tripId, { reason, note }) {
+  const trip = await Trip.findByPk(tripId);
+  if (!trip) throw ApiErrors.notFound('Trip not found');
+  if (trip.driverId !== driverId) throw ApiErrors.forbidden('You can only cancel your own trips');
+
+  if (![TRIP_STATUS.PUBLISHED, TRIP_STATUS.FULL].includes(trip.status)) {
+    throw ApiErrors.conflict('Trip is already ongoing or completed. Cannot cancel.');
+  }
+  if (trip.status === TRIP_STATUS.CANCELLED) {
+    throw ApiErrors.conflict('Trip is already cancelled.');
+  }
+
+  const confirmedCount = await Booking.count({
+    where: { tripId: trip.id, status: BOOKING_STATUS.CONFIRMED },
+  });
+  if (confirmedCount > 0) {
+    throw ApiErrors.conflict('Cannot cancel trip. There are confirmed bookings. Please contact support.');
+  }
+
+  await trip.update({ status: TRIP_STATUS.CANCELLED });
+
+  const penalty = await Penalty.create({
+    userId: driverId,
+    tripId: trip.id,
+    type: PENALTY_TYPES.WARNING,
+    penaltyType: PENALTY_CATEGORY.TRIP_CANCELLATION,
+    severity: PENALTY_SEVERITY.MINOR,
+    reason: reason,
+    details: note || null,
+    startsAt: new Date(),
+    issuedBy: driverId,
+  });
+
+  const escalation = await applyEscalation(penalty, driverId);
+
+  let notifiedPassengers = 0;
+  try {
+    notifiedPassengers = await notificationService.notifyBookedPassengers(
+      [trip.id],
+      'TRIP_CANCELLED',
+      { data: { trip_id: trip.id } }
+    );
+  } catch (err) {
+    console.warn('[tripService] cancel notification failed:', err.message);
+  }
+
+  trackTripMutation({
+    action: 'trip.cancelled_by_driver',
+    driverId,
+    tripId: trip.id,
+    payload: {
+      status: trip.status,
+      reason,
+      note,
+      penalty_id: penalty.id,
+      escalation_count: escalation.count,
+      escalation_severity: escalation.severity,
+      notified_passengers: notifiedPassengers,
+    },
+  });
+
+  return {
+    message: 'Trip cancelled successfully. This cancellation has been recorded.',
+    trip_id: trip.id,
+    status: trip.status,
+    penalty_id: penalty.id,
+    penalty_type: escalation.severity,
   };
 }

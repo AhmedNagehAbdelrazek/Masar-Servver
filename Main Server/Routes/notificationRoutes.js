@@ -3,11 +3,10 @@ const c = require('../Controllers/notificationController');
 const protect = require('../middlewares/protect');
 const validate = require('../middlewares/validatorMiddleware');
 const {
-  notificationListValidation,
-  notificationParamValidation,
+  updateNotificationSettingsValidation,
 } = require('../utils/validators/notificationValidator');
 
-router.get('/', protect, ...notificationListValidation, validate, c.listNotifications);
-router.put('/:notification_id/read', protect, ...notificationParamValidation, validate, c.markRead);
+router.get('/', protect, validate, c.listNotifications);
+router.put('/:notification_id/read', protect, ...updateNotificationSettingsValidation, validate, c.markRead);
 
 module.exports = router;

@@ -131,8 +131,28 @@ beforeEach(async () => {
   outsiderToken = generateAccessToken({ id: OUTSIDER_ID, role: 'passenger' });
 });
 
-describe('US3 - Trip details PII gating', () => {
-  it('shows passenger names and seat numbers to the driver', async () => {
+describe('US1 - Trip details with passengers', () => {
+  it('shows full driver profile and vehicle to confirmed passenger', async () => {
+    const trip = await seedTrip();
+
+    const res = await getAgent()
+      .get(`/api/trips/${trip.id}`)
+      .set('Authorization', `Bearer ${passengerToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.trip).toBeDefined();
+    expect(res.body.trip.driver).toBeDefined();
+    expect(res.body.trip.driver.full_name).toBe('Trip Details Driver');
+    expect(res.body.trip.driver.phone).toBe('+962710000441');
+    expect(res.body.trip.driver.rating).toBeDefined();
+    expect(res.body.trip.vehicle).toBeDefined();
+    expect(res.body.trip.vehicle.make_model).toBe('Toyota Camry');
+    expect(res.body.trip.vehicle.year).toBe(2023);
+    expect(res.body.trip.vehicle.plate_number).toBe('TD-INT-1');
+    expect(res.body.trip.vehicle.total_seats).toBe(4);
+  });
+
+  it('shows passenger with booking details to driver', async () => {
     const trip = await seedTrip();
 
     const res = await getAgent()
@@ -141,35 +161,23 @@ describe('US3 - Trip details PII gating', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.passengers).toHaveLength(1);
-    expect(res.body.passengers[0].passenger_name).toBe('Confirmed Passenger');
-    expect(res.body.passengers[0].seat_numbers).toEqual([2]);
-    expect(res.body.passengers[0].seats_booked).toBe(1);
-    expect(res.body.passengers[0].status).toBe(BOOKING_STATUS.CONFIRMED);
+    const p = res.body.passengers[0];
+    expect(p.passenger).toBeDefined();
+    expect(p.passenger.full_name).toBe('Confirmed Passenger');
+    expect(p.passenger.phone).toBe('+962710000442');
+    expect(p.seat_numbers).toEqual([2]);
+    expect(p.agreed_fare).toBe(5);
+    expect(p.booking_status).toBe('confirmed');
   });
 
-  it('shows passenger names and seat numbers to a confirmed passenger', async () => {
-    const trip = await seedTrip();
-
-    const res = await getAgent()
-      .get(`/api/trips/${trip.id}`)
-      .set('Authorization', `Bearer ${passengerToken}`);
-
-    expect(res.status).toBe(200);
-    expect(res.body.passengers).toHaveLength(1);
-    expect(res.body.passengers[0].passenger_name).toBe('Confirmed Passenger');
-    expect(res.body.passengers[0].seat_numbers).toEqual([2]);
-  });
-
-  it('omits the passengers array for an unrelated authenticated user', async () => {
+  it('returns 403 for an unrelated authenticated user', async () => {
     const trip = await seedTrip();
 
     const res = await getAgent()
       .get(`/api/trips/${trip.id}`)
       .set('Authorization', `Bearer ${outsiderToken}`);
 
-    expect(res.status).toBe(200);
-    expect(res.body.id).toBe(trip.id);
-    expect(res.body.passengers).toBeUndefined();
+    expect(res.status).toBe(403);
   });
 
   it('returns 404 for a non-existent trip', async () => {
@@ -178,5 +186,17 @@ describe('US3 - Trip details PII gating', () => {
       .set('Authorization', `Bearer ${driverToken}`);
 
     expect(res.status).toBe(404);
+  });
+
+  it('returns empty passengers array when no bookings exist', async () => {
+    const trip = await seedTrip();
+    await Booking.destroy({ where: { tripId: trip.id } });
+
+    const res = await getAgent()
+      .get(`/api/trips/${trip.id}`)
+      .set('Authorization', `Bearer ${driverToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.passengers).toEqual([]);
   });
 });
