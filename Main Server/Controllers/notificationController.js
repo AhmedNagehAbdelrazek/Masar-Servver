@@ -1,6 +1,7 @@
 const notificationService = require('../Services/notificationService');
 const { successResponse } = require('../utils/httpResponse');
 const { parsePagination, buildPagination } = require('../utils/pagination');
+const { markResource } = require('../Services/auditService');
 
 const listNotifications = async (req, res, next) => {
   try {
@@ -36,6 +37,7 @@ const listNotifications = async (req, res, next) => {
 const markRead = async (req, res, next) => {
   try {
     const notification = await notificationService.markRead(req.user.id, req.params.notification_id);
+    markResource(res, { type: 'notification', id: notification.id });
     successResponse(res, {
       notification: { id: notification.id, is_read: notification.isRead },
     });

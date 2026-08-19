@@ -57,9 +57,16 @@ export function createAuditMiddleware(
       const shouldCaptureBody =
         options.captureBody?.(req) ?? (req.method !== 'GET' && req.method !== 'HEAD');
 
+      const resource = res.locals?.auditResource as
+        | { type: string; id?: string; label?: string }
+        | undefined;
+
       client.track({
         event_type: 'http.request',
         action: 'http.request',
+        resource: resource
+          ? { type: resource.type, id: resource.id, label: resource.label }
+          : undefined,
         actor: (req as any).user
           ? {
               type: (req as any).user.type ?? 'user',

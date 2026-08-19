@@ -4,6 +4,7 @@ const { User, DriverProfile, Vehicle, UploadedImage } = require('../Models');
 const { ApiErrors } = require('../utils/ApiError');
 const { VERIFICATION_STATUS } = require('../config/constants');
 const { recordStatusChange, alertAdminsOfNewSubmission } = require('./verificationService');
+const auditService = require('./auditService');
 
 const DRIVER_DOC_FIELDS = [
   'userIdentificationFront',
@@ -263,6 +264,16 @@ async function submitOrResubmit(driverId, body) {
   }
 
   await alertAdminsOfNewSubmission({ driverId, fullName: user.fullName });
+
+  auditService.track({
+    action: 'verification.submitted',
+    resourceType: 'user',
+    resourceId: driverId,
+    resourceLabel: user.fullName,
+    actorId: driverId,
+    actorType: 'driver',
+    payload: { from_status: currentStatus, to_status: VERIFICATION_STATUS.PENDING },
+  });
 
   return { status: VERIFICATION_STATUS.PENDING, submitted_at: submittedAt };
 }

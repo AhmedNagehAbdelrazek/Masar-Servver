@@ -1,6 +1,7 @@
 const sms = require('./channels/sms');
 const push = require('./channels/push');
 const inApp = require('./channels/inApp');
+const auditService = require('../auditService');
 
 /**
  * Notification templates keyed by type then locale.
@@ -349,6 +350,13 @@ async function markRead(userId, notificationId) {
 
   if (!notification.isRead) {
     await notification.update({ isRead: true });
+    auditService.track({
+      action: 'notification.mark_read',
+      resourceType: 'notification',
+      resourceId: notification.id,
+      actorId: userId,
+      actorType: 'user',
+    });
   }
   return notification;
 }

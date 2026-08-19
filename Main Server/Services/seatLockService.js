@@ -2,6 +2,7 @@ const { Trip, TripSeat } = require('../Models');
 const { ApiErrors } = require('../utils/ApiError');
 const { acquireSeatLock, checkSeatLock, releaseSeatLock } = require('../utils/seatLock');
 const { TRIP_STATUS, SEAT_TYPE } = require('../config/constants');
+const auditService = require('./auditService');
 
 /**
  * Lock a seat for a passenger during booking
@@ -35,6 +36,13 @@ const lockSeat = async (tripId, seatNumber, passengerId) => {
     throw ApiErrors.conflict('Could not acquire seat lock');
   }
 
+  trackSeatMutation({
+    action: 'trip.seat.locked',
+    passengerId,
+    tripId,
+    seatNumber,
+  });
+
   return {
     lock_id: `${tripId}:${seatNumber}`,
     seat_number: seatNumber,
@@ -42,6 +50,21 @@ const lockSeat = async (tripId, seatNumber, passengerId) => {
     message: 'Seat locked for 5 minutes',
   };
 };
+
+/**
+ * Audit a seat-lock mutation with the trip as the resource.
+ */
+function trackSeatMutation({ action, passengerId, tripId, seatNumber, payload = {} }) {
+  auditService.track({
+    action,
+    resourceType: 'trip',
+    resourceId: tripId,
+    resourceLabel: `seat ${seatNumber}`,
+    actorId: passengerId,
+    actorType: 'passenger',
+    payload: { seat_number: seatNumber, ...payload },
+  });
+}
 
 /**
  * Release a seat lock
@@ -59,6 +82,13 @@ const releaseSeat = async (tripId, seatNumber, passengerId) => {
   if (!released) {
     throw ApiErrors.notFound('Seat lock expired or does not exist');
   }
+
+  trackSeatMutation({
+    action: 'trip.seat.released',
+    passengerId,
+    tripId,
+    seatNumber,
+  });
 
   return { message: 'Seat lock released' };
 };

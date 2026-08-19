@@ -3,7 +3,7 @@ const { Op } = require('sequelize');
 const { ApiErrors } = require('../utils/ApiError');
 const { REDIS_KEYS, CACHE_TTL } = require('../utils/redisKeys');
 const { getKey, setKey, deleteKey } = require('../config/redis');
-const { audit } = require('../config/audit');
+const auditService = require('./auditService');
 
 function toPlanDTO(plan) {
   const dto = {
@@ -34,18 +34,14 @@ function toMethodDTO(method) {
 }
 
 function auditMutation({ action, actorId, resourceType, resourceId, payload }) {
-  try {
-    audit.track({
-      event_type: 'admin.action',
-      action,
-      outcome: 'success',
-      actor: { type: 'admin', id: actorId },
-      resource: { type: resourceType, id: resourceId },
-      payload,
-    });
-  } catch (err) {
-    console.warn('[audit] plan mutation log failed:', err.message);
-  }
+  auditService.track({
+    eventType: 'admin.action',
+    action,
+    actorId,
+    resourceType,
+    resourceId,
+    payload,
+  });
 }
 
 async function invalidatePlansCache() {

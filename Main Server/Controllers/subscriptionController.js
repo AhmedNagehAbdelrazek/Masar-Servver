@@ -1,9 +1,11 @@
 const subscriptionService = require('../Services/subscriptionService');
 const { successResponse } = require('../utils/httpResponse');
+const { markResource } = require('../Services/auditService');
 
 const createSubscription = async (req, res, next) => {
   try {
     const sub = await subscriptionService.createSubscription(req.user.id, req.body);
+    markResource(res, { type: 'driver_subscription', id: sub.id });
     successResponse(
       res,
       {

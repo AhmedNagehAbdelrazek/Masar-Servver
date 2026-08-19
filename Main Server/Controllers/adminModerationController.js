@@ -1,6 +1,7 @@
 const complaintService = require('../Services/complaintService');
 const penaltyService = require('../Services/penaltyService');
 const auditService = require('../Services/auditService');
+const { markResource } = auditService;
 const { successResponse } = require('../utils/httpResponse');
 const { parsePagination, buildPagination } = require('../utils/pagination');
 const { maskPhone } = require('../utils/masking');
@@ -24,6 +25,7 @@ const resolveComplaint = async (req, res, next) => {
       actorId: req.user.id,
       payload: req.body,
     });
+    markResource(res, { type: 'complaint', id: req.params.complaint_id });
     successResponse(res, result);
   } catch (err) {
     next(err);
@@ -86,6 +88,8 @@ const updateUserStatus = async (req, res, next) => {
       payload: { reason: req.body.reason || null },
     });
 
+    markResource(res, { type: 'user', id: user.id });
+
     if (req.body.reason) {
       await Notification.create({
         userId: user.id,
@@ -140,6 +144,8 @@ const moderateTrip = async (req, res, next) => {
       payload: { reason: reason || null },
     });
 
+    markResource(res, { type: 'trip', id: trip.id });
+
     successResponse(res, {
       trip: {
         id: trip.id,
@@ -163,6 +169,7 @@ const issuePenalty = async (req, res, next) => {
       actorId: req.user.id,
       payload: req.body,
     });
+    markResource(res, { type: 'penalty', id: result.penalty.id });
     successResponse(res, result);
   } catch (err) {
     next(err);

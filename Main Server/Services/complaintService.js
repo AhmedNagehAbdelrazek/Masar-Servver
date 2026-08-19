@@ -3,6 +3,7 @@ const { Complaint, User } = require('../Models');
 const { ApiErrors } = require('../utils/ApiError');
 const { COMPLAINT_STATUS } = require('../config/constants');
 const { parsePagination, buildPagination } = require('../utils/pagination');
+const auditService = require('./auditService');
 
 function serializeCreate(complaint) {
   return {
@@ -73,6 +74,19 @@ async function create(reporterId, data) {
     description: data.description,
     evidenceUrls: data.evidence_urls || [],
     status: COMPLAINT_STATUS.OPEN,
+  });
+
+  auditService.track({
+    action: 'complaint.filed',
+    resourceType: 'complaint',
+    resourceId: complaint.id,
+    actorId: reporterId,
+    actorType: 'user',
+    payload: {
+      accused_id: data.accused_id,
+      category: data.category,
+      booking_id: data.booking_id || null,
+    },
   });
 
   return { complaint: serializeCreate(complaint), already_filed: false };

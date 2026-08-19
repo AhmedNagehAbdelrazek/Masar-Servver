@@ -2,6 +2,7 @@ const sequelize = require('../config/database');
 const { Rating, Booking, Trip, User } = require('../Models');
 const { ApiErrors } = require('../utils/ApiError');
 const { parsePagination, buildPagination } = require('../utils/pagination');
+const auditService = require('./auditService');
 
 function serializeRating(rating) {
   return {
@@ -92,6 +93,20 @@ async function create(raterId, data) {
     );
     await updateDriverAvg(rateeId, transaction);
     return created;
+  });
+
+  auditService.track({
+    action: 'rating.submitted',
+    resourceType: 'rating',
+    resourceId: rating.id,
+    actorId: raterId,
+    actorType: isPassenger ? 'passenger' : 'driver',
+    payload: {
+      booking_id: booking.id,
+      ratee_id: rateeId,
+      stars: rating.stars,
+      was_late: rating.wasLate,
+    },
   });
 
   return { rating: serializeRating(rating), already_rated: false };

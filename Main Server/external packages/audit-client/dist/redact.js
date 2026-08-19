@@ -5,7 +5,7 @@ exports.truncateBody = truncateBody;
 const SENSITIVE_KEYS = new Set([
     'password', 'password_hash', 'token', 'access_token', 'refresh_token',
     'authorization', 'otp', 'code', 'secret', 'cookie', 'session',
-    'national_id', 'license_number', 'plate_number', 'insurance_doc',
+    'national_id', 'license_number', 'plate_number', 'code_number', 'insurance_doc',
     'document_url', 'email', 'phone', 'phone_number',
     'credit_card', 'cvv', 'ssn', 'pin',
 ]);

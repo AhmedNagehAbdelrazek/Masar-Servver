@@ -17,6 +17,7 @@ const notificationService = require('./notificationService');
 const { releaseSeatLock } = require('../utils/seatLock');
 const homeService = require('./homeService');
 const { seatNumbersFor } = require('../utils/seatSerializer');
+const auditService = require('./auditService');
 
 /**
  * US3 minimum-balance gate. Rejects with NO_ACTIVE_PLAN when the driver has
@@ -215,6 +216,21 @@ const createTrip = async (driverId, data) => {
     await TripStop.bulkCreate(stopRecords);
   }
 
+  trackTripMutation({
+    action: 'trip.created',
+    driverId,
+    tripId: trip.id,
+    payload: {
+      status: trip.status,
+      origin_city: trip.originCity,
+      destination_city: trip.destinationCity,
+      departure_time: trip.departureTime,
+      fare_per_seat: trip.farePerSeat,
+      total_seats: trip.totalSeats,
+      available_seats: trip.availableSeats,
+    },
+  });
+
   return {
     trip_id: trip.id,
     status: trip.status,
@@ -224,6 +240,20 @@ const createTrip = async (driverId, data) => {
     message: 'Trip published successfully!',
   };
 };
+
+/**
+ * Audit a driver trip mutation with the trip as the resource.
+ */
+function trackTripMutation({ action, driverId, tripId, payload = {} }) {
+  auditService.track({
+    action,
+    resourceType: 'trip',
+    resourceId: tripId,
+    actorId: driverId,
+    actorType: 'driver',
+    payload,
+  });
+}
 
 /**
  * Get trip by ID with seats and stops (US3). Confirmed passengers are
@@ -403,6 +433,13 @@ const startTrip = async (driverId, tripId) => {
   const trackingLink =
     `${process.env.SOCKET_TRACKING_BASE_URL || 'wss://api.masar.app/socket.io'}?trip=${trip.id}`;
 
+  trackTripMutation({
+    action: 'trip.started',
+    driverId,
+    tripId: trip.id,
+    payload: { status: trip.status },
+  });
+
   return {
     trip_id: trip.id,
     status: trip.status,
@@ -469,6 +506,18 @@ const completeTrip = async (driverId, tripId) => {
       }
     }
   }
+
+  trackTripMutation({
+    action: 'trip.completed',
+    driverId,
+    tripId: trip.id,
+    payload: {
+      commission: result.commission,
+      plan_name: result.planName,
+      balance_after: result.balanceAfter,
+      is_in_debt: result.isInDebt,
+    },
+  });
 
   return {
     trip_id: trip.id,
@@ -562,6 +611,13 @@ async function updateTrip(driverId, tripId, data) {
 
   const attributes = await TripAttribute.findAll({ where: { tripId: trip.id } });
 
+  trackTripMutation({
+    action: 'trip.updated',
+    driverId,
+    tripId: trip.id,
+    payload: { fields: Object.keys(fields), notified_passengers: notifiedPassengers },
+  });
+
   return {
     trip: {
       id: trip.id,
@@ -625,6 +681,13 @@ async function cancelTrip(driverId, tripId) {
       console.warn(`[tripService] failed to release seat lock for trip ${trip.id} seat ${seat.seatNumber}:`, err.message);
     }
   }
+
+  trackTripMutation({
+    action: 'trip.cancelled',
+    driverId,
+    tripId: trip.id,
+    payload: { status: trip.status, notified_passengers: notifiedPassengers },
+  });
 
   return {
     trip: {

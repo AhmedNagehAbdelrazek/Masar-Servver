@@ -1,5 +1,6 @@
 const { Vehicle } = require('../Models');
 const { ApiErrors } = require('../utils/ApiError');
+const auditService = require('./auditService');
 
 const listByDriver = async (driverId) => {
   const vehicles = await Vehicle.findAll({
@@ -44,6 +45,16 @@ const update = async (driverId, vehicleId, payload) => {
   }
 
   await vehicle.update(updates);
+
+  auditService.track({
+    action: 'vehicle.updated',
+    resourceType: 'vehicle',
+    resourceId: vehicle.id,
+    resourceLabel: vehicle.plateNumber,
+    actorId: driverId,
+    actorType: 'driver',
+    payload: { fields: Object.keys(updates) },
+  });
 
   return {
     vehicle: {

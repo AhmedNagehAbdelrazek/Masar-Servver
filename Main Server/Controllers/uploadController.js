@@ -1,6 +1,6 @@
 const uploadService = require('../Services/uploadService');
 const { successResponse } = require('../utils/httpResponse');
-const { track } = require('../Services/auditService');
+const { track, markResource } = require('../Services/auditService');
 
 const upload = async (req, res, next) => {
   try {
@@ -20,6 +20,7 @@ const upload = async (req, res, next) => {
         provider: result.provider,
       },
     });
+    markResource(res, { type: 'uploaded_image', id: result.id, label: result.filename });
     successResponse(res, result);
   } catch (err) {
     track({

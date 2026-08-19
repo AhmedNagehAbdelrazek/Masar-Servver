@@ -1,11 +1,11 @@
 const { Op } = require('sequelize');
 const sequelize = require('../config/database');
-const { User, SubscriptionPlan, PaymentMethod, DriverSubscription, UploadedImage } = require('../Models');
+const { User, SubscriptionPlan, PaymentMethod, DriverSubscription, UploadedImage, DriverProfile } = require('../Models');
 const { SUBSCRIPTION_STATUS, FREE_OFFER_TYPE } = require('../config/constants');
 const { ApiErrors } = require('../utils/ApiError');
 const balanceService = require('./balanceService');
 const notificationService = require('./notificationService');
-const { audit } = require('../config/audit');
+const auditService = require('./auditService');
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -21,18 +21,14 @@ function maskNationalID(nationalID) {
 }
 
 function logMutation({ action, actorId, resourceType, resourceId, payload }) {
-  try {
-    audit.track({
-      event_type: 'admin.action',
-      action,
-      outcome: 'success',
-      actor: actorId ? { type: 'admin', id: actorId } : { type: 'system' },
-      resource: { type: resourceType, id: resourceId },
-      payload,
-    });
-  } catch (err) {
-    console.warn('[audit] subscription mutation log failed:', err.message);
-  }
+  auditService.track({
+    eventType: 'admin.action',
+    action,
+    actorId,
+    resourceType,
+    resourceId,
+    payload,
+  });
 }
 
 function toSubscriptionDTO(sub) {

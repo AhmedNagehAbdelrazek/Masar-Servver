@@ -37,9 +37,13 @@ function createAuditMiddleware(client, options = {}) {
             const route = req.baseUrl + (req.route?.path ?? req.path);
             const outcome = res.statusCode >= 500 ? 'failure' : res.statusCode >= 400 ? 'denied' : 'success';
             const shouldCaptureBody = options.captureBody?.(req) ?? (req.method !== 'GET' && req.method !== 'HEAD');
+            const resource = res.locals?.auditResource;
             client.track({
                 event_type: 'http.request',
                 action: 'http.request',
+                resource: resource
+                    ? { type: resource.type, id: resource.id, label: resource.label }
+                    : undefined,
                 actor: req.user
                     ? {
                         type: req.user.type ?? 'user',

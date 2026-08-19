@@ -8,6 +8,7 @@ const otpService = require('./otpService');
 const { validatePhone } = require('../utils/phoneValidator');
 const { TEST_PHONES, SUBSCRIPTION_STATUS, FREE_OFFER_TYPE } = require('../config/constants');
 const balanceService = require('./balanceService');
+const auditService = require('./auditService');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-in-production';
 const JWT_EXPIRY = process.env.JWT_EXPIRY || '24h';
@@ -201,6 +202,15 @@ async function registerPassword(authHeader, password) {
           freeOffer: freePlan.freeOffer || null,
         });
 
+        auditService.track({
+          action: 'subscription.auto_assigned',
+          resourceType: 'driver_subscription',
+          resourceId: sub.id,
+          actorId: user.id,
+          actorType: 'user',
+          payload: { plan_id: freePlan.id, plan_name: freePlan.name },
+        });
+
         // Credit free offer balance if the plan uses a credit offer.
         if (freePlan.freeOffer && freePlan.freeOffer.type === FREE_OFFER_TYPE.CREDIT) {
           const creditAmount = Number(freePlan.freeOffer.value) || 0;
@@ -222,6 +232,16 @@ async function registerPassword(authHeader, password) {
   await storeRefreshToken(user.id, jti);
 
   await user.update({ lastLoginAt: new Date() });
+
+  auditService.track({
+    eventType: 'security.event',
+    action: 'user.register',
+    resourceType: 'user',
+    resourceId: user.id,
+    resourceLabel: user.phone,
+    actorId: user.id,
+    actorType: 'user',
+  });
 
   return {
     access_token: accessToken,
@@ -262,6 +282,17 @@ async function login(phone, password) {
   await storeRefreshToken(user.id, jti);
 
   await user.update({ lastLoginAt: new Date() });
+
+  auditService.track({
+    eventType: 'security.event',
+    action: 'auth.login',
+    resourceType: 'user',
+    resourceId: user.id,
+    resourceLabel: user.phone,
+    actorId: user.id,
+    actorType: 'user',
+    payload: { role: user.role },
+  });
 
   return {
     access_token: accessToken,
@@ -310,6 +341,16 @@ async function refreshToken(refreshTokenValue) {
   const { token: newRefreshToken, jti } = generateRefreshToken(user);
   await storeRefreshToken(user.id, jti);
 
+  auditService.track({
+    eventType: 'security.event',
+    action: 'auth.refresh',
+    resourceType: 'user',
+    resourceId: user.id,
+    resourceLabel: user.phone,
+    actorId: user.id,
+    actorType: 'user',
+  });
+
   return {
     access_token: newAccessToken,
     refresh_token: newRefreshToken,
@@ -352,6 +393,15 @@ async function logout(userId, refreshTokenValue, accessToken) {
   if (accessToken) {
     await blacklistAccessToken(accessToken);
   }
+
+  auditService.track({
+    eventType: 'security.event',
+    action: 'auth.logout',
+    resourceType: 'user',
+    resourceId: userId,
+    actorId: userId,
+    actorType: 'user',
+  });
 
   return { message: 'Logged out successfully' };
 }
@@ -454,6 +504,16 @@ async function resetPassword(authHeader, password) {
     await redis.del(...keys);
   }
 
+  auditService.track({
+    eventType: 'security.event',
+    action: 'auth.password_reset',
+    resourceType: 'user',
+    resourceId: user.id,
+    resourceLabel: user.phone,
+    actorId: user.id,
+    actorType: 'user',
+  });
+
   return { message: 'Password reset successful' };
 }
 
@@ -536,6 +596,15 @@ async function submitDriverProfile(userId, data) {
     nationalID: data.nationalID,
   });
 
+  auditService.track({
+    action: 'driver_profile.submitted',
+    resourceType: 'driver_profile',
+    resourceId: driverProfile.id,
+    resourceLabel: user.fullName,
+    actorId: userId,
+    actorType: 'driver',
+  });
+
   return { driverProfile };
 }
 
@@ -602,6 +671,16 @@ async function submitVehicle(userId, data) {
     registrationDocBack: data.registrationDocBack,
     vehiclePhotoFront: data.vehiclePhotoFront,
     vehiclePhotoBack: data.vehiclePhotoBack,
+  });
+
+  auditService.track({
+    action: 'vehicle.submitted',
+    resourceType: 'vehicle',
+    resourceId: vehicle.id,
+    resourceLabel: vehicle.plateNumber,
+    actorId: userId,
+    actorType: 'driver',
+    payload: { plate_number: vehicle.plateNumber, model: vehicle.model },
   });
 
   return { vehicle };

@@ -1,9 +1,11 @@
 const tripService = require('../Services/tripService');
 const { successResponse } = require('../utils/httpResponse');
+const { markResource } = require('../Services/auditService');
 
 const createTrip = async (req, res, next) => {
   try {
     const result = await tripService.createTrip(req.user.id, req.body);
+    markResource(res, { type: 'trip', id: result.trip_id });
     successResponse(res, result, 201);
   } catch (err) {
     next(err);
@@ -53,6 +55,7 @@ const getAvailableTrips = async (req, res, next) => {
 const startTrip = async (req, res, next) => {
   try {
     const result = await tripService.startTrip(req.user.id, req.params.trip_id);
+    markResource(res, { type: 'trip', id: result.trip_id });
     successResponse(res, result);
   } catch (err) {
     next(err);
@@ -62,6 +65,7 @@ const startTrip = async (req, res, next) => {
 const completeTrip = async (req, res, next) => {
   try {
     const result = await tripService.completeTrip(req.user.id, req.params.trip_id);
+    markResource(res, { type: 'trip', id: result.trip_id });
     successResponse(res, result);
   } catch (err) {
     next(err);
@@ -71,6 +75,7 @@ const completeTrip = async (req, res, next) => {
 const updateTrip = async (req, res, next) => {
   try {
     const result = await tripService.updateTrip(req.user.id, req.params.trip_id, req.body);
+    markResource(res, { type: 'trip', id: result.trip.id });
     successResponse(res, result);
   } catch (err) {
     next(err);
@@ -80,6 +85,7 @@ const updateTrip = async (req, res, next) => {
 const cancelTrip = async (req, res, next) => {
   try {
     const result = await tripService.cancelTrip(req.user.id, req.params.trip_id);
+    markResource(res, { type: 'trip', id: result.trip.id });
     successResponse(res, result);
   } catch (err) {
     next(err);

@@ -1,6 +1,7 @@
 const planService = require('../Services/planService');
 const subscriptionService = require('../Services/subscriptionService');
 const { successResponse } = require('../utils/httpResponse');
+const { markResource } = require('../Services/auditService');
 
 const listPlans = async (req, res, next) => {
   try {
@@ -14,6 +15,7 @@ const listPlans = async (req, res, next) => {
 const createPlan = async (req, res, next) => {
   try {
     const plan = await planService.createPlan(req.body, req.user.id);
+    markResource(res, { type: 'subscription_plan', id: plan.id });
     successResponse(res, { plan }, 201);
   } catch (err) {
     next(err);
@@ -23,6 +25,7 @@ const createPlan = async (req, res, next) => {
 const updatePlan = async (req, res, next) => {
   try {
     const plan = await planService.updatePlan(req.params.plan_id, req.body, req.user.id);
+    markResource(res, { type: 'subscription_plan', id: plan.id });
     successResponse(res, { plan });
   } catch (err) {
     next(err);
@@ -32,6 +35,7 @@ const updatePlan = async (req, res, next) => {
 const deactivatePlan = async (req, res, next) => {
   try {
     const result = await planService.deactivatePlan(req.params.plan_id, req.user.id);
+    markResource(res, { type: 'subscription_plan', id: req.params.plan_id });
     successResponse(res, result);
   } catch (err) {
     next(err);
@@ -50,6 +54,7 @@ const listPaymentMethods = async (req, res, next) => {
 const createPaymentMethod = async (req, res, next) => {
   try {
     const method = await planService.createPaymentMethod(req.body, req.user.id);
+    markResource(res, { type: 'payment_method', id: method.id });
     successResponse(res, { method }, 201);
   } catch (err) {
     next(err);
@@ -59,6 +64,7 @@ const createPaymentMethod = async (req, res, next) => {
 const updatePaymentMethod = async (req, res, next) => {
   try {
     const method = await planService.updatePaymentMethod(req.params.method_id, req.body, req.user.id);
+    markResource(res, { type: 'payment_method', id: method.id });
     successResponse(res, { method });
   } catch (err) {
     next(err);
@@ -68,6 +74,7 @@ const updatePaymentMethod = async (req, res, next) => {
 const deactivatePaymentMethod = async (req, res, next) => {
   try {
     const result = await planService.deactivatePaymentMethod(req.params.method_id, req.user.id);
+    markResource(res, { type: 'payment_method', id: req.params.method_id });
     successResponse(res, result);
   } catch (err) {
     next(err);
@@ -89,6 +96,7 @@ const listPendingSubscriptions = async (req, res, next) => {
 const approveSubscription = async (req, res, next) => {
   try {
     const result = await subscriptionService.approve(req.params.subscription_id, req.user.id);
+    markResource(res, { type: 'driver_subscription', id: req.params.subscription_id });
     successResponse(res, result);
   } catch (err) {
     next(err);
@@ -102,6 +110,7 @@ const rejectSubscription = async (req, res, next) => {
       req.body.reason,
       req.user.id
     );
+    markResource(res, { type: 'driver_subscription', id: req.params.subscription_id });
     successResponse(res, result);
   } catch (err) {
     next(err);

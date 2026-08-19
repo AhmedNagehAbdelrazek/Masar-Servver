@@ -1,5 +1,6 @@
 const authService = require('../Services/authService');
 const { successResponse } = require('../utils/httpResponse');
+const { markResource } = require('../Services/auditService');
 
 const registerPhone = async (req, res, next) => {
   try {
@@ -25,6 +26,7 @@ const registerPassword = async (req, res, next) => {
   try {
     const { password } = req.body;
     const result = await authService.registerPassword(req.headers.authorization, password);
+    markResource(res, { type: 'user', id: result.user.id, label: result.user.phone });
     successResponse(res, result, 201);
   } catch (err) {
     next(err);
@@ -35,6 +37,7 @@ const login = async (req, res, next) => {
   try {
     const { phone, password } = req.body;
     const result = await authService.login(phone, password);
+    markResource(res, { type: 'user', id: result.user.id, label: result.user.phone });
     successResponse(res, result);
   } catch (err) {
     next(err);
@@ -56,6 +59,7 @@ const logout = async (req, res, next) => {
     const { refresh_token } = req.body;
     const accessToken = req.headers.authorization?.split(' ')[1];
     const result = await authService.logout(req.user.id, refresh_token, accessToken);
+    markResource(res, { type: 'user', id: req.user.id });
     successResponse(res, result);
   } catch (err) {
     next(err);
@@ -114,6 +118,7 @@ const resendOTP = async (req, res, next) => {
 const submitDriverProfile = async (req, res, next) => {
   try {
     const result = await authService.submitDriverProfile(req.user.id, req.body);
+    markResource(res, { type: 'driver_profile', id: result.driverProfile.id });
     successResponse(res, result, 201);
   } catch (err) {
     next(err);
@@ -132,6 +137,11 @@ const getDriverProfile = async (req, res, next) => {
 const submitVehicle = async (req, res, next) => {
   try {
     const result = await authService.submitVehicle(req.user.id, req.body);
+    markResource(res, {
+      type: 'vehicle',
+      id: result.vehicle.id,
+      label: result.vehicle.plateNumber,
+    });
     successResponse(res, result, 201);
   } catch (err) {
     next(err);

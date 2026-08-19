@@ -1,4 +1,4 @@
-const { AuditClient, createAuditedFetch } = require('../external packages/audit-client');
+const { AuditClient, createAuditedFetch, getTraceContext } = require('../external packages/audit-client');
 
 const audit = new AuditClient({
   serviceId: process.env.AUDIT_SERVICE_ID,
@@ -13,3 +13,4 @@ const auditedFetch = createAuditedFetch(audit);
 
 exports.audit = audit;
 exports.auditedFetch = auditedFetch;
+exports.getTraceContext = getTraceContext;

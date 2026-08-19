@@ -2,7 +2,7 @@ const { Op } = require('sequelize');
 const sequelize = require('../config/database');
 const { DriverSubscription, SubscriptionPlan, User, Trip, Booking } = require('../Models');
 const { SUBSCRIPTION_STATUS, BOOKING_STATUS, TRIP_STATUS } = require('../config/constants');
-const { audit } = require('../config/audit');
+const auditService = require('./auditService');
 const notificationService = require('./notificationService');
 
 /**
@@ -33,20 +33,15 @@ function round(n) {
 }
 
 function logMutation({ action, resourceType, resourceId, resourceLabel, actorId, actorType, payload }) {
-  try {
-    audit.track({
-      event_type: 'domain.event',
-      action,
-      outcome: 'success',
-      actor: actorId
-        ? { type: actorType || 'admin', id: actorId }
-        : { type: 'system' },
-      resource: { type: resourceType, id: resourceId, label: resourceLabel },
-      payload,
-    });
-  } catch (err) {
-    console.warn('[audit] balance mutation log failed:', err.message);
-  }
+  auditService.track({
+    action,
+    resourceType,
+    resourceId,
+    resourceLabel,
+    actorId,
+    actorType,
+    payload,
+  });
 }
 
 async function getUserForUpdate(driverId, transaction) {
