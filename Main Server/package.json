@@ -14,6 +14,7 @@
     "test:contract": "jest tests/contract",
     "test:unit": "jest tests/unit",
     "seed": "node seed.js",
+    "seed:mock": "node seed-mock.js",
     "db:init": "node -e \"require('./migrations').initMigrations()\"",
     "db:migrate": "node -e \"require('./migrations').runMigrations()\"",
     "db:migrate:redo": "node -e \"require('./migrations').runMigrations({redo:true})\"",

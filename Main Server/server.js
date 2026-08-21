@@ -5,6 +5,7 @@ const { createSocketServer } = require('./socketServer');
 const { initDatabase } = require('./config/database');
 const { startJobs } = require('./jobs');
 const { seedAdmin } = require('./seed');
+const { seedMockData } = require('./seed-mock');
 
 const PORT = process.env.PORT || 3000;
 
@@ -15,6 +16,7 @@ async function startServer() {
 
   await initDatabase();
   await seedAdmin();
+  await seedMockData();
   startJobs();
   console.log(process.env.CLOUDINARY_API_SECRET);
 
