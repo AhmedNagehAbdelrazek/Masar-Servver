@@ -2,7 +2,7 @@ const router = require('express').Router();
 const protect = require('../middlewares/protect');
 const roleGuard = require('../middlewares/roleGuard');
 const validate = require('../middlewares/validatorMiddleware');
-const c = require('../controllers/rideRequestController');
+const c = require('../Controllers/rideRequestController');
 const v = require('../utils/validators/rideRequestValidator');
 
 router.use(protect);
