@@ -29,18 +29,22 @@ async function resetTables() {
 const MARKER_PHONE = '+962790000001';
 
 /**
- * Idempotent entry point for server startup: seeds only when the marker user
- * is absent. ponytail: no transaction around inserts — if a first boot crashes
+ * Opt-in entry point for server startup: no-ops unless SEED_MOCK_ON_BOOT=true,
+ * then seeds only when the marker user is absent — using the same destructive
+ * reset as the CLI so pre-existing rows (e.g. the base admin seeder) can never
+ * collide. ponytail: no transaction around inserts — if a first boot crashes
  * mid-seed, delete partial rows (or run `npm run seed:mock`) and reboot.
  */
 async function seedMockData() {
   if (process.env.NODE_ENV === 'test') return false;
+  if (process.env.SEED_MOCK_ON_BOOT !== 'true') return false;
   const marker = await M.User.findOne({ where: { phone: MARKER_PHONE }, attributes: ['id'] });
   if (marker) {
     console.log('[mock-seed] mock data already present — skipping');
     return false;
   }
-  console.log('[mock-seed] seeding mock data...');
+  console.log('[mock-seed] SEED_MOCK_ON_BOOT=true — resetting tables and seeding mock data...');
+  await resetTables();
   await runInserts();
   console.log('[mock-seed] mock data seeded.');
   return true;
