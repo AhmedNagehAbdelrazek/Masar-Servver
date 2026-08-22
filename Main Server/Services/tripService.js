@@ -585,6 +585,29 @@ const completeTrip = async (driverId, tripId) => {
 
   await trip.update({ status: TRIP_STATUS.COMPLETED });
 
+  // Finalize confirmed bookings (spec 009 US3): completed + paid_cash + timestamp.
+  const confirmedBookings = await Booking.findAll({
+    where: { tripId: trip.id, status: BOOKING_STATUS.CONFIRMED },
+    include: [{ model: User, as: 'passenger', attributes: ['id', 'fullName'] }],
+  });
+  for (const booking of confirmedBookings) {
+    await booking.update({
+      status: BOOKING_STATUS.COMPLETED,
+      paymentStatus: 'paid_cash',
+      completedAt: new Date(),
+    });
+    if (booking.passenger) {
+      try {
+        await notificationService.sendToUser(booking.passenger, 'TRIP_COMPLETED_PROMPT', {
+          channels: ['in_app'],
+          vars: { route: `${trip.originCity} - ${trip.destinationCity}` },
+        });
+      } catch (err) {
+        console.warn('[tripService] trip completed notification failed:', err.message);
+      }
+    }
+  }
+
   // Increment free trips counter if the driver's subscription has a free trips offer.
   try {
     const now = new Date();
@@ -843,7 +866,7 @@ async function countRecentCancellations(driverId) {
     where: {
       userId: driverId,
       penaltyType: PENALTY_CATEGORY.TRIP_CANCELLATION,
-      createdAt: { [Op.gte]: thirtyDaysAgo },
+      createdat: { [Op.gte]: thirtyDaysAgo },
     },
   });
   return count;

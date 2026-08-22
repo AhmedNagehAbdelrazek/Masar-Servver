@@ -26,6 +26,7 @@ const SubscriptionPlan = require('./SubscriptionPlan');
 const DriverSubscription = require('./DriverSubscription');
 const PaymentMethod = require('./PaymentMethod');
 const NotificationSetting = require('./NotificationSetting');
+const SupportTicketMessage = require('./SupportTicketMessage');
 
 // ===== USER RELATIONS =====
 User.hasOne(DriverProfile, { foreignKey: 'driver_id', as: 'driverProfile' });
@@ -70,6 +71,10 @@ Penalty.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
 
 User.hasMany(SupportTicket, { foreignKey: 'user_id', as: 'supportTickets' });
 SupportTicket.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+
+SupportTicket.hasMany(SupportTicketMessage, { foreignKey: 'ticket_id', as: 'messages', onDelete: 'CASCADE' });
+SupportTicketMessage.belongsTo(SupportTicket, { foreignKey: 'ticket_id', as: 'ticket' });
+SupportTicketMessage.belongsTo(User, { foreignKey: 'sender_id', as: 'sender' });
 
 User.hasMany(Notification, { foreignKey: 'user_id', as: 'notifications' });
 Notification.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
@@ -160,4 +165,5 @@ module.exports = {
   DriverSubscription,
   PaymentMethod,
   NotificationSetting,
+  SupportTicketMessage,
 };

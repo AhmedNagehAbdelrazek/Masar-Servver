@@ -71,14 +71,18 @@ Penalty.init(
             type: DataTypes.DATE,
             allowNull: true,
         },
+        createdat: {
+            type: DataTypes.DATE,
+            allowNull: false,
+            defaultValue: DataTypes.NOW,
+        },
     },
     {
         sequelize,
         modelName: 'Penalty',
         tableName: 'penalties',
         underscored: true,
-        timestamps: true,
-        updatedAt: false,
+        timestamps: false,
     }
 );
 

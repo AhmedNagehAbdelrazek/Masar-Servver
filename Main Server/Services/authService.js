@@ -1,7 +1,7 @@
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 const crypto = require('crypto');
-const { User, DriverProfile, Vehicle, UploadedImage, SubscriptionPlan, DriverSubscription } = require('../Models');
+const { User, DriverProfile, Vehicle, UploadedImage, SubscriptionPlan, DriverSubscription, PassengerProfile } = require('../Models');
 const { ApiErrors } = require('../utils/ApiError');
 const { setKey, getKey, deleteKey } = require('../config/redis');
 const otpService = require('./otpService');
@@ -233,6 +233,18 @@ async function registerPassword(authHeader, password) {
     await initializeDefaults(user.id);
   } catch (err) {
     console.warn('[authService] failed to initialize notification settings:', err.message);
+  }
+
+  // Create the passenger profile for new passengers (spec 009 US8).
+  if (decoded.role === 'passenger') {
+    try {
+      await PassengerProfile.findOrCreate({
+        where: { passengerId: user.id },
+        defaults: { passengerId: user.id },
+      });
+    } catch (err) {
+      console.warn('[authService] failed to create passenger profile:', err.message);
+    }
   }
 
   const accessToken = generateAccessToken(user);

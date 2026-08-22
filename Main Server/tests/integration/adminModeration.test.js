@@ -190,7 +190,7 @@ describe('POST /api/admin/penalties', () => {
         user_id: DRIVER_ID,
         type: 'suspension',
         reason: 'Two no-show incidents',
-        ends_at: '2026-08-08T00:00:00Z',
+        ends_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
       });
 
     expect(res.status).toBe(200);

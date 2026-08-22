@@ -41,6 +41,19 @@ SupportTicket.init(
             type: DataTypes.UUID,
             allowNull: true,
         },
+        referenceCode: {
+            type: DataTypes.STRING(12),
+            allowNull: true,
+            unique: true,
+        },
+        bookingId: {
+            type: DataTypes.UUID,
+            allowNull: true,
+        },
+        tripId: {
+            type: DataTypes.UUID,
+            allowNull: true,
+        },
         resolutionNotes: {
             type: DataTypes.TEXT,
             allowNull: true,

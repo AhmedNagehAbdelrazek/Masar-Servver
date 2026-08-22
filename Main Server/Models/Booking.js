@@ -76,6 +76,10 @@ Booking.init(
             allowNull: true,
             defaultValue: PAYMENT_STATUS.PENDING,
         },
+        completedAt: {
+            type: DataTypes.DATE,
+            allowNull: true,
+        },
     },
     {
         sequelize,

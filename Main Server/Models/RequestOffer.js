@@ -36,6 +36,14 @@ RequestOffer.init(
             allowNull: false,
             defaultValue: REQUEST_OFFER_STATUS.SENT,
         },
+        agreedFare: {
+            type: DataTypes.NUMERIC(10, 2),
+            allowNull: true,
+        },
+        bookingId: {
+            type: DataTypes.UUID,
+            allowNull: true,
+        },
     },
     {
         sequelize,

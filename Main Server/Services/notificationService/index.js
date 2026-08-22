@@ -178,6 +178,126 @@ const TEMPLATES = {
       body: 'A {severity} penalty has been recorded: {reason}. Please review the platform policy.',
     },
   },
+  BOOKING_CONFIRMED_DRIVER: {
+    ar: {
+      title: 'حجز جديد على رحلتك',
+      body: 'حجز المسافر {passenger} المقعد {seat_number} في رحلتك {route}.',
+    },
+    en: {
+      title: 'New booking on your trip',
+      body: '{passenger} booked seat {seat_number} on your trip {route}.',
+    },
+  },
+  BOOKING_CONFIRMED_PASSENGER: {
+    ar: {
+      title: 'تم تأكيد حجزك',
+      body: 'تم تأكيد حجزك برمز {reference_code}. رحلتك من {origin} إلى {destination}.',
+    },
+    en: {
+      title: 'Booking confirmed',
+      body: 'Your booking {reference_code} is confirmed. Trip from {origin} to {destination}.',
+    },
+  },
+  BOOKING_CANCELLED_DRIVER: {
+    ar: {
+      title: 'إلغاء حجز',
+      body: 'ألغى {passenger} حجز المقعد {seat_number} في رحلتك {route}.',
+    },
+    en: {
+      title: 'Booking cancelled',
+      body: '{passenger} cancelled seat {seat_number} on your trip {route}.',
+    },
+  },
+  RIDE_REQUEST_NEW: {
+    ar: {
+      title: 'طلب رحلة جديد',
+      body: 'مسافر يبحث عن رحلة من {origin} إلى {destination} بميزانية تصل إلى {budget}.',
+    },
+    en: {
+      title: 'New ride request',
+      body: 'A passenger needs a ride from {origin} to {destination} with budget up to {budget}.',
+    },
+  },
+  OFFER_RECEIVED: {
+    ar: {
+      title: 'عرض جديد على طلبك',
+      body: 'قدم السائق {driver} عرضاً بسعر {offered_fare} على طلب رحلتك.',
+    },
+    en: {
+      title: 'New offer on your request',
+      body: 'Driver {driver} offered {offered_fare} for your ride request.',
+    },
+  },
+  OFFER_ACCEPTED: {
+    ar: {
+      title: 'قُبل عرضك',
+      body: 'قبل المسافر عرضك. اتفقا على السعر النهائي ثم أرفق العرض برحلة.',
+    },
+    en: {
+      title: 'Your offer was accepted',
+      body: 'The passenger accepted your offer. Agree on the final price, then attach the offer to a trip.',
+    },
+  },
+  OFFER_DECLINED: {
+    ar: {
+      title: 'رُفض عرضك',
+      body: 'رفض المسافر عرضك على طلب الرحلة.',
+    },
+    en: {
+      title: 'Offer declined',
+      body: 'The passenger declined your offer.',
+    },
+  },
+  OFFER_PRICE_AGREED: {
+    ar: {
+      title: 'تم الاتفاق على السعر',
+      body: 'السعر النهائي المتفق عليه: {agreed_fare}. يمكنك الآن إرفاق العرض برحلتك.',
+    },
+    en: {
+      title: 'Price agreed',
+      body: 'Final agreed price: {agreed_fare}. You can now attach the offer to one of your trips.',
+    },
+  },
+  BOOKING_CREATED_FROM_OFFER: {
+    ar: {
+      title: 'تم إنشاء حجزك',
+      body: 'تم تأكيد حجزك برمز {reference_code} بعد إرفاق العرض بالرحلة.',
+    },
+    en: {
+      title: 'Booking created',
+      body: 'Your booking {reference_code} is confirmed after attaching the offer to a trip.',
+    },
+  },
+  TRIP_COMPLETED_PROMPT: {
+    ar: {
+      title: 'انتهت الرحلة',
+      body: 'انتهت رحلتكم {route}. لا تنسوا تقييم بعضكم البعض.',
+    },
+    en: {
+      title: 'Trip completed',
+      body: 'Your trip {route} has ended. Do not forget to rate each other.',
+    },
+  },
+  SUPPORT_TICKET_NEW: {
+    ar: {
+      title: 'تذكرة دعم جديدة',
+      body: 'تذكرة جديدة {reference_code}: {subject}.',
+    },
+    en: {
+      title: 'New support ticket',
+      body: 'New ticket {reference_code}: {subject}.',
+    },
+  },
+  DELAY_REPORTED: {
+    ar: {
+      title: 'بلاغ تأخير',
+      body: 'تم تسجيل تأخير {delay_minutes} دقيقة. السبب: {reason}.',
+    },
+    en: {
+      title: 'Delay reported',
+      body: 'A delay of {delay_minutes} minutes was reported. Reason: {reason}.',
+    },
+  },
 };
 
 function interpolate(template, vars = {}) {

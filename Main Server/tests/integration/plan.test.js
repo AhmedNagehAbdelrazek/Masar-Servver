@@ -180,7 +180,7 @@ describe('Free plan single-instance rule - US1', () => {
 });
 
 describe('Payment method catalog - US1', () => {
-  it('admin creates a payment method and it appears publicly', async () => {
+  it('admin creates a payment method and authenticated users see it', async () => {
     await getAgent()
       .post('/api/admin/payment-methods')
       .set('Authorization', `Bearer ${adminToken}`)
@@ -191,13 +191,15 @@ describe('Payment method catalog - US1', () => {
         email: 'payments@boj.com',
       });
 
-    const res = await getAgent().get('/api/payment-methods');
+    const res = await getAgent()
+      .get('/api/payment-methods')
+      .set('Authorization', `Bearer ${driverToken}`);
     expect(res.status).toBe(200);
     expect(res.body.methods).toHaveLength(1);
     expect(res.body.methods[0].type).toBe('bank_account');
   });
 
-  it('deactivating a method hides it from the public list', async () => {
+  it('deactivating a method hides it from the list', async () => {
     const created = await getAgent()
       .post('/api/admin/payment-methods')
       .set('Authorization', `Bearer ${adminToken}`)
@@ -207,7 +209,9 @@ describe('Payment method catalog - US1', () => {
       .delete(`/api/admin/payment-methods/${created.body.method.id}`)
       .set('Authorization', `Bearer ${adminToken}`);
 
-    const res = await getAgent().get('/api/payment-methods');
+    const res = await getAgent()
+      .get('/api/payment-methods')
+      .set('Authorization', `Bearer ${driverToken}`);
     expect(res.body.methods).toHaveLength(0);
   });
 
@@ -226,7 +230,9 @@ describe('Payment method catalog - US1', () => {
     expect(res.body.method.name).toBe('Clover Pay');
     expect(res.body.method.type).toBe('mobile_money');
 
-    const list = await getAgent().get('/api/payment-methods');
+    const list = await getAgent()
+      .get('/api/payment-methods')
+      .set('Authorization', `Bearer ${driverToken}`);
     expect(list.body.methods[0].name).toBe('Clover Pay');
   });
 

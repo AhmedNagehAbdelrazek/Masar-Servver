@@ -8,10 +8,15 @@ const { ratingListValidation } = require('../utils/validators/ratingValidator');
 const { penaltyListValidation } = require('../utils/validators/penaltyValidator');
 const { driverComplaintListValidation } = require('../utils/validators/complaintValidator');
 const { earningsQueryValidation } = require('../utils/validators/earningsStatsValidator');
+const rideRequestController = require('../Controllers/rideRequestController');
+const { driverOffersListValidation } = require('../utils/validators/rideRequestValidator');
 
 // Driver bookings (driver only)
 router.get('/bookings', protect, roleGuard(['driver']), ...bookingListValidation, validate, c.getBookings);
 router.get('/bookings/:booking_id', protect, roleGuard(['driver']), ...bookingParamValidation, validate, c.getBookingById);
+
+// Ride-request offers sent by this driver
+router.get('/offers', protect, roleGuard(['driver']), ...driverOffersListValidation, validate, rideRequestController.listMyOffers);
 
 // Ratings received (driver only)
 router.get('/ratings', protect, roleGuard(['driver']), ...ratingListValidation, validate, c.getRatings);

@@ -229,13 +229,16 @@ const NOTIFICATION_TYPE_LABELS = {
   },
 };
 
-const SIGNUP_ROLES = [ROLES.PASSENGER, ROLES.RIDER];
+const SIGNUP_ROLES = [ROLES.PASSENGER, ROLES.DRIVER];
+
+// How long a ride-request offer stays decidable before it auto-expires.
+const REQUEST_OFFER_TTL_HOURS = 24;
 
 // THE RESOURCES AND ACTIONS THAT THE ADMIN CAN GIVE THEM WITH EACH ROLE LIKE [{resource: 'trip', actions: ['create', 'read', 'update', 'delete']}]; 
 // CAN BE GIVEN TO A ROLE OF RIDER, AS A PERMISSION LIST OF RIDER
 const ADMIN_RESOURCES = [
   "trip",
-  "reservatoin",
+  "reservation",
 
 ];
 
@@ -287,4 +290,5 @@ module.exports = {
   PAGINATION,
   ADMIN_RESOURCES,
   ADMIN_ACTIONS,
+  REQUEST_OFFER_TTL_HOURS,
 };

@@ -109,8 +109,15 @@ describe('Contract: GET /api/payment-methods', () => {
     });
   });
 
-  it('should return 200 with methods array shape (public)', async () => {
+  it('should return 401 without auth (US4: no public exposure)', async () => {
     const res = await getAgent().get('/api/payment-methods');
+    expect(res.status).toBe(401);
+  });
+
+  it('should return 200 with methods array shape for authenticated users', async () => {
+    const res = await getAgent()
+      .get('/api/payment-methods')
+      .set('Authorization', `Bearer ${driverToken}`);
     expect(res.status).toBe(200);
     expect(res.body.methods).toBeDefined();
     expect(Array.isArray(res.body.methods)).toBe(true);

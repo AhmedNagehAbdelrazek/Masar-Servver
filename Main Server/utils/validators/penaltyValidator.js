@@ -25,6 +25,9 @@ const penaltyValidation = [
   body('complaint_id')
     .optional()
     .isUUID().withMessage('Complaint ID must be a valid UUID'),
+  body('details')
+    .optional()
+    .isString().trim().isLength({ max: 4000 }).withMessage('details must be at most 4000 characters'),
   body('ends_at')
     .optional()
     .isISO8601().withMessage('ends_at must be a valid ISO-8601 datetime')

@@ -33,7 +33,7 @@ RideRequest.init(
         },
         originTime: {
             type: DataTypes.DATE,
-            allowNull: false,
+            allowNull: true,
         },
         destinationPlace: {
             type: DataTypes.STRING(120),

@@ -1,4 +1,5 @@
 const tripService = require('../Services/tripService');
+const rideRequestService = require('../Services/rideRequestService');
 const { successResponse } = require('../utils/httpResponse');
 const { markResource } = require('../Services/auditService');
 const { ApiErrors } = require('../utils/ApiError');
@@ -114,6 +115,16 @@ const cancelTripWithPenalty = async (req, res, next) => {
   }
 };
 
+const attachOfferToTrip = async (req, res, next) => {
+  try {
+    const result = await rideRequestService.attachOfferToTrip(req.user.id, req.params.trip_id, req.params.offer_id, req.body);
+    markResource(res, { type: 'booking', id: result.booking.id, label: `booking ${result.booking.reference_code}` });
+    successResponse(res, result, 201);
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   createTrip,
   getTripById,
@@ -125,4 +136,5 @@ module.exports = {
   cancelTrip,
   cancelTripWithPenalty,
   getTripAttributes,
+  attachOfferToTrip,
 };

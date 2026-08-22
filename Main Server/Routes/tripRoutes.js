@@ -4,6 +4,7 @@ const protect = require('../middlewares/protect');
 const { roleGuard } = require('../middlewares/roleGuard');
 const validate = require('../middlewares/validatorMiddleware');
 const { createTripValidation, updateTripValidation, tripParamValidation, searchAvailableTripsValidation, cancelTripValidation } = require('../utils/validators/tripValidator');
+const { param } = require('express-validator');
 
 // Create trip (driver only)
 router.post('/', protect, roleGuard(['driver']), ...createTripValidation, validate, c.createTrip);
@@ -34,5 +35,12 @@ router.delete('/:trip_id', protect, roleGuard(['driver']), ...tripParamValidatio
 
 // Trip attributes (any authenticated user)
 router.get('/:trip_id/attributes', protect, ...tripParamValidation, validate, c.getTripAttributes);
+
+// Attach an accepted ride-request offer to this trip (driver owner only, deferred materialization)
+const attachOfferValidation = [
+  ...tripParamValidation,
+  param('offer_id').isUUID().withMessage('Offer ID must be a valid UUID'),
+];
+router.post('/:trip_id/offers/:offer_id/attach', protect, roleGuard(['driver']), ...attachOfferValidation, validate, c.attachOfferToTrip);
 
 module.exports = router;

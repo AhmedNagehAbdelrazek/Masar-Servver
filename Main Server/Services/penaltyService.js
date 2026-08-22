@@ -58,7 +58,7 @@ const STATUS_BY_TYPE = {
  * does not exist or a suspension is missing `ends_at` / a ban provides one.
  */
 async function issue(actorId, payload) {
-  const { user_id: userId, type, reason, complaint_id: complaintId, ends_at: endsAt } = payload;
+  const { user_id: userId, type, reason, details, complaint_id: complaintId, ends_at: endsAt } = payload;
 
   if (type === PENALTY_TYPES.SUSPENSION && !endsAt) {
     throw ApiErrors.validation('ends_at is required for a suspension');
@@ -75,6 +75,7 @@ async function issue(actorId, payload) {
     complaintId: complaintId || null,
     type,
     reason,
+    details: details || null,
     startsAt: new Date(),
     endsAt: endsAt ? new Date(endsAt) : null,
     issuedBy: actorId,
@@ -91,6 +92,7 @@ async function issue(actorId, payload) {
       user_id: penalty.userId,
       type: penalty.type,
       reason: penalty.reason,
+      details: penalty.details || null,
       starts_at: penalty.startsAt,
       ends_at: penalty.endsAt,
       issued_by: penalty.issuedBy,
