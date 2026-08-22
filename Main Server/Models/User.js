@@ -15,6 +15,10 @@ User.init(
             type: DataTypes.STRING(120),
             allowNull: true,
         },
+        displayName: {
+            type: DataTypes.STRING(120),
+            allowNull: true,
+        },
         countryCode: {
             type: DataTypes.STRING(5),
             allowNull: true,

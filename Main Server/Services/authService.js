@@ -537,6 +537,57 @@ async function resetPassword(authHeader, password) {
   return { message: 'Password reset successful' };
 }
 
+// ===== CHANGE PASSWORD (spec 010) =====
+
+/**
+ * Authenticated password change from the settings screen (contracts §5).
+ * Wrong current password -> 422 INVALID_CURRENT_PASSWORD. On success every
+ * refresh token is revoked and the presenting access token is blacklisted,
+ * forcing a fresh login on other devices (`requires_relogin`).
+ */
+async function changePassword(userId, currentPassword, newPassword, accessToken) {
+  const user = await User.findByPk(userId);
+  if (!user) {
+    throw ApiErrors.notFound('User not found');
+  }
+
+  const isMatch = await bcrypt.compare(currentPassword, user.passwordHash || '');
+  if (!isMatch) {
+    throw ApiErrors.custom('Current password is incorrect', 422, 'INVALID_CURRENT_PASSWORD');
+  }
+
+  if (await bcrypt.compare(newPassword, user.passwordHash || '')) {
+    throw ApiErrors.validation('New password must be different from the current password');
+  }
+
+  const passwordHash = await bcrypt.hash(newPassword, SALT_ROUNDS);
+  await user.update({ passwordHash });
+
+  // Revoke all refresh tokens for this user
+  const { redis } = require('../config/redis');
+  const keys = await redis.keys(`refresh:${user.id}:*`);
+  if (keys.length > 0) {
+    await redis.del(...keys);
+  }
+
+  // The token used for this request stays valid until expiry unless blacklisted
+  if (accessToken) {
+    await blacklistAccessToken(accessToken);
+  }
+
+  auditService.track({
+    eventType: 'security.event',
+    action: 'auth.password_changed',
+    resourceType: 'user',
+    resourceId: user.id,
+    resourceLabel: user.phone,
+    actorId: user.id,
+    actorType: 'user',
+  });
+
+  return { message: 'Password changed successfully', requires_relogin: true };
+}
+
 // ===== RESEND OTP =====
 
 async function resendOTP(phone, purpose) {
@@ -744,6 +795,7 @@ module.exports = {
   forgotPassword,
   verifyForgotPasswordOTP,
   resetPassword,
+  changePassword,
   resendOTP,
   submitDriverProfile,
   getDriverProfile,

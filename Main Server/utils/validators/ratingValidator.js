@@ -34,6 +34,9 @@ const ratingListValidation = [
   query('limit')
     .optional()
     .isInt({ min: 1, max: 100 }).withMessage('Limit must be an integer between 1 and 100'),
+  query('sort')
+    .optional()
+    .isIn(['recent', 'highest', 'lowest']).withMessage('Sort must be recent, highest or lowest'),
 ];
 
 module.exports = {

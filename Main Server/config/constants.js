@@ -193,7 +193,64 @@ const NOTIFICATION_TYPE = {
   SOS_ALERT: 'sos_alert',
   ENFORCEMENT_ACTION: 'enforcement_action',
   SUBSCRIPTION_EXPIRING: 'subscription_expiring',
+  SUBSCRIPTION_PAYMENT: 'subscription_payment',
+  PAYMENT_CONFIRMED: 'payment_confirmed',
   SYSTEM_ANNOUNCEMENT: 'system_announcement',
+};
+
+// Grouped notification settings categories for the driver settings screen
+// (spec 010). Each category lists its member NOTIFICATION_TYPE values.
+const NOTIFICATION_CATEGORIES = {
+  bookings: {
+    label: { ar: 'الحجوزات', en: 'Bookings' },
+    types: [
+      NOTIFICATION_TYPE.BOOKING_CONFIRMED,
+      NOTIFICATION_TYPE.BOOKING_CANCELLED,
+      NOTIFICATION_TYPE.NEW_MESSAGE,
+    ],
+  },
+  trips: {
+    label: { ar: 'الرحلات', en: 'Trips' },
+    types: [
+      NOTIFICATION_TYPE.TRIP_REMINDER,
+      NOTIFICATION_TYPE.TRIP_CANCELLED,
+      NOTIFICATION_TYPE.DELAY_REPORT,
+    ],
+  },
+  subscriptions: {
+    label: { ar: 'الباقات والاشتراك', en: 'Subscriptions' },
+    types: [
+      NOTIFICATION_TYPE.SUBSCRIPTION_PAYMENT,
+      NOTIFICATION_TYPE.PAYMENT_CONFIRMED,
+      NOTIFICATION_TYPE.SUBSCRIPTION_EXPIRING,
+    ],
+  },
+};
+
+// Screen labels for grouped notification settings per type (spec 010).
+const NOTIFICATION_GROUP_LABELS = {
+  ar: {
+    booking_confirmed: 'حجوزات جديدة',
+    booking_cancelled: 'إلغاء الحجز',
+    new_message: 'رسائل الركاب',
+    trip_reminder: 'تذكير الرحلات القادمة',
+    trip_cancelled: 'تحديثات الرحلة',
+    delay_report: 'إشعارات عدم الحضور',
+    subscription_payment: 'الباقات',
+    payment_confirmed: 'اعتماد الدفع',
+    subscription_expiring: 'انتهاء الباقة',
+  },
+  en: {
+    booking_confirmed: 'New bookings',
+    booking_cancelled: 'Booking cancelled',
+    new_message: 'Passenger messages',
+    trip_reminder: 'Upcoming trip reminders',
+    trip_cancelled: 'Trip updates',
+    delay_report: 'Absence alerts',
+    subscription_payment: 'Plans',
+    payment_confirmed: 'Payment confirmed',
+    subscription_expiring: 'Plan expiring',
+  },
 };
 
 const NOTIFICATION_TYPE_LABELS = {
@@ -210,6 +267,8 @@ const NOTIFICATION_TYPE_LABELS = {
     sos_alert: 'تنبيه طوارئ',
     enforcement_action: 'إجراء إنضباطي',
     subscription_expiring: 'اشتراك ينتهي قريباً',
+    subscription_payment: 'الباقات',
+    payment_confirmed: 'اعتماد الدفع',
     system_announcement: 'إعلانات النظام',
   },
   en: {
@@ -225,6 +284,8 @@ const NOTIFICATION_TYPE_LABELS = {
     sos_alert: 'SOS alert',
     enforcement_action: 'Enforcement action',
     subscription_expiring: 'Subscription expiring',
+    subscription_payment: 'Subscription payment',
+    payment_confirmed: 'Payment confirmed',
     system_announcement: 'System announcement',
   },
 };
@@ -287,6 +348,8 @@ module.exports = {
   CANCELLATION_ESCALATION,
   NOTIFICATION_TYPE,
   NOTIFICATION_TYPE_LABELS,
+  NOTIFICATION_CATEGORIES,
+  NOTIFICATION_GROUP_LABELS,
   PAGINATION,
   ADMIN_RESOURCES,
   ADMIN_ACTIONS,

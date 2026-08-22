@@ -8,6 +8,7 @@ const { ratingListValidation } = require('../utils/validators/ratingValidator');
 const { penaltyListValidation } = require('../utils/validators/penaltyValidator');
 const { driverComplaintListValidation } = require('../utils/validators/complaintValidator');
 const { earningsQueryValidation } = require('../utils/validators/earningsStatsValidator');
+const { updateDriverPersonalDataValidation } = require('../utils/validators/profileValidator');
 const rideRequestController = require('../Controllers/rideRequestController');
 const { driverOffersListValidation } = require('../utils/validators/rideRequestValidator');
 
@@ -33,6 +34,14 @@ router.get('/stats', protect, roleGuard(['driver']), c.getStats);
 
 // Aggregated profile (driver only)
 router.get('/profile', protect, roleGuard(['driver']), c.getProfile);
+
+// Profile & settings screens (spec 010, driver only)
+router.get('/profile/full', protect, roleGuard(['driver']), c.getFullProfile);
+router.get('/personal-data', protect, roleGuard(['driver']), c.getPersonalData);
+router.put('/personal-data', protect, roleGuard(['driver']), ...updateDriverPersonalDataValidation, validate, c.updatePersonalData);
+router.get('/account-status', protect, roleGuard(['driver']), c.getAccountStatus);
+router.post('/delete-account', protect, roleGuard(['driver']), c.requestDeleteAccount);
+router.post('/delete-account/cancel', protect, roleGuard(['driver']), c.cancelDeleteAccount);
 
 // Driver home screen (driver, verified, active) + subscription details
 router.get('/home', protect, roleGuard(['driver']), c.getHome);

@@ -1,4 +1,4 @@
-const sequelize = require('../config/database');
+﻿const sequelize = require('../config/database');
 const User = require('./User');
 const UploadedImage = require('./UploadedImage');
 const Vehicle = require('./Vehicle');
@@ -27,6 +27,7 @@ const DriverSubscription = require('./DriverSubscription');
 const PaymentMethod = require('./PaymentMethod');
 const NotificationSetting = require('./NotificationSetting');
 const SupportTicketMessage = require('./SupportTicketMessage');
+const DeletionRequest = require('./DeletionRequest');
 
 // ===== USER RELATIONS =====
 User.hasOne(DriverProfile, { foreignKey: 'driver_id', as: 'driverProfile' });
@@ -68,6 +69,9 @@ Complaint.belongsTo(User, { foreignKey: 'accused_id', as: 'accused' });
 
 User.hasMany(Penalty, { foreignKey: 'user_id', as: 'penalties' });
 Penalty.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+
+User.hasMany(DeletionRequest, { foreignKey: 'user_id', as: 'deletionRequests' });
+DeletionRequest.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
 
 User.hasMany(SupportTicket, { foreignKey: 'user_id', as: 'supportTickets' });
 SupportTicket.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
@@ -166,4 +170,5 @@ module.exports = {
   PaymentMethod,
   NotificationSetting,
   SupportTicketMessage,
+  DeletionRequest,
 };

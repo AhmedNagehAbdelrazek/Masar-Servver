@@ -291,11 +291,41 @@ const TEMPLATES = {
   DELAY_REPORTED: {
     ar: {
       title: 'بلاغ تأخير',
-      body: 'تم تسجيل تأخير {delay_minutes} دقيقة. السبب: {reason}.',
+      body: 'تم تسجيل تأخير {delay_minutes} دقائق. السبب: {reason}.',
     },
     en: {
       title: 'Delay reported',
       body: 'A delay of {delay_minutes} minutes was reported. Reason: {reason}.',
+    },
+  },
+  DELETION_REQUESTED: {
+    ar: {
+      title: 'تم استلام طلب حذف الحساب',
+      body: 'تم استلام طلب حذف حسابك وسيتم مراجعته خلال خمسة أيام عمل. يمكنك إلغاء الطلب قبل إتمام المراجعة.',
+    },
+    en: {
+      title: 'Account deletion request received',
+      body: 'Your account deletion request has been received and will be reviewed within 5 business days. You may cancel it until the review completes.',
+    },
+  },
+  ADMIN_DELETION_NEW: {
+    ar: {
+      title: 'طلب حذف حساب جديد',
+      body: 'السائق {driver_name} ({phone}) قدّم طلب حذف حساب للمراجعة.',
+    },
+    en: {
+      title: 'New account deletion request',
+      body: 'Driver {driver_name} ({phone}) submitted an account deletion request for review.',
+    },
+  },
+  DELETION_REQUEST_CANCELLED: {
+    ar: {
+      title: 'إلغاء طلب حذف الحساب',
+      body: 'تم إلغاء طلب حذف حسابك بنجاح. حسابك يعود إلى حالته السابقة.',
+    },
+    en: {
+      title: 'Account deletion request cancelled',
+      body: 'Your account deletion request has been cancelled. Your account returns to its previous state.',
     },
   },
 };

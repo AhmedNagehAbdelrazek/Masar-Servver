@@ -19,7 +19,27 @@ const updateNotificationSettings = async (req, res, next) => {
   }
 };
 
+const getGroupedSettings = async (req, res, next) => {
+  try {
+    const result = await notificationSettingService.getGroupedSettings(req.user.id);
+    successResponse(res, result);
+  } catch (err) {
+    next(err);
+  }
+};
+
+const updateGroupedSettings = async (req, res, next) => {
+  try {
+    const result = await notificationSettingService.updateGroupedSettings(req.user.id, req.body);
+    successResponse(res, result);
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   getNotificationSettings,
   updateNotificationSettings,
+  getGroupedSettings,
+  updateGroupedSettings,
 };

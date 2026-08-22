@@ -1,4 +1,4 @@
-const authService = require('../Services/authService');
+﻿const authService = require('../Services/authService');
 const { successResponse } = require('../utils/httpResponse');
 const { markResource } = require('../Services/auditService');
 
@@ -66,6 +66,18 @@ const logout = async (req, res, next) => {
   }
 };
 
+
+const changePassword = async (req, res, next) => {
+  try {
+    const { current_password, new_password } = req.body;
+    const accessToken = req.headers.authorization?.split(' ')[1];
+    const result = await authService.changePassword(req.user.id, current_password, new_password, accessToken);
+    markResource(res, { type: 'user', id: req.user.id });
+    successResponse(res, result);
+  } catch (err) {
+    next(err);
+  }
+};
 const me = async (req, res, next) => {
   try {
     const user = await authService.me(req.user.id);
@@ -177,6 +189,7 @@ module.exports = {
   forgotPassword,
   verifyForgotPasswordOTP,
   resetPassword,
+  changePassword,
   resendOTP,
   submitDriverProfile,
   getDriverProfile,

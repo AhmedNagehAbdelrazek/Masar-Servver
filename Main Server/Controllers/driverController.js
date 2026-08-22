@@ -5,6 +5,10 @@ const complaintService = require('../Services/complaintService');
 const earningsService = require('../Services/earningsService');
 const statsService = require('../Services/statsService');
 const homeService = require('../Services/homeService');
+const driverProfileService = require('../Services/driverProfileService');
+const personalDataService = require('../Services/personalDataService');
+const deletionRequestService = require('../Services/deletionRequestService');
+const { markResource } = require('../Services/auditService');
 const { successResponse } = require('../utils/httpResponse');
 const { ApiErrors } = require('../utils/ApiError');
 const { USER_STATUS } = require('../config/constants');
@@ -64,7 +68,66 @@ const getBookingById = async (req, res, next) => {
 
 const getRatings = async (req, res, next) => {
   try {
-    const result = await ratingService.listReceived(req.user.id, req.query);
+    const result = await ratingService.listWithDistribution(req.user.id, req.query);
+    successResponse(res, result);
+  } catch (err) {
+    next(err);
+  }
+};
+
+// ===== Profile & settings screens (spec 010) =====
+
+const getFullProfile = async (req, res, next) => {
+  try {
+    const result = await driverProfileService.getFullProfile(req.user.id);
+    successResponse(res, result);
+  } catch (err) {
+    next(err);
+  }
+};
+
+const getPersonalData = async (req, res, next) => {
+  try {
+    const result = await personalDataService.buildPersonalDataView(req.user.id);
+    successResponse(res, result);
+  } catch (err) {
+    next(err);
+  }
+};
+
+const updatePersonalData = async (req, res, next) => {
+  try {
+    const result = await personalDataService.updatePersonalData(req.user.id, req.body);
+    markResource(res, { type: 'user', id: req.user.id });
+    successResponse(res, result);
+  } catch (err) {
+    next(err);
+  }
+};
+
+const getAccountStatus = async (req, res, next) => {
+  try {
+    const result = await driverProfileService.getAccountStatus(req.user.id);
+    successResponse(res, result);
+  } catch (err) {
+    next(err);
+  }
+};
+
+const requestDeleteAccount = async (req, res, next) => {
+  try {
+    const reason = typeof req.body?.reason === 'string' ? req.body.reason : null;
+    const confirmation = req.body?.confirmation === true;
+    const result = await deletionRequestService.requestDeletion(req.user.id, { reason, confirmation });
+    successResponse(res, result);
+  } catch (err) {
+    next(err);
+  }
+};
+
+const cancelDeleteAccount = async (req, res, next) => {
+  try {
+    const result = await deletionRequestService.cancelDeletionRequest(req.user.id);
     successResponse(res, result);
   } catch (err) {
     next(err);
@@ -188,4 +251,10 @@ module.exports = {
   getEarnings,
   getStats,
   getProfile,
+  getFullProfile,
+  getPersonalData,
+  updatePersonalData,
+  getAccountStatus,
+  requestDeleteAccount,
+  cancelDeleteAccount,
 };

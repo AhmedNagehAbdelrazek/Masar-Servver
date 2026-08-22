@@ -1,4 +1,4 @@
-const { body, header, param } = require('express-validator');
+﻿const { body, header, param } = require('express-validator');
 const { validatePhone } = require('../phoneValidator');
 
 const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
@@ -182,6 +182,20 @@ const onboardingVehicleValidation = [
     .isInt().withMessage('Image ID must be a valid integer'),
 ];
 
+
+const changePasswordValidation = [
+  body('current_password')
+    .notEmpty().withMessage('Current password is required'),
+  body('new_password')
+    .notEmpty().withMessage('New password is required')
+    .matches(passwordRegex).withMessage('Password must be at least 8 characters with uppercase, lowercase, number, and special character')
+    .custom((value, { req }) => {
+      if (value === req.body.current_password) {
+        throw new Error('New password must be different from the current password');
+      }
+      return true;
+    }),
+];
 module.exports = {
   registerPhoneValidation,
   verifyOTPValidation,
@@ -189,6 +203,7 @@ module.exports = {
   loginValidation,
   forgotPasswordValidation,
   resetPasswordValidation,
+  changePasswordValidation,
   resendOTPValidation,
   refreshValidation,
   onboardingProfileValidation,

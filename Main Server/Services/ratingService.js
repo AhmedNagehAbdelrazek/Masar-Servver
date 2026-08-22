@@ -1,4 +1,5 @@
 const sequelize = require('../config/database');
+const { Op } = require('sequelize');
 const { Rating, Booking, Trip, User } = require('../Models');
 const { ApiErrors } = require('../utils/ApiError');
 const { parsePagination, buildPagination } = require('../utils/pagination');
@@ -132,4 +133,67 @@ async function listReceived(rateeId, filters = {}) {
   };
 }
 
-module.exports = { create, listReceived };
+/**
+ * Ratings screen payload for the profile (spec 010, contracts §3): paginated
+ * reviews plus star distribution and punctuality summary. Only visible
+ * ratings count toward every figure.
+ */
+const SORT_ORDERS = {
+  recent: [['createdat', 'DESC']],
+  highest: [['stars', 'DESC'], ['createdat', 'DESC']],
+  lowest: [['stars', 'ASC'], ['createdat', 'DESC']],
+};
+
+async function listWithDistribution(rateeId, filters = {}) {
+  const page = Math.max(1, parseInt(filters.page, 10) || 1);
+  const limit = Math.min(50, Math.max(1, parseInt(filters.limit, 10) || 10));
+  const offset = (page - 1) * limit;
+  const sort = SORT_ORDERS[filters.sort] ? filters.sort : 'recent';
+
+  const visibleWhere = { rateeId, isVisible: { [Op.ne]: false } };
+
+  const [{ rows, count }, distributionRows, onTimeCount, user] = await Promise.all([
+    Rating.findAndCountAll({
+      where: visibleWhere,
+      include: [{ model: User, as: 'rater', attributes: ['id', 'fullName'] }],
+      order: SORT_ORDERS[sort],
+      offset,
+      limit,
+    }),
+    Rating.findAll({
+      where: visibleWhere,
+      attributes: [
+        'stars',
+        [sequelize.fn('COUNT', sequelize.col('Rating.id')), 'count'],
+      ],
+      group: ['stars'],
+      raw: true,
+    }),
+    Rating.count({ where: { ...visibleWhere, wasLate: false } }),
+    User.findByPk(rateeId, { attributes: ['id', 'avgRating'] }),
+  ]);
+
+  const total = Number(count) || 0;
+  const distMap = {};
+  for (const row of distributionRows) {
+    distMap[row.stars] = Number(row.count);
+  }
+  const distribution = [5, 4, 3, 2, 1].map((stars) => ({
+    stars,
+    count: distMap[stars] || 0,
+    percentage: total ? Math.round(((distMap[stars] || 0) / total) * 100) : 0,
+  }));
+
+  return {
+    summary: {
+      average_rating: Number(user?.avgRating || 0),
+      total_ratings: total,
+      punctuality_rate: total ? Math.round((onTimeCount / total) * 100) : 0,
+      distribution,
+    },
+    data: rows.map(serializeReceived),
+    pagination: buildPagination(total, page, limit),
+  };
+}
+
+module.exports = { create, listReceived, listWithDistribution };

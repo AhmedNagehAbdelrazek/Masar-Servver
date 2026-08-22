@@ -12,6 +12,7 @@ const {
   resetPasswordValidation,
   resendOTPValidation,
   refreshValidation,
+  changePasswordValidation,
   onboardingProfileValidation,
   onboardingVehicleValidation,
 } = require('../utils/validators/authValidator');
@@ -30,6 +31,9 @@ router.post('/logout', protect, c.logout);
 
 // Me
 router.get('/me', protect, c.me);
+
+// Change password (spec 010, settings screen)
+router.post('/change-password', protect, ...changePasswordValidation, validate, c.changePassword);
 
 // Forgot password
 router.post('/forgot-password', ...forgotPasswordValidation, validate, c.forgotPassword);
