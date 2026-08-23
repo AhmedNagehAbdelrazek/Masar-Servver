@@ -222,9 +222,9 @@ describe('Contract: GET /api/trips/driver/my-trips', () => {
 
     if (res.body.trips.length > 0) {
       const trip = res.body.trips[0];
-      expect(typeof trip.id).toBe('string');
-      expect(trip.originCity).toBeDefined();
-      expect(trip.destinationCity).toBeDefined();
+      expect(typeof trip.trip_id).toBe('string');
+      expect(trip.origin_city).toBeDefined();
+      expect(trip.destination_city).toBeDefined();
       expect(trip.status).toBeDefined();
     }
   });

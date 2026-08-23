@@ -126,8 +126,9 @@ describe('US2 Contract - Driver Bookings', () => {
     expect(res.body.booking.passenger_phone).toContain('***');
     expect(res.body.booking.seat_number).toBe(2);
     expect(res.body.booking.payment_status).toBeDefined();
-    expect(res.body.booking.trip.origin_city).toBe('Amman');
-    expect(res.body.booking.trip.destination_city).toBe('Irbid');
+    expect(res.body.booking.trip.origin).toBe('Amman');
+    expect(res.body.booking.trip.destination).toBe('Irbid');
+    expect(typeof res.body.booking.passenger_rating).toBe('number');
   });
 
   it('422 returns array message', async () => {

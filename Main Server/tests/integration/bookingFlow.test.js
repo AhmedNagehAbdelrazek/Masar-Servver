@@ -307,7 +307,7 @@ describe('GET /api/bookings/:booking_id - booking detail', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.booking.id).toBe(bookingId);
-    expect(res.body.booking.trip.origin_city).toBe('Amman');
+    expect(res.body.booking.trip.origin).toBe('Amman');
     expect(res.body.booking.driver.full_name).toBe('Booking Driver');
   });
 

@@ -412,7 +412,8 @@ const getTripById = async (tripId) => {
 };
 
 /**
- * Get trips for a driver
+ * Get trips for a driver (contract D-list). Each trip is serialized with its
+ * current lifecycle `status` included.
  */
 const getDriverTrips = async (driverId, status = null) => {
   const where = { driverId };
@@ -426,7 +427,37 @@ const getDriverTrips = async (driverId, status = null) => {
     ],
     order: [['departure_time', 'ASC']],
   });
-  return trips;
+
+  return trips.map((trip) => ({
+    trip_id: trip.id,
+    origin_city: trip.originCity,
+    origin_area: trip.originArea,
+    destination_city: trip.destinationCity,
+    destination_area: trip.destinationArea,
+    departure_time: trip.departureTime,
+    arrival_time: trip.arrivalTime,
+    fare_per_seat: Number(trip.farePerSeat),
+    currency: trip.currency || 'JOD',
+    total_seats: trip.totalSeats,
+    available_seats: trip.availableSeats,
+    gender_preference: trip.genderPreference,
+    is_recurring: trip.isRecurring,
+    recurrence_days: trip.recurrenceDays,
+    recurrence_end_date: trip.recurrenceEndDate,
+    instructions: trip.driverInstructions,
+    additional_instructions: trip.additionalInstructions,
+    status: trip.status,
+    seats: (trip.seats || []).map((s) => ({
+      seat_number: s.seatNumber,
+      seat_type: s.seatType,
+    })),
+    waypoints: (trip.stops || []).map((s) => ({
+      stop_name: s.stopName,
+      stop_lat: s.stopLat ? Number(s.stopLat) : null,
+      stop_lng: s.stopLng ? Number(s.stopLng) : null,
+    })),
+    created_at: trip.createdat || trip.createdAt,
+  }));
 };
 
 /**

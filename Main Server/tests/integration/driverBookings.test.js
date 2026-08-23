@@ -213,8 +213,8 @@ describe('US2 - Driver Bookings', () => {
       expect(res.body.booking.id).toBe(booking.id);
       expect(res.body.booking.passenger_name).toBe('Lina Haddad');
       expect(res.body.booking.seat_number).toBe(2);
-      expect(res.body.booking.trip.origin_city).toBe('Amman');
-      expect(res.body.booking.trip.destination_city).toBe('Irbid');
+      expect(res.body.booking.trip.origin).toBe('Amman');
+      expect(res.body.booking.trip.destination).toBe('Irbid');
       expect(res.body.booking.reference_code).toMatch(/^MSR-/);
     });
 

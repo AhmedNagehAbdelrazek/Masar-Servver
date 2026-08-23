@@ -125,10 +125,11 @@ describe('US2 Contract - Passenger Booking Endpoints', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.booking.trip).toMatchObject({
-      id: tripId,
-      origin_city: 'Amman',
-      destination_city: 'Irbid',
+      origin: 'Amman',
+      destination: 'Irbid',
+      price: 15.5,
     });
+    expect(typeof res.body.booking.driver.rating).toBe('number');
     expect(res.body.booking.driver).toMatchObject({
       id: DRIVER_ID,
       full_name: 'Contract Driver',

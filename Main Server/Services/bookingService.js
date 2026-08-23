@@ -20,12 +20,20 @@ function serializeListRow(booking) {
     id: booking.id,
     passenger_name: booking.passenger ? booking.passenger.fullName : null,
     passenger_phone: maskPhone(booking.passenger ? booking.passenger.phone : null),
+    passenger_rating: booking.passenger ? Number(booking.passenger.avgRating) || 0 : null,
     seats_booked: booking.seatsBooked,
     agreed_fare: Number(booking.agreedFare),
     status: booking.status,
     reference_code: booking.referenceCode,
     booking_created_at: booking.createdat || booking.createdAt,
     trip_id: booking.tripId,
+    trip: booking.trip
+      ? {
+          origin: booking.trip.originCity,
+          destination: booking.trip.destinationCity,
+          price: Number(booking.trip.farePerSeat),
+        }
+      : null,
     dropoff_place: booking.dropoffPlace,
   };
 }
@@ -35,6 +43,7 @@ function serializeDetail(booking) {
     id: booking.id,
     passenger_name: booking.passenger ? booking.passenger.fullName : null,
     passenger_phone: maskPhone(booking.passenger ? booking.passenger.phone : null),
+    passenger_rating: booking.passenger ? Number(booking.passenger.avgRating) || 0 : null,
     seats_booked: booking.seatsBooked,
     seat_number: booking.seatNumber,
     agreed_fare: Number(booking.agreedFare),
@@ -46,10 +55,9 @@ function serializeDetail(booking) {
     dropoff_place: booking.dropoffPlace,
     trip: booking.trip
       ? {
-          id: booking.trip.id,
-          origin_city: booking.trip.originCity,
-          destination_city: booking.trip.destinationCity,
-          departure_time: booking.trip.departureTime,
+          origin: booking.trip.originCity,
+          destination: booking.trip.destinationCity,
+          price: Number(booking.trip.farePerSeat),
         }
       : null,
   };
@@ -74,8 +82,8 @@ async function listForDriver(driverId, filters = {}) {
   const { rows, count } = await Booking.findAndCountAll({
     where: bookingWhere,
     include: [
-      { model: Trip, as: 'trip', where: { driverId }, attributes: ['id'] },
-      { model: User, as: 'passenger', attributes: ['id', 'fullName', 'phone'] },
+      { model: Trip, as: 'trip', where: { driverId }, attributes: ['id', 'originCity', 'destinationCity', 'farePerSeat'] },
+      { model: User, as: 'passenger', attributes: ['id', 'fullName', 'phone', 'avgRating'] },
     ],
     order: [['createdat', 'DESC']],
     offset,
@@ -94,8 +102,8 @@ async function listForDriver(driverId, filters = {}) {
 async function getForDriver(driverId, bookingId) {
   const booking = await Booking.findByPk(bookingId, {
     include: [
-      { model: Trip, as: 'trip', attributes: ['id', 'driverId', 'originCity', 'destinationCity', 'departureTime'] },
-      { model: User, as: 'passenger', attributes: ['id', 'fullName', 'phone'] },
+      { model: Trip, as: 'trip', attributes: ['id', 'driverId', 'originCity', 'destinationCity', 'farePerSeat'] },
+      { model: User, as: 'passenger', attributes: ['id', 'fullName', 'phone', 'avgRating'] },
     ],
   });
   if (!booking) throw ApiErrors.notFound('Booking not found');
@@ -222,7 +230,7 @@ async function createBooking(passengerId, payload) {
   ]);
 
   const fullTrip = await Trip.findByPk(trip_id, {
-    include: [{ model: User, as: 'driver', attributes: ['id', 'fullName', 'phone'] }],
+    include: [{ model: User, as: 'driver', attributes: ['id', 'fullName', 'phone', 'avgRating'] }],
   });
   return serializePassengerDetail(booking, fullTrip, user);
 }
@@ -245,12 +253,9 @@ function serializePassengerDetail(booking, trip, passenger) {
     booking_created_at: booking.createdat || booking.createdAt,
     trip: trip
       ? {
-          id: trip.id,
-          origin_city: trip.originCity,
-          destination_city: trip.destinationCity,
-          departure_time: trip.departureTime,
-          fare_per_seat: Number(trip.farePerSeat),
-          status: trip.status,
+          origin: trip.originCity,
+          destination: trip.destinationCity,
+          price: Number(trip.farePerSeat),
         }
       : null,
     driver:
@@ -259,6 +264,7 @@ function serializePassengerDetail(booking, trip, passenger) {
             id: trip.driver.id,
             full_name: trip.driver.fullName,
             phone_masked: maskPhone(trip.driver.phone),
+            rating: Number(trip.driver.avgRating) || 0,
           }
         : null,
     passenger: passenger
@@ -281,9 +287,9 @@ async function listForPassenger(passengerId, filters = {}) {
       {
         model: Trip,
         as: 'trip',
-        attributes: ['id', 'driverId', 'originCity', 'destinationCity', 'departureTime', 'farePerSeat', 'status'],
+        attributes: ['id', 'driverId', 'originCity', 'destinationCity', 'farePerSeat'],
         include: [
-          { model: User, as: 'driver', attributes: ['id', 'fullName', 'phone'] },
+          { model: User, as: 'driver', attributes: ['id', 'fullName', 'phone', 'avgRating'] },
         ],
       },
     ],
@@ -304,9 +310,9 @@ async function getForPassenger(passengerId, bookingId) {
       {
         model: Trip,
         as: 'trip',
-        attributes: ['id', 'driverId', 'originCity', 'destinationCity', 'departureTime', 'farePerSeat', 'status'],
+        attributes: ['id', 'driverId', 'originCity', 'destinationCity', 'farePerSeat'],
         include: [
-          { model: User, as: 'driver', attributes: ['id', 'fullName', 'phone'] },
+          { model: User, as: 'driver', attributes: ['id', 'fullName', 'phone', 'avgRating'] },
         ],
       },
       { model: User, as: 'passenger', attributes: ['id', 'fullName'] },

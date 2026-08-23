@@ -2,13 +2,15 @@ const fs = require('fs');
 const path = require('path');
 const { createConnection } = require('./connection');
 
-// PostgreSQL error codes that mean "the thing you tried to create already exists".
-// These are treated as successful no-ops so re-running a migration never crashes:
+// PostgreSQL error codes that mean "the thing you tried to change already exists"
+// or "the thing you tried to drop is already gone". These are treated as
+// successful no-ops so re-running a migration never crashes:
 //   42701  duplicate_column
 //   42P07  duplicate_table / duplicate index
 //   42710  duplicate_object (e.g. constraint already exists)
-//   42P01  undefined_table (column/table already dropped — used when re-applying)
-const IDEMPOTENT_ERROR_CODES = new Set(['42701', '42P07', '42710', '42P01']);
+//   42P01  undefined_table (table already dropped — used when re-applying)
+//   42703  undefined_column (column already dropped — used when re-applying)
+const IDEMPOTENT_ERROR_CODES = new Set(['42701', '42P07', '42710', '42P01', '42703']);
 
 function getVersionsDir() {
   return path.join(__dirname, '..', 'versions');
