@@ -158,6 +158,46 @@ const FREE_OFFER_TYPE = {
   CREDIT: 'credit',
 };
 
+const SOS_STATUS = {
+  PENDING: 'pending',
+  ACKNOWLEDGED: 'acknowledged',
+  RESOLVED: 'resolved',
+  CANCELLED: 'cancelled',
+};
+
+const SOS_URGENCY = {
+  LOW: 'low',
+  MEDIUM: 'medium',
+  HIGH: 'high',
+  CRITICAL: 'critical',
+};
+
+const MESSAGE_TYPE = {
+  TEXT: 'text',
+  IMAGE: 'image',
+  SYSTEM: 'system',
+};
+
+const SOS_STATUS = {
+  PENDING: 'pending',
+  ACKNOWLEDGED: 'acknowledged',
+  RESOLVED: 'resolved',
+  CANCELLED: 'cancelled',
+};
+
+const SOS_URGENCY = {
+  LOW: 'low',
+  MEDIUM: 'medium',
+  HIGH: 'high',
+  CRITICAL: 'critical',
+};
+
+const MESSAGE_TYPE = {
+  TEXT: 'text',
+  IMAGE: 'image',
+  SYSTEM: 'system',
+};
+
 const PENALTY_SEVERITY = {
   MINOR: 'minor',
   MODERATE: 'moderate',
@@ -343,6 +383,9 @@ module.exports = {
   VERIFICATION_STATUS,
   VERIFICATION_FIELD_KEYS,
   FREE_OFFER_TYPE,
+  SOS_STATUS,
+  SOS_URGENCY,
+  MESSAGE_TYPE,
   PENALTY_SEVERITY,
   PENALTY_CATEGORY,
   CANCELLATION_ESCALATION,

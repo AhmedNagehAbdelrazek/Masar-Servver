@@ -86,6 +86,25 @@ async function issue(actorId, payload) {
     await user.update({ status: newStatus });
   }
 
+  // Realtime enforcement: suspensions and bans revoke live sessions so the
+  // penalty takes effect immediately (Requirement 8). Best-effort, never
+  // blocks the penalty write.
+  try {
+    const { revoke } = require('./enforcementService');
+    const { revocationForPenalty } = require('./enforcementService');
+    const plan = revocationForPenalty(type);
+    if (plan.applies) {
+      revoke(userId, {
+        action: plan.action,
+        reason,
+        actorId,
+        duration: type === PENALTY_TYPES.SUSPENSION && endsAt ? String(endsAt) : null,
+      });
+    }
+  } catch (err) {
+    console.warn('[penaltyService] enforcement revocation failed:', err.message);
+  }
+
   return {
     penalty: {
       id: penalty.id,

@@ -18,6 +18,9 @@ const Complaint = require('./Complaint');
 const Penalty = require('./Penalty');
 const SupportTicket = require('./SupportTicket');
 const Notification = require('./Notification');
+const Message = require('./Message');
+const SosEvent = require('./SosEvent');
+const TripLocation = require('./TripLocation');
 const FavoriteDriver = require('./FavoriteDriver');
 const FavoriteRoute = require('./FavoriteRoute');
 const AuditLog = require('./AuditLog');
@@ -82,6 +85,34 @@ SupportTicketMessage.belongsTo(User, { foreignKey: 'sender_id', as: 'sender' });
 
 User.hasMany(Notification, { foreignKey: 'user_id', as: 'notifications' });
 Notification.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+
+// ===== REALTIME: MESSAGE / SOS / TRIP LOCATION RELATIONS =====
+User.hasMany(Message, { foreignKey: 'sender_id', as: 'sentMessages' });
+Message.belongsTo(User, { foreignKey: 'sender_id', as: 'sender' });
+
+User.hasMany(Message, { foreignKey: 'receiver_id', as: 'receivedMessages' });
+Message.belongsTo(User, { foreignKey: 'receiver_id', as: 'receiver' });
+
+Trip.hasMany(Message, { foreignKey: 'trip_id', as: 'messages' });
+Message.belongsTo(Trip, { foreignKey: 'trip_id', as: 'trip' });
+
+SupportTicket.hasMany(Message, { foreignKey: 'support_ticket_id', as: 'messages' });
+Message.belongsTo(SupportTicket, { foreignKey: 'support_ticket_id', as: 'supportTicket' });
+
+User.hasMany(SosEvent, { foreignKey: 'user_id', as: 'sosEvents' });
+SosEvent.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+
+Trip.hasMany(SosEvent, { foreignKey: 'trip_id', as: 'sosEvents' });
+SosEvent.belongsTo(Trip, { foreignKey: 'trip_id', as: 'trip' });
+
+Booking.hasMany(SosEvent, { foreignKey: 'booking_id', as: 'sosEvents' });
+SosEvent.belongsTo(Booking, { foreignKey: 'booking_id', as: 'booking' });
+
+Trip.hasMany(TripLocation, { foreignKey: 'trip_id', as: 'locations' });
+TripLocation.belongsTo(Trip, { foreignKey: 'trip_id', as: 'trip' });
+
+User.hasMany(TripLocation, { foreignKey: 'driver_id', as: 'tripLocations' });
+TripLocation.belongsTo(User, { foreignKey: 'driver_id', as: 'driver' });
 
 // FavoriteDriver (passenger -> driver)
 User.hasMany(FavoriteDriver, { foreignKey: 'passenger_id', as: 'favoriteDrivers' });
@@ -161,6 +192,9 @@ module.exports = {
   Penalty,
   SupportTicket,
   Notification,
+  Message,
+  SosEvent,
+  TripLocation,
   FavoriteDriver,
   FavoriteRoute,
   AuditLog,

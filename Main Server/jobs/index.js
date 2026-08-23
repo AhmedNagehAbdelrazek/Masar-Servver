@@ -3,6 +3,8 @@ const { Worker } = require('worker_threads');
 const { runExpirySweep } = require('./expirySweepJob');
 const { runExpiryReminder } = require('./expiryReminderJob');
 const { runLowBalanceWarning } = require('./lowBalanceWarningJob');
+const { runSosEscalation } = require('./sosEscalationJob');
+const { runDataRetention } = require('./dataRetentionJob');
 
 /**
  * Scheduled jobs registry (T050). Cron schedules come from env vars with
@@ -24,6 +26,14 @@ const JOBS = {
   lowBalanceWarning: {
     schedule: process.env.JOB_LOW_BALANCE_WARNING_CRON || '0 12 * * *',
     task: runLowBalanceWarning,
+  },
+  sosEscalation: {
+    schedule: process.env.JOB_SOS_ESCALATION_CRON || '*/1 * * * *',
+    task: runSosEscalation,
+  },
+  dataRetention: {
+    schedule: process.env.JOB_DATA_RETENTION_CRON || '0 3 * * *',
+    task: runDataRetention,
   },
 };
 
@@ -85,4 +95,6 @@ module.exports = {
   runExpirySweep,
   runExpiryReminder,
   runLowBalanceWarning,
+  runSosEscalation,
+  runDataRetention,
 };
