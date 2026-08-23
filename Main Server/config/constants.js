@@ -178,26 +178,6 @@ const MESSAGE_TYPE = {
   SYSTEM: 'system',
 };
 
-const SOS_STATUS = {
-  PENDING: 'pending',
-  ACKNOWLEDGED: 'acknowledged',
-  RESOLVED: 'resolved',
-  CANCELLED: 'cancelled',
-};
-
-const SOS_URGENCY = {
-  LOW: 'low',
-  MEDIUM: 'medium',
-  HIGH: 'high',
-  CRITICAL: 'critical',
-};
-
-const MESSAGE_TYPE = {
-  TEXT: 'text',
-  IMAGE: 'image',
-  SYSTEM: 'system',
-};
-
 const PENALTY_SEVERITY = {
   MINOR: 'minor',
   MODERATE: 'moderate',
