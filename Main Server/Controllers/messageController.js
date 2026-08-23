@@ -1,10 +1,10 @@
 const messageService = require('../Services/messageService');
 const { successResponse } = require('../utils/httpResponse');
 
-const getTripMessages = async (req, res, next) => {
+const getBookingMessages = async (req, res, next) => {
   try {
-    const result = await messageService.listTripMessages(req.user, {
-      tripId: req.params.tripId,
+    const result = await messageService.listBookingMessages(req.user, {
+      bookingId: req.params.bookingId,
       page: req.query.page,
       limit: req.query.limit,
       beforeId: req.query.before_id,
@@ -29,4 +29,4 @@ const getTicketMessages = async (req, res, next) => {
   }
 };
 
-module.exports = { getTripMessages, getTicketMessages };
+module.exports = { getBookingMessages, getTicketMessages };

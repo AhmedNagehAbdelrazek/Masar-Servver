@@ -93,10 +93,10 @@ Message.belongsTo(User, { foreignKey: 'sender_id', as: 'sender' });
 User.hasMany(Message, { foreignKey: 'receiver_id', as: 'receivedMessages' });
 Message.belongsTo(User, { foreignKey: 'receiver_id', as: 'receiver' });
 
-Trip.hasMany(Message, { foreignKey: 'trip_id', as: 'messages' });
-Message.belongsTo(Trip, { foreignKey: 'trip_id', as: 'trip' });
+Booking.hasMany(Message, { foreignKey: 'booking_id', as: 'messages', onDelete: 'CASCADE' });
+Message.belongsTo(Booking, { foreignKey: 'booking_id', as: 'booking' });
 
-SupportTicket.hasMany(Message, { foreignKey: 'support_ticket_id', as: 'messages' });
+SupportTicket.hasMany(Message, { foreignKey: 'support_ticket_id', as: 'chatMessages' });
 Message.belongsTo(SupportTicket, { foreignKey: 'support_ticket_id', as: 'supportTicket' });
 
 User.hasMany(SosEvent, { foreignKey: 'user_id', as: 'sosEvents' });

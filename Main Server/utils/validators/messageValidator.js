@@ -12,9 +12,9 @@ const paginationQuery = [
     .isUUID().withMessage('before_id must be a valid UUID'),
 ];
 
-const tripMessagesValidation = [
-  param('tripId')
-    .isUUID().withMessage('Trip ID must be a valid UUID'),
+const bookingMessagesValidation = [
+  param('bookingId')
+    .isUUID().withMessage('Booking ID must be a valid UUID'),
   ...paginationQuery,
 ];
 
@@ -24,4 +24,4 @@ const ticketMessagesValidation = [
   ...paginationQuery,
 ];
 
-module.exports = { tripMessagesValidation, ticketMessagesValidation };
+module.exports = { bookingMessagesValidation, ticketMessagesValidation };

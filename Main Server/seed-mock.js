@@ -14,7 +14,7 @@ const at = (ms) => new Date(ms);
 // ponytail: wipe + reinsert instead of upsert per row — this is a dev mock seeder, not a migration
 const TABLES = [
   'audit_logs', 'notification_settings', 'notifications', 'favorite_routes', 'favorite_drivers',
-  'support_tickets', 'penalties', 'complaints', 'delay_events', 'ratings', 'request_offers',
+  'messages', 'support_tickets', 'penalties', 'complaints', 'delay_events', 'ratings', 'request_offers',
   'ride_requests', 'bookings', 'trip_seats', 'trip_stops', 'trip_attributes', 'trips',
   'driver_subscriptions', 'subscription_transactions', 'subscription_plans', 'payment_methods',
   'vehicles', 'passenger_profiles', 'verification_status_changes', 'driver_profiles',
@@ -330,7 +330,8 @@ async function runInserts() {
   console.log(`[mock-seed] penalties: ${await M.Penalty.count()}`);
 
   // ===== SUPPORT TICKETS =====
-  await M.SupportTicket.bulkCreate([
+  // captured so chat messages below can reference ticket ids
+  const tickets = await M.SupportTicket.bulkCreate([
     { userId: p1.id, category: 'billing', subject: 'Charged twice for the same seat?', description: 'My friend also booked and we see two pending amounts in the app history.', priority: 'medium', status: 'open' },
     { userId: d1.id, category: 'payout', subject: 'Commission deducted incorrectly', description: 'Trip MS000001A shows an 8% cut but my plan says 8% of fare — numbers do not match.', priority: 'high', status: 'in_progress', assignedTo: admin.id },
     { userId: p3.id, category: 'app_issue', subject: 'Map freezes on search screen', description: 'Android 14, map tiles stop loading after second search.', priority: 'low', status: 'open' },
@@ -338,6 +339,52 @@ async function runInserts() {
     { userId: p2.id, category: 'general', subject: 'How do referral codes work?', description: 'Just want to understand the referral program.', priority: 'low', status: 'resolved', assignedTo: moderator.id, resolutionNotes: 'Explained program rules via in-app message.' },
   ]);
   console.log(`[mock-seed] support_tickets: ${await M.SupportTicket.count()}`);
+
+  // ===== CHAT MESSAGES =====
+  // Booking chats: b1 (trip t1 completed — read-only history), b3 (t2 in_progress — live),
+  // b4 (t4 full, upcoming), b8 (t6 published, upcoming). Support chats mirror the tickets above.
+  await M.Message.bulkCreate([
+    // b1: p1 <-> d1 on Amman -> Irbid (completed) — everything read
+    { bookingId: b1.id, senderId: d1.id, receiverId: p1.id, message: 'Hi Rana! Pickup is Abdali Bus Terminal at 4 PM. Look for the white Camry.', isRead: true, readAt: at(now - 3 * DAY - 115 * MIN), createdat: at(now - 3 * DAY - 2 * HOUR) },
+    { bookingId: b1.id, senderId: p1.id, receiverId: d1.id, message: 'Great, see you there. I will have one small backpack.', isRead: true, readAt: at(now - 3 * DAY - 100 * MIN), createdat: at(now - 3 * DAY - 110 * MIN) },
+    { bookingId: b1.id, senderId: d1.id, receiverId: p1.id, message: 'No problem. I am 5 minutes away.', isRead: true, readAt: at(now - 3 * DAY + 30 * MIN), createdat: at(now - 3 * DAY - 20 * MIN) },
+    { bookingId: b1.id, senderId: p1.id, receiverId: d1.id, message: 'Thanks for the ride! I left my charger on the back seat.', isRead: true, readAt: at(now - 3 * DAY + 95 * MIN), createdat: at(now - 3 * DAY + 80 * MIN) },
+    { bookingId: b1.id, senderId: d1.id, receiverId: p1.id, message: 'Found it. You can grab it next trip, just message me beforehand.', isRead: true, readAt: at(now - 3 * DAY + 110 * MIN), createdat: at(now - 3 * DAY + 95 * MIN) },
+
+    // b3: p2 <-> d1 on Amman -> Aqaba (in progress) — latest driver messages unread
+    { bookingId: b3.id, senderId: p2.id, receiverId: d1.id, message: 'Good morning! Which side of 7th Circle should I wait at?', isRead: true, readAt: at(now - 39 * MIN), createdat: at(now - 40 * MIN) },
+    { bookingId: b3.id, senderId: d1.id, receiverId: p2.id, message: 'The gas station side. I will send my location when I get close.', isRead: true, readAt: at(now - 37 * MIN), createdat: at(now - 38 * MIN) },
+    { bookingId: b3.id, senderId: p2.id, receiverId: d1.id, message: 'Perfect, thank you.', isRead: true, readAt: at(now - 36 * MIN), createdat: at(now - 37 * MIN) },
+    { bookingId: b3.id, senderId: d1.id, receiverId: p2.id, message: 'On my way, about 10 minutes out.', createdat: at(now - 12 * MIN) },
+    { bookingId: b3.id, senderId: d1.id, receiverId: p2.id, message: 'Traffic at the roundabout, might be 15 minutes late.', createdat: at(now - 5 * MIN) },
+
+    // b4: p1 <-> d1 on Amman -> Jerash (full, departs in 2 days)
+    { bookingId: b4.id, senderId: p1.id, receiverId: d1.id, message: 'Hi Omar, can we use Souf Junction as my dropoff instead of the visitor center?', isRead: true, readAt: at(now - 25 * HOUR), createdat: at(now - 26 * HOUR) },
+    { bookingId: b4.id, senderId: d1.id, receiverId: p1.id, message: 'Sure, Souf Junction works fine. It is already one of the trip stops.', isRead: true, readAt: at(now - 24 * HOUR), createdat: at(now - 25 * HOUR) },
+    { bookingId: b4.id, senderId: p1.id, receiverId: d1.id, messageType: 'image', message: 'https://res.cloudinary.com/demo/image/uploads/mock_7.jpg', isRead: true, readAt: at(now - 23 * HOUR), createdat: at(now - 24 * HOUR + 5 * MIN) },
+    { bookingId: b4.id, senderId: p1.id, receiverId: d1.id, message: 'This is the meeting point I mean, next to the circle.', isRead: true, readAt: at(now - 23 * HOUR), createdat: at(now - 24 * HOUR + 6 * MIN) },
+    { bookingId: b4.id, senderId: d1.id, receiverId: p1.id, message: 'Reminder: we leave Sweileh Circle at 9 AM sharp on Friday.', createdat: at(now - 2 * HOUR) },
+
+    // b8: p3 <-> d2 on Zarqa -> Amman (published, tomorrow morning)
+    { bookingId: b8.id, senderId: p3.id, receiverId: d2.id, message: 'Does the Zarqa bus stop near Mahes market?', isRead: true, readAt: at(now - 19 * HOUR), createdat: at(now - 20 * HOUR) },
+    { bookingId: b8.id, senderId: d2.id, receiverId: p3.id, message: 'Yes, right by the main square. Seat 2 is yours.', isRead: true, readAt: at(now - 18 * HOUR), createdat: at(now - 19 * HOUR) },
+
+    // Ticket 0 (p1, billing, open/unassigned) — user messages only, no reply yet
+    { supportTicketId: tickets[0].id, senderId: p1.id, message: 'Hello, my payment history shows two pending amounts for booking MS000001A.', createdat: at(now - 30 * HOUR) },
+    { supportTicketId: tickets[0].id, senderId: p1.id, message: 'Can you check if only one will actually be charged?', createdat: at(now - 29 * HOUR) },
+
+    // Ticket 1 (d1, payout, assigned to admin) — back and forth, last user msg unread
+    { supportTicketId: tickets[1].id, senderId: d1.id, receiverId: admin.id, message: 'Trip MS000001A fare was 7 JOD, 8% cut is 0.56, but my balance shows more deducted.', isRead: true, readAt: at(now - 27 * HOUR), createdat: at(now - 28 * HOUR) },
+    { supportTicketId: tickets[1].id, senderId: admin.id, receiverId: d1.id, message: 'Thanks for reporting this. I am checking the transaction logs now.', isRead: true, readAt: at(now - 26 * HOUR), createdat: at(now - 27 * HOUR) },
+    { supportTicketId: tickets[1].id, senderId: d1.id, receiverId: admin.id, message: 'Also the second trip from that day seems off by a similar amount.', createdat: at(now - 3 * HOUR) },
+
+    // Ticket 4 (p2, referral question, resolved by moderator) — full conversation, all read
+    { supportTicketId: tickets[4].id, senderId: p2.id, receiverId: moderator.id, message: 'How do referral codes work exactly?', isRead: true, readAt: at(now - 49 * HOUR), createdat: at(now - 50 * HOUR) },
+    { supportTicketId: tickets[4].id, senderId: moderator.id, receiverId: p2.id, message: 'You share your code; when a new user completes their first trip, you both get credit.', isRead: true, readAt: at(now - 48 * HOUR), createdat: at(now - 49 * HOUR) },
+    { supportTicketId: tickets[4].id, senderId: p2.id, receiverId: moderator.id, message: 'Got it, thanks! Where do I find my code?', isRead: true, readAt: at(now - 47 * HOUR), createdat: at(now - 48 * HOUR) },
+    { supportTicketId: tickets[4].id, senderId: moderator.id, receiverId: p2.id, message: 'Profile, then Invite Friends. Closing this ticket — reopen if anything else comes up.', isRead: true, readAt: at(now - 46 * HOUR), createdat: at(now - 47 * HOUR) },
+  ]);
+  console.log(`[mock-seed] messages: ${await M.Message.count()}`);
 
   // ===== NOTIFICATIONS =====
   await M.Notification.bulkCreate([

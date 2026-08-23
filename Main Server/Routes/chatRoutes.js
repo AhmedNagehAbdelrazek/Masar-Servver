@@ -3,12 +3,13 @@ const c = require('../Controllers/messageController');
 const protect = require('../middlewares/protect');
 const validate = require('../middlewares/validatorMiddleware');
 const {
-  tripMessagesValidation,
+  bookingMessagesValidation,
   ticketMessagesValidation,
 } = require('../utils/validators/messageValidator');
 
-// Chat history — REST fallback for offline/missed retrieval.
-router.get('/trips/:tripId/messages', protect, ...tripMessagesValidation, validate, c.getTripMessages);
+// Chat history — REST fallback for offline/missed retrieval. Booking chat
+// history stays readable (read-only) after its trip completes/cancels.
+router.get('/bookings/:bookingId/messages', protect, ...bookingMessagesValidation, validate, c.getBookingMessages);
 router.get('/tickets/:ticketId/messages', protect, ...ticketMessagesValidation, validate, c.getTicketMessages);
 
 module.exports = router;

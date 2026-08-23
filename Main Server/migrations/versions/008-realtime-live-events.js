@@ -43,8 +43,15 @@ function migrationSteps(queryInterface) {
   ];
 }
 
+var migrationCommands = [
+  { fn: 'addIndex', params: ['notifications', ['user_id', 'is_read'], { name: 'idx_notifications_user_read' }] },
+  { fn: 'addIndex', params: ['support_tickets', ['assigned_to', 'status'], { name: 'idx_support_tickets_assignee_status' }] },
+  { fn: 'addIndex', params: ['bookings', ['trip_id', 'passenger_id', 'status'], { name: 'idx_bookings_trip_passenger_status' }] },
+];
+
 module.exports = {
     pos: 0,
+    migrationCommands,
     up: function (queryInterface, Sequelize) {
         var steps = migrationSteps(queryInterface);
         var index = this.pos;

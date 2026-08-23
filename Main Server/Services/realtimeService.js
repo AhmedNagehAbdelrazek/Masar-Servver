@@ -1,7 +1,8 @@
 /**
  * Central hub for realtime (Socket.IO) emission. All code that needs to
  * broadcast events goes through this module so rooms stay consistent across
- * the codebase (user:{id}, role:{role}, trip:{id}, support:{id}, admin:{role}).
+ * the codebase (user:{id}, role:{role}, trip:{id}, booking:{id}, support:{id},
+ * admin:{role}).
  */
 let io = null;
 
@@ -61,6 +62,26 @@ async function isTripMember(user, tripId) {
 }
 
 /**
+ * Booking-chat context: loads the booking with its trip and checks that the
+ * user is one of the two chat parties — the booking's passenger or the
+ * booking trip's driver. Returns { member, booking, trip }; never throws.
+ */
+async function getBookingChatContext(user, bookingId) {
+  if (!user || !user.id || !bookingId) return { member: false, booking: null, trip: null };
+
+  const { Booking, Trip } = require('../Models');
+
+  const booking = await Booking.findByPk(bookingId, {
+    include: [{ model: Trip, as: 'trip' }],
+  });
+  if (!booking || !booking.trip) return { member: false, booking, trip: null };
+
+  const isPassenger = booking.passengerId === user.id;
+  const isDriver = booking.trip.driverId === user.id;
+  return { member: isPassenger || isDriver, booking, trip: booking.trip };
+}
+
+/**
  * True when the user is allowed to view/interact with a support ticket: the
  * ticket owner or a support/moderator/admin agent.
  */
@@ -88,5 +109,6 @@ module.exports = {
   emitToRole,
   emitToRoom,
   isTripMember,
+  getBookingChatContext,
   isTicketMember,
 };

@@ -19,7 +19,7 @@ Message.init(
             type: DataTypes.UUID,
             allowNull: true,
         },
-        tripId: {
+        bookingId: {
             type: DataTypes.UUID,
             allowNull: true,
         },
@@ -55,8 +55,8 @@ Message.init(
         updatedAt: false,
         indexes: [
             {
-                name: 'idx_messages_trip_created',
-                fields: ['trip_id', 'createdat'],
+                name: 'idx_messages_booking_created',
+                fields: ['booking_id', 'createdat'],
             },
             {
                 name: 'idx_messages_ticket_created',

@@ -9,9 +9,11 @@ const { ok, errorFromApiError, rateLimited } = require('../utils/socketAck');
 const TYPING_THROTTLE_MS = 1500;
 
 /**
- * Trip + support chat (Requirements 1–3). Rooms: `trip:{tripId}` and
- * `support:{supportTicketId}`. Membership is validated both on join and on
- * every send (defense-in-depth).
+ * Booking chat (driver <-> passenger) + support ticket chat
+ * (user <-> support team). Rooms: `booking:{bookingId}` and
+ * `support:{supportTicketId}`. Booking chats are only joinable while the
+ * booking is CONFIRMED and its trip is not completed/cancelled; membership
+ * is validated on join and on every send (defense-in-depth).
  */
 module.exports = (io, socket) => {
   const user = socket.data.user;
@@ -19,15 +21,14 @@ module.exports = (io, socket) => {
 
   socket.on('chat:join', async (payload, ack) => {
     try {
-      const { trip_id, support_ticket_id } = payload || {};
-      if (trip_id) {
-        const member = await realtimeService.isTripMember(user, trip_id);
-        if (!member) throw ApiErrors.forbidden('You are not a member of this trip');
-        socket.join(`trip:${trip_id}`);
+      const { booking_id, support_ticket_id } = payload || {};
+      if (booking_id) {
+        await messageService.assertBookingChatOpen(user, booking_id);
+        socket.join(`booking:${booking_id}`);
         presenceService
           .getStatus(user.id)
           .then((status) => {
-            socket.to(`trip:${trip_id}`).emit('presence:status', {
+            socket.to(`booking:${booking_id}`).emit('presence:status', {
               user_id: user.id,
               status,
               last_seen: new Date().toISOString(),
@@ -35,7 +36,7 @@ module.exports = (io, socket) => {
             });
           })
           .catch(() => {});
-        return ack ? ack(ok({ room: `trip:${trip_id}` })) : undefined;
+        return ack ? ack(ok({ room: `booking:${booking_id}` })) : undefined;
       }
       if (support_ticket_id) {
         const member = await realtimeService.isTicketMember(user, support_ticket_id);
@@ -43,15 +44,15 @@ module.exports = (io, socket) => {
         socket.join(`support:${support_ticket_id}`);
         return ack ? ack(ok({ room: `support:${support_ticket_id}` })) : undefined;
       }
-      throw ApiErrors.validation('Provide trip_id or support_ticket_id');
+      throw ApiErrors.validation('Provide booking_id or support_ticket_id');
     } catch (err) {
       if (ack) ack(errorFromApiError(err));
     }
   });
 
   socket.on('chat:leave', (payload, ack) => {
-    const { trip_id, support_ticket_id } = payload || {};
-    if (trip_id) socket.leave(`trip:${trip_id}`);
+    const { booking_id, support_ticket_id } = payload || {};
+    if (booking_id) socket.leave(`booking:${booking_id}`);
     if (support_ticket_id) socket.leave(`support:${support_ticket_id}`);
     if (ack) ack(ok({ left: true }));
   });
@@ -64,10 +65,10 @@ module.exports = (io, socket) => {
         return ack ? ack(rateLimited()) : undefined;
       }
 
-      const { trip_id, support_ticket_id, message, message_type } = payload || {};
-      const result = trip_id
-        ? await messageService.sendTripMessage(user, {
-            tripId: trip_id,
+      const { booking_id, support_ticket_id, message, message_type } = payload || {};
+      const result = booking_id
+        ? await messageService.sendBookingMessage(user, {
+            bookingId: booking_id,
             message,
             messageType: message_type,
           })
@@ -77,7 +78,7 @@ module.exports = (io, socket) => {
               message,
             })
           : (() => {
-              throw ApiErrors.validation('Provide trip_id or support_ticket_id');
+              throw ApiErrors.validation('Provide booking_id or support_ticket_id');
             })();
 
       return ack ? ack(ok(result)) : undefined;
@@ -86,11 +87,22 @@ module.exports = (io, socket) => {
     }
   });
 
-  socket.on('chat:typing', (payload, ack) => {
-    const { trip_id, support_ticket_id, is_typing } = payload || {};
-    const room = trip_id ? `trip:${trip_id}` : support_ticket_id ? `support:${support_ticket_id}` : null;
-    if (!room) {
-      if (ack) ack(errorFromApiError(ApiErrors.validation('Provide trip_id or support_ticket_id')));
+  socket.on('chat:typing', async (payload, ack) => {
+    const { booking_id, support_ticket_id, is_typing } = payload || {};
+    let room = null;
+    try {
+      if (booking_id) {
+        await messageService.assertBookingChatOpen(user, booking_id);
+        room = `booking:${booking_id}`;
+      } else if (support_ticket_id) {
+        const member = await realtimeService.isTicketMember(user, support_ticket_id);
+        if (!member) throw ApiErrors.forbidden('You are not a member of this support ticket');
+        room = `support:${support_ticket_id}`;
+      } else {
+        throw ApiErrors.validation('Provide booking_id or support_ticket_id');
+      }
+    } catch (err) {
+      if (ack) ack(errorFromApiError(err));
       return;
     }
 
@@ -120,7 +132,7 @@ module.exports = (io, socket) => {
       }
       const result = await messageService.markRead(user, {
         messageId: payload ? payload.message_id : undefined,
-        tripId: payload ? payload.trip_id : undefined,
+        bookingId: payload ? payload.booking_id : undefined,
         supportTicketId: payload ? payload.support_ticket_id : undefined,
       });
       return ack ? ack(ok(result)) : undefined;

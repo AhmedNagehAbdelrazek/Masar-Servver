@@ -1,16 +1,30 @@
 const trackingService = require('../Services/trackingService');
+const realtimeService = require('../Services/realtimeService');
 const realtimeMetrics = require('../Services/realtimeMetrics');
 const { checkRateLimit } = require('../Services/socketRateLimiter');
+const { ApiErrors } = require('../utils/ApiError');
 const { ok, errorFromApiError, rateLimited } = require('../utils/socketAck');
 
 /**
  * Live trip tracking (Requirement 4). Driver shares location to the
- * `trip:{tripId}` room; passengers join the same room via `chat:join`.
+ * `trip:{tripId}` room; passengers join the same room via `tracking:join`.
  * Location pings are rate-limited (1 / 2s) and persisted before broadcast.
  */
 module.exports = (io, socket) => {
   const user = socket.data.user;
   if (!user) return;
+
+  socket.on('tracking:join', async (payload, ack) => {
+    try {
+      const tripId = payload ? payload.trip_id : undefined;
+      const member = await realtimeService.isTripMember(user, tripId);
+      if (!member) throw ApiErrors.forbidden('You are not a member of this trip');
+      socket.join(`trip:${tripId}`);
+      return ack ? ack(ok({ room: `trip:${tripId}` })) : undefined;
+    } catch (err) {
+      if (ack) ack(errorFromApiError(err));
+    }
+  });
 
   socket.on('tracking:start', async (payload, ack) => {
     try {
