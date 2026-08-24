@@ -1,14 +1,15 @@
 const { body } = require('express-validator');
+const V = require('../../config/messages/validation-keys');
 
 const loginValidation = [
   body('username')
     .trim()
     .notEmpty()
-    .withMessage('Username is required'),
+    .withMessage(V.USERNAME_IS_REQUIRED),
   body('password')
     .trim()
     .notEmpty()
-    .withMessage('Password is required'),
+    .withMessage(V.PASSWORD_IS_REQUIRED),
 ];
 
 module.exports = { loginValidation };

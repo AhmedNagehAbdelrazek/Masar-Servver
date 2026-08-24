@@ -131,7 +131,7 @@ async function toRecentBookings(driverId) {
 
 async function buildHome(driverId) {
   const user = await User.findByPk(driverId);
-  if (!user) throw ApiErrors.notFound('User not found');
+  if (!user) throw ApiErrors.notFound('USER_NOT_FOUND');
   const profile = await DriverProfile.findOne({ where: { driverId } });
 
   const today = new Date();

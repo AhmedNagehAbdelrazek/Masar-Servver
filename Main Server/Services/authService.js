@@ -89,7 +89,7 @@ async function registerPhone(countryCode, phone, role) {
     if (TEST_PHONES.includes(normalizedPhone)) {
       await existingUser.destroy();
     } else {
-      throw ApiErrors.conflict('Phone number is already registered');
+      throw ApiErrors.conflict('PHONE_NUMBER_IS_ALREADY_REGISTERED');
     }
   }
 
@@ -101,7 +101,7 @@ async function registerPhone(countryCode, phone, role) {
 
   console.log(`[OTP] Registration OTP for ${normalizedPhone}: ${otp}`);
 
-  return { message: 'OTP sent successfully' };
+  return { message: 'OTP_SENT' };
 }
 
 // ===== REGISTRATION STEP 1b: Verify OTP =====
@@ -111,17 +111,17 @@ async function verifyRegistrationOTP(phone, otp) {
 
   if (!result.success) {
     if (result.reason === 'expired') {
-      throw ApiErrors.badRequest('OTP has expired. Please request a new one.');
+      throw ApiErrors.badRequest('OTP_HAS_EXPIRED_PLEASE_REQUEST_A_NEW_ONE');
     }
     if (result.reason === 'max_attempts') {
-      throw ApiErrors.badRequest('Maximum OTP attempts exceeded. Please request a new one.');
+      throw ApiErrors.badRequest('MAXIMUM_OTP_ATTEMPTS_EXCEEDED_PLEASE_REQUEST_A_NEW_ONE');
     }
-    throw ApiErrors.badRequest('Invalid OTP');
+    throw ApiErrors.badRequest('INVALID_OTP');
   }
 
   const existingUser = await User.findOne({ where: { phone } });
   if (existingUser) {
-    throw ApiErrors.conflict('Phone number is already registered');
+    throw ApiErrors.conflict('PHONE_NUMBER_IS_ALREADY_REGISTERED');
   }
 
   // Retrieve stored registration data
@@ -140,30 +140,30 @@ async function verifyRegistrationOTP(phone, otp) {
 async function registerPassword(authHeader, password) {
   const token = authHeader?.split(' ')[1];
   if (!token) {
-    throw ApiErrors.unauthorized('Registration token is required');
+    throw ApiErrors.unauthorized('REGISTRATION_TOKEN_IS_REQUIRED');
   }
 
   let decoded;
   try {
     decoded = verifyToken(token);
   } catch {
-    throw ApiErrors.unauthorized('Invalid or expired registration token');
+    throw ApiErrors.unauthorized('INVALID_OR_EXPIRED_REGISTRATION_TOKEN');
   }
 
   if (decoded.type !== 'registration') {
-    throw ApiErrors.unauthorized('Invalid token type');
+    throw ApiErrors.unauthorized('INVALID_TOKEN_TYPE');
   }
 
   const storedToken = await getKey(`reg_token:${decoded.phone}`);
   if (!storedToken || storedToken !== token) {
-    throw ApiErrors.unauthorized('Registration token has already been used or expired');
+    throw ApiErrors.unauthorized('REGISTRATION_TOKEN_HAS_ALREADY_BEEN_USED_OR_EXPIRED');
   }
 
   await deleteKey(`reg_token:${decoded.phone}`);
 
   const existingUser = await User.findOne({ where: { phone: decoded.phone } });
   if (existingUser) {
-    throw ApiErrors.conflict('Phone number is already registered');
+    throw ApiErrors.conflict('PHONE_NUMBER_IS_ALREADY_REGISTERED');
   }
 
   const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
@@ -282,19 +282,19 @@ async function registerPassword(authHeader, password) {
 async function login(phone, password) {
   const user = await User.findOne({ where: { phone } });
   if (!user) {
-    throw ApiErrors.unauthorized('Invalid phone or password');
+    throw ApiErrors.unauthorized('INVALID_PHONE_OR_PASSWORD');
   }
 
   if (user.status === 'banned') {
-    throw ApiErrors.forbidden('Account has been banned');
+    throw ApiErrors.forbidden('ACCOUNT_HAS_BEEN_BANNED');
   }
   if (user.status === 'suspended') {
-    throw ApiErrors.forbidden('Account has been suspended');
+    throw ApiErrors.forbidden('ACCOUNT_HAS_BEEN_SUSPENDED');
   }
 
   const isMatch = await bcrypt.compare(password, user.passwordHash);
   if (!isMatch) {
-    throw ApiErrors.unauthorized('Invalid phone or password');
+    throw ApiErrors.unauthorized('INVALID_PHONE_OR_PASSWORD');
   }
 
   const accessToken = generateAccessToken(user);
@@ -335,26 +335,26 @@ async function refreshToken(refreshTokenValue) {
   try {
     decoded = verifyToken(refreshTokenValue);
   } catch {
-    throw ApiErrors.unauthorized('Invalid or expired refresh token');
+    throw ApiErrors.unauthorized('INVALID_OR_EXPIRED_REFRESH_TOKEN');
   }
 
   if (decoded.type !== 'refresh') {
-    throw ApiErrors.unauthorized('Invalid token type');
+    throw ApiErrors.unauthorized('INVALID_TOKEN_TYPE');
   }
 
   const valid = await isRefreshTokenValid(decoded.id, decoded.jti);
   if (!valid) {
-    throw ApiErrors.unauthorized('Refresh token has been revoked');
+    throw ApiErrors.unauthorized('REFRESH_TOKEN_HAS_BEEN_REVOKED');
   }
 
   await removeRefreshToken(decoded.id, decoded.jti);
 
   const user = await User.findByPk(decoded.id);
   if (!user) {
-    throw ApiErrors.unauthorized('User not found');
+    throw ApiErrors.unauthorized('USER_NOT_FOUND');
   }
   if (user.status === 'banned' || user.status === 'suspended') {
-    throw ApiErrors.forbidden('Account is not active');
+    throw ApiErrors.forbidden('ACCOUNT_IS_NOT_ACTIVE');
   }
 
   const newAccessToken = generateAccessToken(user);
@@ -423,7 +423,7 @@ async function logout(userId, refreshTokenValue, accessToken) {
     actorType: 'user',
   });
 
-  return { message: 'Logged out successfully' };
+  return { message: 'LOGGED_OUT' };
 }
 
 // ===== ME =====
@@ -431,7 +431,7 @@ async function logout(userId, refreshTokenValue, accessToken) {
 async function me(id) {
   const user = await User.findByPk(id);
   if (!user) {
-    throw ApiErrors.notFound('User not found');
+    throw ApiErrors.notFound('USER_NOT_FOUND');
   }
   return {
     id: user.id,
@@ -455,7 +455,7 @@ async function me(id) {
 async function forgotPassword(phone) {
   const user = await User.findOne({ where: { phone } });
   if (!user) {
-    return { message: 'If the phone number is registered, an OTP has been sent' };
+    return { message: 'OTP_IF_REGISTERED' };
   }
 
   const otp = otpService.generateOTP(phone);
@@ -463,7 +463,7 @@ async function forgotPassword(phone) {
 
   console.log(`[OTP] Forgot password OTP for ${phone}: ${otp}`);
 
-  return { message: 'If the phone number is registered, an OTP has been sent' };
+  return { message: 'OTP_IF_REGISTERED' };
 }
 
 async function verifyForgotPasswordOTP(phone, otp) {
@@ -471,12 +471,12 @@ async function verifyForgotPasswordOTP(phone, otp) {
 
   if (!result.success) {
     if (result.reason === 'expired') {
-      throw ApiErrors.badRequest('OTP has expired. Please request a new one.');
+      throw ApiErrors.badRequest('OTP_HAS_EXPIRED_PLEASE_REQUEST_A_NEW_ONE');
     }
     if (result.reason === 'max_attempts') {
-      throw ApiErrors.badRequest('Maximum OTP attempts exceeded. Please request a new one.');
+      throw ApiErrors.badRequest('MAXIMUM_OTP_ATTEMPTS_EXCEEDED_PLEASE_REQUEST_A_NEW_ONE');
     }
-    throw ApiErrors.badRequest('Invalid OTP');
+    throw ApiErrors.badRequest('INVALID_OTP');
   }
 
   const token = generateResetToken(phone);
@@ -488,30 +488,30 @@ async function verifyForgotPasswordOTP(phone, otp) {
 async function resetPassword(authHeader, password) {
   const token = authHeader?.split(' ')[1];
   if (!token) {
-    throw ApiErrors.unauthorized('Reset token is required');
+    throw ApiErrors.unauthorized('RESET_TOKEN_IS_REQUIRED');
   }
 
   let decoded;
   try {
     decoded = verifyToken(token);
   } catch {
-    throw ApiErrors.unauthorized('Invalid or expired reset token');
+    throw ApiErrors.unauthorized('INVALID_OR_EXPIRED_RESET_TOKEN');
   }
 
   if (decoded.type !== 'reset') {
-    throw ApiErrors.unauthorized('Invalid token type');
+    throw ApiErrors.unauthorized('INVALID_TOKEN_TYPE');
   }
 
   const storedToken = await getKey(`reset_token:${decoded.phone}`);
   if (!storedToken || storedToken !== token) {
-    throw ApiErrors.unauthorized('Reset token has already been used or expired');
+    throw ApiErrors.unauthorized('RESET_TOKEN_HAS_ALREADY_BEEN_USED_OR_EXPIRED');
   }
 
   await deleteKey(`reset_token:${decoded.phone}`);
 
   const user = await User.findOne({ where: { phone: decoded.phone } });
   if (!user) {
-    throw ApiErrors.notFound('User not found');
+    throw ApiErrors.notFound('USER_NOT_FOUND');
   }
 
   const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
@@ -534,7 +534,7 @@ async function resetPassword(authHeader, password) {
     actorType: 'user',
   });
 
-  return { message: 'Password reset successful' };
+  return { message: 'PASSWORD_RESET_SUCCESSFUL' };
 }
 
 // ===== CHANGE PASSWORD (spec 010) =====
@@ -548,16 +548,16 @@ async function resetPassword(authHeader, password) {
 async function changePassword(userId, currentPassword, newPassword, accessToken) {
   const user = await User.findByPk(userId);
   if (!user) {
-    throw ApiErrors.notFound('User not found');
+    throw ApiErrors.notFound('USER_NOT_FOUND');
   }
 
   const isMatch = await bcrypt.compare(currentPassword, user.passwordHash || '');
   if (!isMatch) {
-    throw ApiErrors.custom('Current password is incorrect', 400, 'INVALID_CURRENT_PASSWORD');
+    throw ApiErrors.custom('CURRENT_PASSWORD_IS_INCORRECT', 400, 'INVALID_CURRENT_PASSWORD');
   }
 
   if (await bcrypt.compare(newPassword, user.passwordHash || '')) {
-    throw ApiErrors.validation('New password must be different from the current password');
+    throw ApiErrors.validation('NEW_PASSWORD_MUST_BE_DIFFERENT_FROM_THE_CURRENT_PASSWORD');
   }
 
   const passwordHash = await bcrypt.hash(newPassword, SALT_ROUNDS);
@@ -585,7 +585,7 @@ async function changePassword(userId, currentPassword, newPassword, accessToken)
     actorType: 'user',
   });
 
-  return { message: 'Password changed successfully', requires_relogin: true };
+  return { message: 'PASSWORD_CHANGED_SUCCESSFULLY', requires_relogin: true };
 }
 
 // ===== RESEND OTP =====
@@ -594,14 +594,14 @@ async function resendOTP(phone, purpose) {
   if (purpose === 'register') {
     const existingUser = await User.findOne({ where: { phone } });
     if (existingUser) {
-      throw ApiErrors.conflict('Phone number is already registered');
+      throw ApiErrors.conflict('PHONE_NUMBER_IS_ALREADY_REGISTERED');
     }
   }
 
   if (purpose === 'forgot_password') {
     const user = await User.findOne({ where: { phone } });
     if (!user) {
-      return { message: 'If the phone number is registered, an OTP has been sent' };
+      return { message: 'OTP_IF_REGISTERED' };
     }
   }
 
@@ -613,7 +613,7 @@ async function resendOTP(phone, purpose) {
   const logLabel = purpose === 'forgot_password' ? 'Forgot password' : 'Registration';
   console.log(`[OTP] ${logLabel} OTP for ${phone}: ${otp}`);
 
-  return { message: 'OTP resent successfully' };
+  return { message: 'OTP_RESENT' };
 }
 
 // ===== ONBOARDING: Driver Profile =====
@@ -621,15 +621,15 @@ async function resendOTP(phone, purpose) {
 async function submitDriverProfile(userId, data) {
   const user = await User.findByPk(userId);
   if (!user) {
-    throw ApiErrors.notFound('User not found');
+    throw ApiErrors.notFound('USER_NOT_FOUND');
   }
   if (user.role !== 'driver') {
-    throw ApiErrors.forbidden('Only drivers can submit a driver profile');
+    throw ApiErrors.forbidden('ONLY_DRIVERS_CAN_SUBMIT_A_DRIVER_PROFILE');
   }
 
   const existingProfile = await DriverProfile.findOne({ where: { driverId: userId } });
   if (existingProfile) {
-    throw ApiErrors.conflict('Driver profile already exists');
+    throw ApiErrors.conflict('DRIVER_PROFILE_ALREADY_EXISTS');
   }
 
   // Validate all image IDs exist
@@ -646,7 +646,7 @@ async function submitDriverProfile(userId, data) {
   });
 
   if (images.length !== imageIds.length) {
-    throw ApiErrors.badRequest('One or more image IDs are invalid');
+    throw ApiErrors.badRequest('ONE_OR_MORE_IMAGE_IDS_ARE_INVALID');
   }
 
   // Update user info
@@ -689,15 +689,15 @@ async function getDriverProfile(userId) {
 async function submitVehicle(userId, data) {
   const user = await User.findByPk(userId);
   if (!user) {
-    throw ApiErrors.notFound('User not found');
+    throw ApiErrors.notFound('USER_NOT_FOUND');
   }
   if (user.role !== 'driver') {
-    throw ApiErrors.forbidden('Only drivers can add vehicles');
+    throw ApiErrors.forbidden('ONLY_DRIVERS_CAN_ADD_VEHICLES');
   }
 
   const driverProfile = await DriverProfile.findOne({ where: { driverId: userId } });
   if (!driverProfile) {
-    throw ApiErrors.badRequest('Please complete your driver profile first');
+    throw ApiErrors.badRequest('PLEASE_COMPLETE_YOUR_DRIVER_PROFILE_FIRST');
   }
 
   // Validate all image IDs
@@ -713,19 +713,19 @@ async function submitVehicle(userId, data) {
   });
 
   if (images.length !== imageIds.length) {
-    throw ApiErrors.badRequest('One or more image IDs are invalid');
+    throw ApiErrors.badRequest('ONE_OR_MORE_IMAGE_IDS_ARE_INVALID');
   }
 
   // Check plate number uniqueness
   const existingVehicle = await Vehicle.findOne({ where: { plateNumber: data.plateNumber } });
   if (existingVehicle) {
-    throw ApiErrors.conflict('A vehicle with this plate number already exists');
+    throw ApiErrors.conflict('A_VEHICLE_WITH_THIS_PLATE_NUMBER_ALREADY_EXISTS');
   }
 
   // One vehicle per driver
   const ownedVehicle = await Vehicle.findOne({ where: { driverId: userId } });
   if (ownedVehicle) {
-    throw ApiErrors.validation('You already have a registered vehicle. Update it instead.');
+    throw ApiErrors.validation('YOU_ALREADY_HAVE_A_REGISTERED_VEHICLE_UPDATE_IT_INSTEAD');
   }
 
   const vehicle = await Vehicle.create({
@@ -767,7 +767,7 @@ async function getVehicle(userId) {
 async function getOnboardingStatus(userId) {
   const user = await User.findByPk(userId);
   if (!user) {
-    throw ApiErrors.notFound('User not found');
+    throw ApiErrors.notFound('USER_NOT_FOUND');
   }
 
   const driverProfile = await DriverProfile.findOne({ where: { driverId: userId } });

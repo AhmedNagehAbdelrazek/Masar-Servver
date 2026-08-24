@@ -1,14 +1,15 @@
 const { body, param } = require('express-validator');
 const { VEHICLE_TYPES } = require('../../config/constants');
+const V = require('../../config/messages/validation-keys');
 
 const vehicleUpdateValidation = [
-  param('vehicle_id').isUUID().withMessage('Vehicle ID must be a valid UUID'),
-  body('manufacturer').optional().isString().trim().isLength({ max: 80 }).withMessage('manufacturer must be a string ≤ 80 characters'),
-  body('model').optional().isString().trim().isLength({ max: 80 }).withMessage('model must be a string ≤ 80 characters'),
-  body('vehicle_type').optional().isIn(Object.values(VEHICLE_TYPES)).withMessage('vehicle_type must be one of sedan, suv, van, bus, hatchback'),
+  param('vehicle_id').isUUID().withMessage(V.VEHICLE_ID_MUST_BE_A_VALID_UUID),
+  body('manufacturer').optional().isString().trim().isLength({ max: 80 }).withMessage(V.MANUFACTURER_MUST_BE_A_STRING_80_CHARACTERS),
+  body('model').optional().isString().trim().isLength({ max: 80 }).withMessage(V.MODEL_MUST_BE_A_STRING_80_CHARACTERS),
+  body('vehicle_type').optional().isIn(Object.values(VEHICLE_TYPES)).withMessage(V.VEHICLE_TYPE_MUST_BE_ONE_OF_SEDAN_SUV_VAN_BUS_HATCHBACK),
   body('model_year')
     .optional()
-    .isInt().withMessage('model_year must be a valid year')
+    .isInt().withMessage(V.MODEL_YEAR_MUST_BE_A_VALID_YEAR_2)
     .custom((value) => {
       const currentYear = new Date().getFullYear();
       const minYear = currentYear - 10;
@@ -17,10 +18,10 @@ const vehicleUpdateValidation = [
       }
       return true;
     }),
-  body('plate_number').optional().isString().trim().isLength({ max: 20 }).withMessage('plate_number must be a string ≤ 20 characters'),
-  body('code_number').optional().isString().trim().isLength({ max: 20 }).withMessage('code_number must be a string ≤ 20 characters'),
-  body('color').optional().isString().trim().isLength({ max: 30 }).withMessage('color must be a string ≤ 30 characters'),
-  body('seats').optional().isInt({ min: 1, max: 50 }).withMessage('seats must be an integer between 1 and 50'),
+  body('plate_number').optional().isString().trim().isLength({ max: 20 }).withMessage(V.PLATE_NUMBER_MUST_BE_A_STRING_20_CHARACTERS),
+  body('code_number').optional().isString().trim().isLength({ max: 20 }).withMessage(V.CODE_NUMBER_MUST_BE_A_STRING_20_CHARACTERS),
+  body('color').optional().isString().trim().isLength({ max: 30 }).withMessage(V.COLOR_MUST_BE_A_STRING_30_CHARACTERS),
+  body('seats').optional().isInt({ min: 1, max: 50 }).withMessage(V.SEATS_MUST_BE_AN_INTEGER_BETWEEN_1_AND_50),
 ];
 
 module.exports = { vehicleUpdateValidation };

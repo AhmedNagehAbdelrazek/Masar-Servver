@@ -1,33 +1,34 @@
 const { body, param } = require('express-validator');
+const V = require('../../config/messages/validation-keys');
 
 const createSubscriptionValidation = [
   body('plan_id')
-    .isUUID().withMessage('Plan ID must be a valid UUID'),
+    .isUUID().withMessage(V.PLAN_ID_MUST_BE_A_VALID_UUID),
 
   body('payment_method_id')
-    .isUUID().withMessage('Payment method ID must be a valid UUID'),
+    .isUUID().withMessage(V.PAYMENT_METHOD_ID_MUST_BE_A_VALID_UUID),
 
   body('screenshot_id')
-    .notEmpty().withMessage('Screenshot ID is required')
-    .isInt({ min: 1 }).withMessage('Screenshot ID must be a valid uploaded image ID')
+    .notEmpty().withMessage(V.SCREENSHOT_ID_IS_REQUIRED)
+    .isInt({ min: 1 }).withMessage(V.SCREENSHOT_ID_MUST_BE_A_VALID_UPLOADED_IMAGE_ID)
     .toInt(),
 
   body('resubmit')
     .optional()
-    .isBoolean().withMessage('resubmit must be a boolean')
+    .isBoolean().withMessage(V.RESUBMIT_MUST_BE_A_BOOLEAN)
     .toBoolean(),
 ];
 
 const subscriptionIdValidation = [
-  param('subscription_id').isUUID().withMessage('Subscription ID must be a valid UUID'),
+  param('subscription_id').isUUID().withMessage(V.SUBSCRIPTION_ID_MUST_BE_A_VALID_UUID),
 ];
 
 const rejectSubscriptionValidation = [
-  param('subscription_id').isUUID().withMessage('Subscription ID must be a valid UUID'),
+  param('subscription_id').isUUID().withMessage(V.SUBSCRIPTION_ID_MUST_BE_A_VALID_UUID),
   body('reason')
     .trim()
-    .notEmpty().withMessage('Rejection reason is required')
-    .isLength({ max: 500 }).withMessage('Rejection reason must be at most 500 characters'),
+    .notEmpty().withMessage(V.REJECTION_REASON_IS_REQUIRED)
+    .isLength({ max: 500 }).withMessage(V.REJECTION_REASON_MUST_BE_AT_MOST_500_CHARACTERS),
 ];
 
 module.exports = {

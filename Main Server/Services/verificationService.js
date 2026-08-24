@@ -223,10 +223,10 @@ async function getQueue(filters = {}) {
 
 async function approveDriver(adminId, driverId) {
   const profile = await DriverProfile.findOne({ where: { driverId } });
-  if (!profile) throw ApiErrors.notFound('Driver profile not found');
+  if (!profile) throw ApiErrors.notFound('DRIVER_PROFILE_NOT_FOUND');
 
   const user = await User.findByPk(driverId);
-  if (!user) throw ApiErrors.notFound('Driver not found');
+  if (!user) throw ApiErrors.notFound('DRIVER_NOT_FOUND');
   const fromStatus = user.verificationStatus;
 
   const vehicle = await Vehicle.findOne({ where: { driverId } });
@@ -263,10 +263,10 @@ async function approveDriver(adminId, driverId) {
 
 async function rejectDriver(adminId, driverId, reason, fieldsToFix) {
   const profile = await DriverProfile.findOne({ where: { driverId } });
-  if (!profile) throw ApiErrors.notFound('Driver profile not found');
+  if (!profile) throw ApiErrors.notFound('DRIVER_PROFILE_NOT_FOUND');
 
   const user = await User.findByPk(driverId);
-  if (!user) throw ApiErrors.notFound('Driver not found');
+  if (!user) throw ApiErrors.notFound('DRIVER_NOT_FOUND');
   const fromStatus = user.verificationStatus;
 
   const vehicle = await Vehicle.findOne({ where: { driverId } });
@@ -316,7 +316,7 @@ async function rejectDriver(adminId, driverId, reason, fieldsToFix) {
 
 async function approveVehicle(adminId, vehicleId) {
   const vehicle = await Vehicle.findByPk(vehicleId);
-  if (!vehicle) throw ApiErrors.notFound('Vehicle not found');
+  if (!vehicle) throw ApiErrors.notFound('VEHICLE_NOT_FOUND');
 
   await vehicle.update({
     isVerified: true,
@@ -355,7 +355,7 @@ async function approveVehicle(adminId, vehicleId) {
 
 async function rejectVehicle(adminId, vehicleId, reason, fieldsToFix) {
   const vehicle = await Vehicle.findByPk(vehicleId);
-  if (!vehicle) throw ApiErrors.notFound('Vehicle not found');
+  if (!vehicle) throw ApiErrors.notFound('VEHICLE_NOT_FOUND');
 
   await vehicle.update({
     isVerified: false,

@@ -531,8 +531,8 @@ async function markRead(userId, notificationId) {
   const { ApiErrors } = require('../../utils/ApiError');
 
   const notification = await Notification.findByPk(notificationId);
-  if (!notification) throw ApiErrors.notFound('Notification not found');
-  if (notification.userId !== userId) throw ApiErrors.forbidden('You can only mark your own notifications as read');
+  if (!notification) throw ApiErrors.notFound('NOTIFICATION_NOT_FOUND');
+  if (notification.userId !== userId) throw ApiErrors.forbidden('YOU_CAN_ONLY_MARK_YOUR_OWN_NOTIFICATIONS_AS_READ');
 
   if (!notification.isRead) {
     await notification.update({ isRead: true });

@@ -33,14 +33,14 @@ function haversineKm(lat1, lng1, lat2, lng2) {
 }
 
 async function assertDriverOfActiveTrip(user, tripId) {
-  if (!tripId) throw ApiErrors.validation('trip_id is required');
+  if (!tripId) throw ApiErrors.validation('TRIP_ID_IS_REQUIRED');
   const trip = await Trip.findByPk(tripId, {
     attributes: ['id', 'driverId', 'status', 'destinationLat', 'destinationLng'],
   });
-  if (!trip) throw ApiErrors.notFound('Trip not found');
-  if (trip.driverId !== user.id) throw ApiErrors.forbidden('Only the trip driver can share tracking');
+  if (!trip) throw ApiErrors.notFound('TRIP_NOT_FOUND');
+  if (trip.driverId !== user.id) throw ApiErrors.forbidden('ONLY_THE_TRIP_DRIVER_CAN_SHARE_TRACKING');
   if (!ACTIVE_TRIP_STATUSES.includes(trip.status)) {
-    throw ApiErrors.conflict('Tracking is only available for active trips');
+    throw ApiErrors.conflict('TRACKING_IS_ONLY_AVAILABLE_FOR_ACTIVE_TRIPS');
   }
   return trip;
 }
@@ -48,10 +48,10 @@ async function assertDriverOfActiveTrip(user, tripId) {
 async function updateLocation(user, payload) {
   const { tripId, lat, lng, speed, heading } = payload || {};
   if (lat === undefined || lng === undefined) {
-    throw ApiErrors.validation('lat and lng are required');
+    throw ApiErrors.validation('LAT_AND_LNG_ARE_REQUIRED');
   }
   if (Number.isNaN(Number(lat)) || Number.isNaN(Number(lng))) {
-    throw ApiErrors.validation('lat and lng must be numbers');
+    throw ApiErrors.validation('LAT_AND_LNG_MUST_BE_NUMBERS');
   }
 
   const trip = await assertDriverOfActiveTrip(user, tripId);
@@ -130,11 +130,11 @@ async function stopTracking(user, tripId) {
 
 async function assertTripMember(user, tripId) {
   const member = await realtimeService.isTripMember(user, tripId);
-  if (!member) throw ApiErrors.forbidden('You are not a member of this trip');
+  if (!member) throw ApiErrors.forbidden('YOU_ARE_NOT_A_MEMBER_OF_THIS_TRIP');
 }
 
 async function getLatest(user, tripId) {
-  if (!tripId) throw ApiErrors.validation('trip_id is required');
+  if (!tripId) throw ApiErrors.validation('TRIP_ID_IS_REQUIRED');
   await assertTripMember(user, tripId);
   const point = await TripLocation.findOne({
     where: { tripId },
@@ -144,7 +144,7 @@ async function getLatest(user, tripId) {
 }
 
 async function getHistory(user, tripId, { limit = 50 } = {}) {
-  if (!tripId) throw ApiErrors.validation('trip_id is required');
+  if (!tripId) throw ApiErrors.validation('TRIP_ID_IS_REQUIRED');
   await assertTripMember(user, tripId);
   const n = Math.min(500, Math.max(1, parseInt(limit, 10) || 50));
   const rows = await TripLocation.findAll({

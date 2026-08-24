@@ -101,12 +101,12 @@ function toCurrentDTO(sub, user) {
 async function createSubscription(driverId, data) {
   const plan = await SubscriptionPlan.findByPk(data.plan_id);
   if (!plan || !plan.isActive) {
-    throw ApiErrors.custom('The selected plan is no longer active.', 422, 'PLAN_INACTIVE');
+    throw ApiErrors.custom('THE_SELECTED_PLAN_IS_NO_LONGER_ACTIVE', 422, 'PLAN_INACTIVE');
   }
 
   if (plan.isFree) {
     throw ApiErrors.custom(
-      'Free plans are automatically assigned at signup and cannot be subscribed to manually.',
+      'FREE_PLANS_ARE_AUTOMATICALLY_ASSIGNED_AT_SIGNUP_AND_CANNOT_BE',
       422,
       'FREE_PLAN_NOT_SUBSCRIBABLE'
     );
@@ -114,12 +114,12 @@ async function createSubscription(driverId, data) {
 
   const method = await PaymentMethod.findByPk(data.payment_method_id);
   if (!method || !method.isActive) {
-    throw ApiErrors.validation('The selected payment method is unavailable.');
+    throw ApiErrors.validation('THE_SELECTED_PAYMENT_METHOD_IS_UNAVAILABLE');
   }
 
   const screenshot = await UploadedImage.findByPk(data.screenshot_id);
   if (!screenshot) {
-    throw ApiErrors.validation('The screenshot image ID is invalid.');
+    throw ApiErrors.validation('THE_SCREENSHOT_IMAGE_ID_IS_INVALID');
   }
 
   return sequelize.transaction(async (t) => {
@@ -135,7 +135,7 @@ async function createSubscription(driverId, data) {
 
     if (existing.length > 0 && data.resubmit !== true) {
       throw ApiErrors.custom(
-        'You already have a pending request for this plan.',
+        'YOU_ALREADY_HAVE_A_PENDING_REQUEST_FOR_THIS_PLAN',
         409,
         'DUPLICATE_SUBSCRIPTION_REQUEST'
       );
@@ -192,7 +192,7 @@ async function getMySubscriptions(driverId) {
 
 async function getCurrentSubscription(driverId) {
   const user = await User.findByPk(driverId);
-  if (!user) throw ApiErrors.notFound('User not found');
+  if (!user) throw ApiErrors.notFound('USER_NOT_FOUND');
 
   const current = await balanceService.findCurrentSubscription(driverId);
   return toCurrentDTO(current, user);
@@ -206,7 +206,7 @@ async function getCurrentSubscription(driverId) {
 async function listPending({ status = SUBSCRIPTION_STATUS.PENDING_APPROVAL, sort = 'newest' } = {}) {
   const validStatuses = Object.values(SUBSCRIPTION_STATUS);
   if (!validStatuses.includes(status)) {
-    throw ApiErrors.validation('Invalid subscription status filter.');
+    throw ApiErrors.validation('INVALID_SUBSCRIPTION_STATUS_FILTER');
   }
 
   const order =
@@ -269,15 +269,15 @@ async function approve(subscriptionId, actorId) {
       transaction: t,
       lock: t.LOCK.UPDATE,
     });
-    if (!sub) throw ApiErrors.notFound('Subscription not found');
+    if (!sub) throw ApiErrors.notFound('SUBSCRIPTION_NOT_FOUND');
 
     if (sub.status !== SUBSCRIPTION_STATUS.PENDING_APPROVAL) {
-      throw ApiErrors.custom('Request already processed.', 409, 'REQUEST_ALREADY_PROCESSED');
+      throw ApiErrors.custom('REQUEST_ALREADY_PROCESSED', 409, 'REQUEST_ALREADY_PROCESSED');
     }
 
     const plan = await SubscriptionPlan.findByPk(sub.planId);
     if (!plan || !plan.isActive) {
-      throw ApiErrors.custom('The selected plan is no longer active.', 409, 'APPROVAL_BLOCKED');
+      throw ApiErrors.custom('THE_SELECTED_PLAN_IS_NO_LONGER_ACTIVE', 409, 'APPROVAL_BLOCKED');
     }
 
     const now = new Date();
@@ -373,7 +373,7 @@ async function approve(subscriptionId, actorId) {
   }
 
   return {
-    message: 'Subscription approved. Plan activated.',
+    message: 'SUBSCRIPTION_APPROVED_PLAN_ACTIVATED',
     subscription_id: result.subscriptionId,
     balance_added: result.balanceAdded,
   };
@@ -388,10 +388,10 @@ async function reject(subscriptionId, reason, actorId) {
       transaction: t,
       lock: t.LOCK.UPDATE,
     });
-    if (!sub) throw ApiErrors.notFound('Subscription not found');
+    if (!sub) throw ApiErrors.notFound('SUBSCRIPTION_NOT_FOUND');
 
     if (sub.status !== SUBSCRIPTION_STATUS.PENDING_APPROVAL) {
-      throw ApiErrors.custom('Request already processed.', 409, 'REQUEST_ALREADY_PROCESSED');
+      throw ApiErrors.custom('REQUEST_ALREADY_PROCESSED', 409, 'REQUEST_ALREADY_PROCESSED');
     }
 
     await sub.update(
@@ -423,7 +423,7 @@ async function reject(subscriptionId, reason, actorId) {
     console.warn('[subscriptionService] rejection notification failed:', err.message);
   }
 
-  return { message: 'Subscription rejected.', subscription_id: result.subscriptionId };
+  return { message: 'SUBSCRIPTION_REJECTED', subscription_id: result.subscriptionId };
 }
 
 async function getCurrentActivePlan(driverId) {

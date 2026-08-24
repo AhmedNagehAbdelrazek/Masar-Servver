@@ -63,7 +63,7 @@ async function uniqueTicketCode() {
     const existing = await SupportTicket.findOne({ where: { referenceCode: code } });
     if (!existing) return code;
   }
-  throw ApiErrors.serverError('Could not generate a unique reference code');
+  throw ApiErrors.serverError('COULD_NOT_GENERATE_A_UNIQUE_REFERENCE_CODE');
 }
 
 async function notifyStaff(ticket) {
@@ -89,7 +89,7 @@ async function createTicket(user, payload) {
 
   if (payload.booking_id) {
     const booking = await Booking.findByPk(payload.booking_id);
-    if (!booking) throw ApiErrors.notFound('Referenced booking not found');
+    if (!booking) throw ApiErrors.notFound('REFERENCED_BOOKING_NOT_FOUND');
   }
 
   const ticket = await SupportTicket.create({
@@ -158,9 +158,9 @@ async function getTicket(user, ticketId) {
       },
     ],
   });
-  if (!ticket) throw ApiErrors.notFound('Support ticket not found');
+  if (!ticket) throw ApiErrors.notFound('SUPPORT_TICKET_NOT_FOUND');
   if (!isStaff(user) && ticket.userId !== user.id) {
-    throw ApiErrors.forbidden('You can only view your own support tickets');
+    throw ApiErrors.forbidden('YOU_CAN_ONLY_VIEW_YOUR_OWN_SUPPORT_TICKETS');
   }
 
   const sorted = (ticket.messages || []).sort(
@@ -173,7 +173,7 @@ async function getTicket(user, ticketId) {
 
 async function assertTicketExists(ticketId) {
   const ticket = await SupportTicket.findByPk(ticketId);
-  if (!ticket) throw ApiErrors.notFound('Support ticket not found');
+  if (!ticket) throw ApiErrors.notFound('SUPPORT_TICKET_NOT_FOUND');
   return ticket;
 }
 
@@ -203,7 +203,7 @@ async function updateTicket(actorId, ticketId, payload) {
 async function updateTicketStatus(actorId, ticketId, status) {
   const ticket = await assertTicketExists(ticketId);
   if (ticket.status === TICKET_STATUS.CLOSED && status !== TICKET_STATUS.CLOSED) {
-    throw ApiErrors.conflict('Closed tickets cannot be reopened');
+    throw ApiErrors.conflict('CLOSED_TICKETS_CANNOT_BE_REOPENED');
   }
 
   await ticket.update({ status });
@@ -222,7 +222,7 @@ async function updateTicketStatus(actorId, ticketId, status) {
 async function addMessage(user, ticketId, messageText) {
   const ticket = await assertTicketExists(ticketId);
   if (!isStaff(user) && ticket.userId !== user.id) {
-    throw ApiErrors.forbidden('You can only reply to your own support tickets');
+    throw ApiErrors.forbidden('YOU_CAN_ONLY_REPLY_TO_YOUR_OWN_SUPPORT_TICKETS');
   }
 
   const message = await SupportTicketMessage.create({

@@ -49,13 +49,13 @@ async function findMessageWithSender(id) {
  */
 async function assertBookingChatOpen(user, bookingId) {
   const { member, booking, trip } = await realtimeService.getBookingChatContext(user, bookingId);
-  if (!booking) throw ApiErrors.notFound('Booking not found');
-  if (!member) throw ApiErrors.forbidden('You are not a member of this booking chat');
+  if (!booking) throw ApiErrors.notFound('BOOKING_NOT_FOUND');
+  if (!member) throw ApiErrors.forbidden('YOU_ARE_NOT_A_MEMBER_OF_THIS_BOOKING_CHAT');
   if (booking.status !== BOOKING_STATUS.CONFIRMED) {
-    throw ApiErrors.forbidden('Booking chat requires a confirmed booking');
+    throw ApiErrors.forbidden('BOOKING_CHAT_REQUIRES_A_CONFIRMED_BOOKING');
   }
   if (!trip || [TRIP_STATUS.COMPLETED, TRIP_STATUS.CANCELLED].includes(trip.status)) {
-    throw ApiErrors.forbidden('Booking chat is closed because the trip is completed or cancelled');
+    throw ApiErrors.forbidden('BOOKING_CHAT_IS_CLOSED_BECAUSE_THE_TRIP_IS_COMPLETED_OR');
   }
   return { booking, trip };
 }
@@ -66,13 +66,13 @@ async function assertBookingChatOpen(user, bookingId) {
  */
 async function sendBookingMessage(user, payload) {
   const { bookingId, message } = payload || {};
-  if (!bookingId) throw ApiErrors.validation('booking_id is required for booking chat');
-  if (!message || !String(message).trim()) throw ApiErrors.validation('message is required');
+  if (!bookingId) throw ApiErrors.validation('BOOKING_ID_IS_REQUIRED_FOR_BOOKING_CHAT');
+  if (!message || !String(message).trim()) throw ApiErrors.validation('MESSAGE_IS_REQUIRED');
 
   await assertBookingChatOpen(user, bookingId);
 
   const clean = sanitizeMessage(message);
-  if (!clean) throw ApiErrors.validation('message is empty after sanitization');
+  if (!clean) throw ApiErrors.validation('MESSAGE_IS_EMPTY_AFTER_SANITIZATION');
 
   const created = await Message.create({
     senderId: user.id,
@@ -108,14 +108,14 @@ async function sendBookingMessage(user, payload) {
  */
 async function sendSupportMessage(user, payload) {
   const { supportTicketId, message } = payload || {};
-  if (!supportTicketId) throw ApiErrors.validation('support_ticket_id is required for support chat');
-  if (!message || !String(message).trim()) throw ApiErrors.validation('message is required');
+  if (!supportTicketId) throw ApiErrors.validation('SUPPORT_TICKET_ID_IS_REQUIRED_FOR_SUPPORT_CHAT');
+  if (!message || !String(message).trim()) throw ApiErrors.validation('MESSAGE_IS_REQUIRED');
 
   const member = await realtimeService.isTicketMember(user, supportTicketId);
-  if (!member) throw ApiErrors.forbidden('You are not a member of this support ticket');
+  if (!member) throw ApiErrors.forbidden('YOU_ARE_NOT_A_MEMBER_OF_THIS_SUPPORT_TICKET');
 
   const clean = sanitizeMessage(message);
-  if (!clean) throw ApiErrors.validation('message is empty after sanitization');
+  if (!clean) throw ApiErrors.validation('MESSAGE_IS_EMPTY_AFTER_SANITIZATION');
 
   const created = await Message.create({
     senderId: user.id,
@@ -155,9 +155,9 @@ async function markRead(user, payload) {
 
   if (messageId) {
     const message = await Message.findByPk(messageId);
-    if (!message) throw ApiErrors.notFound('Message not found');
+    if (!message) throw ApiErrors.notFound('MESSAGE_NOT_FOUND');
     if (message.senderId === user.id) {
-      throw ApiErrors.forbidden('You cannot mark your own message as read');
+      throw ApiErrors.forbidden('YOU_CANNOT_MARK_YOUR_OWN_MESSAGE_AS_READ');
     }
 
     let room;
@@ -166,10 +166,10 @@ async function markRead(user, payload) {
       room = `booking:${message.bookingId}`;
     } else if (message.supportTicketId) {
       const member = await realtimeService.isTicketMember(user, message.supportTicketId);
-      if (!member) throw ApiErrors.forbidden('You are not a member of this conversation');
+      if (!member) throw ApiErrors.forbidden('YOU_ARE_NOT_A_MEMBER_OF_THIS_CONVERSATION');
       room = `support:${message.supportTicketId}`;
     } else {
-      throw ApiErrors.notFound('Message not found');
+      throw ApiErrors.notFound('MESSAGE_NOT_FOUND');
     }
 
     await message.update({ isRead: true, readAt });
@@ -205,7 +205,7 @@ async function markRead(user, payload) {
 
   if (supportTicketId) {
     const member = await realtimeService.isTicketMember(user, supportTicketId);
-    if (!member) throw ApiErrors.forbidden('You are not a member of this support ticket');
+    if (!member) throw ApiErrors.forbidden('YOU_ARE_NOT_A_MEMBER_OF_THIS_SUPPORT_TICKET');
     await Message.update(
       { isRead: true, readAt },
       { where: { supportTicketId, senderId: { [Op.ne]: user.id }, isRead: false } }
@@ -222,7 +222,7 @@ async function markRead(user, payload) {
     return { support_ticket_id: supportTicketId };
   }
 
-  throw ApiErrors.validation('Provide message_id, booking_id or support_ticket_id');
+  throw ApiErrors.validation('PROVIDE_MESSAGE_ID_BOOKING_ID_OR_SUPPORT_TICKET_ID');
 }
 
 /**
@@ -231,16 +231,16 @@ async function markRead(user, payload) {
  * after the trip completes or is cancelled (read-only archive).
  */
 async function listBookingMessages(user, { bookingId, page, limit, beforeId } = {}) {
-  if (!bookingId) throw ApiErrors.validation('booking_id is required');
+  if (!bookingId) throw ApiErrors.validation('BOOKING_ID_IS_REQUIRED');
   const { member, booking } = await realtimeService.getBookingChatContext(user, bookingId);
-  if (!booking) throw ApiErrors.notFound('Booking not found');
-  if (!member) throw ApiErrors.forbidden('You are not a member of this booking chat');
+  if (!booking) throw ApiErrors.notFound('BOOKING_NOT_FOUND');
+  if (!member) throw ApiErrors.forbidden('YOU_ARE_NOT_A_MEMBER_OF_THIS_BOOKING_CHAT');
 
   const { page: p, limit: l, offset } = parsePagination({ page, limit });
   const where = { bookingId };
   if (beforeId) {
     const before = await Message.findByPk(beforeId, { attributes: ['id', 'bookingId', 'createdat'] });
-    if (!before || before.bookingId !== bookingId) throw ApiErrors.badRequest('Invalid before_id');
+    if (!before || before.bookingId !== bookingId) throw ApiErrors.badRequest('INVALID_BEFORE_ID');
     where.createdat = { [Op.lt]: before.createdat };
   }
 
@@ -259,9 +259,9 @@ async function listBookingMessages(user, { bookingId, page, limit, beforeId } = 
  * Paginated support ticket chat history.
  */
 async function listSupportMessages(user, { supportTicketId, page, limit, beforeId } = {}) {
-  if (!supportTicketId) throw ApiErrors.validation('support_ticket_id is required');
+  if (!supportTicketId) throw ApiErrors.validation('SUPPORT_TICKET_ID_IS_REQUIRED');
   const member = await realtimeService.isTicketMember(user, supportTicketId);
-  if (!member) throw ApiErrors.forbidden('You are not a member of this support ticket');
+  if (!member) throw ApiErrors.forbidden('YOU_ARE_NOT_A_MEMBER_OF_THIS_SUPPORT_TICKET');
 
   const { page: p, limit: l, offset } = parsePagination({ page, limit });
   const where = { supportTicketId };
@@ -270,7 +270,7 @@ async function listSupportMessages(user, { supportTicketId, page, limit, beforeI
       attributes: ['id', 'supportTicketId', 'createdat'],
     });
     if (!before || before.supportTicketId !== supportTicketId) {
-      throw ApiErrors.badRequest('Invalid before_id');
+      throw ApiErrors.badRequest('INVALID_BEFORE_ID');
     }
     where.createdat = { [Op.lt]: before.createdat };
   }

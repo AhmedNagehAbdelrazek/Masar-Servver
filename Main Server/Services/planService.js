@@ -107,7 +107,7 @@ async function ensureSingleFreePlan({ isFree, excludeId = null }) {
   const existing = await SubscriptionPlan.findOne({ where });
   if (existing) {
     throw ApiErrors.custom(
-      'A free plan already exists. Only one free plan can be active at a time.',
+      'A_FREE_PLAN_ALREADY_EXISTS_ONLY_ONE_FREE_PLAN_CAN',
       409,
       'FREE_PLAN_EXISTS'
     );
@@ -144,7 +144,7 @@ async function createPlan(data, actorId) {
 
 async function updatePlan(planId, data, actorId) {
   const plan = await SubscriptionPlan.findByPk(planId);
-  if (!plan) throw ApiErrors.notFound('Plan not found');
+  if (!plan) throw ApiErrors.notFound('PLAN_NOT_FOUND');
 
   const isFree = data.is_free !== undefined ? Boolean(data.is_free) : plan.isFree;
   await ensureSingleFreePlan({ isFree, excludeId: planId });
@@ -174,7 +174,7 @@ async function updatePlan(planId, data, actorId) {
 
 async function deactivatePlan(planId, actorId) {
   const plan = await SubscriptionPlan.findByPk(planId);
-  if (!plan) throw ApiErrors.notFound('Plan not found');
+  if (!plan) throw ApiErrors.notFound('PLAN_NOT_FOUND');
 
   plan.isActive = false;
   await plan.save();
@@ -188,7 +188,7 @@ async function deactivatePlan(planId, actorId) {
   });
   await invalidatePlansCache();
 
-  return { message: 'Plan deactivated.' };
+  return { message: 'PLAN_DEACTIVATED' };
 }
 
 async function listPaymentMethods() {
@@ -218,7 +218,7 @@ async function createPaymentMethod(data, actorId) {
 
 async function updatePaymentMethod(methodId, data, actorId) {
   const method = await PaymentMethod.findByPk(methodId);
-  if (!method) throw ApiErrors.notFound('Payment method not found');
+  if (!method) throw ApiErrors.notFound('PAYMENT_METHOD_NOT_FOUND');
 
   if (data.name !== undefined) method.name = data.name;
   if (data.account_number !== undefined) method.accountNumber = data.account_number;
@@ -240,7 +240,7 @@ async function updatePaymentMethod(methodId, data, actorId) {
 
 async function deactivatePaymentMethod(methodId, actorId) {
   const method = await PaymentMethod.findByPk(methodId);
-  if (!method) throw ApiErrors.notFound('Payment method not found');
+  if (!method) throw ApiErrors.notFound('PAYMENT_METHOD_NOT_FOUND');
 
   method.isActive = false;
   await method.save();
@@ -253,7 +253,7 @@ async function deactivatePaymentMethod(methodId, actorId) {
     payload: { is_active: false },
   });
 
-  return { message: 'Payment method deactivated.' };
+  return { message: 'PAYMENT_METHOD_DEACTIVATED' };
 }
 
 module.exports = {

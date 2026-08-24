@@ -1,4 +1,5 @@
 const { body } = require('express-validator');
+const V = require('../../config/messages/validation-keys');
 
 // Driver personal-data screen (spec 010). Identity/vehicle fields are only
  // accepted while verification is unverified/rejected; the service enforces
@@ -7,70 +8,70 @@ const updateDriverPersonalDataValidation = [
   body('full_name')
     .optional()
     .trim()
-    .isLength({ min: 3, max: 120 }).withMessage('Full name must be 3-120 characters'),
+    .isLength({ min: 3, max: 120 }).withMessage(V.FULL_NAME_MUST_BE_3_120_CHARACTERS),
   body('display_name')
     .optional({ nullable: true })
     .trim()
-    .isLength({ max: 120 }).withMessage('Display name must be at most 120 characters'),
+    .isLength({ max: 120 }).withMessage(V.DISPLAY_NAME_MUST_BE_AT_MOST_120_CHARACTERS),
   body('email')
     .optional({ nullable: true })
     .trim()
-    .isEmail().withMessage('Email must be a valid email address')
+    .isEmail().withMessage(V.EMAIL_MUST_BE_A_VALID_EMAIL_ADDRESS_2)
     .normalizeEmail(),
   body('phone')
     .optional()
     .trim()
-    .notEmpty().withMessage('Phone cannot be empty'),
+    .notEmpty().withMessage(V.PHONE_CANNOT_BE_EMPTY),
   body('age')
     .optional({ nullable: true })
-    .isInt({ min: 18, max: 100 }).withMessage('Age must be an integer between 18 and 100'),
+    .isInt({ min: 18, max: 100 }).withMessage(V.AGE_MUST_BE_AN_INTEGER_BETWEEN_18_AND_100),
   body('avatar_url')
     .optional({ nullable: true })
-    .isString().withMessage('Avatar URL must be a string'),
+    .isString().withMessage(V.AVATAR_URL_MUST_BE_A_STRING),
   body('national_id')
     .optional()
     .trim()
-    .isLength({ min: 5, max: 30 }).withMessage('National ID must be 5-30 characters'),
+    .isLength({ min: 5, max: 30 }).withMessage(V.NATIONAL_ID_MUST_BE_5_30_CHARACTERS),
   body('vehicle')
     .optional()
-    .isObject().withMessage('Vehicle must be an object'),
+    .isObject().withMessage(V.VEHICLE_MUST_BE_AN_OBJECT_2),
   body('vehicle.manufacturer')
     .optional()
     .trim()
-    .isLength({ min: 2, max: 60 }).withMessage('Manufacturer must be 2-60 characters'),
+    .isLength({ min: 2, max: 60 }).withMessage(V.MANUFACTURER_MUST_BE_2_60_CHARACTERS),
   body('vehicle.model')
     .optional()
     .trim()
-    .isLength({ min: 1, max: 60 }).withMessage('Model must be 1-60 characters'),
+    .isLength({ min: 1, max: 60 }).withMessage(V.MODEL_MUST_BE_1_60_CHARACTERS),
   body('vehicle.model_year')
     .optional()
-    .isInt({ min: 1990, max: 2100 }).withMessage('Model year must be a valid year'),
+    .isInt({ min: 1990, max: 2100 }).withMessage(V.MODEL_YEAR_MUST_BE_A_VALID_YEAR),
   body('vehicle.color')
     .optional({ nullable: true })
     .trim()
-    .isLength({ max: 40 }).withMessage('Color must be at most 40 characters'),
+    .isLength({ max: 40 }).withMessage(V.COLOR_MUST_BE_AT_MOST_40_CHARACTERS),
   body('vehicle.plate_number')
     .optional()
     .trim()
-    .isLength({ min: 3, max: 20 }).withMessage('Plate number must be 3-20 characters'),
+    .isLength({ min: 3, max: 20 }).withMessage(V.PLATE_NUMBER_MUST_BE_3_20_CHARACTERS),
   body('vehicle.total_seats')
     .optional()
-    .isInt({ min: 1, max: 15 }).withMessage('Total seats must be between 1 and 15'),
+    .isInt({ min: 1, max: 15 }).withMessage(V.TOTAL_SEATS_MUST_BE_BETWEEN_1_AND_15),
 ];
 
 const updatePassengerProfileValidation = [
   body('preferred_gender')
     .optional()
-    .isIn(['male', 'female', 'any']).withMessage('preferred_gender must be "male", "female" or "any"'),
+    .isIn(['male', 'female', 'any']).withMessage(V.PREFERRED_GENDER_MUST_BE_MALE_FEMALE_OR_ANY),
   body('smoking_preference')
     .optional()
-    .isIn(['no_preference', 'non_smoking', 'smoking_allowed']).withMessage('smoking_preference must be one of: no_preference, non_smoking, smoking_allowed'),
+    .isIn(['no_preference', 'non_smoking', 'smoking_allowed']).withMessage(V.SMOKING_PREFERENCE_MUST_BE_ONE_OF_NO_PREFERENCE_NON_SMOKING_SMOKING_ALLOWED),
   body('saved_routes')
     .optional()
-    .isArray().withMessage('saved_routes must be an array'),
+    .isArray().withMessage(V.SAVED_ROUTES_MUST_BE_AN_ARRAY),
   body('emergency_contacts')
     .optional()
-    .isArray().withMessage('emergency_contacts must be an array'),
+    .isArray().withMessage(V.EMERGENCY_CONTACTS_MUST_BE_AN_ARRAY),
 ];
 
 module.exports = { updatePassengerProfileValidation, updateDriverPersonalDataValidation };

@@ -1,6 +1,9 @@
 const createApp = require('../../app');
 const sequelize = require('../../config/database');
 
+// Tests assert English message texts; production default is Arabic (APP_LOCALE in .env).
+process.env.APP_LOCALE = process.env.APP_LOCALE || 'en';
+
 // Mock Redis — store must be created INSIDE the factory (Jest hoisting rule)
 jest.mock('../../config/redis', () => {
   const store = new Map();

@@ -47,11 +47,11 @@ function canEdit(status) {
 
 function guardSubmission(status) {
   if (status === VERIFICATION_STATUS.PENDING) {
-    throw ApiErrors.conflict('Your verification application is already under review.');
+    throw ApiErrors.conflict('YOUR_VERIFICATION_APPLICATION_IS_ALREADY_UNDER_REVIEW');
   }
   if (status === VERIFICATION_STATUS.APPROVED) {
     throw ApiErrors.forbidden(
-      'Your verification is approved and locked. Contact support if you need to make changes.'
+      'YOUR_VERIFICATION_IS_APPROVED_AND_LOCKED_CONTACT_SUPPORT_IF_YOU'
     );
   }
 }
@@ -128,7 +128,7 @@ function buildVehiclePayload(vehicle) {
 
 async function loadDriverData(driverId) {
   const user = await User.findByPk(driverId);
-  if (!user) throw ApiErrors.notFound('Driver not found');
+  if (!user) throw ApiErrors.notFound('DRIVER_NOT_FOUND');
   const profile = await DriverProfile.findOne({ where: { driverId } });
   const vehicle = await Vehicle.findOne({ where: { driverId } });
   return { user, profile, vehicle };
@@ -175,7 +175,7 @@ async function verifyDocumentIds(body) {
   const uniqueIds = [...new Set(docIds)];
   const found = await UploadedImage.findAll({ where: { id: { [Op.in]: uniqueIds } } });
   if (found.length !== uniqueIds.length) {
-    throw ApiErrors.validation('One or more uploaded document ids do not exist.');
+    throw ApiErrors.validation('ONE_OR_MORE_UPLOADED_DOCUMENT_IDS_DO_NOT_EXIST');
   }
 }
 

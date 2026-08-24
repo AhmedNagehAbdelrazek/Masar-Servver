@@ -28,14 +28,14 @@ function serializeFavoriteRoute(route) {
 async function assertDriverExists(driverId) {
   const driver = await User.findByPk(driverId);
   if (!driver || driver.role !== 'driver') {
-    throw ApiErrors.notFound('Driver not found');
+    throw ApiErrors.notFound('DRIVER_NOT_FOUND');
   }
   return driver;
 }
 
 async function addFavoriteDriver(passengerId, driverId) {
   if (driverId === passengerId) {
-    throw ApiErrors.validation('You cannot add yourself as a favorite driver');
+    throw ApiErrors.validation('YOU_CANNOT_ADD_YOURSELF_AS_A_FAVORITE_DRIVER');
   }
   await assertDriverExists(driverId);
 
@@ -66,7 +66,7 @@ async function removeFavoriteDriver(passengerId, driverId) {
   const deleted = await FavoriteDriver.destroy({
     where: { passengerId, driverId },
   });
-  if (!deleted) throw ApiErrors.notFound('Favorite driver not found');
+  if (!deleted) throw ApiErrors.notFound('FAVORITE_DRIVER_NOT_FOUND');
 
   auditService.track({
     action: 'favorite_driver.removed',
@@ -76,7 +76,7 @@ async function removeFavoriteDriver(passengerId, driverId) {
     actorType: 'passenger',
   });
 
-  return { message: 'Favorite driver removed.' };
+  return { message: 'FAVORITE_DRIVER_REMOVED' };
 }
 
 async function listFavoriteDrivers(passengerId, filters = {}) {
@@ -141,7 +141,7 @@ async function removeFavoriteRoute(passengerId, originCity, destinationCity) {
       destinationCity,
     },
   });
-  if (!deleted) throw ApiErrors.notFound('Favorite route not found');
+  if (!deleted) throw ApiErrors.notFound('FAVORITE_ROUTE_NOT_FOUND');
 
   auditService.track({
     action: 'favorite_route.removed',
@@ -151,7 +151,7 @@ async function removeFavoriteRoute(passengerId, originCity, destinationCity) {
     actorType: 'passenger',
   });
 
-  return { message: 'Favorite route removed.' };
+  return { message: 'FAVORITE_ROUTE_REMOVED' };
 }
 
 async function listFavoriteRoutes(passengerId) {

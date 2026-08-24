@@ -18,7 +18,7 @@ module.exports = (io, socket) => {
     try {
       const tripId = payload ? payload.trip_id : undefined;
       const member = await realtimeService.isTripMember(user, tripId);
-      if (!member) throw ApiErrors.forbidden('You are not a member of this trip');
+      if (!member) throw ApiErrors.forbidden('YOU_ARE_NOT_A_MEMBER_OF_THIS_TRIP');
       socket.join(`trip:${tripId}`);
       return ack ? ack(ok({ room: `trip:${tripId}` })) : undefined;
     } catch (err) {

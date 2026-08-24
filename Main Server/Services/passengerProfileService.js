@@ -36,7 +36,7 @@ async function updateMyProfile(passengerId, payload) {
   if (payload.emergency_contacts !== undefined) updates.emergencyContacts = payload.emergency_contacts;
 
   if (Object.keys(updates).length === 0) {
-    throw ApiErrors.validation('No updatable fields provided');
+    throw ApiErrors.validation('NO_UPDATABLE_FIELDS_PROVIDED');
   }
 
   await profile.update(updates);

@@ -61,14 +61,14 @@ async function issue(actorId, payload) {
   const { user_id: userId, type, reason, details, complaint_id: complaintId, ends_at: endsAt } = payload;
 
   if (type === PENALTY_TYPES.SUSPENSION && !endsAt) {
-    throw ApiErrors.validation('ends_at is required for a suspension');
+    throw ApiErrors.validation('ENDS_AT_IS_REQUIRED_FOR_A_SUSPENSION');
   }
   if (type === PENALTY_TYPES.BAN && endsAt) {
-    throw ApiErrors.validation('ends_at is forbidden for a ban');
+    throw ApiErrors.validation('ENDS_AT_IS_FORBIDDEN_FOR_A_BAN');
   }
 
   const user = await User.findByPk(userId);
-  if (!user) throw ApiErrors.notFound('User not found');
+  if (!user) throw ApiErrors.notFound('USER_NOT_FOUND');
 
   const penalty = await Penalty.create({
     userId,

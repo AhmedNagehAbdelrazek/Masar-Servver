@@ -19,7 +19,7 @@ const getTripById = catchAsync(async (req, res) => {
   const isParticipant = isAdmin || participantIds.includes(req.user.id);
   delete trip._participantIds;
   if (!isParticipant) {
-    throw ApiErrors.forbidden('You do not have access to this trip');
+    throw ApiErrors.forbidden('YOU_DO_NOT_HAVE_ACCESS_TO_THIS_TRIP');
   }
   successResponse(res, trip);
 });

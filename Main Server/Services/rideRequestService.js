@@ -109,7 +109,7 @@ function computeExpiresAt(arrivalDeadline, originTime) {
 
 async function createRideRequest(userId, payload) {
   const user = await User.findByPk(userId);
-  if (!user) throw ApiErrors.notFound('User not found');
+  if (!user) throw ApiErrors.notFound('USER_NOT_FOUND');
 
   const request = await RideRequest.create({
     passengerId: userId,
@@ -185,12 +185,12 @@ async function getRequest(user, requestId) {
       },
     ],
   });
-  if (!request) throw ApiErrors.notFound('Ride request not found');
+  if (!request) throw ApiErrors.notFound('RIDE_REQUEST_NOT_FOUND');
 
   const isOwner = request.passengerId === user.id;
   const isDriver = user.role === 'driver';
   if (!isOwner && !isDriver) {
-    throw ApiErrors.forbidden('You can only view your own ride requests');
+    throw ApiErrors.forbidden('YOU_CAN_ONLY_VIEW_YOUR_OWN_RIDE_REQUESTS');
   }
 
   return { ride_request: serializeRideRequest(request, { includeOffers: true }) };
@@ -200,12 +200,12 @@ async function updateRideRequest(userId, requestId, payload) {
   await expireStale();
 
   const request = await RideRequest.findByPk(requestId);
-  if (!request) throw ApiErrors.notFound('Ride request not found');
+  if (!request) throw ApiErrors.notFound('RIDE_REQUEST_NOT_FOUND');
   if (request.passengerId !== userId) {
-    throw ApiErrors.forbidden('You can only update your own ride requests');
+    throw ApiErrors.forbidden('YOU_CAN_ONLY_UPDATE_YOUR_OWN_RIDE_REQUESTS');
   }
   if (![RIDE_REQUEST_STATUS.OPEN, RIDE_REQUEST_STATUS.OFFERED].includes(request.status)) {
-    throw ApiErrors.conflict('Only open or offered ride requests can be updated');
+    throw ApiErrors.conflict('ONLY_OPEN_OR_OFFERED_RIDE_REQUESTS_CAN_BE_UPDATED');
   }
 
   if (payload.action === 'cancel') {
@@ -259,12 +259,12 @@ async function submitOffer(driverId, requestId, payload) {
   await expireStale();
 
   const driver = await User.findByPk(driverId);
-  if (!driver) throw ApiErrors.notFound('User not found');
+  if (!driver) throw ApiErrors.notFound('USER_NOT_FOUND');
 
   const request = await RideRequest.findByPk(requestId);
-  if (!request) throw ApiErrors.notFound('Ride request not found');
+  if (!request) throw ApiErrors.notFound('RIDE_REQUEST_NOT_FOUND');
   if (![RIDE_REQUEST_STATUS.OPEN, RIDE_REQUEST_STATUS.OFFERED].includes(request.status)) {
-    throw ApiErrors.conflict('This ride request is no longer accepting offers');
+    throw ApiErrors.conflict('THIS_RIDE_REQUEST_IS_NO_LONGER_ACCEPTING_OFFERS');
   }
 
   const duplicate = await RequestOffer.findOne({
@@ -275,7 +275,7 @@ async function submitOffer(driverId, requestId, payload) {
     },
   });
   if (duplicate) {
-    throw ApiErrors.conflict('You already have a pending offer on this ride request');
+    throw ApiErrors.conflict('YOU_ALREADY_HAVE_A_PENDING_OFFER_ON_THIS_RIDE_REQUEST');
   }
 
   const offer = await RequestOffer.create({
@@ -327,13 +327,13 @@ async function listOffersForRequest(userId, requestId) {
       },
     ],
   });
-  if (!request) throw ApiErrors.notFound('Ride request not found');
+  if (!request) throw ApiErrors.notFound('RIDE_REQUEST_NOT_FOUND');
 
   const isOwner = request.passengerId === userId;
   const participates = (request.offers || []).some((o) => o.driverId === userId);
   if (!isOwner && !participates) {
     // drivers who never offered cannot browse others' offers
-    throw ApiErrors.forbidden('You can only view offers on your own requests or ones you submitted');
+    throw ApiErrors.forbidden('YOU_CAN_ONLY_VIEW_OFFERS_ON_YOUR_OWN_REQUESTS_OR');
   }
 
   return { data: (request.offers || []).map(serializeOffer) };
@@ -389,12 +389,12 @@ async function decideOffer(passengerId, offerId, action) {
       { model: User, as: 'driver', attributes: ['id', 'fullName'] },
     ],
   });
-  if (!offer) throw ApiErrors.notFound('Offer not found');
+  if (!offer) throw ApiErrors.notFound('OFFER_NOT_FOUND');
   if (!offer.rideRequest || offer.rideRequest.passengerId !== passengerId) {
-    throw ApiErrors.forbidden('You can only decide on offers to your own ride requests');
+    throw ApiErrors.forbidden('YOU_CAN_ONLY_DECIDE_ON_OFFERS_TO_YOUR_OWN_RIDE');
   }
   if (offer.status !== REQUEST_OFFER_STATUS.SENT) {
-    throw ApiErrors.conflict(`Offer is no longer decidable (status: ${offer.status})`);
+    throw ApiErrors.conflict('OFFER_NO_LONGER_DECIDABLE', null, { status: offer.status });
   }
 
   if (action === 'accept') {
@@ -474,15 +474,15 @@ async function agreeOfferPrice(passengerId, offerId, agreedFare) {
       { model: User, as: 'driver', attributes: ['id', 'fullName'] },
     ],
   });
-  if (!offer) throw ApiErrors.notFound('Offer not found');
+  if (!offer) throw ApiErrors.notFound('OFFER_NOT_FOUND');
   if (!offer.rideRequest || offer.rideRequest.passengerId !== passengerId) {
-    throw ApiErrors.forbidden('You can only agree prices on offers to your own ride requests');
+    throw ApiErrors.forbidden('YOU_CAN_ONLY_AGREE_PRICES_ON_OFFERS_TO_YOUR_OWN');
   }
   if (offer.status !== REQUEST_OFFER_STATUS.ACCEPTED) {
-    throw ApiErrors.conflict('Accept the offer before agreeing on a final price');
+    throw ApiErrors.conflict('ACCEPT_THE_OFFER_BEFORE_AGREEING_ON_A_FINAL_PRICE');
   }
   if (offer.rideRequest.status === RIDE_REQUEST_STATUS.CANCELLED || offer.rideRequest.status === RIDE_REQUEST_STATUS.EXPIRED) {
-    throw ApiErrors.conflict('The ride request is no longer active');
+    throw ApiErrors.conflict('THE_RIDE_REQUEST_IS_NO_LONGER_ACTIVE');
   }
 
   offer.agreedFare = agreedFare;
@@ -519,30 +519,30 @@ async function attachOfferToTrip(driverId, tripId, offerId, payload = {}) {
       { model: User, as: 'driver', attributes: ['id', 'fullName'] },
     ],
   });
-  if (!offer) throw ApiErrors.notFound('Offer not found');
+  if (!offer) throw ApiErrors.notFound('OFFER_NOT_FOUND');
   if (offer.driverId !== driverId) {
-    throw ApiErrors.forbidden('You can only attach your own offers');
+    throw ApiErrors.forbidden('YOU_CAN_ONLY_ATTACH_YOUR_OWN_OFFERS');
   }
   if (offer.bookingId) {
-    throw ApiErrors.conflict('Offer already attached to a booking');
+    throw ApiErrors.conflict('OFFER_ALREADY_ATTACHED_TO_A_BOOKING');
   }
   if (offer.status !== REQUEST_OFFER_STATUS.ACCEPTED) {
-    throw ApiErrors.conflict('Only accepted offers can be attached to a trip');
+    throw ApiErrors.conflict('ONLY_ACCEPTED_OFFERS_CAN_BE_ATTACHED_TO_A_TRIP');
   }
   if (!offer.rideRequest || offer.rideRequest.status !== RIDE_REQUEST_STATUS.ACCEPTED) {
-    throw ApiErrors.conflict('The underlying ride request is not in an accepted state');
+    throw ApiErrors.conflict('THE_UNDERLYING_RIDE_REQUEST_IS_NOT_IN_AN_ACCEPTED_STATE');
   }
   if (offer.agreedFare === null || offer.agreedFare === undefined) {
-    throw ApiErrors.conflict('Agree on a final price before attaching the offer to a trip');
+    throw ApiErrors.conflict('AGREE_ON_A_FINAL_PRICE_BEFORE_ATTACHING_THE_OFFER_TO');
   }
 
   const trip = await Trip.findByPk(tripId);
-  if (!trip) throw ApiErrors.notFound('Trip not found');
+  if (!trip) throw ApiErrors.notFound('TRIP_NOT_FOUND');
   if (trip.driverId !== driverId) {
-    throw ApiErrors.forbidden('You can only attach offers to your own trips');
+    throw ApiErrors.forbidden('YOU_CAN_ONLY_ATTACH_OFFERS_TO_YOUR_OWN_TRIPS');
   }
   if (![TRIP_STATUS.PUBLISHED, TRIP_STATUS.FULL].includes(trip.status)) {
-    throw ApiErrors.conflict('Trip is already ongoing or completed');
+    throw ApiErrors.conflict('TRIP_IS_ALREADY_ONGOING_OR_COMPLETED');
   }
 
   const seatsNeeded = offer.rideRequest.seatsNeeded || 1;
@@ -553,7 +553,7 @@ async function attachOfferToTrip(driverId, tripId, offerId, payload = {}) {
       const existing = await Booking.findOne({ where: { referenceCode: code } });
       if (!existing) return code;
     }
-    throw ApiErrors.serverError('Could not generate a unique reference code');
+    throw ApiErrors.serverError('COULD_NOT_GENERATE_A_UNIQUE_REFERENCE_CODE');
   }
 
   const referenceCode = await uniqueBookingCode();
@@ -562,7 +562,7 @@ async function attachOfferToTrip(driverId, tripId, offerId, payload = {}) {
     const freshTrip = await Trip.findByPk(tripId, { transaction: t, lock: t.LOCK.UPDATE });
     const remainingSeats = freshTrip.availableSeats - seatsNeeded;
     if (remainingSeats < 0) {
-      throw ApiErrors.conflict('Not enough available seats on the selected trip');
+      throw ApiErrors.conflict('NOT_ENOUGH_AVAILABLE_SEATS_ON_THE_SELECTED_TRIP');
     }
 
     const row = await Booking.create(

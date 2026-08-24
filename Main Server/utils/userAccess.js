@@ -11,22 +11,22 @@ const { USER_STATUS } = require('../config/constants');
 
 async function loadDriverUser(userId) {
     const user = await User.findByPk(userId);
-    if (!user) throw ApiErrors.notFound('User not found');
+    if (!user) throw ApiErrors.notFound('USER_NOT_FOUND');
     return user;
 }
 
 function ensureReadable(user) {
     if (user.status === USER_STATUS.BANNED) {
-        throw ApiErrors.forbidden('Account is banned');
+        throw ApiErrors.forbidden('ACCOUNT_IS_BANNED');
     }
 }
 
 function ensureOperational(user) {
     if (user.status === USER_STATUS.BANNED) {
-        throw ApiErrors.forbidden('Account is banned');
+        throw ApiErrors.forbidden('ACCOUNT_IS_BANNED');
     }
     if (user.status === USER_STATUS.SUSPENDED) {
-        throw ApiErrors.forbidden('Suspended accounts cannot perform this action');
+        throw ApiErrors.forbidden('SUSPENDED_ACCOUNTS_CANNOT_PERFORM_THIS_ACTION');
     }
 }
 

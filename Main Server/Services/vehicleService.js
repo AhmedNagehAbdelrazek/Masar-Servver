@@ -26,8 +26,8 @@ const listByDriver = async (driverId) => {
 
 const update = async (driverId, vehicleId, payload) => {
   const vehicle = await Vehicle.findByPk(vehicleId);
-  if (!vehicle) throw ApiErrors.notFound('Vehicle not found');
-  if (vehicle.driverId !== driverId) throw ApiErrors.forbidden('You can only update your own vehicles');
+  if (!vehicle) throw ApiErrors.notFound('VEHICLE_NOT_FOUND');
+  if (vehicle.driverId !== driverId) throw ApiErrors.forbidden('YOU_CAN_ONLY_UPDATE_YOUR_OWN_VEHICLES');
 
   const updates = {};
   if (payload.manufacturer !== undefined) updates.manufacturer = payload.manufacturer;
@@ -41,7 +41,7 @@ const update = async (driverId, vehicleId, payload) => {
 
   if (updates.plateNumber !== undefined && updates.plateNumber !== vehicle.plateNumber) {
     const existing = await Vehicle.findOne({ where: { plate_number: updates.plateNumber } });
-    if (existing && existing.id !== vehicle.id) throw ApiErrors.conflict('Plate number already in use');
+    if (existing && existing.id !== vehicle.id) throw ApiErrors.conflict('PLATE_NUMBER_ALREADY_IN_USE');
   }
 
   await vehicle.update(updates);

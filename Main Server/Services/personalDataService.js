@@ -109,7 +109,7 @@ async function assertUniqueness(userId, payload) {
             where: { email: payload.email, id: { [Op.ne]: userId } },
         });
         if (clash) {
-            throw ApiErrors.custom('Email already in use', 409, 'EMAIL_ALREADY_IN_USE');
+            throw ApiErrors.custom('EMAIL_ALREADY_IN_USE', 409, 'EMAIL_ALREADY_IN_USE');
         }
     }
     if (payload.phone) {
@@ -117,7 +117,7 @@ async function assertUniqueness(userId, payload) {
             where: { phone: payload.phone, id: { [Op.ne]: userId } },
         });
         if (clash) {
-            throw ApiErrors.custom('Phone already in use', 409, 'PHONE_ALREADY_IN_USE');
+            throw ApiErrors.custom('PHONE_ALREADY_IN_USE', 409, 'PHONE_ALREADY_IN_USE');
         }
     }
     if (payload.vehicle && payload.vehicle.plate_number) {
@@ -125,7 +125,7 @@ async function assertUniqueness(userId, payload) {
             where: { plateNumber: payload.vehicle.plate_number, driverId: { [Op.ne]: userId } },
         });
         if (clash) {
-            throw ApiErrors.custom('Plate number already in use', 409, 'PLATE_ALREADY_IN_USE');
+            throw ApiErrors.custom('PLATE_NUMBER_ALREADY_IN_USE', 409, 'PLATE_ALREADY_IN_USE');
         }
     }
 }
@@ -146,9 +146,11 @@ async function updatePersonalData(userId, payload) {
         const attempts = extractLockedAttempts(payload);
         if (attempts.length > 0) {
             throw ApiErrors.custom(
-                `Locked fields cannot be modified: ${attempts.join(', ')}`,
+                'LOCKED_FIELDS_CANNOT_BE_MODIFIED',
                 403,
-                'FIELD_LOCKED'
+                'FIELD_LOCKED',
+                null,
+                { fields: attempts.join(', ') }
             );
         }
     }

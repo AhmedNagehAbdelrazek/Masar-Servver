@@ -51,7 +51,7 @@ function serializeDriver(complaint, direction) {
  */
 async function create(reporterId, data) {
   const accused = await User.findByPk(data.accused_id);
-  if (!accused) throw ApiErrors.notFound('Accused user not found');
+  if (!accused) throw ApiErrors.notFound('ACCUSED_USER_NOT_FOUND');
 
   const existing = await Complaint.findOne({
     where: {
@@ -158,7 +158,7 @@ async function listAdmin(filters = {}) {
  */
 async function resolve(adminId, complaintId, data) {
   const complaint = await Complaint.findByPk(complaintId);
-  if (!complaint) throw ApiErrors.notFound('Complaint not found');
+  if (!complaint) throw ApiErrors.notFound('COMPLAINT_NOT_FOUND');
 
   const fields = { status: data.status };
   if (data.status === COMPLAINT_STATUS.RESOLVED) {

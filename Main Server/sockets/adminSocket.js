@@ -20,8 +20,8 @@ module.exports = (io, socket) => {
   socket.on('admin:ticket_assign', async (payload, ack) => {
     try {
       const ticket = await SupportTicket.findByPk(payload && payload.support_ticket_id);
-      if (!ticket) throw ApiErrors.notFound('Support ticket not found');
-      if (!payload || !payload.agent_id) throw ApiErrors.validation('agent_id is required');
+      if (!ticket) throw ApiErrors.notFound('SUPPORT_TICKET_NOT_FOUND');
+      if (!payload || !payload.agent_id) throw ApiErrors.validation('AGENT_ID_IS_REQUIRED');
 
       await ticket.update({ assignedTo: payload.agent_id });
       socket.join(`support:${ticket.id}`);
@@ -45,7 +45,7 @@ module.exports = (io, socket) => {
   socket.on('admin:ticket_resolve', async (payload, ack) => {
     try {
       const ticket = await SupportTicket.findByPk(payload && payload.support_ticket_id);
-      if (!ticket) throw ApiErrors.notFound('Support ticket not found');
+      if (!ticket) throw ApiErrors.notFound('SUPPORT_TICKET_NOT_FOUND');
 
       await ticket.update({
         status: TICKET_STATUS.RESOLVED,

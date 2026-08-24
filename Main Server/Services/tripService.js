@@ -31,13 +31,15 @@ async function assertCanPublish(driverId, farePerSeat) {
     farePerSeat
   );
   if (!current) {
-    throw ApiErrors.custom('You need an active plan to publish trips.', 422, 'NO_ACTIVE_PLAN');
+    throw ApiErrors.custom('YOU_NEED_AN_ACTIVE_PLAN_TO_PUBLISH_TRIPS', 422, 'NO_ACTIVE_PLAN');
   }
   if (totalBalance < minimum) {
     throw ApiErrors.custom(
-      `Insufficient balance to publish trip. You need at least ${minimum.toFixed(2)} to cover commission for one seat. Current balance: ${totalBalance.toFixed(2)}.`,
+      'INSUFFICIENT_BALANCE_TO_PUBLISH_TRIP',
       422,
-      'INSUFFICIENT_BALANCE'
+      'INSUFFICIENT_BALANCE',
+      null,
+      { minimum: minimum.toFixed(2), balance: totalBalance.toFixed(2) }
     );
   }
   return { minimum, totalBalance };
@@ -100,9 +102,11 @@ async function assertFreeTripsAvailable(driverId) {
   if (paidSub) return;
 
   throw ApiErrors.custom(
-    `You have used all ${limit} free trips included in your plan. Please subscribe to a paid plan to continue publishing trips.`,
+    'FREE_TRIPS_EXHAUSTED_PUBLISHING',
     422,
-    'FREE_TRIPS_EXHAUSTED'
+    'FREE_TRIPS_EXHAUSTED',
+    null,
+    { limit }
   );
 }
 
@@ -112,57 +116,57 @@ async function assertFreeTripsAvailable(driverId) {
 const createTrip = async (driverId, data) => {
   // Verify driver exists and is verified
   const driver = await User.findByPk(driverId);
-  if (!driver) throw ApiErrors.notFound('User not found');
-  if (driver.role !== 'driver') throw ApiErrors.forbidden('Only drivers can create trips');
-  if (!driver.isVerified) throw ApiErrors.forbidden('Driver not verified');
+  if (!driver) throw ApiErrors.notFound('USER_NOT_FOUND');
+  if (driver.role !== 'driver') throw ApiErrors.forbidden('ONLY_DRIVERS_CAN_CREATE_TRIPS');
+  if (!driver.isVerified) throw ApiErrors.forbidden('DRIVER_NOT_VERIFIED');
 
   // Fetch driver's vehicle (each driver has exactly one vehicle)
   const vehicle = await Vehicle.findOne({ where: { driverId } });
-  if (!vehicle) throw ApiErrors.forbidden('Driver has no registered vehicle');
-  if (!vehicle.isVerified) throw ApiErrors.forbidden('Driver vehicle is not verified');
+  if (!vehicle) throw ApiErrors.forbidden('DRIVER_HAS_NO_REGISTERED_VEHICLE');
+  if (!vehicle.isVerified) throw ApiErrors.forbidden('DRIVER_VEHICLE_IS_NOT_VERIFIED');
 
   // Validate seat configuration matches vehicle
   if (data.seats.length !== vehicle.seats) {
-    throw ApiErrors.validation('Seat count does not match vehicle total seats');
+    throw ApiErrors.validation('SEAT_COUNT_DOES_NOT_MATCH_VEHICLE_TOTAL_SEATS');
   }
 
   // Validate seat numbers are sequential 1 to N
   const seatNumbers = data.seats.map((s) => s.seat_number).sort((a, b) => a - b);
   const expectedNumbers = Array.from({ length: vehicle.seats }, (_, i) => i + 1);
   if (JSON.stringify(seatNumbers) !== JSON.stringify(expectedNumbers)) {
-    throw ApiErrors.validation('Seat numbers must be sequential from 1 to total seats');
+    throw ApiErrors.validation('SEAT_NUMBERS_MUST_BE_SEQUENTIAL_FROM_1_TO_TOTAL_SEATS');
   }
 
   // Validate at least one available seat
   const availableSeats = data.seats.filter((s) => s.type === 'available');
   if (availableSeats.length === 0) {
-    throw ApiErrors.validation('At least one seat must be available');
+    throw ApiErrors.validation('AT_LEAST_ONE_SEAT_MUST_BE_AVAILABLE');
   }
 
   // Validate exactly one driver seat
   const driverSeats = data.seats.filter((s) => s.type === 'driver');
   if (driverSeats.length !== 1) {
-    throw ApiErrors.validation('Exactly one seat must be marked as driver');
+    throw ApiErrors.validation('EXACTLY_ONE_SEAT_MUST_BE_MARKED_AS_DRIVER');
   }
 
   // Validate departure time is in the future
   const departureDateTime = new Date(`${data.departure_date}T${data.departure_time}`);
   if (departureDateTime <= new Date()) {
-    throw ApiErrors.validation('Departure time must be in the future');
+    throw ApiErrors.validation('DEPARTURE_TIME_MUST_BE_IN_THE_FUTURE');
   }
 
   // Validate recurrence
   const isRecurring = data.type_of_trip === 'repeated';
   if (isRecurring && (!data.repeated_days || data.repeated_days.length === 0)) {
-    throw ApiErrors.validation('Repeated days are required for recurring trips');
+    throw ApiErrors.validation('REPEATED_DAYS_ARE_REQUIRED_FOR_RECURRING_TRIPS');
   }
   if (isRecurring && !data.repeated_end_date) {
-    throw ApiErrors.validation('End date is required for recurring trips');
+    throw ApiErrors.validation('END_DATE_IS_REQUIRED_FOR_RECURRING_TRIPS');
   }
   if (isRecurring) {
     const endDate = new Date(data.repeated_end_date);
     if (endDate <= departureDateTime) {
-      throw ApiErrors.validation('End date must be after departure date');
+      throw ApiErrors.validation('END_DATE_MUST_BE_AFTER_DEPARTURE_DATE');
     }
   }
 
@@ -238,7 +242,7 @@ const createTrip = async (driverId, data) => {
     total_seats: trip.totalSeats,
     available_seats: trip.availableSeats,
     estimated_earnings: trip.availableSeats * trip.farePerSeat,
-    message: 'Trip published successfully!',
+    message: 'TRIP_PUBLISHED_SUCCESSFULLY',
   };
 };
 
@@ -293,7 +297,7 @@ const getTripById = async (tripId) => {
       },
     ],
   });
-  if (!trip) throw ApiErrors.notFound('Trip not found');
+  if (!trip) throw ApiErrors.notFound('TRIP_NOT_FOUND');
 
   const data = trip.toJSON();
   const confirmedBookings = data.bookings || [];
@@ -516,11 +520,11 @@ const getAvailableTrips = async (originCity, destinationCity, date, genderPrefer
  */
 const startTrip = async (driverId, tripId) => {
   const trip = await Trip.findByPk(tripId);
-  if (!trip) throw ApiErrors.notFound('Trip not found');
-  if (trip.driverId !== driverId) throw ApiErrors.forbidden('You can only start your own trips');
+  if (!trip) throw ApiErrors.notFound('TRIP_NOT_FOUND');
+  if (trip.driverId !== driverId) throw ApiErrors.forbidden('YOU_CAN_ONLY_START_YOUR_OWN_TRIPS');
 
   if (![TRIP_STATUS.PUBLISHED, TRIP_STATUS.FULL].includes(trip.status)) {
-    throw ApiErrors.custom('Trip cannot be started from its current status.', 422, 'INVALID_TRIP_STATUS');
+    throw ApiErrors.custom('TRIP_CANNOT_BE_STARTED_FROM_ITS_CURRENT_STATUS', 422, 'INVALID_TRIP_STATUS');
   }
 
   // US2: departure window — reject starting more than 1 hour before departure.
@@ -528,7 +532,7 @@ const startTrip = async (driverId, tripId) => {
   const START_WINDOW_MS = 60 * 60 * 1000;
   if (trip.departureTime.getTime() - now > START_WINDOW_MS) {
     throw ApiErrors.custom(
-      'Trip cannot be started yet. It can only be started within one hour before departure.',
+      'TRIP_CANNOT_BE_STARTED_YET_IT_CAN_ONLY_BE_STARTED',
       400,
       'TOO_EARLY_TO_START'
     );
@@ -539,7 +543,7 @@ const startTrip = async (driverId, tripId) => {
     trip.farePerSeat
   );
   if (!current) {
-    throw ApiErrors.custom('You need an active plan to start trips.', 422, 'NO_ACTIVE_PLAN');
+    throw ApiErrors.custom('YOU_NEED_AN_ACTIVE_PLAN_TO_START_TRIPS', 422, 'NO_ACTIVE_PLAN');
   }
   if (totalBalance < minimum) {
     const user = await User.findByPk(driverId);
@@ -554,7 +558,7 @@ const startTrip = async (driverId, tripId) => {
       }
     }
     throw ApiErrors.custom(
-      'Your trip cannot be started because your balance is insufficient. Please subscribe to a plan.',
+      'YOUR_TRIP_CANNOT_BE_STARTED_BECAUSE_YOUR_BALANCE_IS_INSUFFICIENT',
       422,
       'INSUFFICIENT_BALANCE'
     );
@@ -593,7 +597,7 @@ const startTrip = async (driverId, tripId) => {
   return {
     trip_id: trip.id,
     status: trip.status,
-    message: 'Trip started successfully!',
+    message: 'TRIP_STARTED_SUCCESSFULLY',
     tracking_link: trackingLink,
   };
 };
@@ -605,11 +609,11 @@ const startTrip = async (driverId, tripId) => {
  */
 const completeTrip = async (driverId, tripId) => {
   const trip = await Trip.findByPk(tripId);
-  if (!trip) throw ApiErrors.notFound('Trip not found');
-  if (trip.driverId !== driverId) throw ApiErrors.forbidden('You can only complete your own trips');
+  if (!trip) throw ApiErrors.notFound('TRIP_NOT_FOUND');
+  if (trip.driverId !== driverId) throw ApiErrors.forbidden('YOU_CAN_ONLY_COMPLETE_YOUR_OWN_TRIPS');
 
   if (![TRIP_STATUS.IN_PROGRESS, TRIP_STATUS.ONGOING].includes(trip.status)) {
-    throw ApiErrors.custom('Trip cannot be completed from its current status.', 422, 'INVALID_TRIP_STATUS');
+    throw ApiErrors.custom('TRIP_CANNOT_BE_COMPLETED_FROM_ITS_CURRENT_STATUS', 422, 'INVALID_TRIP_STATUS');
   }
 
   const result = await commissionService.deductCommission(trip, driverId);
@@ -724,9 +728,9 @@ async function getTripPassengers(driverId, tripId, filters = {}) {
   const trip = await Trip.findByPk(tripId, {
     attributes: ['id', 'driverId', 'originCity', 'destinationCity', 'departureTime', 'status'],
   });
-  if (!trip) throw ApiErrors.notFound('Trip not found');
+  if (!trip) throw ApiErrors.notFound('TRIP_NOT_FOUND');
   if (trip.driverId !== driverId) {
-    throw ApiErrors.forbidden('You can only view passengers on your own trips');
+    throw ApiErrors.forbidden('YOU_CAN_ONLY_VIEW_PASSENGERS_ON_YOUR_OWN_TRIPS');
   }
 
   const status = filters.status || [BOOKING_STATUS.CONFIRMED, BOOKING_STATUS.COMPLETED];
@@ -768,10 +772,10 @@ async function updateTrip(driverId, tripId, data) {
   const trip = await Trip.findByPk(tripId, {
     include: [{ model: TripAttribute, as: 'attributes' }],
   });
-  if (!trip) throw ApiErrors.notFound('Trip not found');
-  if (trip.driverId !== driverId) throw ApiErrors.forbidden('You can only edit your own trips');
+  if (!trip) throw ApiErrors.notFound('TRIP_NOT_FOUND');
+  if (trip.driverId !== driverId) throw ApiErrors.forbidden('YOU_CAN_ONLY_EDIT_YOUR_OWN_TRIPS');
   if ([TRIP_STATUS.COMPLETED, TRIP_STATUS.CANCELLED].includes(trip.status)) {
-    throw ApiErrors.custom('Trip cannot be edited from its current status.', 422, 'INVALID_TRIP_STATUS');
+    throw ApiErrors.custom('TRIP_CANNOT_BE_EDITED_FROM_ITS_CURRENT_STATUS', 422, 'INVALID_TRIP_STATUS');
   }
 
   const fields = {};
@@ -857,15 +861,15 @@ async function updateTrip(driverId, tripId, data) {
  */
 async function cancelTrip(driverId, tripId) {
   const trip = await Trip.findByPk(tripId);
-  if (!trip) throw ApiErrors.notFound('Trip not found');
-  if (trip.driverId !== driverId) throw ApiErrors.forbidden('You can only cancel your own trips');
+  if (!trip) throw ApiErrors.notFound('TRIP_NOT_FOUND');
+  if (trip.driverId !== driverId) throw ApiErrors.forbidden('YOU_CAN_ONLY_CANCEL_YOUR_OWN_TRIPS');
   if (
     [TRIP_STATUS.IN_PROGRESS, TRIP_STATUS.ONGOING, TRIP_STATUS.COMPLETED].includes(trip.status)
   ) {
-    throw ApiErrors.forbidden('A trip that has already started cannot be cancelled');
+    throw ApiErrors.forbidden('A_TRIP_THAT_HAS_ALREADY_STARTED_CANNOT_BE_CANCELLED');
   }
   if (trip.status === TRIP_STATUS.CANCELLED) {
-    throw ApiErrors.custom('Trip is already cancelled.', 409, 'ALREADY_CANCELLED');
+    throw ApiErrors.custom('TRIP_IS_ALREADY_CANCELLED', 409, 'ALREADY_CANCELLED');
   }
 
   await trip.update({ status: TRIP_STATUS.CANCELLED });
@@ -921,7 +925,7 @@ async function cancelTrip(driverId, tripId) {
  */
 async function getTripAttributes(tripId) {
   const trip = await Trip.findByPk(tripId, { attributes: ['id'] });
-  if (!trip) throw ApiErrors.notFound('Trip not found');
+  if (!trip) throw ApiErrors.notFound('TRIP_NOT_FOUND');
 
   const attributes = await TripAttribute.findAll({ where: { tripId: trip.id } });
   return {
@@ -1030,21 +1034,21 @@ async function applyEscalation(penalty, driverId) {
  */
 async function cancelTripWithPenalty(driverId, tripId, { reason, note }) {
   const trip = await Trip.findByPk(tripId);
-  if (!trip) throw ApiErrors.notFound('Trip not found');
-  if (trip.driverId !== driverId) throw ApiErrors.forbidden('You can only cancel your own trips');
+  if (!trip) throw ApiErrors.notFound('TRIP_NOT_FOUND');
+  if (trip.driverId !== driverId) throw ApiErrors.forbidden('YOU_CAN_ONLY_CANCEL_YOUR_OWN_TRIPS');
 
   if (![TRIP_STATUS.PUBLISHED, TRIP_STATUS.FULL].includes(trip.status)) {
-    throw ApiErrors.conflict('Trip is already ongoing or completed. Cannot cancel.');
+    throw ApiErrors.conflict('TRIP_IS_ALREADY_ONGOING_OR_COMPLETED_CANNOT_CANCEL');
   }
   if (trip.status === TRIP_STATUS.CANCELLED) {
-    throw ApiErrors.custom('Trip is already cancelled.', 409, 'ALREADY_CANCELLED');
+    throw ApiErrors.custom('TRIP_IS_ALREADY_CANCELLED', 409, 'ALREADY_CANCELLED');
   }
 
   const confirmedCount = await Booking.count({
     where: { tripId: trip.id, status: BOOKING_STATUS.CONFIRMED },
   });
   if (confirmedCount > 0) {
-    throw ApiErrors.conflict('Cannot cancel trip. There are confirmed bookings. Please contact support.');
+    throw ApiErrors.conflict('CANNOT_CANCEL_TRIP_THERE_ARE_CONFIRMED_BOOKINGS_PLEASE_CONTACT_SUPPORT');
   }
 
   await trip.update({ status: TRIP_STATUS.CANCELLED });
@@ -1090,7 +1094,7 @@ async function cancelTripWithPenalty(driverId, tripId, { reason, note }) {
   });
 
   return {
-    message: 'Trip cancelled successfully. This cancellation has been recorded.',
+    message: 'TRIP_CANCELLED_SUCCESSFULLY',
     trip_id: trip.id,
     status: trip.status,
     penalty_id: penalty.id,

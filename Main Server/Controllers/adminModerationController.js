@@ -61,7 +61,7 @@ const listUsers = catchAsync(async (req, res) => {
 const updateUserStatus = catchAsync(async (req, res) => {
   const user = await User.findByPk(req.params.user_id);
   if (!user) {
-    throw ApiErrors.notFound('User not found');
+    throw ApiErrors.notFound('USER_NOT_FOUND');
   }
 
   await user.update({ status: req.body.status });
@@ -94,7 +94,7 @@ const updateUserStatus = catchAsync(async (req, res) => {
 
 const moderateTrip = catchAsync(async (req, res) => {
   const trip = await Trip.findByPk(req.params.trip_id);
-  if (!trip) throw ApiErrors.notFound('Trip not found');
+  if (!trip) throw ApiErrors.notFound('TRIP_NOT_FOUND');
 
   const { action, reason } = req.body;
 

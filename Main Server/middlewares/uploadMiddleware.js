@@ -11,7 +11,7 @@ const fileFilter = (req, file, cb) => {
     cb(null, true);
   } else {
     cb(
-      ApiErrors.custom('Only JPEG, PNG, WebP, and GIF images are allowed.', 400, 'INVALID_FILE_TYPE'),
+      ApiErrors.custom('ONLY_JPEG_PNG_WEBP_AND_GIF_IMAGES_ARE_ALLOWED', 400, 'INVALID_FILE_TYPE'),
       false
     );
   }

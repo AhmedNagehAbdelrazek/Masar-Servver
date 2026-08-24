@@ -1,20 +1,21 @@
 const { body } = require('express-validator');
 const { NOTIFICATION_TYPE } = require('../../config/constants');
+const V = require('../../config/messages/validation-keys');
 
 const VALID_TYPES = Object.values(NOTIFICATION_TYPE);
 
 const updateNotificationSettingsValidation = [
   body('settings')
-    .isArray({ min: 1 }).withMessage('Settings must be a non-empty array'),
+    .isArray({ min: 1 }).withMessage(V.SETTINGS_MUST_BE_A_NON_EMPTY_ARRAY),
   body('settings.*.type')
-    .notEmpty().withMessage('Notification type is required')
-    .isIn(VALID_TYPES).withMessage(`Notification type must be one of: ${VALID_TYPES.join(', ')}`),
+    .notEmpty().withMessage(V.NOTIFICATION_TYPE_IS_REQUIRED)
+    .isIn(VALID_TYPES).withMessage(V.NOTIFICATION_TYPE_MUST_BE_ONE_OF_BOOKING_CONFIRMED_BOOKING_CANCELLED_TRIP_REMINDER),
   body('settings.*.enabled_in_app')
     .optional()
-    .isBoolean().withMessage('enabled_in_app must be a boolean'),
+    .isBoolean().withMessage(V.ENABLED_IN_APP_MUST_BE_A_BOOLEAN),
   body('settings.*.enabled_push')
     .optional()
-    .isBoolean().withMessage('enabled_push must be a boolean'),
+    .isBoolean().withMessage(V.ENABLED_PUSH_MUST_BE_A_BOOLEAN),
 ];
 
 module.exports = { updateNotificationSettingsValidation };
@@ -24,28 +25,28 @@ module.exports = { updateNotificationSettingsValidation };
 const updateGroupedNotificationValidation = [
   body('master_switch')
     .optional()
-    .isBoolean().withMessage('master_switch must be a boolean')
+    .isBoolean().withMessage(V.MASTER_SWITCH_MUST_BE_A_BOOLEAN)
     .custom((value, { req }) => {
       if (req.body.updates !== undefined) {
-        throw new Error('Send either master_switch or updates, not both');
+        throw new Error(V.SEND_EITHER_MASTER_SWITCH_OR_UPDATES_NOT_BOTH);
       }
       return true;
     }),
   body('updates')
     .optional()
-    .isArray({ min: 1 }).withMessage('Updates must be a non-empty array'),
+    .isArray({ min: 1 }).withMessage(V.UPDATES_MUST_BE_A_NON_EMPTY_ARRAY),
   body('updates.*.type')
     .if(body('updates').exists())
-    .notEmpty().withMessage('Notification type is required')
-    .isIn(VALID_TYPES).withMessage(`Notification type must be one of: ${VALID_TYPES.join(', ')}`),
+    .notEmpty().withMessage(V.NOTIFICATION_TYPE_IS_REQUIRED)
+    .isIn(VALID_TYPES).withMessage(V.NOTIFICATION_TYPE_MUST_BE_ONE_OF_BOOKING_CONFIRMED_BOOKING_CANCELLED_TRIP_REMINDER),
   body('updates.*.channel')
     .if(body('updates').exists())
     .optional()
-    .isIn(['in_app', 'push']).withMessage('Channel must be in_app or push'),
+    .isIn(['in_app', 'push']).withMessage(V.CHANNEL_MUST_BE_IN_APP_OR_PUSH),
   body('updates.*.enabled')
     .if(body('updates').exists())
-    .notEmpty().withMessage('Enabled is required')
-    .isBoolean({ strict: true }).withMessage('Enabled must be a boolean'),
+    .notEmpty().withMessage(V.ENABLED_IS_REQUIRED)
+    .isBoolean({ strict: true }).withMessage(V.ENABLED_MUST_BE_A_BOOLEAN),
 ];
 
 module.exports.updateGroupedNotificationValidation = updateGroupedNotificationValidation;

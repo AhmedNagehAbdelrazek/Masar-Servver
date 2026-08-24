@@ -58,18 +58,18 @@ async function alertPayload(event) {
  */
 async function trigger(user, payload) {
   const { tripId, lat, lng, urgency = SOS_URGENCY.HIGH } = payload || {};
-  if (!tripId) throw ApiErrors.validation('trip_id is required for SOS');
+  if (!tripId) throw ApiErrors.validation('TRIP_ID_IS_REQUIRED_FOR_SOS');
   if (lat === undefined || lng === undefined) {
-    throw ApiErrors.validation('lat and lng are required');
+    throw ApiErrors.validation('LAT_AND_LNG_ARE_REQUIRED');
   }
 
   const member = await realtimeService.isTripMember(user, tripId);
-  if (!member) throw ApiErrors.forbidden('You are not a participant of this trip');
+  if (!member) throw ApiErrors.forbidden('YOU_ARE_NOT_A_PARTICIPANT_OF_THIS_TRIP');
 
   const trip = await Trip.findByPk(tripId, { attributes: ['id', 'status'] });
-  if (!trip) throw ApiErrors.notFound('Trip not found');
+  if (!trip) throw ApiErrors.notFound('TRIP_NOT_FOUND');
   if (!ACTIVE_TRIP_STATUSES.includes(trip.status)) {
-    throw ApiErrors.conflict('SOS is only available during an active trip');
+    throw ApiErrors.conflict('SOS_IS_ONLY_AVAILABLE_DURING_AN_ACTIVE_TRIP');
   }
 
   const active = await findActiveForUser(user.id);
@@ -126,9 +126,9 @@ async function listAdmin(actor, { status, page, limit } = {}) {
 
 async function acknowledge(actor, sosId) {
   const event = await SosEvent.findByPk(sosId);
-  if (!event) throw ApiErrors.notFound('SOS event not found');
+  if (!event) throw ApiErrors.notFound('SOS_EVENT_NOT_FOUND');
   if (event.status === SOS_STATUS.RESOLVED || event.status === SOS_STATUS.CANCELLED) {
-    throw ApiErrors.conflict('SOS event is already closed');
+    throw ApiErrors.conflict('SOS_EVENT_IS_ALREADY_CLOSED');
   }
   if (event.status !== SOS_STATUS.ACKNOWLEDGED) {
     await event.update({
@@ -150,9 +150,9 @@ async function acknowledge(actor, sosId) {
 
 async function resolve(actor, sosId, resolutionNote) {
   const event = await SosEvent.findByPk(sosId);
-  if (!event) throw ApiErrors.notFound('SOS event not found');
+  if (!event) throw ApiErrors.notFound('SOS_EVENT_NOT_FOUND');
   if (event.status === SOS_STATUS.RESOLVED || event.status === SOS_STATUS.CANCELLED) {
-    throw ApiErrors.conflict('SOS event is already closed');
+    throw ApiErrors.conflict('SOS_EVENT_IS_ALREADY_CLOSED');
   }
 
   const resolvedAt = new Date();

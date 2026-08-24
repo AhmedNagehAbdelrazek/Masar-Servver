@@ -40,11 +40,11 @@ module.exports = (io, socket) => {
       }
       if (support_ticket_id) {
         const member = await realtimeService.isTicketMember(user, support_ticket_id);
-        if (!member) throw ApiErrors.forbidden('You are not a member of this support ticket');
+        if (!member) throw ApiErrors.forbidden('YOU_ARE_NOT_A_MEMBER_OF_THIS_SUPPORT_TICKET');
         socket.join(`support:${support_ticket_id}`);
         return ack ? ack(ok({ room: `support:${support_ticket_id}` })) : undefined;
       }
-      throw ApiErrors.validation('Provide booking_id or support_ticket_id');
+      throw ApiErrors.validation('PROVIDE_BOOKING_ID_OR_SUPPORT_TICKET_ID');
     } catch (err) {
       if (ack) ack(errorFromApiError(err));
     }
@@ -78,7 +78,7 @@ module.exports = (io, socket) => {
               message,
             })
           : (() => {
-              throw ApiErrors.validation('Provide booking_id or support_ticket_id');
+              throw ApiErrors.validation('PROVIDE_BOOKING_ID_OR_SUPPORT_TICKET_ID');
             })();
 
       return ack ? ack(ok(result)) : undefined;
@@ -96,10 +96,10 @@ module.exports = (io, socket) => {
         room = `booking:${booking_id}`;
       } else if (support_ticket_id) {
         const member = await realtimeService.isTicketMember(user, support_ticket_id);
-        if (!member) throw ApiErrors.forbidden('You are not a member of this support ticket');
+        if (!member) throw ApiErrors.forbidden('YOU_ARE_NOT_A_MEMBER_OF_THIS_SUPPORT_TICKET');
         room = `support:${support_ticket_id}`;
       } else {
-        throw ApiErrors.validation('Provide booking_id or support_ticket_id');
+        throw ApiErrors.validation('PROVIDE_BOOKING_ID_OR_SUPPORT_TICKET_ID');
       }
     } catch (err) {
       if (ack) ack(errorFromApiError(err));

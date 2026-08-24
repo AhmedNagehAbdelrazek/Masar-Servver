@@ -1,5 +1,6 @@
 const { body } = require('express-validator');
 const { VEHICLE_TYPES } = require('../../config/constants');
+const V = require('../../config/messages/validation-keys');
 
 const documentId = (field, label) =>
   body(field)
@@ -10,24 +11,24 @@ const documentId = (field, label) =>
 const driverVerificationValidation = [
   body('full_name')
     .optional()
-    .isString().withMessage('full_name must be a string')
+    .isString().withMessage(V.FULL_NAME_MUST_BE_A_STRING)
     .trim()
-    .isLength({ max: 120 }).withMessage('full_name must be at most 120 characters'),
+    .isLength({ max: 120 }).withMessage(V.FULL_NAME_MUST_BE_AT_MOST_120_CHARACTERS_2),
   body('national_id')
     .optional()
-    .isString().withMessage('national_id must be a string')
+    .isString().withMessage(V.NATIONAL_ID_MUST_BE_A_STRING)
     .trim()
-    .isLength({ max: 30 }).withMessage('national_id must be at most 30 characters'),
+    .isLength({ max: 30 }).withMessage(V.NATIONAL_ID_MUST_BE_AT_MOST_30_CHARACTERS),
   body('license_number')
     .optional()
-    .isString().withMessage('license_number must be a string')
+    .isString().withMessage(V.LICENSE_NUMBER_MUST_BE_A_STRING)
     .trim()
-    .isLength({ max: 50 }).withMessage('license_number must be at most 50 characters'),
+    .isLength({ max: 50 }).withMessage(V.LICENSE_NUMBER_MUST_BE_AT_MOST_50_CHARACTERS),
   body('license_expiry')
     .optional()
-    .isDate().withMessage('license_expiry must be a valid date'),
+    .isDate().withMessage(V.LICENSE_EXPIRY_MUST_BE_A_VALID_DATE),
   body('phone')
-    .not().exists().withMessage('phone cannot be changed during verification'),
+    .not().exists().withMessage(V.PHONE_CANNOT_BE_CHANGED_DURING_VERIFICATION),
 
   documentId('user_identification_front', 'user_identification_front'),
   documentId('user_identification_back', 'user_identification_back'),
@@ -36,24 +37,24 @@ const driverVerificationValidation = [
   documentId('personal_image_with_id', 'personal_image_with_id'),
 
   body('vehicle')
-    .exists().withMessage('vehicle is required')
-    .isObject().withMessage('vehicle must be an object'),
+    .exists().withMessage(V.VEHICLE_IS_REQUIRED)
+    .isObject().withMessage(V.VEHICLE_MUST_BE_AN_OBJECT),
   body('vehicle.manufacturer')
-    .exists().withMessage('vehicle.manufacturer is required')
-    .isString().withMessage('vehicle.manufacturer must be a string')
+    .exists().withMessage(V.VEHICLE_MANUFACTURER_IS_REQUIRED)
+    .isString().withMessage(V.VEHICLE_MANUFACTURER_MUST_BE_A_STRING)
     .trim()
-    .isLength({ max: 80 }).withMessage('vehicle.manufacturer must be at most 80 characters'),
+    .isLength({ max: 80 }).withMessage(V.VEHICLE_MANUFACTURER_MUST_BE_AT_MOST_80_CHARACTERS),
   body('vehicle.model')
-    .exists().withMessage('vehicle.model is required')
-    .isString().withMessage('vehicle.model must be a string')
+    .exists().withMessage(V.VEHICLE_MODEL_IS_REQUIRED)
+    .isString().withMessage(V.VEHICLE_MODEL_MUST_BE_A_STRING)
     .trim()
-    .isLength({ max: 80 }).withMessage('vehicle.model must be at most 80 characters'),
+    .isLength({ max: 80 }).withMessage(V.VEHICLE_MODEL_MUST_BE_AT_MOST_80_CHARACTERS),
   body('vehicle.vehicle_type')
-    .exists().withMessage('vehicle.vehicle_type is required')
-    .isIn(Object.values(VEHICLE_TYPES)).withMessage(`vehicle.vehicle_type must be one of ${Object.values(VEHICLE_TYPES).join(', ')}`),
+    .exists().withMessage(V.VEHICLE_VEHICLE_TYPE_IS_REQUIRED)
+    .isIn(Object.values(VEHICLE_TYPES)).withMessage(V.VEHICLE_VEHICLE_TYPE_MUST_BE_ONE_OF_SEDAN_SUV_VAN_BUS_HATCHBACK),
   body('vehicle.model_year')
     .optional()
-    .isInt().withMessage('vehicle.model_year must be a valid year')
+    .isInt().withMessage(V.VEHICLE_MODEL_YEAR_MUST_BE_A_VALID_YEAR)
     .custom((value) => {
       const currentYear = new Date().getFullYear();
       const minYear = currentYear - 10;
@@ -63,23 +64,23 @@ const driverVerificationValidation = [
       return true;
     }),
   body('vehicle.plate_number')
-    .exists().withMessage('vehicle.plate_number is required')
-    .isString().withMessage('vehicle.plate_number must be a string')
+    .exists().withMessage(V.VEHICLE_PLATE_NUMBER_IS_REQUIRED)
+    .isString().withMessage(V.VEHICLE_PLATE_NUMBER_MUST_BE_A_STRING)
     .trim()
-    .isLength({ max: 20 }).withMessage('vehicle.plate_number must be at most 20 characters'),
+    .isLength({ max: 20 }).withMessage(V.VEHICLE_PLATE_NUMBER_MUST_BE_AT_MOST_20_CHARACTERS),
   body('vehicle.code_number')
     .optional()
-    .isString().withMessage('vehicle.code_number must be a string')
+    .isString().withMessage(V.VEHICLE_CODE_NUMBER_MUST_BE_A_STRING)
     .trim()
-    .isLength({ max: 20 }).withMessage('vehicle.code_number must be at most 20 characters'),
+    .isLength({ max: 20 }).withMessage(V.VEHICLE_CODE_NUMBER_MUST_BE_AT_MOST_20_CHARACTERS),
   body('vehicle.color')
     .optional()
-    .isString().withMessage('vehicle.color must be a string')
+    .isString().withMessage(V.VEHICLE_COLOR_MUST_BE_A_STRING)
     .trim()
-    .isLength({ max: 30 }).withMessage('vehicle.color must be at most 30 characters'),
+    .isLength({ max: 30 }).withMessage(V.VEHICLE_COLOR_MUST_BE_AT_MOST_30_CHARACTERS),
   body('vehicle.seats')
-    .exists().withMessage('vehicle.seats is required')
-    .isInt({ min: 1, max: 50 }).withMessage('vehicle.seats must be an integer between 1 and 50'),
+    .exists().withMessage(V.VEHICLE_SEATS_IS_REQUIRED)
+    .isInt({ min: 1, max: 50 }).withMessage(V.VEHICLE_SEATS_MUST_BE_AN_INTEGER_BETWEEN_1_AND_50),
 
   documentId('vehicle.registration_doc_front', 'vehicle.registration_doc_front'),
   documentId('vehicle.registration_doc_back', 'vehicle.registration_doc_back'),

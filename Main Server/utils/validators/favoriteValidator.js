@@ -1,44 +1,45 @@
 const { body, param, query } = require('express-validator');
+const V = require('../../config/messages/validation-keys');
 
 const driverParamValidation = [
   param('driver_id')
-    .isUUID().withMessage('Driver ID must be a valid UUID'),
+    .isUUID().withMessage(V.DRIVER_ID_MUST_BE_A_VALID_UUID),
 ];
 
 const addFavoriteDriverValidation = [
   body('driver_id')
-    .notEmpty().withMessage('driver_id is required')
-    .isUUID().withMessage('driver_id must be a valid UUID'),
+    .notEmpty().withMessage(V.DRIVER_ID_IS_REQUIRED)
+    .isUUID().withMessage(V.DRIVER_ID_MUST_BE_A_VALID_UUID_2),
 ];
 
 const favoriteDriversListValidation = [
   query('page')
     .optional()
-    .isInt({ min: 1 }).withMessage('Page must be a positive integer'),
+    .isInt({ min: 1 }).withMessage(V.PAGE_MUST_BE_A_POSITIVE_INTEGER),
   query('limit')
     .optional()
-    .isInt({ min: 1, max: 100 }).withMessage('Limit must be an integer between 1 and 100'),
+    .isInt({ min: 1, max: 100 }).withMessage(V.LIMIT_MUST_BE_AN_INTEGER_BETWEEN_1_AND_100),
 ];
 
 const routeParamValidation = [
   param('origin_city')
-    .isString().trim().notEmpty().withMessage('origin_city is required')
-    .isLength({ max: 120 }).withMessage('origin_city must be at most 120 characters'),
+    .isString().trim().notEmpty().withMessage(V.ORIGIN_CITY_IS_REQUIRED)
+    .isLength({ max: 120 }).withMessage(V.ORIGIN_CITY_MUST_BE_AT_MOST_120_CHARACTERS),
   param('destination_city')
-    .isString().trim().notEmpty().withMessage('destination_city is required')
-    .isLength({ max: 120 }).withMessage('destination_city must be at most 120 characters'),
+    .isString().trim().notEmpty().withMessage(V.DESTINATION_CITY_IS_REQUIRED)
+    .isLength({ max: 120 }).withMessage(V.DESTINATION_CITY_MUST_BE_AT_MOST_120_CHARACTERS),
 ];
 
 const addFavoriteRouteValidation = [
   body('origin_city')
-    .notEmpty().withMessage('origin_city is required')
-    .isString().trim().isLength({ max: 120 }).withMessage('origin_city must be at most 120 characters'),
+    .notEmpty().withMessage(V.ORIGIN_CITY_IS_REQUIRED)
+    .isString().trim().isLength({ max: 120 }).withMessage(V.ORIGIN_CITY_MUST_BE_AT_MOST_120_CHARACTERS),
   body('destination_city')
-    .notEmpty().withMessage('destination_city is required')
-    .isString().trim().isLength({ max: 120 }).withMessage('destination_city must be at most 120 characters'),
+    .notEmpty().withMessage(V.DESTINATION_CITY_IS_REQUIRED)
+    .isString().trim().isLength({ max: 120 }).withMessage(V.DESTINATION_CITY_MUST_BE_AT_MOST_120_CHARACTERS),
   body('label')
     .optional()
-    .isString().trim().isLength({ max: 100 }).withMessage('label must be at most 100 characters'),
+    .isString().trim().isLength({ max: 100 }).withMessage(V.LABEL_MUST_BE_AT_MOST_100_CHARACTERS),
 ];
 
 module.exports = {

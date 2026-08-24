@@ -11,7 +11,7 @@ const createSubscription = catchAsync(async (req, res) => {
     {
       subscription_id: sub.id,
       status: sub.status,
-      message: 'Your subscription is pending admin approval.',
+      message: 'SUBSCRIPTION_PENDING_ADMIN_APPROVAL',
     },
     201
   );

@@ -27,12 +27,12 @@ async function loadBookingForUser(userId, bookingId) {
       },
     ],
   });
-  if (!booking) throw ApiErrors.notFound('Booking not found');
+  if (!booking) throw ApiErrors.notFound('BOOKING_NOT_FOUND');
 
   const isPassenger = booking.passengerId === userId;
   const isDriver = booking.trip && booking.trip.driverId === userId;
   if (!isPassenger && !isDriver) {
-    throw ApiErrors.forbidden('You are not part of this booking');
+    throw ApiErrors.forbidden('YOU_ARE_NOT_PART_OF_THIS_BOOKING');
   }
 
   return { booking, isPassenger, isDriver };
@@ -42,13 +42,13 @@ async function reportDelay(user, bookingId, payload) {
   const { booking, isPassenger, isDriver } = await loadBookingForUser(user.id, bookingId);
 
   if (!['driver', 'passenger'].includes(payload.party)) {
-    throw ApiErrors.validation('party must be "driver" or "passenger"');
+    throw ApiErrors.validation('PARTY_MUST_BE_DRIVER_OR_PASSENGER');
   }
   if (payload.party === 'passenger' && !isPassenger) {
-    throw ApiErrors.forbidden('Only the booking passenger can report a passenger delay');
+    throw ApiErrors.forbidden('ONLY_THE_BOOKING_PASSENGER_CAN_REPORT_A_PASSENGER_DELAY');
   }
   if (payload.party === 'driver' && !isDriver) {
-    throw ApiErrors.forbidden('Only the trip driver can report a driver delay');
+    throw ApiErrors.forbidden('ONLY_THE_TRIP_DRIVER_CAN_REPORT_A_DRIVER_DELAY');
   }
 
   const delay = await DelayEvent.create({

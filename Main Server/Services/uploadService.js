@@ -4,7 +4,7 @@ const UploadedImage = require('../Models/UploadedImage');
 
 async function upload(req) {
   if (!req.file) {
-    throw require('../utils/ApiError').ApiErrors.badRequest('No file uploaded');
+    throw require('../utils/ApiError').ApiErrors.badRequest('NO_FILE_UPLOADED');
   }
 
   const hash = crypto.createHash('sha256').update(req.file.buffer).digest('hex');

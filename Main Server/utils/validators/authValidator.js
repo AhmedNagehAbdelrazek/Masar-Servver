@@ -1,21 +1,22 @@
 ﻿const { body, header, param } = require('express-validator');
 const { validatePhone } = require('../phoneValidator');
+const V = require('../../config/messages/validation-keys');
 
 const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
 
 const registerPhoneValidation = [
   body('country_code')
     .trim()
-    .notEmpty().withMessage('Country code is required')
-    .isAlpha().withMessage('Country code must contain only letters')
-    .isLength({ min: 2, max: 2 }).withMessage('Country code must be 2 letters (e.g., JO, AE)'),
+    .notEmpty().withMessage(V.COUNTRY_CODE_IS_REQUIRED)
+    .isAlpha().withMessage(V.COUNTRY_CODE_MUST_CONTAIN_ONLY_LETTERS)
+    .isLength({ min: 2, max: 2 }).withMessage(V.COUNTRY_CODE_MUST_BE_2_LETTERS_E_G_JO_AE),
   body('phone')
     .trim()
-    .notEmpty().withMessage('Phone number is required')
+    .notEmpty().withMessage(V.PHONE_NUMBER_IS_REQUIRED)
     .custom((value, { req }) => {
       const countryCode = req.body.country_code;
       if (!countryCode) {
-        throw new Error('Country code is required');
+        throw new Error(V.COUNTRY_CODE_IS_REQUIRED);
       }
       const result = validatePhone(countryCode, value);
       if (!result.valid) {
@@ -27,30 +28,30 @@ const registerPhoneValidation = [
       return true;
     }),
   body('role')
-    .notEmpty().withMessage('Role is required')
-    .isIn(['passenger', 'driver']).withMessage('Role must be passenger or driver'),
+    .notEmpty().withMessage(V.ROLE_IS_REQUIRED)
+    .isIn(['passenger', 'driver']).withMessage(V.ROLE_MUST_BE_PASSENGER_OR_DRIVER),
 ];
 
 const verifyOTPValidation = [
   body('phone')
     .trim()
-    .notEmpty().withMessage('Phone number is required'),
+    .notEmpty().withMessage(V.PHONE_NUMBER_IS_REQUIRED),
   body('otp')
     .trim()
-    .notEmpty().withMessage('OTP is required')
-    .isLength({ min: 6, max: 6 }).withMessage('OTP must be 6 digits')
-    .isNumeric().withMessage('OTP must be numeric'),
+    .notEmpty().withMessage(V.OTP_IS_REQUIRED)
+    .isLength({ min: 6, max: 6 }).withMessage(V.OTP_MUST_BE_6_DIGITS)
+    .isNumeric().withMessage(V.OTP_MUST_BE_NUMERIC),
 ];
 
 const registerPasswordValidation = [
   body('password')
-    .notEmpty().withMessage('Password is required')
-    .matches(passwordRegex).withMessage('Password must be at least 8 characters with uppercase, lowercase, number, and special character'),
+    .notEmpty().withMessage(V.PASSWORD_IS_REQUIRED)
+    .matches(passwordRegex).withMessage(V.PASSWORD_MUST_BE_AT_LEAST_8_CHARACTERS_WITH_UPPERCASE_LOWERCASE_NUMBER_AND),
   body('confirmPassword')
-    .notEmpty().withMessage('Confirm password is required')
+    .notEmpty().withMessage(V.CONFIRM_PASSWORD_IS_REQUIRED)
     .custom((value, { req }) => {
       if (value !== req.body.password) {
-        throw new Error('Passwords do not match');
+        throw new Error(V.PASSWORDS_DO_NOT_MATCH);
       }
       return true;
     }),
@@ -59,26 +60,26 @@ const registerPasswordValidation = [
 const loginValidation = [
   body('phone')
     .trim()
-    .notEmpty().withMessage('Phone number is required'),
+    .notEmpty().withMessage(V.PHONE_NUMBER_IS_REQUIRED),
   body('password')
-    .notEmpty().withMessage('Password is required'),
+    .notEmpty().withMessage(V.PASSWORD_IS_REQUIRED),
 ];
 
 const forgotPasswordValidation = [
   body('phone')
     .trim()
-    .notEmpty().withMessage('Phone number is required'),
+    .notEmpty().withMessage(V.PHONE_NUMBER_IS_REQUIRED),
 ];
 
 const resetPasswordValidation = [
   body('password')
-    .notEmpty().withMessage('Password is required')
-    .matches(passwordRegex).withMessage('Password must be at least 8 characters with uppercase, lowercase, number, and special character'),
+    .notEmpty().withMessage(V.PASSWORD_IS_REQUIRED)
+    .matches(passwordRegex).withMessage(V.PASSWORD_MUST_BE_AT_LEAST_8_CHARACTERS_WITH_UPPERCASE_LOWERCASE_NUMBER_AND),
   body('confirmPassword')
-    .notEmpty().withMessage('Confirm password is required')
+    .notEmpty().withMessage(V.CONFIRM_PASSWORD_IS_REQUIRED)
     .custom((value, { req }) => {
       if (value !== req.body.password) {
-        throw new Error('Passwords do not match');
+        throw new Error(V.PASSWORDS_DO_NOT_MATCH);
       }
       return true;
     }),
@@ -87,64 +88,64 @@ const resetPasswordValidation = [
 const resendOTPValidation = [
   body('phone')
     .trim()
-    .notEmpty().withMessage('Phone number is required'),
+    .notEmpty().withMessage(V.PHONE_NUMBER_IS_REQUIRED),
   body('purpose')
-    .notEmpty().withMessage('Purpose is required')
-    .isIn(['register', 'forgot_password']).withMessage('Purpose must be register or forgot_password'),
+    .notEmpty().withMessage(V.PURPOSE_IS_REQUIRED)
+    .isIn(['register', 'forgot_password']).withMessage(V.PURPOSE_MUST_BE_REGISTER_OR_FORGOT_PASSWORD),
 ];
 
 const refreshValidation = [
   body('refresh_token')
-    .notEmpty().withMessage('Refresh token is required'),
+    .notEmpty().withMessage(V.REFRESH_TOKEN_IS_REQUIRED),
 ];
 
 const onboardingProfileValidation = [
   body('fullName')
     .trim()
-    .notEmpty().withMessage('Full name is required')
-    .isLength({ max: 120 }).withMessage('Full name must be at most 120 characters'),
+    .notEmpty().withMessage(V.FULL_NAME_IS_REQUIRED)
+    .isLength({ max: 120 }).withMessage(V.FULL_NAME_MUST_BE_AT_MOST_120_CHARACTERS),
   body('age')
-    .notEmpty().withMessage('Age is required')
-    .isInt({ min: 18, max: 100 }).withMessage('Age must be between 18 and 100'),
+    .notEmpty().withMessage(V.AGE_IS_REQUIRED)
+    .isInt({ min: 18, max: 100 }).withMessage(V.AGE_MUST_BE_BETWEEN_18_AND_100),
   body('gender')
-    .notEmpty().withMessage('Gender is required')
-    .isIn(['male', 'female']).withMessage('Gender must be male or female'),
+    .notEmpty().withMessage(V.GENDER_IS_REQUIRED)
+    .isIn(['male', 'female']).withMessage(V.GENDER_MUST_BE_MALE_OR_FEMALE),
   body('userIdentificationFront')
-    .notEmpty().withMessage('Front ID image is required')
-    .isInt().withMessage('Image ID must be a valid integer'),
+    .notEmpty().withMessage(V.FRONT_ID_IMAGE_IS_REQUIRED)
+    .isInt().withMessage(V.IMAGE_ID_MUST_BE_A_VALID_INTEGER),
   body('userIdentificationBack')
-    .notEmpty().withMessage('Back ID image is required')
-    .isInt().withMessage('Image ID must be a valid integer'),
+    .notEmpty().withMessage(V.BACK_ID_IMAGE_IS_REQUIRED)
+    .isInt().withMessage(V.IMAGE_ID_MUST_BE_A_VALID_INTEGER),
   body('linceseFront')
-    .notEmpty().withMessage('Front license image is required')
-    .isInt().withMessage('Image ID must be a valid integer'),
+    .notEmpty().withMessage(V.FRONT_LICENSE_IMAGE_IS_REQUIRED)
+    .isInt().withMessage(V.IMAGE_ID_MUST_BE_A_VALID_INTEGER),
   body('linceseBack')
-    .notEmpty().withMessage('Back license image is required')
-    .isInt().withMessage('Image ID must be a valid integer'),
+    .notEmpty().withMessage(V.BACK_LICENSE_IMAGE_IS_REQUIRED)
+    .isInt().withMessage(V.IMAGE_ID_MUST_BE_A_VALID_INTEGER),
   body('personalImageWithId')
-    .notEmpty().withMessage('Personal image with ID is required')
-    .isInt().withMessage('Image ID must be a valid integer'),
+    .notEmpty().withMessage(V.PERSONAL_IMAGE_WITH_ID_IS_REQUIRED)
+    .isInt().withMessage(V.IMAGE_ID_MUST_BE_A_VALID_INTEGER),
   body('nationalID')
     .trim()
-    .notEmpty().withMessage('National ID is required')
-    .isLength({ min: 5, max: 30 }).withMessage('National ID must be between 5 and 30 characters'),
+    .notEmpty().withMessage(V.NATIONAL_ID_IS_REQUIRED)
+    .isLength({ min: 5, max: 30 }).withMessage(V.NATIONAL_ID_MUST_BE_BETWEEN_5_AND_30_CHARACTERS),
 ];
 
 const onboardingVehicleValidation = [
   body('vehicleType')
-    .notEmpty().withMessage('Vehicle type is required')
-    .isIn(['sedan', 'suv', 'van', 'bus', 'hatchback']).withMessage('Invalid vehicle type'),
+    .notEmpty().withMessage(V.VEHICLE_TYPE_IS_REQUIRED)
+    .isIn(['sedan', 'suv', 'van', 'bus', 'hatchback']).withMessage(V.INVALID_VEHICLE_TYPE),
   body('manufacturer')
     .trim()
-    .notEmpty().withMessage('Manufacturer is required')
-    .isLength({ max: 80 }).withMessage('Manufacturer must be at most 80 characters'),
+    .notEmpty().withMessage(V.MANUFACTURER_IS_REQUIRED)
+    .isLength({ max: 80 }).withMessage(V.MANUFACTURER_MUST_BE_AT_MOST_80_CHARACTERS),
   body('model')
     .trim()
-    .notEmpty().withMessage('Model is required')
-    .isLength({ max: 80 }).withMessage('Model must be at most 80 characters'),
+    .notEmpty().withMessage(V.MODEL_IS_REQUIRED)
+    .isLength({ max: 80 }).withMessage(V.MODEL_MUST_BE_AT_MOST_80_CHARACTERS),
   body('modelYear')
     .optional()
-    .isInt().withMessage('Model year must be a valid year')
+    .isInt().withMessage(V.MODEL_YEAR_MUST_BE_A_VALID_YEAR)
     .custom((value) => {
       const currentYear = new Date().getFullYear();
       const minYear = currentYear - 10;
@@ -156,42 +157,42 @@ const onboardingVehicleValidation = [
   body('color')
     .optional()
     .trim()
-    .isLength({ max: 30 }).withMessage('Color must be at most 30 characters'),
+    .isLength({ max: 30 }).withMessage(V.COLOR_MUST_BE_AT_MOST_30_CHARACTERS),
   body('plateNumber')
     .trim()
-    .notEmpty().withMessage('Plate number is required')
-    .isLength({ max: 20 }).withMessage('Plate number must be at most 20 characters'),
+    .notEmpty().withMessage(V.PLATE_NUMBER_IS_REQUIRED)
+    .isLength({ max: 20 }).withMessage(V.PLATE_NUMBER_MUST_BE_AT_MOST_20_CHARACTERS),
   body('codeNumber')
     .optional()
     .trim()
-    .isLength({ max: 20 }).withMessage('Code number must be at most 20 characters'),
+    .isLength({ max: 20 }).withMessage(V.CODE_NUMBER_MUST_BE_AT_MOST_20_CHARACTERS),
   body('seats')
-    .notEmpty().withMessage('Number of seats is required')
-    .isInt({ min: 1, max: 50 }).withMessage('Seats must be between 1 and 50'),
+    .notEmpty().withMessage(V.NUMBER_OF_SEATS_IS_REQUIRED)
+    .isInt({ min: 1, max: 50 }).withMessage(V.SEATS_MUST_BE_BETWEEN_1_AND_50),
   body('registrationDocFront')
-    .notEmpty().withMessage('Front registration doc image is required')
-    .isInt().withMessage('Image ID must be a valid integer'),
+    .notEmpty().withMessage(V.FRONT_REGISTRATION_DOC_IMAGE_IS_REQUIRED)
+    .isInt().withMessage(V.IMAGE_ID_MUST_BE_A_VALID_INTEGER),
   body('registrationDocBack')
-    .notEmpty().withMessage('Back registration doc image is required')
-    .isInt().withMessage('Image ID must be a valid integer'),
+    .notEmpty().withMessage(V.BACK_REGISTRATION_DOC_IMAGE_IS_REQUIRED)
+    .isInt().withMessage(V.IMAGE_ID_MUST_BE_A_VALID_INTEGER),
   body('vehiclePhotoFront')
-    .notEmpty().withMessage('Front vehicle photo is required')
-    .isInt().withMessage('Image ID must be a valid integer'),
+    .notEmpty().withMessage(V.FRONT_VEHICLE_PHOTO_IS_REQUIRED)
+    .isInt().withMessage(V.IMAGE_ID_MUST_BE_A_VALID_INTEGER),
   body('vehiclePhotoBack')
-    .notEmpty().withMessage('Back vehicle photo is required')
-    .isInt().withMessage('Image ID must be a valid integer'),
+    .notEmpty().withMessage(V.BACK_VEHICLE_PHOTO_IS_REQUIRED)
+    .isInt().withMessage(V.IMAGE_ID_MUST_BE_A_VALID_INTEGER),
 ];
 
 
 const changePasswordValidation = [
   body('current_password')
-    .notEmpty().withMessage('Current password is required'),
+    .notEmpty().withMessage(V.CURRENT_PASSWORD_IS_REQUIRED),
   body('new_password')
-    .notEmpty().withMessage('New password is required')
-    .matches(passwordRegex).withMessage('Password must be at least 8 characters with uppercase, lowercase, number, and special character')
+    .notEmpty().withMessage(V.NEW_PASSWORD_IS_REQUIRED)
+    .matches(passwordRegex).withMessage(V.PASSWORD_MUST_BE_AT_LEAST_8_CHARACTERS_WITH_UPPERCASE_LOWERCASE_NUMBER_AND)
     .custom((value, { req }) => {
       if (value === req.body.current_password) {
-        throw new Error('New password must be different from the current password');
+        throw new Error(V.NEW_PASSWORD_MUST_BE_DIFFERENT_FROM_THE_CURRENT_PASSWORD);
       }
       return true;
     }),

@@ -22,9 +22,9 @@ const catchAsync = require('../utils/catchAsync');
  */
 async function assertDriverEligible(userId) {
   const user = await User.findByPk(userId);
-  if (!user) throw ApiErrors.notFound('User not found');
+  if (!user) throw ApiErrors.notFound('USER_NOT_FOUND');
   if (user.isVerified !== true || [USER_STATUS.SUSPENDED, USER_STATUS.BANNED].includes(user.status)) {
-    throw ApiErrors.forbidden('Account must be verified and active to access this resource.');
+    throw ApiErrors.forbidden('ACCOUNT_MUST_BE_VERIFIED_AND_ACTIVE_TO_ACCESS_THIS_RESOURCE');
   }
   return user;
 }

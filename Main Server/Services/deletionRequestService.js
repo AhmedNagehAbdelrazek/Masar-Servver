@@ -51,14 +51,14 @@ async function requestDeletion(userId, { reason = null, confirmation = false } =
     ensureOperational(user);
 
     if (confirmation !== true) {
-        throw ApiErrors.validation('Confirmation is required to request account deletion');
+        throw ApiErrors.validation('CONFIRMATION_IS_REQUIRED_TO_REQUEST_ACCOUNT_DELETION');
     }
 
     const existing = await DeletionRequest.findOne({
         where: { userId: user.id, status: 'pending' },
     });
     if (existing) {
-        throw ApiErrors.custom('A deletion request is already pending', 409, 'DELETION_ALREADY_REQUESTED');
+        throw ApiErrors.custom('A_DELETION_REQUEST_IS_ALREADY_PENDING', 409, 'DELETION_ALREADY_REQUESTED');
     }
 
     const estimatedCompletion = addBusinessDays(new Date(), 5);
@@ -110,7 +110,7 @@ async function cancelDeletionRequest(userId) {
         where: { userId: user.id, status: 'pending' },
     });
     if (!pending) {
-        throw ApiErrors.custom('No pending deletion request found', 404, 'NO_PENDING_DELETION_REQUEST');
+        throw ApiErrors.custom('NO_PENDING_DELETION_REQUEST_FOUND', 404, 'NO_PENDING_DELETION_REQUEST');
     }
 
     await pending.update({ status: 'cancelled' });

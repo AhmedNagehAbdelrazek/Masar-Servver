@@ -1,27 +1,28 @@
 const { body, query } = require('express-validator');
+const V = require('../../config/messages/validation-keys');
 
 const ratingValidation = [
   body('booking_id')
-    .isUUID().withMessage('Booking ID must be a valid UUID'),
+    .isUUID().withMessage(V.BOOKING_ID_MUST_BE_A_VALID_UUID),
   body('stars')
-    .notEmpty().withMessage('Stars are required')
-    .isInt({ min: 1, max: 5 }).withMessage('Stars must be an integer between 1 and 5'),
+    .notEmpty().withMessage(V.STARS_ARE_REQUIRED)
+    .isInt({ min: 1, max: 5 }).withMessage(V.STARS_MUST_BE_AN_INTEGER_BETWEEN_1_AND_5),
   body('was_late')
     .optional()
-    .isBoolean().withMessage('was_late must be a boolean'),
+    .isBoolean().withMessage(V.WAS_LATE_MUST_BE_A_BOOLEAN),
   body('late_minutes')
     .optional()
-    .isInt({ min: 0 }).withMessage('late_minutes must be a non-negative integer'),
+    .isInt({ min: 0 }).withMessage(V.LATE_MINUTES_MUST_BE_A_NON_NEGATIVE_INTEGER),
   body('review')
     .optional()
     .trim()
-    .isLength({ max: 500 }).withMessage('Review must be at most 500 characters'),
+    .isLength({ max: 500 }).withMessage(V.REVIEW_MUST_BE_AT_MOST_500_CHARACTERS),
   body('tags')
     .optional()
-    .isArray().withMessage('Tags must be an array')
+    .isArray().withMessage(V.TAGS_MUST_BE_AN_ARRAY)
     .custom((arr) => {
       if (!arr.every((item) => typeof item === 'string' && item.trim().length > 0)) {
-        throw new Error('Each tag must be a non-empty string');
+        throw new Error(V.EACH_TAG_MUST_BE_A_NON_EMPTY_STRING);
       }
       return true;
     }),
@@ -30,13 +31,13 @@ const ratingValidation = [
 const ratingListValidation = [
   query('page')
     .optional()
-    .isInt({ min: 1 }).withMessage('Page must be a positive integer'),
+    .isInt({ min: 1 }).withMessage(V.PAGE_MUST_BE_A_POSITIVE_INTEGER),
   query('limit')
     .optional()
-    .isInt({ min: 1, max: 100 }).withMessage('Limit must be an integer between 1 and 100'),
+    .isInt({ min: 1, max: 100 }).withMessage(V.LIMIT_MUST_BE_AN_INTEGER_BETWEEN_1_AND_100),
   query('sort')
     .optional()
-    .isIn(['recent', 'highest', 'lowest']).withMessage('Sort must be recent, highest or lowest'),
+    .isIn(['recent', 'highest', 'lowest']).withMessage(V.SORT_MUST_BE_RECENT_HIGHEST_OR_LOWEST),
 ];
 
 module.exports = {

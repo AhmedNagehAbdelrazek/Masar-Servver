@@ -1,100 +1,101 @@
 const { body, query, param } = require('express-validator');
 const { RIDE_REQUEST_STATUS, REQUEST_OFFER_STATUS } = require('../../config/constants');
+const V = require('../../config/messages/validation-keys');
 
 const rideRequestParamValidation = [
   param('request_id')
-    .isUUID().withMessage('Request ID must be a valid UUID'),
+    .isUUID().withMessage(V.REQUEST_ID_MUST_BE_A_VALID_UUID),
 ];
 
 const offerParamValidation = [
   param('offer_id')
-    .isUUID().withMessage('Offer ID must be a valid UUID'),
+    .isUUID().withMessage(V.OFFER_ID_MUST_BE_A_VALID_UUID),
 ];
 
 const createRideRequestValidation = [
   body('origin_city')
-    .notEmpty().withMessage('origin_city is required')
-    .isString().trim().isLength({ max: 120 }).withMessage('origin_city must be at most 120 characters'),
+    .notEmpty().withMessage(V.ORIGIN_CITY_IS_REQUIRED)
+    .isString().trim().isLength({ max: 120 }).withMessage(V.ORIGIN_CITY_MUST_BE_AT_MOST_120_CHARACTERS),
   body('destination_city')
-    .notEmpty().withMessage('destination_city is required')
-    .isString().trim().isLength({ max: 120 }).withMessage('destination_city must be at most 120 characters'),
+    .notEmpty().withMessage(V.DESTINATION_CITY_IS_REQUIRED)
+    .isString().trim().isLength({ max: 120 }).withMessage(V.DESTINATION_CITY_MUST_BE_AT_MOST_120_CHARACTERS),
   body('origin_place')
     .optional()
-    .isString().trim().isLength({ max: 255 }).withMessage('origin_place must be at most 255 characters'),
+    .isString().trim().isLength({ max: 255 }).withMessage(V.ORIGIN_PLACE_MUST_BE_AT_MOST_255_CHARACTERS),
   body('destination_place')
     .optional()
-    .isString().trim().isLength({ max: 255 }).withMessage('destination_place must be at most 255 characters'),
+    .isString().trim().isLength({ max: 255 }).withMessage(V.DESTINATION_PLACE_MUST_BE_AT_MOST_255_CHARACTERS),
   body('origin_lat')
     .optional()
-    .isFloat({ min: -90, max: 90 }).withMessage('origin_lat must be a valid latitude'),
+    .isFloat({ min: -90, max: 90 }).withMessage(V.ORIGIN_LAT_MUST_BE_A_VALID_LATITUDE),
   body('origin_lng')
     .optional()
-    .isFloat({ min: -180, max: 180 }).withMessage('origin_lng must be a valid longitude'),
+    .isFloat({ min: -180, max: 180 }).withMessage(V.ORIGIN_LNG_MUST_BE_A_VALID_LONGITUDE),
   body('origin_time')
     .optional()
-    .isISO8601().withMessage('origin_time must be a valid ISO-8601 datetime'),
+    .isISO8601().withMessage(V.ORIGIN_TIME_MUST_BE_A_VALID_ISO_8601_DATETIME),
   body('arrival_deadline')
     .optional()
-    .isISO8601().withMessage('arrival_deadline must be a valid ISO-8601 datetime'),
+    .isISO8601().withMessage(V.ARRIVAL_DEADLINE_MUST_BE_A_VALID_ISO_8601_DATETIME),
   body('seats_needed')
     .optional()
-    .isInt({ min: 1, max: 8 }).withMessage('seats_needed must be between 1 and 8'),
+    .isInt({ min: 1, max: 8 }).withMessage(V.SEATS_NEEDED_MUST_BE_BETWEEN_1_AND_8),
   body('max_budget')
     .optional()
-    .isFloat({ min: 0 }).withMessage('max_budget must be a non-negative number'),
+    .isFloat({ min: 0 }).withMessage(V.MAX_BUDGET_MUST_BE_A_NON_NEGATIVE_NUMBER),
   body('attributes_preferred')
     .optional()
-    .isObject().withMessage('attributes_preferred must be an object'),
+    .isObject().withMessage(V.ATTRIBUTES_PREFERRED_MUST_BE_AN_OBJECT),
 ];
 
 const listRideRequestsValidation = [
   query('status')
     .optional()
-    .isIn(Object.values(RIDE_REQUEST_STATUS)).withMessage(`Status must be one of: ${Object.values(RIDE_REQUEST_STATUS).join(', ')}`),
+    .isIn(Object.values(RIDE_REQUEST_STATUS)).withMessage(V.STATUS_MUST_BE_ONE_OF_OPEN_OFFERED_ACCEPTED_EXPIRED_CANCELLED),
   query('page')
     .optional()
-    .isInt({ min: 1 }).withMessage('Page must be a positive integer'),
+    .isInt({ min: 1 }).withMessage(V.PAGE_MUST_BE_A_POSITIVE_INTEGER),
   query('limit')
     .optional()
-    .isInt({ min: 1, max: 100 }).withMessage('Limit must be an integer between 1 and 100'),
+    .isInt({ min: 1, max: 100 }).withMessage(V.LIMIT_MUST_BE_AN_INTEGER_BETWEEN_1_AND_100),
 ];
 
 const updateRideRequestValidation = [
   ...rideRequestParamValidation,
   body('action')
     .optional()
-    .isIn(['cancel']).withMessage('action must be "cancel"'),
+    .isIn(['cancel']).withMessage(V.ACTION_MUST_BE_CANCEL),
   body('origin_city')
     .optional()
-    .isString().trim().isLength({ max: 120 }).withMessage('origin_city must be at most 120 characters'),
+    .isString().trim().isLength({ max: 120 }).withMessage(V.ORIGIN_CITY_MUST_BE_AT_MOST_120_CHARACTERS),
   body('destination_city')
     .optional()
-    .isString().trim().isLength({ max: 120 }).withMessage('destination_city must be at most 120 characters'),
+    .isString().trim().isLength({ max: 120 }).withMessage(V.DESTINATION_CITY_MUST_BE_AT_MOST_120_CHARACTERS),
   body('origin_time')
     .optional()
-    .isISO8601().withMessage('origin_time must be a valid ISO-8601 datetime'),
+    .isISO8601().withMessage(V.ORIGIN_TIME_MUST_BE_A_VALID_ISO_8601_DATETIME),
   body('arrival_deadline')
     .optional()
-    .isISO8601().withMessage('arrival_deadline must be a valid ISO-8601 datetime'),
+    .isISO8601().withMessage(V.ARRIVAL_DEADLINE_MUST_BE_A_VALID_ISO_8601_DATETIME),
   body('seats_needed')
     .optional()
-    .isInt({ min: 1, max: 8 }).withMessage('seats_needed must be between 1 and 8'),
+    .isInt({ min: 1, max: 8 }).withMessage(V.SEATS_NEEDED_MUST_BE_BETWEEN_1_AND_8),
   body('max_budget')
     .optional()
-    .isFloat({ min: 0 }).withMessage('max_budget must be a non-negative number'),
+    .isFloat({ min: 0 }).withMessage(V.MAX_BUDGET_MUST_BE_A_NON_NEGATIVE_NUMBER),
 ];
 
 const createOfferValidation = [
   ...rideRequestParamValidation,
   body('offered_fare')
     .optional()
-    .isFloat({ min: 0 }).withMessage('offered_fare must be a non-negative number'),
+    .isFloat({ min: 0 }).withMessage(V.OFFERED_FARE_MUST_BE_A_NON_NEGATIVE_NUMBER),
   body('message')
     .optional()
-    .isString().trim().isLength({ max: 1000 }).withMessage('message must be at most 1000 characters'),
+    .isString().trim().isLength({ max: 1000 }).withMessage(V.MESSAGE_MUST_BE_AT_MOST_1000_CHARACTERS),
   body('trip_id')
     .optional()
-    .isUUID().withMessage('trip_id must be a valid UUID'),
+    .isUUID().withMessage(V.TRIP_ID_MUST_BE_A_VALID_UUID_2),
 ];
 
 const listOffersValidation = [
@@ -104,26 +105,26 @@ const listOffersValidation = [
 const decideOfferValidation = [
   ...offerParamValidation,
   body('action')
-    .isIn(['accept', 'decline']).withMessage('action must be "accept" or "decline"'),
+    .isIn(['accept', 'decline']).withMessage(V.ACTION_MUST_BE_ACCEPT_OR_DECLINE),
 ];
 
 const agreePriceValidation = [
   ...offerParamValidation,
   body('agreed_fare')
-    .notEmpty().withMessage('agreed_fare is required')
-    .isFloat({ min: 0 }).withMessage('agreed_fare must be a non-negative number'),
+    .notEmpty().withMessage(V.AGREED_FARE_IS_REQUIRED)
+    .isFloat({ min: 0 }).withMessage(V.AGREED_FARE_MUST_BE_A_NON_NEGATIVE_NUMBER),
 ];
 
 const driverOffersListValidation = [
   query('status')
     .optional()
-    .isIn(Object.values(REQUEST_OFFER_STATUS)).withMessage(`Status must be one of: ${Object.values(REQUEST_OFFER_STATUS).join(', ')}`),
+    .isIn(Object.values(REQUEST_OFFER_STATUS)).withMessage(V.STATUS_MUST_BE_ONE_OF_SENT_ACCEPTED_DECLINED_EXPIRED),
   query('page')
     .optional()
-    .isInt({ min: 1 }).withMessage('Page must be a positive integer'),
+    .isInt({ min: 1 }).withMessage(V.PAGE_MUST_BE_A_POSITIVE_INTEGER),
   query('limit')
     .optional()
-    .isInt({ min: 1, max: 100 }).withMessage('Limit must be an integer between 1 and 100'),
+    .isInt({ min: 1, max: 100 }).withMessage(V.LIMIT_MUST_BE_AN_INTEGER_BETWEEN_1_AND_100),
 ];
 
 module.exports = {

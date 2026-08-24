@@ -61,12 +61,12 @@ async function create(raterId, data) {
   const booking = await Booking.findByPk(data.booking_id, {
     include: [{ model: Trip, as: 'trip', attributes: ['id', 'driverId'] }],
   });
-  if (!booking) throw ApiErrors.notFound('Booking not found');
+  if (!booking) throw ApiErrors.notFound('BOOKING_NOT_FOUND');
 
   const isPassenger = booking.passengerId === raterId;
   const isDriver = booking.trip.driverId === raterId;
   if (!isPassenger && !isDriver) {
-    throw ApiErrors.forbidden('Only the passenger or the driver of a booking may rate it');
+    throw ApiErrors.forbidden('ONLY_THE_PASSENGER_OR_THE_DRIVER_OF_A_BOOKING_MAY');
   }
 
   const rateeId = isPassenger ? booking.trip.driverId : booking.passengerId;

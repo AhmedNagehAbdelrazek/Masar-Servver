@@ -19,7 +19,7 @@ const getDashboard = async (driverId) => {
 
   // Fetch fresh data
   const driver = await User.findByPk(driverId);
-  if (!driver) throw ApiErrors.notFound('User not found');
+  if (!driver) throw ApiErrors.notFound('USER_NOT_FOUND');
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);

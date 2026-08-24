@@ -173,9 +173,9 @@ async function getForDriver(driverId, bookingId) {
       { model: User, as: 'passenger', attributes: ['id', 'fullName', 'phone', 'avgRating'] },
     ],
   });
-  if (!booking) throw ApiErrors.notFound('Booking not found');
+  if (!booking) throw ApiErrors.notFound('BOOKING_NOT_FOUND');
   if (!booking.trip || booking.trip.driverId !== driverId) {
-    throw ApiErrors.forbidden('You can only view bookings on your own trips');
+    throw ApiErrors.forbidden('YOU_CAN_ONLY_VIEW_BOOKINGS_ON_YOUR_OWN_TRIPS');
   }
 
   return { booking: serializeDetail(booking) };
@@ -189,7 +189,7 @@ async function uniqueBookingCode() {
     const existing = await Booking.findOne({ where: { referenceCode: code } });
     if (!existing) return code;
   }
-  throw ApiErrors.serverError('Could not generate a unique reference code');
+  throw ApiErrors.serverError('COULD_NOT_GENERATE_A_UNIQUE_REFERENCE_CODE');
 }
 
 async function notifyDriver(trip, template, vars) {
@@ -203,30 +203,30 @@ async function createBooking(passengerId, payload) {
   const { trip_id, seat_number, seats = 1, agreed_fare, dropoff_place, dropoff_deadline } = payload;
 
   const user = await User.findByPk(passengerId);
-  if (!user) throw ApiErrors.notFound('User not found');
+  if (!user) throw ApiErrors.notFound('USER_NOT_FOUND');
   if ([USER_STATUS.SUSPENDED, USER_STATUS.BANNED].includes(user.status)) {
-    throw ApiErrors.forbidden('Account is suspended. You cannot book trips.');
+    throw ApiErrors.forbidden('ACCOUNT_IS_SUSPENDED_YOU_CANNOT_BOOK_TRIPS');
   }
 
   const trip = await Trip.findByPk(trip_id);
-  if (!trip) throw ApiErrors.notFound('Trip not found');
+  if (!trip) throw ApiErrors.notFound('TRIP_NOT_FOUND');
   if (![TRIP_STATUS.PUBLISHED, TRIP_STATUS.FULL].includes(trip.status)) {
-    throw ApiErrors.conflict('Trip is already ongoing or completed');
+    throw ApiErrors.conflict('TRIP_IS_ALREADY_ONGOING_OR_COMPLETED');
   }
 
   if (Number(agreed_fare) !== Number(trip.farePerSeat)) {
-    throw ApiErrors.validation('agreed_fare does not match the current trip fare');
+    throw ApiErrors.validation('AGREED_FARE_DOES_NOT_MATCH_THE_CURRENT_TRIP_FARE');
   }
 
   const lockStatus = await checkSeatLock(trip_id, seat_number);
   if (!lockStatus.locked || lockStatus.passengerId !== passengerId) {
-    throw ApiErrors.custom('Seat lock expired or not held', 404, 'SEAT_LOCK_EXPIRED');
+    throw ApiErrors.custom('SEAT_LOCK_EXPIRED_OR_NOT_HELD', 404, 'SEAT_LOCK_EXPIRED');
   }
 
   const seat = await TripSeat.findOne({ where: { tripId: trip_id, seatNumber: seat_number } });
-  if (!seat) throw ApiErrors.notFound('Seat not found on this trip');
+  if (!seat) throw ApiErrors.notFound('SEAT_NOT_FOUND_ON_THIS_TRIP');
   if (seat.seatType !== SEAT_TYPE.AVAILABLE) {
-    throw ApiErrors.conflict('Seat already booked');
+    throw ApiErrors.conflict('SEAT_ALREADY_BOOKED');
   }
 
   const referenceCode = await uniqueBookingCode();
@@ -234,7 +234,7 @@ async function createBooking(passengerId, payload) {
   const booking = await sequelize.transaction(async (t) => {
     const freshTrip = await Trip.findByPk(trip_id, { transaction: t, lock: t.LOCK.UPDATE });
     if (![TRIP_STATUS.PUBLISHED, TRIP_STATUS.FULL].includes(freshTrip.status)) {
-      throw ApiErrors.conflict('Trip is already ongoing or completed');
+      throw ApiErrors.conflict('TRIP_IS_ALREADY_ONGOING_OR_COMPLETED');
     }
 
     const row = await Booking.create(
@@ -256,7 +256,7 @@ async function createBooking(passengerId, payload) {
     );
 
     const remainingSeats = freshTrip.availableSeats - seats;
-    if (remainingSeats < 0) throw ApiErrors.conflict('Not enough available seats');
+    if (remainingSeats < 0) throw ApiErrors.conflict('NOT_ENOUGH_AVAILABLE_SEATS');
 
     freshTrip.availableSeats = remainingSeats;
     if (remainingSeats === 0 && freshTrip.status === TRIP_STATUS.PUBLISHED) {
@@ -391,9 +391,9 @@ async function getForPassenger(passengerId, bookingId) {
       { model: User, as: 'passenger', attributes: ['id', 'fullName'] },
     ],
   });
-  if (!booking) throw ApiErrors.notFound('Booking not found');
+  if (!booking) throw ApiErrors.notFound('BOOKING_NOT_FOUND');
   if (booking.passengerId !== passengerId) {
-    throw ApiErrors.forbidden('You can only view your own bookings');
+    throw ApiErrors.forbidden('YOU_CAN_ONLY_VIEW_YOUR_OWN_BOOKINGS');
   }
 
   return { booking: serializePassengerDetail(booking, booking.trip, booking.passenger) };
@@ -401,7 +401,7 @@ async function getForPassenger(passengerId, bookingId) {
 
 async function cancelBooking(passengerId, bookingId) {
   const user = await User.findByPk(passengerId);
-  if (!user) throw ApiErrors.notFound('User not found');
+  if (!user) throw ApiErrors.notFound('USER_NOT_FOUND');
 
   const booking = await Booking.findByPk(bookingId, {
     include: [
@@ -412,19 +412,19 @@ async function cancelBooking(passengerId, bookingId) {
       },
     ],
   });
-  if (!booking) throw ApiErrors.notFound('Booking not found');
+  if (!booking) throw ApiErrors.notFound('BOOKING_NOT_FOUND');
   if (booking.passengerId !== passengerId) {
-    throw ApiErrors.forbidden('You can only cancel your own bookings');
+    throw ApiErrors.forbidden('YOU_CAN_ONLY_CANCEL_YOUR_OWN_BOOKINGS');
   }
   if ([BOOKING_STATUS.CANCELLED, BOOKING_STATUS.COMPLETED].includes(booking.status)) {
-    throw ApiErrors.conflict('Booking is already completed or cancelled');
+    throw ApiErrors.conflict('BOOKING_IS_ALREADY_COMPLETED_OR_CANCELLED');
   }
 
   const departureTime = new Date(booking.trip.departureTime).getTime();
   const hoursUntilDeparture = (departureTime - Date.now()) / (1000 * 60 * 60);
   if (hoursUntilDeparture < 1) {
     throw ApiErrors.custom(
-      'Cancellations are allowed up to one hour before departure.',
+      'CANCELLATIONS_ARE_ALLOWED_UP_TO_ONE_HOUR_BEFORE_DEPARTURE',
       409,
       'CANCELLATION_WINDOW_CLOSED'
     );
