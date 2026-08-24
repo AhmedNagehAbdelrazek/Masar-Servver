@@ -712,7 +712,51 @@ module.exports = {
   cancelTrip,
   cancelTripWithPenalty,
   getTripAttributes,
+  getTripPassengers,
 };
+
+/**
+ * Lean passenger list for one of the driver's own trips — shaped for
+ * client-side pickers/dropdowns (e.g. rate-a-passenger after completion).
+ * Defaults to CONFIRMED + COMPLETED bookings; `status` narrows to one.
+ */
+async function getTripPassengers(driverId, tripId, filters = {}) {
+  const trip = await Trip.findByPk(tripId, {
+    attributes: ['id', 'driverId', 'originCity', 'destinationCity', 'departureTime', 'status'],
+  });
+  if (!trip) throw ApiErrors.notFound('Trip not found');
+  if (trip.driverId !== driverId) {
+    throw ApiErrors.forbidden('You can only view passengers on your own trips');
+  }
+
+  const status = filters.status || [BOOKING_STATUS.CONFIRMED, BOOKING_STATUS.COMPLETED];
+  const bookings = await Booking.findAll({
+    where: { tripId: trip.id, status },
+    include: [{ model: User, as: 'passenger', attributes: ['id', 'fullName', 'avatarUrl', 'avgRating'] }],
+    order: [['createdat', 'ASC']],
+  });
+
+  return {
+    trip_id: trip.id,
+    trip_status: trip.status,
+    route: `${trip.originCity} - ${trip.destinationCity}`,
+    departure_time: trip.departureTime,
+    passengers: bookings.map((b) => ({
+      booking_id: b.id,
+      passenger: b.passenger
+        ? {
+            id: b.passenger.id,
+            full_name: b.passenger.fullName,
+            profile_picture_url: b.passenger.avatarUrl,
+            rating: Number(b.passenger.avgRating) || 0,
+          }
+        : null,
+      seats_booked: b.seatsBooked,
+      seat_numbers: seatNumbersFor(b),
+      booking_status: b.status,
+    })),
+  };
+}
 
 /**
  * Partial update of a driver's own trip (contract D1). Accepts fare,

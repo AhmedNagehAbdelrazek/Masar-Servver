@@ -70,6 +70,12 @@ const getTripAttributes = catchAsync(async (req, res) => {
   successResponse(res, result);
 });
 
+const getTripPassengers = catchAsync(async (req, res) => {
+  const { status } = req.query;
+  const result = await tripService.getTripPassengers(req.user.id, req.params.trip_id, { status });
+  successResponse(res, result);
+});
+
 const cancelTripWithPenalty = catchAsync(async (req, res) => {
   const result = await tripService.cancelTripWithPenalty(req.user.id, req.params.trip_id, req.body);
   markResource(res, { type: 'trip', id: result.trip_id });
@@ -93,5 +99,6 @@ module.exports = {
   cancelTrip,
   cancelTripWithPenalty,
   getTripAttributes,
+  getTripPassengers,
   attachOfferToTrip,
 };

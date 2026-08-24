@@ -3,7 +3,7 @@ const c = require('../Controllers/tripController');
 const protect = require('../middlewares/protect');
 const { roleGuard } = require('../middlewares/roleGuard');
 const validate = require('../middlewares/validatorMiddleware');
-const { createTripValidation, updateTripValidation, tripParamValidation, searchAvailableTripsValidation, cancelTripValidation } = require('../utils/validators/tripValidator');
+const { createTripValidation, updateTripValidation, tripParamValidation, tripPassengersValidation, searchAvailableTripsValidation, cancelTripValidation } = require('../utils/validators/tripValidator');
 const { param } = require('express-validator');
 
 // Create trip (driver only)
@@ -35,6 +35,9 @@ router.delete('/:trip_id', protect, roleGuard(['driver']), ...tripParamValidatio
 
 // Trip attributes (any authenticated user)
 router.get('/:trip_id/attributes', protect, ...tripParamValidation, validate, c.getTripAttributes);
+
+// Trip passengers for dropdown selection (driver owner only)
+router.get('/:trip_id/passengers', protect, roleGuard(['driver']), ...tripPassengersValidation, validate, c.getTripPassengers);
 
 // Attach an accepted ride-request offer to this trip (driver owner only, deferred materialization)
 const attachOfferValidation = [

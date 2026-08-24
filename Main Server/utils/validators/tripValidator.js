@@ -1,5 +1,5 @@
 const { body, param, query } = require('express-validator');
-const { TRIP_STATUS, GENDER_PREFERENCE } = require('../../config/constants');
+const { TRIP_STATUS, GENDER_PREFERENCE, BOOKING_STATUS } = require('../../config/constants');
 
 const createTripValidation = [
   body('origin_city')
@@ -175,6 +175,13 @@ const tripParamValidation = [
     .isUUID().withMessage('Trip ID must be a valid UUID'),
 ];
 
+const tripPassengersValidation = [
+  ...tripParamValidation,
+  query('status')
+    .optional()
+    .isIn(Object.values(BOOKING_STATUS)).withMessage(`Status must be one of: ${Object.values(BOOKING_STATUS).join(', ')}`),
+];
+
 const lockSeatValidation = [
   param('trip_id')
     .isUUID().withMessage('Trip ID must be a valid UUID'),
@@ -293,5 +300,6 @@ module.exports = {
   releaseSeatLockValidation,
   updateTripValidation,
   tripParamValidation,
+  tripPassengersValidation,
   cancelTripValidation,
 };
