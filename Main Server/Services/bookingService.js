@@ -1,5 +1,5 @@
 const { Op } = require('sequelize');
-const { Booking, Trip, User, TripSeat, sequelize } = require('../Models');
+const { Booking, Trip, User, TripSeat, TripStop, sequelize } = require('../Models');
 const { ApiErrors } = require('../utils/ApiError');
 const { parsePagination, buildPagination } = require('../utils/pagination');
 const { maskPhone } = require('../utils/masking');
@@ -9,11 +9,73 @@ const {
   TRIP_STATUS,
   SEAT_TYPE,
   USER_STATUS,
+  STOP_TYPE,
 } = require('../config/constants');
 const { checkSeatLock, releaseSeatLock } = require('../utils/seatLock');
 const auditService = require('./auditService');
 const notificationService = require('./notificationService');
 const { generateReferenceCode } = require('../utils/referenceCode');
+
+function serializeRoutePoints(trip) {
+  return (trip.stops || [])
+    .slice()
+    .sort((a, b) => a.stopOrder - b.stopOrder)
+    .map((s) => ({
+      stop_order: s.stopOrder,
+      stop_name: s.stopName,
+      city: s.city,
+      address: s.address,
+      lat: s.lat != null ? Number(s.lat) : s.stopLat != null ? Number(s.stopLat) : null,
+      lng: s.lng != null ? Number(s.lng) : s.stopLng != null ? Number(s.stopLng) : null,
+      stop_type: s.stopType,
+      estimated_arrival: s.estimatedArrival,
+    }));
+}
+
+function getMeetingPoint(trip) {
+  const pickup =
+    (trip.stops || []).find((s) => s.stopType === STOP_TYPE.PICKUP) ||
+    (trip.stops || []).find((s) => s.stopType === STOP_TYPE.BOTH);
+  if (pickup) {
+    return {
+      stop_name: pickup.stopName,
+      city: pickup.city,
+      address: pickup.address,
+      lat: pickup.lat != null ? Number(pickup.lat) : pickup.stopLat != null ? Number(pickup.stopLat) : null,
+      lng: pickup.lng != null ? Number(pickup.lng) : pickup.stopLng != null ? Number(pickup.stopLng) : null,
+      estimated_arrival: pickup.estimatedArrival,
+    };
+  }
+  return {
+    stop_name: null,
+    city: trip.originCity,
+    address: trip.originArea,
+    lat: trip.originLat != null ? Number(trip.originLat) : null,
+    lng: trip.originLng != null ? Number(trip.originLng) : null,
+    estimated_arrival: null,
+  };
+}
+
+function tripLocationData(trip) {
+  return {
+    origin: {
+      city: trip.originCity,
+      area: trip.originArea,
+      lat: trip.originLat != null ? Number(trip.originLat) : null,
+      lng: trip.originLng != null ? Number(trip.originLng) : null,
+    },
+    destination: {
+      city: trip.destinationCity,
+      area: trip.destinationArea,
+      lat: trip.destinationLat != null ? Number(trip.destinationLat) : null,
+      lng: trip.destinationLng != null ? Number(trip.destinationLng) : null,
+    },
+    departure_time: trip.departureTime,
+    arrival_time: trip.arrivalTime,
+    route_points: serializeRoutePoints(trip),
+    meeting_point: getMeetingPoint(trip),
+  };
+}
 
 function serializeListRow(booking) {
   return {
@@ -32,6 +94,9 @@ function serializeListRow(booking) {
           origin: booking.trip.originCity,
           destination: booking.trip.destinationCity,
           price: Number(booking.trip.farePerSeat),
+          status: booking.trip.status,
+          departureTime: booking.trip.departureTime,
+          ...tripLocationData(booking.trip),
         }
       : null,
     dropoff_place: booking.dropoffPlace,
@@ -50,6 +115,7 @@ function serializeDetail(booking) {
     status: booking.status,
     payment_status: booking.paymentStatus,
     reference_code: booking.referenceCode,
+    booking_created_at: booking.createdat || booking.createdAt,
     cancellation_reason: booking.cancellationReason,
     cancelled_at: booking.cancelledAt,
     dropoff_place: booking.dropoffPlace,
@@ -58,6 +124,7 @@ function serializeDetail(booking) {
           origin: booking.trip.originCity,
           destination: booking.trip.destinationCity,
           price: Number(booking.trip.farePerSeat),
+          ...tripLocationData(booking.trip),
         }
       : null,
   };
@@ -82,7 +149,7 @@ async function listForDriver(driverId, filters = {}) {
   const { rows, count } = await Booking.findAndCountAll({
     where: bookingWhere,
     include: [
-      { model: Trip, as: 'trip', where: { driverId }, attributes: ['id', 'originCity', 'destinationCity', 'farePerSeat'] },
+      { model: Trip, as: 'trip', where: { driverId }, attributes: ['id', 'originCity', 'originArea', 'originLat', 'originLng', 'destinationCity', 'destinationArea', 'destinationLat', 'destinationLng', 'farePerSeat'], include: [{ model: TripStop, as: 'stops' }] },
       { model: User, as: 'passenger', attributes: ['id', 'fullName', 'phone', 'avgRating'] },
     ],
     order: [['createdat', 'DESC']],
@@ -102,7 +169,7 @@ async function listForDriver(driverId, filters = {}) {
 async function getForDriver(driverId, bookingId) {
   const booking = await Booking.findByPk(bookingId, {
     include: [
-      { model: Trip, as: 'trip', attributes: ['id', 'driverId', 'originCity', 'destinationCity', 'farePerSeat'] },
+      { model: Trip, as: 'trip', attributes: ['id', 'driverId', 'originCity', 'originArea', 'originLat', 'originLng', 'destinationCity', 'destinationArea', 'destinationLat', 'destinationLng', 'farePerSeat'], include: [{ model: TripStop, as: 'stops' }] },
       { model: User, as: 'passenger', attributes: ['id', 'fullName', 'phone', 'avgRating'] },
     ],
   });
@@ -230,7 +297,10 @@ async function createBooking(passengerId, payload) {
   ]);
 
   const fullTrip = await Trip.findByPk(trip_id, {
-    include: [{ model: User, as: 'driver', attributes: ['id', 'fullName', 'phone', 'avgRating'] }],
+    include: [
+      { model: User, as: 'driver', attributes: ['id', 'fullName', 'phone', 'avgRating'] },
+      { model: TripStop, as: 'stops' },
+    ],
   });
   return serializePassengerDetail(booking, fullTrip, user);
 }
@@ -256,6 +326,7 @@ function serializePassengerDetail(booking, trip, passenger) {
           origin: trip.originCity,
           destination: trip.destinationCity,
           price: Number(trip.farePerSeat),
+          ...tripLocationData(trip),
         }
       : null,
     driver:
@@ -287,9 +358,10 @@ async function listForPassenger(passengerId, filters = {}) {
       {
         model: Trip,
         as: 'trip',
-        attributes: ['id', 'driverId', 'originCity', 'destinationCity', 'farePerSeat'],
+        attributes: ['id', 'driverId', 'originCity', 'originArea', 'originLat', 'originLng', 'destinationCity', 'destinationArea', 'destinationLat', 'destinationLng', 'farePerSeat'],
         include: [
           { model: User, as: 'driver', attributes: ['id', 'fullName', 'phone', 'avgRating'] },
+          { model: TripStop, as: 'stops' },
         ],
       },
     ],
@@ -310,9 +382,10 @@ async function getForPassenger(passengerId, bookingId) {
       {
         model: Trip,
         as: 'trip',
-        attributes: ['id', 'driverId', 'originCity', 'destinationCity', 'farePerSeat'],
+        attributes: ['id', 'driverId', 'originCity', 'originArea', 'originLat', 'originLng', 'destinationCity', 'destinationArea', 'destinationLat', 'destinationLng', 'farePerSeat'],
         include: [
           { model: User, as: 'driver', attributes: ['id', 'fullName', 'phone', 'avgRating'] },
+          { model: TripStop, as: 'stops' },
         ],
       },
       { model: User, as: 'passenger', attributes: ['id', 'fullName'] },
