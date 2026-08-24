@@ -1,8 +1,10 @@
 class ApiError extends Error {
-  constructor(message, statusCode, code = null) {
-    super(message);
+  constructor(message, statusCode, code = null, details = null) {
+    super(typeof message === 'string' ? message : String(message));
+    this.name = 'ApiError';
     this.statusCode = statusCode;
     this.code = code;
+    this.details = Array.isArray(details) && details.length > 0 ? details : null;
     this.isOperational = true;
     Error.captureStackTrace(this, this.constructor);
   }
@@ -12,34 +14,35 @@ class ApiError extends Error {
       status: 'error',
       message: this.message,
       code: this.code,
+      ...(this.details && { details: this.details }),
     };
   }
 }
 
 const ApiErrors = {
-  badRequest: (message = 'Bad request') =>
-    new ApiError(message, 400, 'BAD_REQUEST'),
+  badRequest: (message = 'Bad request', details = null) =>
+    new ApiError(message, 400, 'BAD_REQUEST', details),
 
-  unauthorized: (message = 'Unauthorized') =>
-    new ApiError(message, 401, 'UNAUTHORIZED'),
+  unauthorized: (message = 'Unauthorized', details = null) =>
+    new ApiError(message, 401, 'UNAUTHORIZED', details),
 
-  forbidden: (message = 'Forbidden') =>
-    new ApiError(message, 403, 'FORBIDDEN'),
+  forbidden: (message = 'Forbidden', details = null) =>
+    new ApiError(message, 403, 'FORBIDDEN', details),
 
-  notFound: (message = 'Resource not found') =>
-    new ApiError(message, 404, 'NOT_FOUND'),
+  notFound: (message = 'Resource not found', details = null) =>
+    new ApiError(message, 404, 'NOT_FOUND', details),
 
-  conflict: (message = 'Conflict') =>
-    new ApiError(message, 409, 'CONFLICT'),
+  conflict: (message = 'Conflict', details = null) =>
+    new ApiError(message, 409, 'CONFLICT', details),
 
-  validation: (message = 'Validation error') =>
-    new ApiError(message, 422, 'VALIDATION_ERROR'),
+  validation: (message = 'Validation failed', details = null) =>
+    new ApiError(message, 422, 'VALIDATION_ERROR', details),
 
-  serverError: (message = 'Internal server error') =>
-    new ApiError(message, 500, 'INTERNAL_ERROR'),
+  serverError: (message = 'Internal server error', details = null) =>
+    new ApiError(message, 500, 'INTERNAL_ERROR', details),
 
-  custom: (message = 'Error', statusCode = 500, code = 'INTERNAL_ERROR') =>
-    new ApiError(message, statusCode, code),
+  custom: (message = 'Error', statusCode = 500, code = 'INTERNAL_ERROR', details = null) =>
+    new ApiError(message, statusCode, code, details),
 };
 
 module.exports = ApiError;

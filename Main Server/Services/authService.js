@@ -541,7 +541,7 @@ async function resetPassword(authHeader, password) {
 
 /**
  * Authenticated password change from the settings screen (contracts §5).
- * Wrong current password -> 422 INVALID_CURRENT_PASSWORD. On success every
+ * Wrong current password -> 400 INVALID_CURRENT_PASSWORD. On success every
  * refresh token is revoked and the presenting access token is blacklisted,
  * forcing a fresh login on other devices (`requires_relogin`).
  */
@@ -553,7 +553,7 @@ async function changePassword(userId, currentPassword, newPassword, accessToken)
 
   const isMatch = await bcrypt.compare(currentPassword, user.passwordHash || '');
   if (!isMatch) {
-    throw ApiErrors.custom('Current password is incorrect', 422, 'INVALID_CURRENT_PASSWORD');
+    throw ApiErrors.custom('Current password is incorrect', 400, 'INVALID_CURRENT_PASSWORD');
   }
 
   if (await bcrypt.compare(newPassword, user.passwordHash || '')) {

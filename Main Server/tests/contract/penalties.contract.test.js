@@ -56,7 +56,7 @@ describe('US4 Contract - Driver Penalties', () => {
     expect(res.body.pagination.total_pages).toBe(1);
   });
 
-  it('422 returns array message for invalid active filter', async () => {
+  it('422 returns details array for invalid active filter', async () => {
     const res = await getAgent()
       .get('/api/driver/penalties')
       .query({ active: 'maybe' })
@@ -64,7 +64,8 @@ describe('US4 Contract - Driver Penalties', () => {
 
     expect(res.status).toBe(422);
     expect(res.body.status).toBe('error');
-    expect(Array.isArray(res.body.message)).toBe(true);
+    expect(typeof res.body.message).toBe('string');
+    expect(Array.isArray(res.body.details)).toBe(true);
     expect(res.body.code).toBe('VALIDATION_ERROR');
   });
 });

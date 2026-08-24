@@ -380,7 +380,7 @@ describe('US4 - change password', () => {
       .set('Authorization', `Bearer ${driverToken}`)
       .send({ current_password: 'Wrong@123', new_password: 'NewPass@456' });
 
-    expect(res.status).toBe(422);
+    expect(res.status).toBe(400);
     expect(res.body.code).toBe('INVALID_CURRENT_PASSWORD');
   });
 

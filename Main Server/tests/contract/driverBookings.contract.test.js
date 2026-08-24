@@ -131,7 +131,7 @@ describe('US2 Contract - Driver Bookings', () => {
     expect(typeof res.body.booking.passenger_rating).toBe('number');
   });
 
-  it('422 returns array message', async () => {
+  it('422 returns details array', async () => {
     const res = await getAgent()
       .get('/api/driver/bookings')
       .query({ status: 'nope' })
@@ -139,7 +139,8 @@ describe('US2 Contract - Driver Bookings', () => {
 
     expect(res.status).toBe(422);
     expect(res.body.status).toBe('error');
-    expect(Array.isArray(res.body.message)).toBe(true);
+    expect(typeof res.body.message).toBe('string');
+    expect(Array.isArray(res.body.details)).toBe(true);
     expect(res.body.code).toBe('VALIDATION_ERROR');
   });
 });

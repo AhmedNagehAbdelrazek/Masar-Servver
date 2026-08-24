@@ -30,6 +30,14 @@ function createApp() {
 
   app.use('/api', apiRouter);
 
+  app.use((req, res) => {
+    res.status(404).json({
+      status: 'error',
+      message: `Route ${req.method} ${req.originalUrl} not found`,
+      code: 'ROUTE_NOT_FOUND',
+    });
+  });
+
   app.use(globalErrorHandler);
 
   return app;

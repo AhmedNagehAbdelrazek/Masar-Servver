@@ -2,120 +2,77 @@ const planService = require('../Services/planService');
 const subscriptionService = require('../Services/subscriptionService');
 const { successResponse } = require('../utils/httpResponse');
 const { markResource } = require('../Services/auditService');
+const catchAsync = require('../utils/catchAsync');
 
-const listPlans = async (req, res, next) => {
-  try {
-    const plans = await planService.listPlans();
-    successResponse(res, { plans });
-  } catch (err) {
-    next(err);
-  }
-};
+const listPlans = catchAsync(async (req, res) => {
+  const plans = await planService.listPlans();
+  successResponse(res, { plans });
+});
 
-const createPlan = async (req, res, next) => {
-  try {
-    const plan = await planService.createPlan(req.body, req.user.id);
-    markResource(res, { type: 'subscription_plan', id: plan.id });
-    successResponse(res, { plan }, 201);
-  } catch (err) {
-    next(err);
-  }
-};
+const createPlan = catchAsync(async (req, res) => {
+  const plan = await planService.createPlan(req.body, req.user.id);
+  markResource(res, { type: 'subscription_plan', id: plan.id });
+  successResponse(res, { plan }, 201);
+});
 
-const updatePlan = async (req, res, next) => {
-  try {
-    const plan = await planService.updatePlan(req.params.plan_id, req.body, req.user.id);
-    markResource(res, { type: 'subscription_plan', id: plan.id });
-    successResponse(res, { plan });
-  } catch (err) {
-    next(err);
-  }
-};
+const updatePlan = catchAsync(async (req, res) => {
+  const plan = await planService.updatePlan(req.params.plan_id, req.body, req.user.id);
+  markResource(res, { type: 'subscription_plan', id: plan.id });
+  successResponse(res, { plan });
+});
 
-const deactivatePlan = async (req, res, next) => {
-  try {
-    const result = await planService.deactivatePlan(req.params.plan_id, req.user.id);
-    markResource(res, { type: 'subscription_plan', id: req.params.plan_id });
-    successResponse(res, result);
-  } catch (err) {
-    next(err);
-  }
-};
+const deactivatePlan = catchAsync(async (req, res) => {
+  const result = await planService.deactivatePlan(req.params.plan_id, req.user.id);
+  markResource(res, { type: 'subscription_plan', id: req.params.plan_id });
+  successResponse(res, result);
+});
 
-const listPaymentMethods = async (req, res, next) => {
-  try {
-    const methods = await planService.listPaymentMethods();
-    successResponse(res, { methods });
-  } catch (err) {
-    next(err);
-  }
-};
+const listPaymentMethods = catchAsync(async (req, res) => {
+  const methods = await planService.listPaymentMethods();
+  successResponse(res, { methods });
+});
 
-const createPaymentMethod = async (req, res, next) => {
-  try {
-    const method = await planService.createPaymentMethod(req.body, req.user.id);
-    markResource(res, { type: 'payment_method', id: method.id });
-    successResponse(res, { method }, 201);
-  } catch (err) {
-    next(err);
-  }
-};
+const createPaymentMethod = catchAsync(async (req, res) => {
+  const method = await planService.createPaymentMethod(req.body, req.user.id);
+  markResource(res, { type: 'payment_method', id: method.id });
+  successResponse(res, { method }, 201);
+});
 
-const updatePaymentMethod = async (req, res, next) => {
-  try {
-    const method = await planService.updatePaymentMethod(req.params.method_id, req.body, req.user.id);
-    markResource(res, { type: 'payment_method', id: method.id });
-    successResponse(res, { method });
-  } catch (err) {
-    next(err);
-  }
-};
+const updatePaymentMethod = catchAsync(async (req, res) => {
+  const method = await planService.updatePaymentMethod(req.params.method_id, req.body, req.user.id);
+  markResource(res, { type: 'payment_method', id: method.id });
+  successResponse(res, { method });
+});
 
-const deactivatePaymentMethod = async (req, res, next) => {
-  try {
-    const result = await planService.deactivatePaymentMethod(req.params.method_id, req.user.id);
-    markResource(res, { type: 'payment_method', id: req.params.method_id });
-    successResponse(res, result);
-  } catch (err) {
-    next(err);
-  }
-};
+const deactivatePaymentMethod = catchAsync(async (req, res) => {
+  const result = await planService.deactivatePaymentMethod(req.params.method_id, req.user.id);
+  markResource(res, { type: 'payment_method', id: req.params.method_id });
+  successResponse(res, result);
+});
 
 // ===== Subscription admin workflow (US2) =====
 
-const listPendingSubscriptions = async (req, res, next) => {
-  try {
-    const { status, sort } = req.query;
-    const pending = await subscriptionService.listPending({ status, sort });
-    successResponse(res, { pending });
-  } catch (err) {
-    next(err);
-  }
-};
+const listPendingSubscriptions = catchAsync(async (req, res) => {
+  const { status, sort } = req.query;
+  const pending = await subscriptionService.listPending({ status, sort });
+  successResponse(res, { pending });
+});
 
-const approveSubscription = async (req, res, next) => {
-  try {
-    const result = await subscriptionService.approve(req.params.subscription_id, req.user.id);
-    markResource(res, { type: 'driver_subscription', id: req.params.subscription_id });
-    successResponse(res, result);
-  } catch (err) {
-    next(err);
-  }
-};
+const approveSubscription = catchAsync(async (req, res) => {
+  const result = await subscriptionService.approve(req.params.subscription_id, req.user.id);
+  markResource(res, { type: 'driver_subscription', id: req.params.subscription_id });
+  successResponse(res, result);
+});
 
-const rejectSubscription = async (req, res, next) => {
-  try {
-    const result = await subscriptionService.reject(
-      req.params.subscription_id,
-      req.body.reason,
-      req.user.id
-    );
-    markResource(res, { type: 'driver_subscription', id: req.params.subscription_id });
-    successResponse(res, result);
-  } catch (err) {
-    next(err);
-  }
-};
+const rejectSubscription = catchAsync(async (req, res) => {
+  const result = await subscriptionService.reject(
+    req.params.subscription_id,
+    req.body.reason,
+    req.user.id
+  );
+  markResource(res, { type: 'driver_subscription', id: req.params.subscription_id });
+  successResponse(res, result);
+});
 
 module.exports = {
   listPlans,

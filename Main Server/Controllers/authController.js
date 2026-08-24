@@ -1,182 +1,115 @@
 ﻿const authService = require('../Services/authService');
 const { successResponse } = require('../utils/httpResponse');
+const catchAsync = require('../utils/catchAsync');
 const { markResource } = require('../Services/auditService');
 
-const registerPhone = async (req, res, next) => {
-  try {
-    const { country_code, phone, role } = req.body;
-    const result = await authService.registerPhone(country_code, phone, role);
-    successResponse(res, result, 201);
-  } catch (err) {
-    next(err);
-  }
-};
+const registerPhone = catchAsync(async (req, res) => {
+  const { country_code, phone, role } = req.body;
+  const result = await authService.registerPhone(country_code, phone, role);
+  successResponse(res, result, 201);
+});
 
-const verifyRegistrationOTP = async (req, res, next) => {
-  try {
-    const { phone, otp } = req.body;
-    const result = await authService.verifyRegistrationOTP(phone, otp);
-    successResponse(res, result, 201);
-  } catch (err) {
-    next(err);
-  }
-};
+const verifyRegistrationOTP = catchAsync(async (req, res) => {
+  const { phone, otp } = req.body;
+  const result = await authService.verifyRegistrationOTP(phone, otp);
+  successResponse(res, result, 201);
+});
 
-const registerPassword = async (req, res, next) => {
-  try {
-    const { password } = req.body;
-    const result = await authService.registerPassword(req.headers.authorization, password);
-    markResource(res, { type: 'user', id: result.user.id, label: result.user.phone });
-    successResponse(res, result, 201);
-  } catch (err) {
-    next(err);
-  }
-};
+const registerPassword = catchAsync(async (req, res) => {
+  const { password } = req.body;
+  const result = await authService.registerPassword(req.headers.authorization, password);
+  markResource(res, { type: 'user', id: result.user.id, label: result.user.phone });
+  successResponse(res, result, 201);
+});
 
-const login = async (req, res, next) => {
-  try {
-    const { phone, password } = req.body;
-    const result = await authService.login(phone, password);
-    markResource(res, { type: 'user', id: result.user.id, label: result.user.phone });
-    successResponse(res, result);
-  } catch (err) {
-    next(err);
-  }
-};
+const login = catchAsync(async (req, res) => {
+  const { phone, password } = req.body;
+  const result = await authService.login(phone, password);
+  markResource(res, { type: 'user', id: result.user.id, label: result.user.phone });
+  successResponse(res, result);
+});
 
-const refresh = async (req, res, next) => {
-  try {
-    const { refresh_token } = req.body;
-    const result = await authService.refreshToken(refresh_token);
-    successResponse(res, result);
-  } catch (err) {
-    next(err);
-  }
-};
+const refresh = catchAsync(async (req, res) => {
+  const { refresh_token } = req.body;
+  const result = await authService.refreshToken(refresh_token);
+  successResponse(res, result);
+});
 
-const logout = async (req, res, next) => {
-  try {
-    const { refresh_token } = req.body;
-    const accessToken = req.headers.authorization?.split(' ')[1];
-    const result = await authService.logout(req.user.id, refresh_token, accessToken);
-    markResource(res, { type: 'user', id: req.user.id });
-    successResponse(res, result);
-  } catch (err) {
-    next(err);
-  }
-};
+const logout = catchAsync(async (req, res) => {
+  const { refresh_token } = req.body;
+  const accessToken = req.headers.authorization?.split(' ')[1];
+  const result = await authService.logout(req.user.id, refresh_token, accessToken);
+  markResource(res, { type: 'user', id: req.user.id });
+  successResponse(res, result);
+});
 
 
-const changePassword = async (req, res, next) => {
-  try {
-    const { current_password, new_password } = req.body;
-    const accessToken = req.headers.authorization?.split(' ')[1];
-    const result = await authService.changePassword(req.user.id, current_password, new_password, accessToken);
-    markResource(res, { type: 'user', id: req.user.id });
-    successResponse(res, result);
-  } catch (err) {
-    next(err);
-  }
-};
-const me = async (req, res, next) => {
-  try {
-    const user = await authService.me(req.user.id);
-    successResponse(res, user);
-  } catch (err) {
-    next(err);
-  }
-};
+const changePassword = catchAsync(async (req, res) => {
+  const { current_password, new_password } = req.body;
+  const accessToken = req.headers.authorization?.split(' ')[1];
+  const result = await authService.changePassword(req.user.id, current_password, new_password, accessToken);
+  markResource(res, { type: 'user', id: req.user.id });
+  successResponse(res, result);
+});
+const me = catchAsync(async (req, res) => {
+  const user = await authService.me(req.user.id);
+  successResponse(res, user);
+});
 
-const forgotPassword = async (req, res, next) => {
-  try {
-    const { phone } = req.body;
-    const result = await authService.forgotPassword(phone);
-    successResponse(res, result);
-  } catch (err) {
-    next(err);
-  }
-};
+const forgotPassword = catchAsync(async (req, res) => {
+  const { phone } = req.body;
+  const result = await authService.forgotPassword(phone);
+  successResponse(res, result);
+});
 
-const verifyForgotPasswordOTP = async (req, res, next) => {
-  try {
-    const { phone, otp } = req.body;
-    const result = await authService.verifyForgotPasswordOTP(phone, otp);
-    successResponse(res, result);
-  } catch (err) {
-    next(err);
-  }
-};
+const verifyForgotPasswordOTP = catchAsync(async (req, res) => {
+  const { phone, otp } = req.body;
+  const result = await authService.verifyForgotPasswordOTP(phone, otp);
+  successResponse(res, result);
+});
 
-const resetPassword = async (req, res, next) => {
-  try {
-    const { password } = req.body;
-    const result = await authService.resetPassword(req.headers.authorization, password);
-    successResponse(res, result);
-  } catch (err) {
-    next(err);
-  }
-};
+const resetPassword = catchAsync(async (req, res) => {
+  const { password } = req.body;
+  const result = await authService.resetPassword(req.headers.authorization, password);
+  successResponse(res, result);
+});
 
-const resendOTP = async (req, res, next) => {
-  try {
-    const { phone, purpose } = req.body;
-    const result = await authService.resendOTP(phone, purpose);
-    successResponse(res, result);
-  } catch (err) {
-    next(err);
-  }
-};
+const resendOTP = catchAsync(async (req, res) => {
+  const { phone, purpose } = req.body;
+  const result = await authService.resendOTP(phone, purpose);
+  successResponse(res, result);
+});
 
-const submitDriverProfile = async (req, res, next) => {
-  try {
-    const result = await authService.submitDriverProfile(req.user.id, req.body);
-    markResource(res, { type: 'driver_profile', id: result.driverProfile.id });
-    successResponse(res, result, 201);
-  } catch (err) {
-    next(err);
-  }
-};
+const submitDriverProfile = catchAsync(async (req, res) => {
+  const result = await authService.submitDriverProfile(req.user.id, req.body);
+  markResource(res, { type: 'driver_profile', id: result.driverProfile.id });
+  successResponse(res, result, 201);
+});
 
-const getDriverProfile = async (req, res, next) => {
-  try {
-    const result = await authService.getDriverProfile(req.user.id);
-    successResponse(res, result);
-  } catch (err) {
-    next(err);
-  }
-};
+const getDriverProfile = catchAsync(async (req, res) => {
+  const result = await authService.getDriverProfile(req.user.id);
+  successResponse(res, result);
+});
 
-const submitVehicle = async (req, res, next) => {
-  try {
-    const result = await authService.submitVehicle(req.user.id, req.body);
-    markResource(res, {
-      type: 'vehicle',
-      id: result.vehicle.id,
-      label: result.vehicle.plateNumber,
-    });
-    successResponse(res, result, 201);
-  } catch (err) {
-    next(err);
-  }
-};
+const submitVehicle = catchAsync(async (req, res) => {
+  const result = await authService.submitVehicle(req.user.id, req.body);
+  markResource(res, {
+    type: 'vehicle',
+    id: result.vehicle.id,
+    label: result.vehicle.plateNumber,
+  });
+  successResponse(res, result, 201);
+});
 
-const getVehicle = async (req, res, next) => {
-  try {
-    const result = await authService.getVehicle(req.user.id);
-    successResponse(res, result);
-  } catch (err) {
-    next(err);
-  }
-};
+const getVehicle = catchAsync(async (req, res) => {
+  const result = await authService.getVehicle(req.user.id);
+  successResponse(res, result);
+});
 
-const getOnboardingStatus = async (req, res, next) => {
-  try {
-    const result = await authService.getOnboardingStatus(req.user.id);
-    successResponse(res, result);
-  } catch (err) {
-    next(err);
-  }
-};
+const getOnboardingStatus = catchAsync(async (req, res) => {
+  const result = await authService.getOnboardingStatus(req.user.id);
+  successResponse(res, result);
+});
 
 module.exports = {
   registerPhone,

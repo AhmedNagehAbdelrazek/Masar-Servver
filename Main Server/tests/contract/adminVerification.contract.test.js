@@ -90,7 +90,8 @@ describe('US7/US8 Contract - Admin Verification', () => {
     expect(res.status).toBe(422);
     expect(res.body.status).toBe('error');
     expect(res.body.code).toBe('VALIDATION_ERROR');
-    expect(Array.isArray(res.body.message)).toBe(true);
+    expect(typeof res.body.message).toBe('string');
+    expect(Array.isArray(res.body.details)).toBe(true);
   });
 
   it('reject with reason but without fields_to_fix (422)', async () => {

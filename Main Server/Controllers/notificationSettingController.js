@@ -1,41 +1,26 @@
 const notificationSettingService = require('../Services/notificationSettingService');
 const { successResponse } = require('../utils/httpResponse');
+const catchAsync = require('../utils/catchAsync');
 
-const getNotificationSettings = async (req, res, next) => {
-  try {
-    const settings = await notificationSettingService.getSettings(req.user.id);
-    successResponse(res, { settings });
-  } catch (err) {
-    next(err);
-  }
-};
+const getNotificationSettings = catchAsync(async (req, res) => {
+  const settings = await notificationSettingService.getSettings(req.user.id);
+  successResponse(res, { settings });
+});
 
-const updateNotificationSettings = async (req, res, next) => {
-  try {
-    const result = await notificationSettingService.updateSettings(req.user.id, req.body.settings);
-    successResponse(res, result);
-  } catch (err) {
-    next(err);
-  }
-};
+const updateNotificationSettings = catchAsync(async (req, res) => {
+  const result = await notificationSettingService.updateSettings(req.user.id, req.body.settings);
+  successResponse(res, result);
+});
 
-const getGroupedSettings = async (req, res, next) => {
-  try {
-    const result = await notificationSettingService.getGroupedSettings(req.user.id);
-    successResponse(res, result);
-  } catch (err) {
-    next(err);
-  }
-};
+const getGroupedSettings = catchAsync(async (req, res) => {
+  const result = await notificationSettingService.getGroupedSettings(req.user.id);
+  successResponse(res, result);
+});
 
-const updateGroupedSettings = async (req, res, next) => {
-  try {
-    const result = await notificationSettingService.updateGroupedSettings(req.user.id, req.body);
-    successResponse(res, result);
-  } catch (err) {
-    next(err);
-  }
-};
+const updateGroupedSettings = catchAsync(async (req, res) => {
+  const result = await notificationSettingService.updateGroupedSettings(req.user.id, req.body);
+  successResponse(res, result);
+});
 
 module.exports = {
   getNotificationSettings,

@@ -229,8 +229,8 @@ describe('US2 - Initial submission', () => {
 
     expect(res.status).toBe(422);
     expect(res.body.code).toBe('VALIDATION_ERROR');
-    expect(Array.isArray(res.body.message)).toBe(true);
-    const fields = res.body.message.map((m) => m.field);
+    expect(Array.isArray(res.body.details)).toBe(true);
+    const fields = res.body.details.map((m) => m.field);
     expect(fields).toContain('vehicle.model');
     expect(fields).toContain('vehicle.plate_number');
     expect(fields).toContain('vehicle.seats');

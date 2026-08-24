@@ -4,6 +4,7 @@ const { Trip, TripSeat, Booking, Rating, User, Vehicle } = require('../Models');
 const { TRIP_STATUS } = require('../config/constants');
 const { REDIS_KEYS, CACHE_TTL } = require('../utils/redisKeys');
 const { getKey, setKey } = require('../config/redis');
+const { ApiErrors } = require('../utils/ApiError');
 
 /**
  * Get driver dashboard data with caching
@@ -18,7 +19,7 @@ const getDashboard = async (driverId) => {
 
   // Fetch fresh data
   const driver = await User.findByPk(driverId);
-  if (!driver) throw new Error('User not found');
+  if (!driver) throw ApiErrors.notFound('User not found');
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);

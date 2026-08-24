@@ -162,7 +162,7 @@ describe('US1 Contract - Trip Edit/Cancel/Attributes', () => {
     expect(Array.isArray(res.body.attributes)).toBe(true);
   });
 
-  it('422 returns array message per field', async () => {
+  it('422 returns details array per field', async () => {
     const tripId = await createTrip();
     const res = await getAgent()
       .put(`/api/trips/${tripId}`)
@@ -170,8 +170,9 @@ describe('US1 Contract - Trip Edit/Cancel/Attributes', () => {
       .send({ gender_preference: 'nope' });
 
     expect(res.status).toBe(422);
-    expect(Array.isArray(res.body.message)).toBe(true);
-    expect(res.body.message[0].field).toBeDefined();
-    expect(res.body.message[0].message).toBeDefined();
+    expect(typeof res.body.message).toBe('string');
+    expect(Array.isArray(res.body.details)).toBe(true);
+    expect(res.body.details[0].field).toBeDefined();
+    expect(res.body.details[0].message).toBeDefined();
   });
 });

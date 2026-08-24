@@ -1,15 +1,12 @@
 const { successResponse } = require('../utils/httpResponse');
+const catchAsync = require('../utils/catchAsync');
 
-const healthz = async (req, res, next) => {
-  try {
-    successResponse(res, {
-      status: 'ok',
-      timestamp: new Date().toISOString(),
-      uptime: process.uptime(),
-    });
-  } catch (err) {
-    next(err);
-  }
-};
+const healthz = catchAsync(async (req, res) => {
+  successResponse(res, {
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+  });
+});
 
 module.exports = { healthz };

@@ -19,4 +19,16 @@ function rateLimited(message = 'Rate limit exceeded') {
   return error('RATE_LIMITED', message);
 }
 
-module.exports = { ok, error, errorFromApiError, rateLimited };
+/**
+ * Structured error for the Socket.IO handshake middleware. The wire contract
+ * exposes the stable machine `code` through `connect_error.message`, while
+ * `code`/`reason` stay available server-side.
+ */
+function authError(code, reason = 'Authentication failed') {
+  const err = new Error(code);
+  err.code = code;
+  err.reason = reason;
+  return err;
+}
+
+module.exports = { ok, error, errorFromApiError, rateLimited, authError };

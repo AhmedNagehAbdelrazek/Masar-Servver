@@ -115,7 +115,7 @@ describe('Error-code contracts (spec 010)', () => {
       .set('Authorization', `Bearer ${driverToken}`)
       .send({ current_password: 'Nope@1234', new_password: 'Whatever@1' });
 
-    expect(res.status).toBe(422);
+    expect(res.status).toBe(400);
     expect(res.body.status).toBe('error');
     expect(res.body.code).toBe('INVALID_CURRENT_PASSWORD');
     expect(typeof res.body.message).toBe('string');

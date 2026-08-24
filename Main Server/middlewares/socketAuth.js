@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const { isAccessTokenBlacklisted } = require('../Services/authService');
+const { authError } = require('../utils/socketAck');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-in-production';
 
@@ -16,7 +17,7 @@ async function socketAuth(socket, next) {
     (socket.handshake.query && socket.handshake.query.token);
 
   if (!token) {
-    return next(new Error('AUTH_REQUIRED'));
+    return next(authError('AUTH_REQUIRED', 'Authentication token is required.'));
   }
 
   let decoded;
@@ -24,19 +25,19 @@ async function socketAuth(socket, next) {
     decoded = jwt.verify(token, JWT_SECRET);
   } catch (err) {
     if (err.name === 'TokenExpiredError') {
-      return next(new Error('TOKEN_EXPIRED'));
+      return next(authError('TOKEN_EXPIRED', 'Access token has expired.'));
     }
-    return next(new Error('INVALID_TOKEN'));
+    return next(authError('INVALID_TOKEN', 'Invalid access token.'));
   }
 
   if (decoded.type !== 'access') {
-    return next(new Error('INVALID_TOKEN_TYPE'));
+    return next(authError('INVALID_TOKEN_TYPE', 'An access token is required.'));
   }
 
   try {
     const blacklisted = await isAccessTokenBlacklisted(token);
     if (blacklisted) {
-      return next(new Error('TOKEN_REVOKED'));
+      return next(authError('TOKEN_REVOKED', 'Access token has been revoked.'));
     }
 
     const { User } = require('../Models');
@@ -45,10 +46,10 @@ async function socketAuth(socket, next) {
     });
 
     if (!user) {
-      return next(new Error('USER_NOT_FOUND'));
+      return next(authError('USER_NOT_FOUND', 'User no longer exists.'));
     }
     if (user.status === 'banned' || user.status === 'suspended') {
-      return next(new Error('ACCOUNT_SUSPENDED'));
+      return next(authError('ACCOUNT_SUSPENDED', 'Account is banned or suspended.'));
     }
 
     socket.data.user = {
@@ -58,7 +59,7 @@ async function socketAuth(socket, next) {
 
     next();
   } catch (err) {
-    return next(new Error('AUTH_FAILED'));
+    return next(authError('AUTH_FAILED', 'Authentication failed.'));
   }
 }
 

@@ -993,7 +993,7 @@ async function cancelTripWithPenalty(driverId, tripId, { reason, note }) {
     throw ApiErrors.conflict('Trip is already ongoing or completed. Cannot cancel.');
   }
   if (trip.status === TRIP_STATUS.CANCELLED) {
-    throw ApiErrors.conflict('Trip is already cancelled.');
+    throw ApiErrors.custom('Trip is already cancelled.', 409, 'ALREADY_CANCELLED');
   }
 
   const confirmedCount = await Booking.count({
