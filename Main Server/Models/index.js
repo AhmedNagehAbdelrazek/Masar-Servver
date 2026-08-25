@@ -31,6 +31,7 @@ const PaymentMethod = require('./PaymentMethod');
 const NotificationSetting = require('./NotificationSetting');
 const SupportTicketMessage = require('./SupportTicketMessage');
 const DeletionRequest = require('./DeletionRequest');
+const DocumentReview = require('./DocumentReview');
 
 // ===== USER RELATIONS =====
 User.hasOne(DriverProfile, { foreignKey: 'driver_id', as: 'driverProfile' });
@@ -205,4 +206,5 @@ module.exports = {
   NotificationSetting,
   SupportTicketMessage,
   DeletionRequest,
+  DocumentReview,
 };

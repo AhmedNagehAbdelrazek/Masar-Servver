@@ -255,6 +255,17 @@ const APP_MESSAGES = {
   ENDS_AT_IS_REQUIRED_FOR_A_SUSPENSION: { en: 'ends_at is required for a suspension', ar: 'تاريخ الانتهاء مطلوب للتعليق' },
   ENDS_AT_IS_FORBIDDEN_FOR_A_BAN: { en: 'ends_at is forbidden for a ban', ar: 'تاريخ الانتهاء غير مسموح به للحظر' },
 
+  // ===== Admin dashboard (spec 011) =====
+  DRIVER_ALREADY_IN_STATE: { en: 'Driver is already in this state', ar: 'السائق في هذه الحالة بالفعل' },
+  INVALID_DRIVER_STATUS_VALUE: { en: 'Invalid driver status value', ar: 'قيمة حالة السائق غير صالحة' },
+  INVALID_ACCOUNT_ACTION: { en: 'Invalid account action', ar: 'إجراء الحساب غير صالح' },
+  DOCUMENT_KEY_NOT_RECOGNIZED: { en: 'Document key not recognized', ar: 'مفتاح المستند غير معروف' },
+  DOCUMENT_HAS_NO_BACKING_FILE: { en: 'This document has no backing file to review', ar: 'لا يوجد ملف لهذا المستند لمراجعته' },
+  INVALID_MONTH_FILTER: { en: 'Invalid month filter, expected YYYY-MM', ar: 'مرشح الشهر غير صالح، الصيغة المتوقعة YYYY-MM' },
+  ALERT_PENDING_VERIFICATION_DOCUMENTS: { en: 'Verification documents awaiting review', ar: 'مستندات توثيق بانتظار المراجعة' },
+  ALERT_PENDING_REVIEW_DRIVERS: { en: 'Drivers awaiting review', ar: 'سائقون بانتظار المراجعة' },
+  ALERT_UNRESOLVED_COMPLAINTS: { en: 'Unresolved complaints', ar: 'شكاوى غير محلولة' },
+
   // ===== Successes =====
 };
 
