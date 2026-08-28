@@ -19,6 +19,7 @@ const { releaseSeatLock } = require('../utils/seatLock');
 const homeService = require('./homeService');
 const { seatNumbersFor } = require('../utils/seatSerializer');
 const auditService = require('./auditService');
+const { hasFreeTripsOffer, freeTripsLimit } = require('../utils/freeTrips');
 
 /**
  * US3 minimum-balance gate. Rejects with NO_ACTIVE_PLAN when the driver has
@@ -79,7 +80,7 @@ async function assertFreeTripsAvailable(driverId) {
   // Only block if this is a free plan subscription.
   if (!subscription.plan || !subscription.plan.isFree) return;
 
-  const limit = Number(freeOffer.value);
+  const limit = freeTripsLimit(subscription);
   const used = Number(subscription.freeTripsUsed) || 0;
 
   if (used < limit) return;

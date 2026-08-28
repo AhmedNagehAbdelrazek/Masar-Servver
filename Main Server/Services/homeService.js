@@ -1,12 +1,13 @@
 const { Op } = require('sequelize');
 const { User, DriverProfile, Trip, Booking, Vehicle } = require('../Models');
-const { TRIP_STATUS, BOOKING_STATUS, FREE_OFFER_TYPE } = require('../config/constants');
+const { TRIP_STATUS, BOOKING_STATUS } = require('../config/constants');
 const { ApiErrors } = require('../utils/ApiError');
 const balanceService = require('./balanceService');
 const subscriptionService = require('./subscriptionService');
 const { REDIS_KEYS, CACHE_TTL } = require('../utils/redisKeys');
 const { getKey, setKey, deleteKey } = require('../config/redis');
 const { seatNumbersFor } = require('../utils/seatSerializer');
+const { hasFreeTripsOffer, freeTripsLimit } = require('../utils/freeTrips');
 
 const HOUR_MS = 60 * 60 * 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -26,8 +27,8 @@ function toDriverSection(user, profile) {
  * the subscription has no free-trips offer (e.g. paid plans, credit offers).
  */
 function freeTripsFor(sub) {
-  if (!sub || !sub.freeOffer || sub.freeOffer.type !== FREE_OFFER_TYPE.TRIPS) return null;
-  const limit = Number(sub.freeOffer.value) || 0;
+  if (!hasFreeTripsOffer(sub)) return null;
+  const limit = freeTripsLimit(sub);
   const used = Number(sub.freeTripsUsed) || 0;
   return { max: limit, used, remaining: Math.max(0, limit - used) };
 }

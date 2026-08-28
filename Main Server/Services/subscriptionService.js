@@ -6,6 +6,7 @@ const { ApiErrors } = require('../utils/ApiError');
 const balanceService = require('./balanceService');
 const notificationService = require('./notificationService');
 const auditService = require('./auditService');
+const { hasFreeTripsOffer, freeTripsLimit } = require('../utils/freeTrips');
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -47,8 +48,8 @@ function toSubscriptionDTO(sub) {
   };
 
   // Show free trips info from the snapshot on the subscription.
-  if (sub.freeOffer && sub.freeOffer.type === FREE_OFFER_TYPE.TRIPS) {
-    const limit = Number(sub.freeOffer.max) || 0;
+  if (hasFreeTripsOffer(sub)) {
+    const limit = freeTripsLimit(sub);
     const used = Number(sub.freeTripsUsed) || 0;
     dto.free_trips = {
       max: limit,
@@ -78,8 +79,8 @@ function toCurrentDTO(sub, user) {
   };
 
   // Show free trips info from the snapshot on the subscription.
-  if (sub && sub.freeOffer && sub.freeOffer.type === FREE_OFFER_TYPE.TRIPS) {
-    const limit = Number(sub.freeOffer.value) || 0;
+  if (hasFreeTripsOffer(sub)) {
+    const limit = freeTripsLimit(sub);
     const used = Number(sub.freeTripsUsed) || 0;
     result.subscription.free_trips = {
       max: limit,
