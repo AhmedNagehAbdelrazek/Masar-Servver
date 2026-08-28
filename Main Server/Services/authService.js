@@ -6,7 +6,7 @@ const { ApiErrors } = require('../utils/ApiError');
 const { setKey, getKey, deleteKey } = require('../config/redis');
 const otpService = require('./otpService');
 const { validatePhone } = require('../utils/phoneValidator');
-const { TEST_PHONES, SUBSCRIPTION_STATUS, FREE_OFFER_TYPE } = require('../config/constants');
+const { TEST_PHONES, SUBSCRIPTION_STATUS, FREE_OFFER_TYPE, VERIFICATION_STATUS } = require('../config/constants');
 const balanceService = require('./balanceService');
 const auditService = require('./auditService');
 
@@ -186,7 +186,6 @@ async function registerPassword(authHeader, password) {
       if (freePlan) {
         const now = new Date();
         const expiresAt = new Date(now.getTime() + Number(freePlan.periodDays) * 24 * 60 * 60 * 1000);
-
         const sub = await DriverSubscription.create({
           driverId: user.id,
           planId: freePlan.id,
@@ -667,6 +666,14 @@ async function submitDriverProfile(userId, data) {
     nationalID: data.nationalID,
   });
 
+  const vehicle = await Vehicle.findOne({ where: { driverId: userId } });
+  if (vehicle) {
+    await user.update({
+      verificationStatus: VERIFICATION_STATUS.PENDING,
+      verificationSubmittedAt: new Date(),
+    });
+  }
+
   auditService.track({
     action: 'driver_profile.submitted',
     resourceType: 'driver_profile',
@@ -742,6 +749,11 @@ async function submitVehicle(userId, data) {
     registrationDocBack: data.registrationDocBack,
     vehiclePhotoFront: data.vehiclePhotoFront,
     vehiclePhotoBack: data.vehiclePhotoBack,
+  });
+
+  await user.update({
+    verificationStatus: VERIFICATION_STATUS.PENDING,
+    verificationSubmittedAt: new Date(),
   });
 
   auditService.track({

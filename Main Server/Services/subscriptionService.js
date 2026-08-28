@@ -48,7 +48,7 @@ function toSubscriptionDTO(sub) {
 
   // Show free trips info from the snapshot on the subscription.
   if (sub.freeOffer && sub.freeOffer.type === FREE_OFFER_TYPE.TRIPS) {
-    const limit = Number(sub.freeOffer.value) || 0;
+    const limit = Number(sub.freeOffer.max) || 0;
     const used = Number(sub.freeTripsUsed) || 0;
     dto.free_trips = {
       max: limit,

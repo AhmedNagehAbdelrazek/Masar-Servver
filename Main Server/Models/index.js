@@ -34,8 +34,8 @@ const DeletionRequest = require('./DeletionRequest');
 const DocumentReview = require('./DocumentReview');
 
 // ===== USER RELATIONS =====
-User.hasOne(DriverProfile, { foreignKey: 'driver_id', as: 'driverProfile' });
-DriverProfile.belongsTo(User, { foreignKey: 'driver_id', as: 'driver' });
+User.hasOne(DriverProfile, { foreignKey: 'driverId', as: 'driverProfile' });
+DriverProfile.belongsTo(User, { foreignKey: 'driverId', as: 'driver' });
 
 User.hasOne(PassengerProfile, { foreignKey: 'passenger_id', as: 'passengerProfile' });
 PassengerProfile.belongsTo(User, { foreignKey: 'passenger_id', as: 'passenger' });

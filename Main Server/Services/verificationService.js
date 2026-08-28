@@ -155,7 +155,7 @@ function buildQueueVehiclePayload(vehicle) {
  * package per driver, filtered by `users.verification_status` (default pending).
  */
 async function getQueue(filters = {}) {
-  const { status = 'pending', search } = filters;
+  const { status , search } = filters;
   const { page, limit } = parsePagination(filters);
 
   const where = {};
