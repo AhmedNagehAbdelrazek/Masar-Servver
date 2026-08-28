@@ -26,6 +26,26 @@ const { hasFreeTripsOffer, freeTripsLimit } = require('../utils/freeTrips');
  * no active plan, or INSUFFICIENT_BALANCE when the total balance cannot
  * cover the commission for one seat.
  */
+async function hasRemainingFreeTrips(driverId) {
+  const now = new Date();
+  const subscription = await DriverSubscription.findOne({
+    where: {
+      driverId,
+      status: 'active',
+      expiresAt: { [Op.gt]: now },
+    },
+    include: [{
+      model: SubscriptionPlan,
+      as: 'plan',
+      attributes: ['id', 'isFree'],
+    }],
+  });
+  if (!subscription || !hasFreeTripsOffer(subscription)) return false;
+  if (!subscription.plan || !subscription.plan.isFree) return false;
+  const used = Number(subscription.freeTripsUsed) || 0;
+  return used < freeTripsLimit(subscription);
+}
+
 async function assertCanPublish(driverId, farePerSeat) {
   const { current, minimum, totalBalance } = await commissionService.getGatingSnapshot(
     driverId,
@@ -33,6 +53,10 @@ async function assertCanPublish(driverId, farePerSeat) {
   );
   if (!current) {
     throw ApiErrors.custom('YOU_NEED_AN_ACTIVE_PLAN_TO_PUBLISH_TRIPS', 422, 'NO_ACTIVE_PLAN');
+  }
+  // Free-trip allowance covers publishing without needing a pre-funded balance.
+  if (await hasRemainingFreeTrips(driverId)) {
+    return { minimum, totalBalance, freeTrips: true };
   }
   if (totalBalance < minimum) {
     throw ApiErrors.custom(
@@ -546,7 +570,7 @@ const startTrip = async (driverId, tripId) => {
   if (!current) {
     throw ApiErrors.custom('YOU_NEED_AN_ACTIVE_PLAN_TO_START_TRIPS', 422, 'NO_ACTIVE_PLAN');
   }
-  if (totalBalance < minimum) {
+  if (!(await hasRemainingFreeTrips(driverId)) && totalBalance < minimum) {
     const user = await User.findByPk(driverId);
     if (user) {
       try {
