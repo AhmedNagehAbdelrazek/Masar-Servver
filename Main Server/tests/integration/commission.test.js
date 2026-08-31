@@ -28,12 +28,6 @@ let driverToken;
 let method;
 let screenshot;
 
-function getFutureDate(daysAhead = 1) {
-  const d = new Date();
-  d.setDate(d.getDate() + daysAhead);
-  return d.toISOString().split('T')[0];
-}
-
 function getStartableDeparture() {
   const d = new Date(Date.now() + 30 * 60 * 1000);
   const pad = (n) => String(n).padStart(2, '0');

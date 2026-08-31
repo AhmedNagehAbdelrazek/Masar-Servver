@@ -99,7 +99,7 @@ async function updateLocation(user, payload) {
 }
 
 async function startTracking(user, tripId) {
-  const trip = await assertDriverOfActiveTrip(user, tripId);
+  await assertDriverOfActiveTrip(user, tripId);
   const out = {
     trip_id: tripId,
     driver_lat: null,
@@ -114,7 +114,7 @@ async function startTracking(user, tripId) {
 }
 
 async function stopTracking(user, tripId) {
-  const trip = await assertDriverOfActiveTrip(user, tripId);
+  await assertDriverOfActiveTrip(user, tripId);
   const out = {
     trip_id: tripId,
     driver_lat: null,

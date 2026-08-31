@@ -1,4 +1,4 @@
-﻿const { body, header, param } = require('express-validator');
+﻿const { body } = require('express-validator');
 const { validatePhone } = require('../phoneValidator');
 const V = require('../../config/messages/validation-keys');
 

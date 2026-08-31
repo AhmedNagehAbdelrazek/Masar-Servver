@@ -101,7 +101,7 @@ function disconnectUserSockets(userId) {
     if (socket.data.user && socket.data.user.id === userId) {
       try {
         socket.emit('force_disconnect', { reason: 'SESSION_TERMINATED' });
-      } catch (err) {
+      } catch (_err) {
         // ignore
       }
       socket.disconnect(true);

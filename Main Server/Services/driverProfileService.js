@@ -1,5 +1,5 @@
 const { Op } = require('sequelize');
-const { User, DriverProfile, Vehicle, Rating, Penalty, DriverSubscription } = require('../Models');
+const { DriverProfile, Vehicle, Rating, Penalty, DriverSubscription } = require('../Models');
 const statsService = require('./statsService');
 const balanceService = require('./balanceService');
 const { USER_STATUS, PENALTY_TYPES, SUBSCRIPTION_STATUS } = require('../config/constants');
@@ -111,7 +111,7 @@ async function getFullProfile(driverId) {
     let subscription = null;
     try {
         subscription = await balanceService.findCurrentSubscription(driverId);
-    } catch (err) {
+    } catch (_err) {
         subscription = null;
     }
 

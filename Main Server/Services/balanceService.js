@@ -1,7 +1,7 @@
 const { Op } = require('sequelize');
 const sequelize = require('../config/database');
-const { DriverSubscription, SubscriptionPlan, User, Trip, Booking } = require('../Models');
-const { SUBSCRIPTION_STATUS, BOOKING_STATUS, TRIP_STATUS } = require('../config/constants');
+const { DriverSubscription, SubscriptionPlan, User, Trip } = require('../Models');
+const { SUBSCRIPTION_STATUS, TRIP_STATUS } = require('../config/constants');
 const auditService = require('./auditService');
 const notificationService = require('./notificationService');
 

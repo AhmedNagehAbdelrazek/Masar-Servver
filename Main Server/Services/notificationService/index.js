@@ -508,7 +508,6 @@ async function notifyConfirmedPassengers(tripIds, type, { vars = {}, data = {}, 
  */
 async function listForUser(userId, { unread = null, page = 1, limit = 20 } = {}) {
   const { Notification } = require('../../Models');
-  const { Op } = require('sequelize');
   const where = { userId };
   if (unread === true) where.isRead = false;
   else if (unread === false) where.isRead = true;
@@ -581,7 +580,7 @@ function emitCount(userId) {
         });
       })
       .catch(() => {});
-  } catch (err) {
+  } catch (_err) {
     // ignore
   }
 }

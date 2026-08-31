@@ -9,12 +9,6 @@ const VEHICLE_ID = '3c3b7a4e-1111-4d5e-9f0a-2b3c4d5e6f70';
 
 let driverToken;
 
-function getFutureDate(daysAhead = 1) {
-  const d = new Date();
-  d.setDate(d.getDate() + daysAhead);
-  return d.toISOString().split('T')[0];
-}
-
 function getStartableDeparture() {
   const d = new Date(Date.now() + 30 * 60 * 1000);
   const pad = (n) => String(n).padStart(2, '0');

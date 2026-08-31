@@ -1,8 +1,4 @@
 const {
-  User,
-  DriverProfile,
-  Vehicle,
-  UploadedImage,
   VerificationStatusChange,
 } = require('../../Models');
 

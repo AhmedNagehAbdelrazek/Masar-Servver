@@ -13,7 +13,6 @@ const VEHICLE_ID = '550e8400-e29b-41d4-a716-446655440010';
 const OTHER_VEHICLE_ID = '550e8400-e29b-41d4-a716-446655440011';
 
 let driverToken;
-let otherDriverToken;
 
 async function seedActiveSubscription(driverId) {
   const plan = await SubscriptionPlan.create({
@@ -67,7 +66,6 @@ beforeEach(async () => {
   await seedActiveSubscription(OTHER_DRIVER_ID);
 
   driverToken = generateAccessToken({ id: DRIVER_ID, role: 'driver' });
-  otherDriverToken = generateAccessToken({ id: OTHER_DRIVER_ID, role: 'driver' });
 });
 
 function makeRef() {

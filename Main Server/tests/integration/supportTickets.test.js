@@ -191,11 +191,8 @@ describe('US5 - creating support tickets', () => {
 });
 
 describe('US5 - listing tickets', () => {
-  let ticketId;
-
   beforeEach(async () => {
-    const res = await createTicket(passengerToken);
-    ticketId = res.body.support_ticket.id;
+    await createTicket(passengerToken);
   });
 
   it('should show passengers only their own tickets', async () => {

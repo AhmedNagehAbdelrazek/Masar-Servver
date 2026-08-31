@@ -310,8 +310,6 @@ const NOTIFICATION_TYPE_LABELS = {
   },
 };
 
-const SIGNUP_ROLES = [ROLES.PASSENGER, ROLES.DRIVER];
-
 // How long a ride-request offer stays decidable before it auto-expires.
 const REQUEST_OFFER_TTL_HOURS = 24;
 

@@ -1,6 +1,5 @@
 const { Sequelize } = require('sequelize');
 const config = require('./config');
-const { execSync } = require('child_process');
 
 const environment = process.env.NODE_ENV || 'development';
 const dbConfig = config[environment];

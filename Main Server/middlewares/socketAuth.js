@@ -58,7 +58,7 @@ async function socketAuth(socket, next) {
     };
 
     next();
-  } catch (err) {
+  } catch (_err) {
     return next(authError('AUTH_FAILED', 'Authentication failed.'));
   }
 }

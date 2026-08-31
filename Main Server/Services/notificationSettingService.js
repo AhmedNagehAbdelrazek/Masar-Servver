@@ -1,6 +1,5 @@
 const { NotificationSetting } = require('../Models');
 const { NOTIFICATION_TYPE, NOTIFICATION_TYPE_LABELS } = require('../config/constants');
-const { ApiErrors } = require('../utils/ApiError');
 
 const ALL_TYPES = Object.values(NOTIFICATION_TYPE);
 

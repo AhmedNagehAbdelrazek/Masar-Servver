@@ -14,7 +14,6 @@ const { generateAccessToken } = require('../setup/helpers');
 const {
   TRIP_STATUS,
   SUBSCRIPTION_STATUS,
-  BOOKING_STATUS,
 } = require('../../config/constants');
 
 const DRIVER_ID = '550e8400-e29b-41d4-a716-446655440f11';

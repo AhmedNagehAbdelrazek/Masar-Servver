@@ -1,4 +1,4 @@
-const { getAgent, getRedisStore } = require('../setup/setup');
+const { getAgent } = require('../setup/setup');
 const { User, Vehicle, Trip, TripSeat, SubscriptionPlan, DriverSubscription } = require('../../Models');
 const { generateAccessToken } = require('../setup/helpers');
 const { SUBSCRIPTION_STATUS } = require('../../config/constants');

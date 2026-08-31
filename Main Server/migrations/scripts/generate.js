@@ -10,7 +10,7 @@ const cmd = `npx makemigration --models-path "${modelsPath}" --migrations-path "
 
 try {
   execSync(cmd, { stdio: 'inherit', cwd: process.cwd() });
-} catch (err) {
+} catch (_err) {
   process.exit(1);
 }
 

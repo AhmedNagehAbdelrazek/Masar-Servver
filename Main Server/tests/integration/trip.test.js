@@ -1,4 +1,4 @@
-const { getAgent, getRedisStore } = require('../setup/setup');
+const { getAgent } = require('../setup/setup');
 const { User, Vehicle, Trip, TripSeat, TripStop, SubscriptionPlan, DriverSubscription } = require('../../Models');
 const { TRIP_STATUS, SEAT_TYPE, GENDER_PREFERENCE, SUBSCRIPTION_STATUS } = require('../../config/constants');
 const { generateAccessToken } = require('../setup/helpers');
@@ -210,7 +210,7 @@ describe('Trip - Create Trip', () => {
     });
 
     it('should reject if origin_city is missing', async () => {
-      const { origin_city, ...body } = VALID_TRIP_BODY;
+      const { origin_city: _origin_city, ...body } = VALID_TRIP_BODY;
       const res = await getAgent()
         .post('/api/trips')
         .set('Authorization', `Bearer ${driverToken}`)
@@ -220,7 +220,7 @@ describe('Trip - Create Trip', () => {
     });
 
     it('should reject if destination_city is missing', async () => {
-      const { destination_city, ...body } = VALID_TRIP_BODY;
+      const { destination_city: _destination_city, ...body } = VALID_TRIP_BODY;
       const res = await getAgent()
         .post('/api/trips')
         .set('Authorization', `Bearer ${driverToken}`)
@@ -230,7 +230,7 @@ describe('Trip - Create Trip', () => {
     });
 
     it('should reject if departure_date is missing', async () => {
-      const { departure_date, ...body } = VALID_TRIP_BODY;
+      const { departure_date: _departure_date, ...body } = VALID_TRIP_BODY;
       const res = await getAgent()
         .post('/api/trips')
         .set('Authorization', `Bearer ${driverToken}`)
@@ -240,7 +240,7 @@ describe('Trip - Create Trip', () => {
     });
 
     it('should reject if departure_time is missing', async () => {
-      const { departure_time, ...body } = VALID_TRIP_BODY;
+      const { departure_time: _departure_time, ...body } = VALID_TRIP_BODY;
       const res = await getAgent()
         .post('/api/trips')
         .set('Authorization', `Bearer ${driverToken}`)
@@ -250,7 +250,7 @@ describe('Trip - Create Trip', () => {
     });
 
     it('should reject if fare_per_seat is missing', async () => {
-      const { fare_per_seat, ...body } = VALID_TRIP_BODY;
+      const { fare_per_seat: _fare_per_seat, ...body } = VALID_TRIP_BODY;
       const res = await getAgent()
         .post('/api/trips')
         .set('Authorization', `Bearer ${driverToken}`)
@@ -260,7 +260,7 @@ describe('Trip - Create Trip', () => {
     });
 
     it('should reject if seats config is missing', async () => {
-      const { seats, ...body } = VALID_TRIP_BODY;
+      const { seats: _seats, ...body } = VALID_TRIP_BODY;
       const res = await getAgent()
         .post('/api/trips')
         .set('Authorization', `Bearer ${driverToken}`)

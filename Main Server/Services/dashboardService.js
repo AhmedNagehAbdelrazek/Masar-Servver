@@ -1,6 +1,6 @@
 const { Op } = require('sequelize');
 const sequelize = require('../config/database');
-const { Trip, TripSeat, Booking, Rating, User, Vehicle } = require('../Models');
+const { Trip, TripSeat, Booking, Rating, User } = require('../Models');
 const { TRIP_STATUS } = require('../config/constants');
 const { REDIS_KEYS, CACHE_TTL } = require('../utils/redisKeys');
 const { getKey, setKey } = require('../config/redis');

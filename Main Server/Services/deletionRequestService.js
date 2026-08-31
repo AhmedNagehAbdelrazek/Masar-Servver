@@ -1,4 +1,3 @@
-const { Op } = require('sequelize');
 const { DeletionRequest, User } = require('../Models');
 const ApiError = require('../utils/ApiError');
 const { ApiErrors } = ApiError;

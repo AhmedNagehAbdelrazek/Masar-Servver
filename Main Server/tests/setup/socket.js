@@ -89,12 +89,12 @@ async function stopSocketServer() {
   const io = getIO();
   try {
     if (io) await io.close();
-  } catch (err) {
+  } catch (_err) {
     // already closed
   }
   try {
     if (httpServer) await new Promise((resolve) => httpServer.close(resolve));
-  } catch (err) {
+  } catch (_err) {
     // ignore
   }
   httpServer = null;

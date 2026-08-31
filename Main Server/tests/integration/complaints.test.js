@@ -1,6 +1,6 @@
 const { getAgent } = require('../setup/setup');
 const { User, Complaint, Booking, Trip } = require('../../Models');
-const { BOOKING_STATUS, COMPLAINT_STATUS } = require('../../config/constants');
+const { COMPLAINT_STATUS } = require('../../config/constants');
 const { generateAccessToken } = require('../setup/helpers');
 
 const ADMIN_PHONE = '+962790000000';

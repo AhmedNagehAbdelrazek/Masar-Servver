@@ -27,6 +27,6 @@ startServer().catch((err) => {
 
 const app = createApp();
 const httpServer = http.createServer(app);
-const io = createSocketServer(httpServer);
+createSocketServer(httpServer);
 
 module.exports = app;

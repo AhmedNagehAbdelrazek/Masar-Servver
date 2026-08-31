@@ -1,4 +1,3 @@
-const { Op } = require('sequelize');
 const { DelayEvent, Booking, Trip, User } = require('../Models');
 const { ApiErrors } = require('../utils/ApiError');
 const { parsePagination, buildPagination } = require('../utils/pagination');

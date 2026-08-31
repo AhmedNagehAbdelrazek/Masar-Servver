@@ -28,7 +28,7 @@ jest.mock('../../config/redis', () => {
     }),
     redis: {
       get: jest.fn(async (key) => store.get(key) || null),
-      set: jest.fn(async (key, value, ...args) => {
+      set: jest.fn(async (key, value, ..._args) => {
         store.set(key, value);
         return 'OK';
       }),
@@ -41,7 +41,7 @@ jest.mock('../../config/redis', () => {
         const prefix = pattern.replace('*', '');
         return [...store.keys()].filter(k => k.startsWith(prefix));
       }),
-      expire: jest.fn(async (key, ttl) => store.has(key) ? 1 : 0),
+      expire: jest.fn(async (key, _ttl) => store.has(key) ? 1 : 0),
     },
   };
 });
@@ -63,7 +63,7 @@ beforeAll(async () => {
 afterAll(async () => {
   try {
     await sequelize.close();
-  } catch (err) {
+  } catch (_err) {
     // ignore
   }
 });

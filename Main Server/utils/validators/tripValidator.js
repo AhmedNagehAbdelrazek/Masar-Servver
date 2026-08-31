@@ -1,5 +1,5 @@
 const { body, param, query } = require('express-validator');
-const { TRIP_STATUS, GENDER_PREFERENCE, BOOKING_STATUS } = require('../../config/constants');
+const { GENDER_PREFERENCE, BOOKING_STATUS } = require('../../config/constants');
 const V = require('../../config/messages/validation-keys');
 
 const createTripValidation = [

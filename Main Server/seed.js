@@ -59,7 +59,7 @@ const TEST_ACCOUNTS = [
   },
 ];
 
-async function seed() {
+async function _seed() {
   console.log('Seeding database...');
 
   await sequelize.authenticate();

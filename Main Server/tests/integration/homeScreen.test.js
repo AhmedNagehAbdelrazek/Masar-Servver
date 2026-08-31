@@ -24,7 +24,6 @@ const VEHICLE_ID = '550e8400-e29b-41d4-a716-446655440e60';
 const VEHICLE2_ID = '550e8400-e29b-41d4-a716-446655440e61';
 
 let driverToken;
-let driver2Token;
 
 function future(minutesFromNow) {
   return new Date(Date.now() + minutesFromNow * 60 * 1000);
@@ -145,7 +144,6 @@ beforeEach(async () => {
   await seedDriver(DRIVER2_ID, VEHICLE2_ID);
 
   driverToken = generateAccessToken({ id: DRIVER_ID, role: 'driver' });
-  driver2Token = generateAccessToken({ id: DRIVER2_ID, role: 'driver' });
 });
 
 describe('US1 - Home screen', () => {

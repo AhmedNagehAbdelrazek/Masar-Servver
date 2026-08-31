@@ -575,7 +575,7 @@ async function getDriverEvaluations(driverId, query) {
 }
 
 async function getAccountLog(driverId) {
-  const driver = await getDriverOrThrow(driverId);
+  await getDriverOrThrow(driverId);
   const now = new Date();
   const [penalties, complaints] = await Promise.all([
     Penalty.findAll({ where: { userId: driverId }, order: [['starts_at', 'DESC']] }),

@@ -57,19 +57,6 @@ if (content.includes(arrayNeedle)) {
 }
 
 // Patch 3: Array defaultValue — emit actual array literal instead of Sequelize.Array
-const defaultNeedle = `const reverseSequelizeDefValueType = function(defaultValue, prefix = 'Sequelize.')
-{
-    if (typeof defaultValue === 'object') {
-        if (defaultValue.constructor && defaultValue.constructor.name) {
-            return { internal: true, value: prefix + defaultValue.constructor.name };
-        }
-    }
-
-    if (typeof defaultValue === 'function')
-        return { notSupported: true, value: '' };
-
-    return { value: defaultValue };
-};`;
 
 // Match with flexible whitespace
 const defaultRegex = /const reverseSequelizeDefValueType = function\(defaultValue, prefix = 'Sequelize\.'\)\s*\{\s*if \(typeof defaultValue === 'object'\) \{\s*if \(defaultValue\.constructor && defaultValue\.constructor\.name\) \{\s*return \{ internal: true, value: prefix \+ defaultValue\.constructor\.name \};\s*\}\s*\}\s*if \(typeof defaultValue === 'function'\)\s*return \{ notSupported: true, value: '' \};\s*return \{ value: defaultValue \};\s*\};/;

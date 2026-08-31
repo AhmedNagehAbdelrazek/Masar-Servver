@@ -1,7 +1,7 @@
 ﻿const { getAgent } = require('../setup/setup');
 const {
   User, Vehicle, Trip, Booking, Rating, Penalty, Complaint, DriverProfile,
-  DriverSubscription, UploadedImage, DocumentReview, SubscriptionPlan,
+  DriverSubscription, UploadedImage, SubscriptionPlan,
 } = require('../../Models');
 const { TRIP_STATUS, BOOKING_STATUS, COMPLAINT_STATUS, PENALTY_TYPES } = require('../../config/constants');
 const { generateAccessToken } = require('../setup/helpers');
@@ -111,7 +111,7 @@ async function seedDossier() {
     totalSeats: 4, availableSeats: 4, farePerSeat: 30, status: TRIP_STATUS.CANCELLED,
   });
 
-  const bookingInMonth = await Booking.create({
+  await Booking.create({
     tripId: tripInMonth.id, passengerId: PASSENGER_ID,
     seatsBooked: 3, agreedFare: 30, referenceCode: `RD${Date.now() % 1000000}`,
     status: BOOKING_STATUS.CONFIRMED,

@@ -3,11 +3,9 @@ const {
   User,
   FavoriteDriver,
   FavoriteRoute,
-  SubscriptionPlan,
   DriverSubscription,
 } = require('../../Models');
 const { generateAccessToken } = require('../setup/helpers');
-const { SUBSCRIPTION_STATUS } = require('../../config/constants');
 
 const PASSENGER_ID = 'fa000000-0000-4000-8000-000000000001';
 const DRIVER1_ID = 'fa000000-0000-4000-8000-000000000002';

@@ -70,7 +70,7 @@ const checkSeatLock = async (tripId, seatNumber) => {
             passengerId: parsed.passenger_id,
             expiresAt: new Date(parsed.expires_at),
         };
-    } catch (err) {
+    } catch (_err) {
         return { locked: false, passengerId: null, expiresAt: null };
     }
 };

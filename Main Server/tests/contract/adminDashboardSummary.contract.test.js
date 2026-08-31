@@ -1,6 +1,6 @@
 ﻿const { getAgent } = require('../setup/setup');
 const { User, Vehicle, Trip, Complaint, UploadedImage, DriverProfile, DocumentReview } = require('../../Models');
-const { TRIP_STATUS, COMPLAINT_STATUS } = require('../../config/constants');
+const { TRIP_STATUS } = require('../../config/constants');
 const { generateAccessToken } = require('../setup/helpers');
 
 const ADMIN_ID = 'a5000000-0000-4000-8000-000000000001';

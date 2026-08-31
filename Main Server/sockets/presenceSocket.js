@@ -16,7 +16,7 @@ module.exports = (io, socket) => {
     try {
       await presenceService.markOnline(user.id, user.role);
       if (ack) ack(ok({ status: 'online' }));
-    } catch (err) {
+    } catch (_err) {
       if (ack) ack(ok({ status: 'online' }));
     }
   });
