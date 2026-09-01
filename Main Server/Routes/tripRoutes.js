@@ -18,6 +18,9 @@ router.get('/search/available', protect, ...searchAvailableTripsValidation, vali
 // Get trip by ID
 router.get('/:trip_id', protect, ...tripParamValidation, validate, c.getTripById);
 
+// Booking options for a trip: open seats + drop-off points (any authenticated user)
+router.get('/:trip_id/options', protect, ...tripParamValidation, validate, c.getTripOptions);
+
 // Start a trip (driver only)
 router.post('/:trip_id/start', protect, roleGuard(['driver']), c.startTrip);
 

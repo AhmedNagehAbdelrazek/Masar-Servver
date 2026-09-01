@@ -2,6 +2,7 @@ const REDIS_KEYS = {
   SEAT_LOCK: (tripId, seatNumber) => `seat_lock:${tripId}:${seatNumber}`,
   DRIVER_DASHBOARD: (driverId) => `driver_dashboard:${driverId}`,
   DRIVER_HOME: (driverId) => `driver_home:${driverId}`,
+  PASSENGER_HOME: (passengerId) => `passenger_home:${passengerId}`,
   TRIP_CACHE: (tripId) => `trip:${tripId}`,
   OTP: (phone) => `otp:${phone}`,
   REFRESH_TOKEN: (userId) => `refresh:${userId}`,

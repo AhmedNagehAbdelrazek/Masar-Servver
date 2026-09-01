@@ -5,6 +5,7 @@ const { runExpiryReminder } = require('./expiryReminderJob');
 const { runLowBalanceWarning } = require('./lowBalanceWarningJob');
 const { runSosEscalation } = require('./sosEscalationJob');
 const { runDataRetention } = require('./dataRetentionJob');
+const { runDriverStats } = require('./driverStatsJob');
 
 /**
  * Scheduled jobs registry (T050). Cron schedules come from env vars with
@@ -34,6 +35,10 @@ const JOBS = {
   dataRetention: {
     schedule: process.env.JOB_DATA_RETENTION_CRON || '0 3 * * *',
     task: runDataRetention,
+  },
+  driverStats: {
+    schedule: process.env.JOB_DRIVER_STATS_CRON || '0 2 * * *',
+    task: runDriverStats,
   },
 };
 
@@ -97,4 +102,5 @@ module.exports = {
   runLowBalanceWarning,
   runSosEscalation,
   runDataRetention,
+  runDriverStats,
 };

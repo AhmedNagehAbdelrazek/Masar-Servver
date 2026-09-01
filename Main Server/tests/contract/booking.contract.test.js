@@ -1,5 +1,5 @@
 ﻿const { getAgent } = require('../setup/setup');
-const { User, Vehicle, Trip, TripSeat, Booking, SubscriptionPlan, DriverSubscription } = require('../../Models');
+const { User, Vehicle, Trip, TripSeat, Booking, DriverProfile, SubscriptionPlan, DriverSubscription } = require('../../Models');
 const { SUBSCRIPTION_STATUS } = require('../../config/constants');
 const { generateAccessToken } = require('../setup/helpers');
 
@@ -31,6 +31,7 @@ beforeEach(async () => {
   await Booking.destroy({ where: {}, force: true });
   await TripSeat.destroy({ where: {}, force: true });
   await Trip.destroy({ where: {}, force: true });
+  await DriverProfile.destroy({ where: { driverId: DRIVER_ID }, force: true });
   await DriverSubscription.destroy({ where: { driverId: DRIVER_ID }, force: true });
   await Vehicle.destroy({ where: { id: VEHICLE_ID }, force: true });
   await User.destroy({ where: { id: [DRIVER_ID, PASSENGER_ID] }, force: true });
@@ -124,11 +125,9 @@ describe('US2 Contract - Passenger Booking Endpoints', () => {
       .set('Authorization', `Bearer ${passengerToken}`);
 
     expect(res.status).toBe(200);
-    expect(res.body.booking.trip).toMatchObject({
-      origin: 'Amman',
-      destination: 'Irbid',
-      price: 15.5,
-    });
+    expect(res.body.booking.trip.origin).toMatchObject({ city: 'Amman' });
+    expect(res.body.booking.trip.destination).toMatchObject({ city: 'Irbid' });
+    expect(res.body.booking.trip.price).toBe(15.5);
     expect(typeof res.body.booking.driver.rating).toBe('number');
     expect(res.body.booking.driver).toMatchObject({
       id: DRIVER_ID,
@@ -165,5 +164,76 @@ describe('US2 Contract - Passenger Booking Endpoints', () => {
     expect(res.status).toBe(200);
     expect(res.body.booking.status).toBe('cancelled');
     expect(res.body.booking.cancelled_at).toBeDefined();
+  });
+});
+
+describe('US5 Contract - Driver Profile Reveal', () => {
+  it('GET /api/bookings/:booking_id/driver-profile returns reveal shape', async () => {
+    await User.update(
+      { age: 34, gender: 'male' },
+      { where: { id: DRIVER_ID } }
+    );
+    await DriverProfile.create({
+      driverId: DRIVER_ID, totalTrips: 32, punctualityRate: 96, professionalDriver: true,
+    });
+
+    await getAgent()
+      .post(`/api/trips/${tripId}/seats/lock`)
+      .set('Authorization', `Bearer ${passengerToken}`)
+      .send({ seat_number: 2 });
+    const created = await getAgent()
+      .post('/api/bookings')
+      .set('Authorization', `Bearer ${passengerToken}`)
+      .send({ trip_id: tripId, seat_number: 2, agreed_fare: '15.50' });
+    const bookingId = created.body.booking.id;
+
+    const res = await getAgent()
+      .get(`/api/bookings/${bookingId}/driver-profile`)
+      .set('Authorization', `Bearer ${passengerToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.driver).toMatchObject({
+      first_name: 'Contract',
+      last_name: 'Driver',
+      phone: '+962799111111',
+      age: 34,
+      gender: 'male',
+      is_professional_driver: true,
+      driver_stats: {
+        punctuality_rate: 96,
+        completed_trips: 32,
+        rating: 0,
+      },
+      vehicle_details: {
+        manufacturer: 'Toyota',
+        model: 'Camry',
+        year: 2023,
+        color: 'White',
+        plate_number: 'CTR-2001',
+        seat_capacity: 4,
+      },
+    });
+  });
+
+  it('GET driver-profile on cancelled booking returns 409 reveal code', async () => {
+    await getAgent()
+      .post(`/api/trips/${tripId}/seats/lock`)
+      .set('Authorization', `Bearer ${passengerToken}`)
+      .send({ seat_number: 2 });
+    const created = await getAgent()
+      .post('/api/bookings')
+      .set('Authorization', `Bearer ${passengerToken}`)
+      .send({ trip_id: tripId, seat_number: 2, agreed_fare: '15.50' });
+    const bookingId = created.body.booking.id;
+    await getAgent()
+      .put(`/api/bookings/${bookingId}/cancel`)
+      .set('Authorization', `Bearer ${passengerToken}`);
+
+    const res = await getAgent()
+      .get(`/api/bookings/${bookingId}/driver-profile`)
+      .set('Authorization', `Bearer ${passengerToken}`);
+
+    expect(res.status).toBe(409);
+    expect(res.body.code).toBe('DRIVER_REVEAL_AVAILABLE_ONLY_AFTER_BOOKING_CONFIRMATION');
   });
 });

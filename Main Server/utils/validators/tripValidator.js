@@ -1,5 +1,5 @@
 const { body, param, query } = require('express-validator');
-const { GENDER_PREFERENCE, BOOKING_STATUS } = require('../../config/constants');
+const { GENDER_PREFERENCE, BOOKING_STATUS, VEHICLE_TYPES } = require('../../config/constants');
 const V = require('../../config/messages/validation-keys');
 
 const createTripValidation = [
@@ -169,6 +169,28 @@ const searchAvailableTripsValidation = [
   query('gender_preference')
     .optional()
     .isIn(Object.values(GENDER_PREFERENCE)).withMessage(V.GENDER_PREFERENCE_MUST_BE_ONE_OF_ALL_WOMEN_ONLY_MEN_ONLY),
+
+  query('time_from')
+    .optional()
+    .matches(/^([01]\d|2[0-3]):([0-5]\d)$/).withMessage(V.DEPARTURE_TIME_MUST_BE_IN_HH_MM_FORMAT),
+
+  query('time_to')
+    .optional()
+    .matches(/^([01]\d|2[0-3]):([0-5]\d)$/).withMessage(V.DEPARTURE_TIME_MUST_BE_IN_HH_MM_FORMAT)
+    .custom((value, { req }) => {
+      if (req.query.time_from && value < req.query.time_from) {
+        throw new Error(V.TIME_FROM_AFTER_TIME_TO);
+      }
+      return true;
+    }),
+
+  query('vehicle_type')
+    .optional()
+    .isIn(Object.values(VEHICLE_TYPES)).withMessage(V.VEHICLE_TYPE_MUST_BE_ONE_OF_SEDAN_SUV_VAN_BUS_HATCHBACK),
+
+  query('seats')
+    .optional()
+    .isInt({ min: 1 }).withMessage(V.SEATS_MUST_BE_POSITIVE_INTEGER),
 ];
 
 const tripParamValidation = [

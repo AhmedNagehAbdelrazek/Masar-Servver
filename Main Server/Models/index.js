@@ -23,6 +23,7 @@ const SosEvent = require('./SosEvent');
 const TripLocation = require('./TripLocation');
 const FavoriteDriver = require('./FavoriteDriver');
 const FavoriteRoute = require('./FavoriteRoute');
+const RecentSearch = require('./RecentSearch');
 const AuditLog = require('./AuditLog');
 const SubscriptionTransaction = require('./SubscriptionTransaction');
 const SubscriptionPlan = require('./SubscriptionPlan');
@@ -126,6 +127,10 @@ FavoriteDriver.belongsTo(User, { foreignKey: 'driver_id', as: 'driver' });
 User.hasMany(FavoriteRoute, { foreignKey: 'passenger_id', as: 'favoriteRoutes' });
 FavoriteRoute.belongsTo(User, { foreignKey: 'passenger_id', as: 'passenger' });
 
+// RecentSearch
+User.hasMany(RecentSearch, { foreignKey: 'passenger_id', as: 'recentSearches' });
+RecentSearch.belongsTo(User, { foreignKey: 'passenger_id', as: 'passenger' });
+
 // ===== VEHICLE RELATIONS =====
 Vehicle.hasMany(Trip, { foreignKey: 'vehicle_id', as: 'trips' });
 Trip.belongsTo(Vehicle, { foreignKey: 'vehicle_id', as: 'vehicle' });
@@ -198,6 +203,7 @@ module.exports = {
   TripLocation,
   FavoriteDriver,
   FavoriteRoute,
+  RecentSearch,
   AuditLog,
   SubscriptionTransaction,
   SubscriptionPlan,

@@ -97,6 +97,16 @@ DriverProfile.init(
             allowNull: true,
             defaultValue: 100,
         },
+        punctualityRate: {
+            type: DataTypes.NUMERIC(5, 2),
+            allowNull: true,
+            defaultValue: null,
+        },
+        professionalDriver: {
+            type: DataTypes.BOOLEAN,
+            allowNull: false,
+            defaultValue: false,
+        },
         bio: {
             type: DataTypes.TEXT,
             allowNull: true,

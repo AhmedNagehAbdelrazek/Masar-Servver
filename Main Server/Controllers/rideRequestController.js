@@ -20,6 +20,11 @@ const getRequest = catchAsync(async (req, res) => {
   successResponse(res, result);
 });
 
+const getMatches = catchAsync(async (req, res) => {
+  const result = await rideRequestService.getMatches(req.user, req.params.request_id);
+  successResponse(res, result);
+});
+
 const updateRideRequest = catchAsync(async (req, res) => {
   const ride_request = await rideRequestService.updateRideRequest(req.user.id, req.params.request_id, req.body);
   markResource(res, { type: 'ride_request', id: req.params.request_id });
@@ -58,6 +63,7 @@ module.exports = {
   createRideRequest,
   listRequests,
   getRequest,
+  getMatches,
   updateRideRequest,
   submitOffer,
   listOffers,

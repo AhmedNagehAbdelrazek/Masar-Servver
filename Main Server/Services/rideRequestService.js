@@ -22,6 +22,99 @@ const auditService = require('./auditService');
 const notificationService = require('./notificationService');
 const { generateReferenceCode } = require('../utils/referenceCode');
 
+const MATCH_WINDOW_BEFORE_MS = 24 * 60 * 60 * 1000;
+const MATCH_WINDOW_AFTER_MS = 2 * 24 * 60 * 60 * 1000;
+const MATCH_LIMIT = 10; // support at least 10 candidates
+
+function genderCompatible(trip, request) {
+  const pref = request.attributesPreferred && request.attributesPreferred.gender_preference;
+  if (!pref || pref === 'all') return true;
+  if (!trip.genderPreference || trip.genderPreference === 'all') return true;
+  return trip.genderPreference === pref;
+}
+
+function matchScore(trip, request) {
+  let score = 0;
+
+  // 1. Route match — the strongest signal.
+  if (trip.originCity === request.originCity) score += 100;
+  if (trip.destinationCity === request.destinationCity) score += 100;
+
+  // 2. Time window — trips closest to the requested departure rank higher.
+  const requested = request.originTime ? new Date(request.originTime).getTime() : Date.now();
+  const actual = new Date(trip.departureTime).getTime();
+  const diffMin = Math.round(Math.abs(requested - actual) / 60000);
+  score -= Math.min(diffMin, 720) / 12; // up to ~60 points beyond 12h
+
+  // 3. Seat availability — more free seats is a little better.
+  score += Math.min(Number(trip.availableSeats), 4);
+
+  // 4. Gender preference compatibility.
+  if (genderCompatible(trip, request)) score += 5;
+
+  return score;
+}
+
+/** US6: ranked trip suggestions for a passenger's ride request (never books). */
+async function getMatches(user, requestId) {
+  await expireStale();
+
+  const request = await RideRequest.findByPk(requestId);
+  if (!request) throw ApiErrors.notFound('RIDE_REQUEST_NOT_FOUND');
+  if (request.passengerId !== user.id) {
+    throw ApiErrors.custom('YOU_CAN_ONLY_VIEW_MATCHES_FOR_YOUR_OWN_RIDE_REQUESTS', 403, 'YOU_CAN_ONLY_VIEW_MATCHES_FOR_YOUR_OWN_RIDE_REQUESTS');
+  }
+
+  const seatsNeeded = Math.max(1, request.seatsNeeded || 1);
+  const requestedMs = request.originTime
+    ? new Date(request.originTime).getTime()
+    : Date.now();
+  const windowStart = new Date(requestedMs - MATCH_WINDOW_BEFORE_MS);
+  const windowEnd = new Date(requestedMs + MATCH_WINDOW_AFTER_MS);
+
+  const trips = await Trip.findAll({
+    where: {
+      status: { [Op.in]: [TRIP_STATUS.PUBLISHED, TRIP_STATUS.FULL] },
+      availableSeats: { [Op.gte]: seatsNeeded },
+      departureTime: { [Op.between]: [windowStart, windowEnd] },
+    },
+    include: [{ model: User, as: 'driver', attributes: ['id', 'fullName', 'avgRating'] }],
+    order: [['departureTime', 'ASC']],
+  });
+
+  const scored = trips
+    .map((trip) => ({ trip, score: matchScore(trip, request) }))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, MATCH_LIMIT);
+
+  return {
+    ride_request_id: request.id,
+    matches: scored.map(({ trip }, index) => ({
+      trip_id: trip.id,
+      score_rank: index + 1,
+      origin: {
+        city: trip.originCity,
+        lat: trip.originLat !== null && trip.originLat !== undefined ? Number(trip.originLat) : null,
+        lng: trip.originLng !== null && trip.originLng !== undefined ? Number(trip.originLng) : null,
+      },
+      destination: { city: trip.destinationCity },
+      departure_time: trip.departureTime,
+      available_seats: Number(trip.availableSeats),
+      fare_per_seat: Number(trip.farePerSeat),
+      currency: trip.currency || 'JOD',
+      gender_preference: trip.genderPreference || 'all',
+      driver: trip.driver
+        ? {
+            id: trip.driver.id,
+            full_name: trip.driver.fullName,
+            rating: Number(trip.driver.avgRating) || 0,
+          }
+        : null,
+    })),
+  };
+}
+
+
 function serializeRideRequest(request, options = {}) {
   const base = {
     id: request.id,
@@ -644,5 +737,6 @@ module.exports = {
   decideOffer,
   agreeOfferPrice,
   attachOfferToTrip,
+  getMatches,
   expireStale,
 };

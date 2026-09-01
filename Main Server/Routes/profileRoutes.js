@@ -9,5 +9,6 @@ router.use(protect);
 
 router.get('/', roleGuard(['passenger']), c.getMyProfile);
 router.put('/', roleGuard(['passenger']), ...updatePassengerProfileValidation, validate, c.updateMyProfile);
+router.get('/home', roleGuard(['passenger']), c.getPassengerHome);
 
 module.exports = router;

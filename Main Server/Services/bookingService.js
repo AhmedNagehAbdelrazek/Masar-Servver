@@ -1,8 +1,10 @@
 const { Op } = require('sequelize');
-const { Booking, Trip, User, TripSeat, TripStop, sequelize } = require('../Models');
+const { Booking, Trip, User, TripSeat, TripStop, Rating, Vehicle, DriverProfile, sequelize } = require('../Models');
 const { ApiErrors } = require('../utils/ApiError');
 const { parsePagination, buildPagination } = require('../utils/pagination');
 const { maskPhone } = require('../utils/masking');
+const { REDIS_KEYS } = require('../utils/redisKeys');
+const { deleteKey } = require('../config/redis');
 const {
   BOOKING_STATUS,
   PAYMENT_STATUS,
@@ -200,7 +202,15 @@ async function notifyDriver(trip, template, vars) {
 }
 
 async function createBooking(passengerId, payload) {
-  const { trip_id, seat_number, seats = 1, agreed_fare, dropoff_place, dropoff_deadline } = payload;
+  const {
+    trip_id,
+    seat_number,
+    seats,
+    agreed_fare,
+    dropoff_place,
+    dropoff_deadline,
+    drop_off_point,
+  } = payload;
 
   const user = await User.findByPk(passengerId);
   if (!user) throw ApiErrors.notFound('USER_NOT_FOUND');
@@ -208,25 +218,56 @@ async function createBooking(passengerId, payload) {
     throw ApiErrors.forbidden('ACCOUNT_IS_SUSPENDED_YOU_CANNOT_BOOK_TRIPS');
   }
 
-  const trip = await Trip.findByPk(trip_id);
+  const requestedSeats = seats === undefined ? 1 : Number(seats);
+  if (!Number.isInteger(requestedSeats) || requestedSeats < 1) {
+    throw ApiErrors.validation('SEATS_MUST_BE_POSITIVE_INTEGER');
+  }
+
+  const trip = await Trip.findByPk(trip_id, {
+    include: [{ model: TripStop, as: 'stops' }],
+  });
   if (!trip) throw ApiErrors.notFound('TRIP_NOT_FOUND');
   if (![TRIP_STATUS.PUBLISHED, TRIP_STATUS.FULL].includes(trip.status)) {
-    throw ApiErrors.conflict('TRIP_IS_ALREADY_ONGOING_OR_COMPLETED');
+    throw ApiErrors.conflict('TRIP_NOT_BOOKABLE');
   }
 
   if (Number(agreed_fare) !== Number(trip.farePerSeat)) {
     throw ApiErrors.validation('AGREED_FARE_DOES_NOT_MATCH_THE_CURRENT_TRIP_FARE');
   }
 
-  const lockStatus = await checkSeatLock(trip_id, seat_number);
-  if (!lockStatus.locked || lockStatus.passengerId !== passengerId) {
-    throw ApiErrors.custom('SEAT_LOCK_EXPIRED_OR_NOT_HELD', 404, 'SEAT_LOCK_EXPIRED');
+  // Resolve the chosen drop-off point (must belong to this trip's route).
+  let resolvedDropoffPlace = dropoff_place || null;
+  let resolvedDropoffOrder = null;
+  if (drop_off_point) {
+    const stops = (trip.stops || []).slice().sort((a, b) => a.stopOrder - b.stopOrder);
+    const stop = stops.find((s) => s.id === drop_off_point);
+    if (!stop) throw ApiErrors.custom('DROP_OFF_POINT_NOT_ON_TRIP', 409, 'DROP_OFF_POINT_NOT_ON_TRIP');
+    resolvedDropoffPlace = stop.stopName || stop.city || dropoff_place || null;
+    resolvedDropoffOrder = stop.stopOrder;
   }
 
-  const seat = await TripSeat.findOne({ where: { tripId: trip_id, seatNumber: seat_number } });
-  if (!seat) throw ApiErrors.notFound('SEAT_NOT_FOUND_ON_THIS_TRIP');
-  if (seat.seatType !== SEAT_TYPE.AVAILABLE) {
-    throw ApiErrors.conflict('SEAT_ALREADY_BOOKED');
+  // Could the booking be satisfied right now? (re-checked atomically below)
+  if (requestedSeats > Number(trip.availableSeats)) {
+    throw ApiErrors.custom('NOT_ENOUGH_AVAILABLE_SEATS_ON_THE_SELECTED_TRIP', 409, 'NOT_ENOUGH_AVAILABLE_SEATS_ON_THE_SELECTED_TRIP');
+  }
+
+  // Legacy single-seat path uses an explicit seat lock + specific seat row.
+  const isSingleSeatLocked = seat_number !== undefined && seat_number !== null;
+  if (isSingleSeatLocked && requestedSeats !== 1) {
+    throw ApiErrors.validation('SEATS_MUST_BE_1');
+  }
+
+  let seat = null;
+  if (isSingleSeatLocked) {
+    const lockStatus = await checkSeatLock(trip_id, seat_number);
+    if (!lockStatus.locked || lockStatus.passengerId !== passengerId) {
+      throw ApiErrors.custom('SEAT_LOCK_EXPIRED_OR_NOT_HELD', 404, 'SEAT_LOCK_EXPIRED');
+    }
+    seat = await TripSeat.findOne({ where: { tripId: trip_id, seatNumber: seat_number } });
+    if (!seat) throw ApiErrors.notFound('SEAT_NOT_FOUND_ON_THIS_TRIP');
+    if (seat.seatType !== SEAT_TYPE.AVAILABLE) {
+      throw ApiErrors.conflict('SEAT_ALREADY_BOOKED');
+    }
   }
 
   const referenceCode = await uniqueBookingCode();
@@ -234,18 +275,29 @@ async function createBooking(passengerId, payload) {
   const booking = await sequelize.transaction(async (t) => {
     const freshTrip = await Trip.findByPk(trip_id, { transaction: t, lock: t.LOCK.UPDATE });
     if (![TRIP_STATUS.PUBLISHED, TRIP_STATUS.FULL].includes(freshTrip.status)) {
-      throw ApiErrors.conflict('TRIP_IS_ALREADY_ONGOING_OR_COMPLETED');
+      throw ApiErrors.conflict('TRIP_NOT_BOOKABLE');
+    }
+
+    const remainingSeats = Number(freshTrip.availableSeats) - requestedSeats;
+    if (remainingSeats < 0) {
+      throw ApiErrors.custom('NOT_ENOUGH_AVAILABLE_SEATS_ON_THE_SELECTED_TRIP', 409, 'NOT_ENOUGH_AVAILABLE_SEATS_ON_THE_SELECTED_TRIP');
+    }
+
+    if (isSingleSeatLocked) {
+      seat.seatType = SEAT_TYPE.UNAVAILABLE;
+      await seat.save({ transaction: t });
     }
 
     const row = await Booking.create(
       {
         tripId: trip_id,
         passengerId,
-        seatNumber: seat_number,
-        seatsBooked: seats,
+        seatNumber: isSingleSeatLocked ? seat_number : null,
+        seatsBooked: requestedSeats,
         agreedFare: agreed_fare,
         currency: 'JOD',
-        dropoffPlace: dropoff_place || null,
+        dropoffPlace: resolvedDropoffPlace,
+        dropoffOrder: resolvedDropoffOrder,
         dropoffDeadline: dropoff_deadline ? new Date(dropoff_deadline) : null,
         status: BOOKING_STATUS.CONFIRMED,
         paymentStatus: PAYMENT_STATUS.PENDING,
@@ -255,17 +307,11 @@ async function createBooking(passengerId, payload) {
       { transaction: t }
     );
 
-    const remainingSeats = freshTrip.availableSeats - seats;
-    if (remainingSeats < 0) throw ApiErrors.conflict('NOT_ENOUGH_AVAILABLE_SEATS');
-
     freshTrip.availableSeats = remainingSeats;
     if (remainingSeats === 0 && freshTrip.status === TRIP_STATUS.PUBLISHED) {
       freshTrip.status = TRIP_STATUS.FULL;
     }
     await freshTrip.save({ transaction: t });
-
-    seat.seatType = SEAT_TYPE.UNAVAILABLE;
-    await seat.save({ transaction: t });
 
     return row;
   });
@@ -276,8 +322,15 @@ async function createBooking(passengerId, payload) {
     resourceId: booking.id,
     actorId: passengerId,
     actorType: 'passenger',
-    payload: { trip_id, seat_number, reference_code: booking.referenceCode },
+    payload: { trip_id, seat_number: isSingleSeatLocked ? seat_number : null, seats: requestedSeats, reference_code: booking.referenceCode },
   });
+
+  // Best-effort: passenger home cache should reflect the new booking/trip.
+  try {
+    await deleteKey(REDIS_KEYS.PASSENGER_HOME(passengerId));
+  } catch (err) {
+    console.warn('[bookingService] passenger home cache invalidation failed:', err.message);
+  }
 
   const routeLabel = `${trip.originCity} - ${trip.destinationCity}`;
   await Promise.allSettled([
@@ -291,21 +344,25 @@ async function createBooking(passengerId, payload) {
     }),
     notifyDriver(trip, 'BOOKING_CONFIRMED_DRIVER', {
       passenger: user.fullName,
-      seat_number: seat_number,
+      seat_number: isSingleSeatLocked ? seat_number : null,
+      seats: requestedSeats,
       route: routeLabel,
     }),
   ]);
 
   const fullTrip = await Trip.findByPk(trip_id, {
     include: [
-      { model: User, as: 'driver', attributes: ['id', 'fullName', 'phone', 'avgRating'] },
+      { model: User, as: 'driver', attributes: ['id', 'fullName', 'phone', 'avgRating', 'avatarUrl'] },
       { model: TripStop, as: 'stops' },
+      { model: Vehicle, as: 'vehicle', attributes: ['id', 'vehicleType', 'plateNumber', 'seats'] },
     ],
   });
   return serializePassengerDetail(booking, fullTrip, user);
 }
 
 function serializePassengerDetail(booking, trip, passenger) {
+  const ratingRow = (booking.ratings || [])[0];
+  const tripVehicle = trip && trip.vehicle;
   return {
     id: booking.id,
     reference_code: booking.referenceCode,
@@ -336,11 +393,21 @@ function serializePassengerDetail(booking, trip, passenger) {
             full_name: trip.driver.fullName,
             phone_masked: maskPhone(trip.driver.phone),
             rating: Number(trip.driver.avgRating) || 0,
+            image: trip.driver.avatarUrl,
           }
         : null,
+    vehicle: tripVehicle
+      ? {
+          vehicle_id: tripVehicle.id,
+          type: tripVehicle.vehicleType,
+          plate: tripVehicle.plateNumber,
+          seats: tripVehicle.seats,
+        }
+      : null,
     passenger: passenger
       ? { id: passenger.id, full_name: passenger.fullName }
       : null,
+    passenger_rating: ratingRow ? Number(ratingRow.stars) : null,
   };
 }
 
@@ -360,10 +427,12 @@ async function listForPassenger(passengerId, filters = {}) {
         as: 'trip',
         attributes: ['id', 'driverId', 'originCity', 'originArea', 'originLat', 'originLng', 'destinationCity', 'destinationArea', 'destinationLat', 'destinationLng', 'farePerSeat'],
         include: [
-          { model: User, as: 'driver', attributes: ['id', 'fullName', 'phone', 'avgRating'] },
+          { model: User, as: 'driver', attributes: ['id', 'fullName', 'phone', 'avgRating', 'avatarUrl'] },
           { model: TripStop, as: 'stops' },
+          { model: Vehicle, as: 'vehicle', attributes: ['id', 'vehicleType', 'plateNumber', 'seats'] },
         ],
       },
+      { model: Rating, as: 'ratings', attributes: ['stars'], where: { raterId: passengerId }, required: false },
     ],
     order: [['createdat', 'DESC']],
     offset,
@@ -384,11 +453,13 @@ async function getForPassenger(passengerId, bookingId) {
         as: 'trip',
         attributes: ['id', 'driverId', 'originCity', 'originArea', 'originLat', 'originLng', 'destinationCity', 'destinationArea', 'destinationLat', 'destinationLng', 'farePerSeat'],
         include: [
-          { model: User, as: 'driver', attributes: ['id', 'fullName', 'phone', 'avgRating'] },
+          { model: User, as: 'driver', attributes: ['id', 'fullName', 'phone', 'avgRating', 'avatarUrl'] },
           { model: TripStop, as: 'stops' },
+          { model: Vehicle, as: 'vehicle', attributes: ['id', 'vehicleType', 'plateNumber', 'seats'] },
         ],
       },
       { model: User, as: 'passenger', attributes: ['id', 'fullName'] },
+      { model: Rating, as: 'ratings', attributes: ['stars'], where: { raterId: passengerId }, required: false },
     ],
   });
   if (!booking) throw ApiErrors.notFound('BOOKING_NOT_FOUND');
@@ -484,4 +555,77 @@ async function cancelBooking(passengerId, bookingId) {
   return { booking: { id: booking.id, status: booking.status, cancelled_at: booking.cancelledAt } };
 }
 
-module.exports = { listForDriver, getForDriver, createBooking, listForPassenger, getForPassenger, cancelBooking };
+/**
+ * Driver reveal for a confirmed booking (spec 012 US5). Only the booking's
+ * passenger, the trip's driver, or an admin may read it, and only while the
+ * booking is `confirmed`. PII (national ID, exact age) is returned here only.
+ */
+async function getDriverReveal(requesterId, requesterRole, bookingId) {
+  const booking = await Booking.findByPk(bookingId, {
+    include: [
+      {
+        model: Trip,
+        as: 'trip',
+        attributes: ['id', 'driverId', 'departureTime'],
+        include: [
+          {
+            model: User,
+            as: 'driver',
+            attributes: ['id', 'fullName', 'phone', 'age', 'gender', 'avatarUrl', 'avgRating'],
+          },
+          { model: Vehicle, as: 'vehicle' },
+        ],
+      },
+    ],
+  });
+  if (!booking) throw ApiErrors.notFound('BOOKING_NOT_FOUND');
+
+  const isOwner = booking.passengerId === requesterId;
+  const isDriver = booking.trip && booking.trip.driverId === requesterId;
+  const isAdmin = requesterRole === 'admin';
+  if (!isOwner && !isDriver && !isAdmin) {
+    throw ApiErrors.custom('YOU_DO_NOT_HAVE_ACCESS_TO_THIS_BOOKING_DRIVER_PROFILE', 403, 'YOU_DO_NOT_HAVE_ACCESS_TO_THIS_BOOKING_DRIVER_PROFILE');
+  }
+  if (booking.status !== BOOKING_STATUS.CONFIRMED) {
+    throw ApiErrors.custom('DRIVER_REVEAL_AVAILABLE_ONLY_AFTER_BOOKING_CONFIRMATION', 409, 'DRIVER_REVEAL_AVAILABLE_ONLY_AFTER_BOOKING_CONFIRMATION');
+  }
+
+  const driver = booking.trip && booking.trip.driver;
+  if (!driver) throw ApiErrors.notFound('DRIVER_NOT_FOUND');
+
+  const profile = await DriverProfile.findOne({ where: { driverId: driver.id } });
+  const vehicle = booking.trip.vehicle || null;
+
+  const nameParts = (driver.fullName || '').split(/\s+/).filter(Boolean);
+  const firstName = nameParts[0] || '';
+  const lastName = nameParts.slice(1).join(' ') || null;
+
+  return {
+    driver: {
+      id: driver.id,
+      first_name: firstName,
+      last_name: lastName,
+      phone: driver.phone,
+      age: driver.age != null ? Number(driver.age) : null,
+      gender: driver.gender,
+      is_professional_driver: Boolean(profile && profile.professionalDriver),
+      driver_stats: {
+        punctuality_rate: profile && profile.punctualityRate != null ? Number(profile.punctualityRate) : null,
+        completed_trips: profile ? Number(profile.totalTrips) || 0 : 0,
+        rating: Number(driver.avgRating) || 0,
+      },
+      vehicle_details: vehicle
+        ? {
+            manufacturer: vehicle.manufacturer,
+            model: vehicle.model,
+            year: vehicle.modelYear,
+            color: vehicle.color,
+            plate_number: vehicle.plateNumber,
+            seat_capacity: vehicle.seats,
+          }
+        : null,
+    },
+  };
+}
+
+module.exports = { listForDriver, getForDriver, createBooking, listForPassenger, getForPassenger, cancelBooking, getDriverReveal };

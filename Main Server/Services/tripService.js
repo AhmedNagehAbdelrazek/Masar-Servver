@@ -441,6 +441,41 @@ const getTripById = async (tripId) => {
 };
 
 /**
+ * Get trip booking options (spec 012 US2): the current open-seat count and the
+ * ordered drop-off points (the trip's stops). Refused for trips that have
+ * already started or ended (not bookable).
+ */
+const getTripOptions = async (tripId) => {
+  const trip = await Trip.findByPk(tripId, {
+    attributes: ['id', 'status', 'availableSeats'],
+    include: [{ model: TripStop, as: 'stops' }],
+  });
+  if (!trip) throw ApiErrors.notFound('TRIP_NOT_FOUND');
+  if (![TRIP_STATUS.PUBLISHED, TRIP_STATUS.FULL].includes(trip.status)) {
+    throw ApiErrors.conflict('TRIP_NOT_BOOKABLE');
+  }
+
+  const dropOffPoints = (trip.stops || [])
+    .slice()
+    .sort((a, b) => a.stopOrder - b.stopOrder)
+    .map((s) => ({
+      stop_id: s.id,
+      stop_order: s.stopOrder,
+      stop_name: s.stopName,
+      city: s.city,
+      lat: s.lat != null ? Number(s.lat) : s.stopLat != null ? Number(s.stopLat) : null,
+      lng: s.lng != null ? Number(s.lng) : s.stopLng != null ? Number(s.stopLng) : null,
+      stop_type: s.stopType,
+    }));
+
+  return {
+    trip_id: trip.id,
+    available_seats: trip.availableSeats,
+    drop_off_points: dropOffPoints,
+  };
+};
+
+/**
  * Get trips for a driver (contract D-list). Each trip is serialized with its
  * current lifecycle `status` included.
  */
@@ -490,15 +525,25 @@ const getDriverTrips = async (driverId, status = null) => {
 };
 
 /**
- * Get available trips for passengers (with recurrence expansion)
+ * Get available trips for passengers (with recurrence expansion).
+ * Additive filters (spec 012): time window, vehicle type, minimum seat count.
+ * The output keeps the existing raw-trip shape for backward compatibility.
  */
-const getAvailableTrips = async (originCity, destinationCity, date, genderPreference = null) => {
+const getAvailableTrips = async (filters = {}) => {
+  const {
+    originCity,
+    destinationCity,
+    date,
+    genderPreference = null,
+    timeFrom,
+    timeTo,
+    vehicleType,
+    seats,
+  } = filters;
+
   const queryDate = new Date(date);
 
-  const where = {
-    status: TRIP_STATUS.PUBLISHED,
-    isModerated: false,
-    availableSeats: { [Op.gt]: 0 },
+  const dateBranch = {
     [Op.or]: [
       // One-time trips for this date
       {
@@ -519,19 +564,49 @@ const getAvailableTrips = async (originCity, destinationCity, date, genderPrefer
     ],
   };
 
+  const where = {
+    status: TRIP_STATUS.PUBLISHED,
+    isModerated: false,
+    availableSeats: { [Op.gt]: 0 },
+  };
+
+  // Base date/recurrence requirement, optionally narrowed by a time window.
+  const andConditions = [dateBranch];
+  if (timeFrom || timeTo) {
+    const [fhh, fmm] = (timeFrom || '00:00').split(':').map(Number);
+    const [thh, tmm] = (timeTo || '23:59').split(':').map(Number);
+    const dayStart = new Date(queryDate.setHours(0, 0, 0, 0));
+    const windowStart = new Date(dayStart);
+    windowStart.setHours(fhh, fmm, 0, 0);
+    const windowEnd = new Date(dayStart);
+    windowEnd.setHours(thh, tmm, 59, 999);
+    andConditions.push({
+      departureTime: { [Op.gte]: windowStart, [Op.lte]: windowEnd },
+    });
+  }
+  where[Op.and] = andConditions;
+
   if (originCity) where.originCity = originCity;
   if (destinationCity) where.destinationCity = destinationCity;
   if (genderPreference && genderPreference !== GENDER_PREFERENCE.ALL) {
-    where.genderPreference = { [Op.in]: [ genderPreference ] };
+    where.genderPreference = { [Op.in]: [genderPreference] };
+  }
+  if (seats && Number(seats) > 0) {
+    where.availableSeats = { [Op.gte]: Number(seats) };
+  }
+
+  const include = [
+    { model: TripSeat, as: 'seats', where: { seatType: 'available' } },
+    { model: TripStop, as: 'stops' },
+    { model: Vehicle, as: 'vehicle' },
+  ];
+  if (vehicleType) {
+    include[2] = { model: Vehicle, as: 'vehicle', where: { vehicleType } };
   }
 
   const trips = await Trip.findAll({
     where,
-    include: [
-      { model: TripSeat, as: 'seats', where: { seatType: 'available' } },
-      { model: TripStop, as: 'stops' },
-      { model: Vehicle, as: 'vehicle' },
-    ],
+    include,
     order: [['departure_time', 'ASC']],
   });
 
@@ -733,6 +808,7 @@ const completeTrip = async (driverId, tripId) => {
 module.exports = {
   createTrip,
   getTripById,
+  getTripOptions,
   getDriverTrips,
   getAvailableTrips,
   startTrip,

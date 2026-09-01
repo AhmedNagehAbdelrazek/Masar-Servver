@@ -31,13 +31,38 @@ const getDriverTrips = catchAsync(async (req, res) => {
 });
 
 const getAvailableTrips = catchAsync(async (req, res) => {
-  const { origin_city, destination_city, date, gender_preference } = req.query;
-  const trips = await tripService.getAvailableTrips(
+  const {
     origin_city,
     destination_city,
-    date || new Date().toISOString().split('T')[0],
-    gender_preference
-  );
+    date,
+    gender_preference,
+    time_from,
+    time_to,
+    vehicle_type,
+    seats,
+  } = req.query;
+  const trips = await tripService.getAvailableTrips({
+    originCity: origin_city,
+    destinationCity: destination_city,
+    date: date || new Date().toISOString().split('T')[0],
+    genderPreference: gender_preference,
+    timeFrom: time_from,
+    timeTo: time_to,
+    vehicleType: vehicle_type,
+    seats,
+  });
+
+  // Record the search route for the passenger home "last searched trips"
+  // section (best-effort; never blocks the search response).
+  if (req.user && req.user.role === ROLES.PASSENGER && origin_city && destination_city) {
+    try {
+      const recentSearchService = require('../Services/recentSearchService');
+      await recentSearchService.recordSearch(req.user.id, origin_city, destination_city);
+    } catch (err) {
+      console.warn('[tripController] record search failed:', err.message);
+    }
+  }
+
   successResponse(res, { trips });
 });
 
@@ -70,6 +95,11 @@ const getTripAttributes = catchAsync(async (req, res) => {
   successResponse(res, result);
 });
 
+const getTripOptions = catchAsync(async (req, res) => {
+  const result = await tripService.getTripOptions(req.params.trip_id);
+  successResponse(res, result);
+});
+
 const getTripPassengers = catchAsync(async (req, res) => {
   const { status } = req.query;
   const result = await tripService.getTripPassengers(req.user.id, req.params.trip_id, { status });
@@ -99,6 +129,7 @@ module.exports = {
   cancelTrip,
   cancelTripWithPenalty,
   getTripAttributes,
+  getTripOptions,
   getTripPassengers,
   attachOfferToTrip,
 };

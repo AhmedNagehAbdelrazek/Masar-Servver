@@ -164,8 +164,9 @@ describe('Contract: GET /api/trips/:trip_id', () => {
 
     expect(res.status).toBe(200);
     expect(typeof res.body.id).toBe('string');
-    expect(res.body.originCity).toBeDefined();
-    expect(res.body.destinationCity).toBeDefined();
+    expect(res.body.trip).toBeDefined();
+    expect(res.body.trip.origin.city).toBe('Amman');
+    expect(res.body.trip.destination.city).toBe('Irbid');
     expect(Array.isArray(res.body.seats)).toBe(true);
     expect(Array.isArray(res.body.stops)).toBe(true);
 
@@ -270,11 +271,70 @@ describe('Contract: GET /api/trips/search/available', () => {
       expect(typeof trip.id).toBe('string');
       expect(trip.originCity).toBeDefined();
       expect(trip.destinationCity).toBeDefined();
+      expect(typeof trip.availableSeats).toBe('number');
       expect(Array.isArray(trip.seats)).toBe(true);
       trip.seats.forEach(s => {
         expect(s.seatType).toBe('available');
       });
+      // additive filter fields (US1)
+      expect(trip.vehicle).toBeDefined();
+      expect(trip.vehicle.vehicleType).toBe('sedan');
     }
+  });
+});
+
+describe('Contract: GET /api/trips/:id/options', () => {
+  let tripId;
+
+  beforeEach(async () => {
+    const res = await getAgent()
+      .post('/api/trips')
+      .set('Authorization', `Bearer ${driverToken}`)
+      .send({
+        origin_city: 'Amman',
+        destination_city: 'Irbid',
+        departure_date: getFutureDate(1),
+        departure_time: '14:00',
+        type_of_trip: 'once',
+        fare_per_seat: '15.00',
+        seats: [
+          { seat_number: 1, type: 'driver' },
+          { seat_number: 2, type: 'available' },
+          { seat_number: 3, type: 'available' },
+          { seat_number: 4, type: 'unavailable' },
+        ],
+      });
+    tripId = res.body.trip_id;
+    await TripStop.bulkCreate([
+      { tripId, stopOrder: 1, stopName: 'Al-Balad', city: 'Amman', estimatedDurationMinutes: 0, estimatedArrival: new Date() },
+      { tripId, stopOrder: 2, stopName: 'University', city: 'Amman', estimatedDurationMinutes: 20, estimatedArrival: new Date() },
+    ]);
+  });
+
+  it('should return US2 options shape', async () => {
+    const res = await getAgent()
+      .get(`/api/trips/${tripId}/options`)
+      .set('Authorization', `Bearer ${passengerToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.trip_id).toBe(tripId);
+    expect(typeof res.body.available_seats).toBe('number');
+    expect(Array.isArray(res.body.drop_off_points)).toBe(true);
+    res.body.drop_off_points.forEach(point => {
+      expect(typeof point.stop_id).toBe('string');
+      expect(point.stop_order).toBeDefined();
+      expect(point.stop_name).toBeDefined();
+      expect(point.city).toBeDefined();
+    });
+  });
+
+  it('should return 404 for unknown trip in options shape', async () => {
+    const res = await getAgent()
+      .get('/api/trips/00000000-0000-4000-8000-000000000000/options')
+      .set('Authorization', `Bearer ${passengerToken}`);
+
+    expect(res.status).toBe(404);
+    expect(res.body.code).toBeDefined();
   });
 });
 

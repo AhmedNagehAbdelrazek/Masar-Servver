@@ -1,9 +1,10 @@
 const { Op } = require('sequelize');
-const { User, DriverProfile, Trip, Booking, Vehicle } = require('../Models');
+const { User, DriverProfile, Trip, Booking, Vehicle, Rating } = require('../Models');
 const { TRIP_STATUS, BOOKING_STATUS } = require('../config/constants');
 const { ApiErrors } = require('../utils/ApiError');
 const balanceService = require('./balanceService');
 const subscriptionService = require('./subscriptionService');
+const recentSearchService = require('./recentSearchService');
 const { REDIS_KEYS, CACHE_TTL } = require('../utils/redisKeys');
 const { getKey, setKey, deleteKey } = require('../config/redis');
 const { seatNumbersFor } = require('../utils/seatSerializer');
@@ -232,4 +233,145 @@ async function getSubscription(driverId) {
   };
 }
 
-module.exports = { getHome, invalidateHomeCache, getSubscription };
+const TRIP_DRIVER_ATTRS = ['id', 'fullName', 'avgRating', 'avatarUrl'];
+const VEHICLE_ATTRS = ['id', 'vehicleType', 'plateNumber', 'seats'];
+
+function toPassengerSection(user) {
+  return {
+    id: user.id,
+    full_name: user.fullName,
+    profile_picture_url: user.avatarUrl,
+    rating: user.avgRating ? Number(user.avgRating) : null,
+  };
+}
+
+function toNextBookingPayload(booking) {
+  if (!booking || !booking.trip) return null;
+  const trip = booking.trip;
+  const driver = trip.driver ? trip.driver : null;
+  const vehicle = trip.vehicle ? trip.vehicle : null;
+
+  return {
+    booking_id: booking.id,
+    reference_code: booking.referenceCode,
+    status: booking.status,
+    seats_booked: booking.seatsBooked,
+    agreed_fare: Number(booking.agreedFare),
+    currency: booking.currency || 'JOD',
+    trip: {
+      trip_id: trip.id,
+      origin: { city: trip.originCity, area: trip.originArea },
+      destination: { city: trip.destinationCity, area: trip.destinationArea },
+      departure_time: trip.departureTime,
+    },
+    driver: driver
+      ? {
+          id: driver.id,
+          full_name: driver.fullName,
+          rating: Number(driver.avgRating) || 0,
+          image: driver.avatarUrl,
+        }
+      : null,
+    vehicle: vehicle
+      ? {
+          vehicle_id: vehicle.id,
+          type: vehicle.vehicleType,
+          plate: vehicle.plateNumber,
+          seats: vehicle.seats,
+        }
+      : null,
+  };
+}
+
+function toLastTripPayload(booking) {
+  const trip = booking.trip;
+  if (!trip) return null;
+  const ratingRow = (booking.ratings || [])[0];
+  return {
+    booking_id: booking.id,
+    trip_id: trip.id,
+    origin: { city: trip.originCity, area: trip.originArea },
+    destination: { city: trip.destinationCity, area: trip.destinationArea },
+    departure_time: trip.departureTime,
+    status: booking.status,
+    satisfaction_rating: ratingRow ? Number(ratingRow.stars) : null,
+    trip_cost: Number(booking.agreedFare),
+    currency: booking.currency || 'JOD',
+  };
+}
+
+async function buildPassengerHome(passengerId) {
+  const user = await User.findByPk(passengerId);
+  if (!user) throw ApiErrors.notFound('USER_NOT_FOUND');
+
+  const now = new Date();
+
+  const nextBooking = await Booking.findOne({
+    where: { passengerId, status: { [Op.in]: [BOOKING_STATUS.PENDING, BOOKING_STATUS.CONFIRMED] } },
+    include: [
+      {
+        model: Trip,
+        as: 'trip',
+        where: { departureTime: { [Op.gte]: now } },
+        include: [
+          { model: User, as: 'driver', attributes: TRIP_DRIVER_ATTRS },
+          { model: Vehicle, as: 'vehicle', attributes: VEHICLE_ATTRS },
+        ],
+      },
+    ],
+    order: [[{ model: Trip, as: 'trip' }, 'departureTime', 'ASC']],
+    limit: 1,
+  });
+
+  const [lastSearched, recentBookings] = await Promise.all([
+    recentSearchService.getRecent(passengerId, 5),
+    Booking.findAll({
+      where: { passengerId },
+      include: [
+        {
+          model: Trip,
+          as: 'trip',
+          include: [
+            { model: User, as: 'driver', attributes: TRIP_DRIVER_ATTRS },
+            { model: Vehicle, as: 'vehicle', attributes: VEHICLE_ATTRS },
+          ],
+        },
+        { model: Rating, as: 'ratings', attributes: ['stars'], where: { raterId: passengerId }, required: false },
+      ],
+      order: [[{ model: Trip, as: 'trip' }, 'departureTime', 'DESC']],
+      limit: 10,
+    }),
+  ]);
+
+  const lastTrips = recentBookings
+    .filter((b) => b.trip && (b.status === BOOKING_STATUS.COMPLETED || new Date(b.trip.departureTime) < now))
+    .slice(0, 5)
+    .map(toLastTripPayload)
+    .filter(Boolean);
+
+  return {
+    passenger: toPassengerSection(user),
+    next_booking: toNextBookingPayload(nextBooking),
+    last_searched_trips: lastSearched, // [{origin_city, destination_city, searched_on}]
+    last_trips: lastTrips,
+  };
+}
+
+/**
+ * Combined passenger home payload, cached in Redis for 30s.
+ */
+async function getPassengerHome(passengerId) {
+  const cacheKey = REDIS_KEYS.PASSENGER_HOME(passengerId);
+  const cached = await getKey(cacheKey);
+  if (cached) return JSON.parse(cached);
+
+  const payload = await buildPassengerHome(passengerId);
+  await setKey(cacheKey, JSON.stringify(payload), CACHE_TTL.HOME);
+  return payload;
+}
+
+async function invalidatePassengerHome(passengerId) {
+  await deleteKey(REDIS_KEYS.PASSENGER_HOME(passengerId));
+}
+
+module.exports = { getHome, invalidateHomeCache, getSubscription, getPassengerHome, invalidatePassengerHome };

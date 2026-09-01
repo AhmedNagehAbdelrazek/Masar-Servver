@@ -39,6 +39,16 @@ const cancelBooking = catchAsync(async (req, res) => {
   successResponse(res, result);
 });
 
+const getDriverProfile = catchAsync(async (req, res) => {
+  const result = await bookingService.getDriverReveal(
+    req.user.id,
+    req.user.role,
+    req.params.booking_id
+  );
+  markResource(res, { type: 'booking', id: req.params.booking_id, action: 'driver_profile_revealed' });
+  successResponse(res, result);
+});
+
 const reportDelay = catchAsync(async (req, res) => {
   const delay_event = await delayService.reportDelay(req.user, req.params.booking_id, req.body);
   markResource(res, { type: 'delay_event', id: delay_event.id });
@@ -55,6 +65,7 @@ module.exports = {
   listMyBookings,
   getBooking,
   cancelBooking,
+  getDriverProfile,
   reportDelay,
   listDelays,
 };

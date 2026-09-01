@@ -29,10 +29,14 @@ const createBookingValidation = [
   body('trip_id')
     .isUUID().withMessage(V.TRIP_ID_MUST_BE_A_VALID_UUID),
   body('seat_number')
+    .optional()
     .isInt({ min: 1 }).withMessage(V.SEAT_NUMBER_MUST_BE_A_POSITIVE_INTEGER),
   body('seats')
     .optional()
-    .isInt({ min: 1, max: 1 }).withMessage(V.SEATS_MUST_BE_1),
+    .isInt({ min: 1 }).withMessage(V.SEATS_MUST_BE_POSITIVE_INTEGER),
+  body('drop_off_point')
+    .optional()
+    .isUUID().withMessage(V.TRIP_ID_MUST_BE_A_VALID_UUID),
   body('agreed_fare')
     .notEmpty().withMessage(V.AGREED_FARE_IS_REQUIRED)
     .isFloat({ min: 0 }).withMessage(V.AGREED_FARE_MUST_BE_A_NON_NEGATIVE_NUMBER),

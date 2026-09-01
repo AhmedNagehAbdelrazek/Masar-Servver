@@ -130,6 +130,12 @@ const APP_MESSAGES = {
   SEAT_LOCK_RELEASED: { en: 'Seat lock released', ar: 'تم تحرير الحجز المؤقت للمقعد' },
   NOT_ENOUGH_AVAILABLE_SEATS: { en: 'Not enough available seats', ar: 'لا توجد مقاعد متاحة كافية' },
   NOT_ENOUGH_AVAILABLE_SEATS_ON_THE_SELECTED_TRIP: { en: 'Not enough available seats on the selected trip', ar: 'لا توجد مقاعد متاحة كافية في الرحلة المختارة' },
+  TRIP_NOT_BOOKABLE: { en: 'Trip is not bookable', ar: 'الرحلة غير قابلة للحجز' },
+  DROP_OFF_POINT_NOT_ON_TRIP: { en: 'Drop-off point is not on this trip', ar: 'نقطة النزول غير موجودة على هذه الرحلة' },
+  DROP_OFF_POINT_AFTER_DESTINATION: { en: 'Drop-off point must be before the final destination', ar: 'يجب أن تكون نقطة النزول قبل الوجهة النهائية' },
+  DROP_OFF_POINT_AFTER_MEETING_POINT: { en: 'Drop-off point must be after the pickup point', ar: 'يجب أن تكون نقطة النزول بعد نقطة الالتقاء' },
+  DRIVER_REVEAL_AVAILABLE_ONLY_AFTER_BOOKING_CONFIRMATION: { en: 'Driver profile reveal is available only after the booking is confirmed', ar: 'إظهار ملف السائق متاح فقط بعد تأكيد الحجز' },
+  YOU_DO_NOT_HAVE_ACCESS_TO_THIS_BOOKING_DRIVER_PROFILE: { en: 'You do not have access to this booking driver profile', ar: 'ليس لديك صلاحية الوصول إلى ملف سائق هذا الحجز' },
 
   // ===== Ride requests / offers =====
   RIDE_REQUEST_NOT_FOUND: { en: 'Ride request not found', ar: 'طلب التنقل غير موجود' },
@@ -139,6 +145,7 @@ const APP_MESSAGES = {
   YOU_CAN_ONLY_UPDATE_YOUR_OWN_RIDE_REQUESTS: { en: 'You can only update your own ride requests', ar: 'يمكنك تحديث طلبات التنقل الخاصة بك فقط' },
   YOU_CAN_ONLY_VIEW_OFFERS_ON_YOUR_OWN_REQUESTS_OR: { en: 'You can only view offers on your own requests or ones you submitted', ar: 'يمكنك عرض العروض على طلباتك الخاصة أو العروض التي قدمتها فقط' },
   YOU_CAN_ONLY_VIEW_YOUR_OWN_RIDE_REQUESTS: { en: 'You can only view your own ride requests', ar: 'يمكنك عرض طلبات التنقل الخاصة بك فقط' },
+  YOU_CAN_ONLY_VIEW_MATCHES_FOR_YOUR_OWN_RIDE_REQUESTS: { en: 'You can only view matches for your own ride requests', ar: 'يمكنك عرض الاقتراحات لطلبات التنقل الخاصة بك فقط' },
   YOU_ALREADY_HAVE_A_PENDING_OFFER_ON_THIS_RIDE_REQUEST: { en: 'You already have a pending offer on this ride request', ar: 'لديك بالفعل عرض قيد الانتظار على طلب التنقل هذا' },
   OFFER_NOT_FOUND: { en: 'Offer not found', ar: 'العرض غير موجود' },
   OFFER_ALREADY_ATTACHED_TO_A_BOOKING: { en: 'Offer already attached to a booking', ar: 'العرض مرتبط بالفعل بحجز' },

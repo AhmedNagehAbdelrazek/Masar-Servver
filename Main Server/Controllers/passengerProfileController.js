@@ -1,4 +1,5 @@
 const passengerProfileService = require('../Services/passengerProfileService');
+const homeService = require('../Services/homeService');
 const { successResponse } = require('../utils/httpResponse');
 const { markResource } = require('../Services/auditService');
 const catchAsync = require('../utils/catchAsync');
@@ -15,4 +16,9 @@ const updateMyProfile = catchAsync(async (req, res) => {
   successResponse(res, result);
 });
 
-module.exports = { getMyProfile, updateMyProfile };
+const getPassengerHome = catchAsync(async (req, res) => {
+  const result = await homeService.getPassengerHome(req.user.id);
+  successResponse(res, result);
+});
+
+module.exports = { getMyProfile, updateMyProfile, getPassengerHome };

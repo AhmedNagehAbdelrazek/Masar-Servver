@@ -10,6 +10,7 @@ router.use(protect);
 router.post('/', roleGuard(['passenger']), ...v.createRideRequestValidation, validate, c.createRideRequest);
 router.get('/', ...v.listRideRequestsValidation, validate, c.listRequests);
 router.get('/:request_id', ...v.rideRequestParamValidation, c.getRequest);
+router.get('/:request_id/matches', roleGuard(['passenger']), ...v.rideRequestParamValidation, c.getMatches);
 router.put('/:request_id', roleGuard(['passenger']), ...v.updateRideRequestValidation, validate, c.updateRideRequest);
 
 router.post('/:request_id/offers', roleGuard(['driver']), ...v.createOfferValidation, validate, c.submitOffer);

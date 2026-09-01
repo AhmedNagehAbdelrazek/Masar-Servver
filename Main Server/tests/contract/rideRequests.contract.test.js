@@ -1,11 +1,13 @@
 const { getAgent } = require('../setup/setup');
-const { User, SubscriptionPlan } = require('../../Models');
+const { User, Vehicle, Trip, TripSeat, DriverSubscription, SubscriptionPlan } = require('../../Models');
 const { generateAccessToken } = require('../setup/helpers');
+const { SUBSCRIPTION_STATUS } = require('../../config/constants');
 
 const PASSENGER_ID = 'e3000000-0000-4000-8000-000000000001';
 const DRIVER_ID = 'e3000000-0000-4000-8000-000000000002';
 const PASSENGER_PHONE = '+962797311111';
 const DRIVER_PHONE = '+962797322222';
+const VEHICLE_ID = 'e3000000-0000-4000-8000-000000000010';
 
 let passengerToken;
 let driverToken;
@@ -172,5 +174,113 @@ describe('US5 Contract - Offer Lifecycle', () => {
   it('rejects unauthenticated access to the board', async () => {
     const res = await getAgent().get('/api/ride-requests');
     expect(res.status).toBe(401);
+  });
+});
+
+describe('US6 Contract - Ride Request Matches', () => {
+  let tripId;
+  let tripDeparture;
+
+  beforeEach(async () => {
+    await TripSeat.destroy({ where: {}, force: true });
+    await Trip.destroy({ where: {}, force: true });
+    await DriverSubscription.destroy({ where: { driverId: DRIVER_ID }, force: true });
+    await Vehicle.destroy({ where: { id: VEHICLE_ID }, force: true });
+
+    await Vehicle.create({
+      id: VEHICLE_ID, driverId: DRIVER_ID, manufacturer: 'Toyota', model: 'Corolla',
+      vehicleType: 'sedan', modelYear: 2022, plateNumber: 'MTC-101', color: 'Black', seats: 4, isVerified: true,
+    });
+
+    const plan = await SubscriptionPlan.create({
+      name: 'Basic', periodDays: 30, percentageCut: 8, cost: 100,
+      features: [], isFree: false, isActive: true,
+    });
+    await DriverSubscription.create({
+      driverId: DRIVER_ID, planId: plan.id, planName: plan.name,
+      planPeriodDays: plan.periodDays, planPercentageCut: plan.percentageCut,
+      planCost: plan.cost, balance: 100,
+      paymentMethod: { name: 'Bank of Jordan', account_number: 'JO94BOJX0000000000', type: 'bank_account' },
+      status: SUBSCRIPTION_STATUS.ACTIVE, approvedAt: new Date(), activatedAt: new Date(),
+      expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+    });
+    await User.update({ totalBalance: 100, isInDebt: false }, { where: { id: DRIVER_ID } });
+
+    const departureDate = (() => { const d = new Date(); d.setDate(d.getDate() + 1); return d.toISOString().split('T')[0]; })();
+    const created = await getAgent()
+      .post('/api/trips')
+      .set('Authorization', `Bearer ${driverToken}`)
+      .send({
+        origin_city: 'Amman',
+        destination_city: 'Irbid',
+        departure_date: departureDate,
+        departure_time: '14:00',
+        type_of_trip: 'once',
+        fare_per_seat: '15.00',
+        seats: [
+          { seat_number: 1, type: 'driver' },
+          { seat_number: 2, type: 'available' },
+          { seat_number: 3, type: 'available' },
+          { seat_number: 4, type: 'unavailable' },
+        ],
+      });
+    expect(created.status).toBe(201);
+    tripId = created.body.trip_id;
+    const t = await Trip.findByPk(tripId);
+    tripDeparture = t.departureTime;
+  });
+
+  it('GET /api/ride-requests/:request_id/matches returns ranked matches shape', async () => {
+    const req = await getAgent()
+      .post('/api/ride-requests')
+      .set('Authorization', `Bearer ${passengerToken}`)
+      .send({
+        origin_city: 'Amman',
+        destination_city: 'Irbid',
+        origin_time: tripDeparture.toISOString(),
+        seats_needed: 1,
+      });
+    const requestId = req.body.ride_request.id;
+
+    const res = await getAgent()
+      .get(`/api/ride-requests/${requestId}/matches`)
+      .set('Authorization', `Bearer ${passengerToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.ride_request_id).toBe(requestId);
+    expect(Array.isArray(res.body.matches)).toBe(true);
+    const match = res.body.matches[0];
+    expect(match).toMatchObject({
+      trip_id: tripId,
+      score_rank: 1,
+      origin: { city: 'Amman' },
+      destination: { city: 'Irbid' },
+      available_seats: 2,
+      fare_per_seat: 15,
+      currency: 'JOD',
+    });
+    expect(match.driver).toMatchObject({ id: DRIVER_ID, full_name: 'Contract Offer Driver' });
+  });
+
+  it('GET matches by a non-owner passenger returns 403 code', async () => {
+    const OTHER_PASSENGER_ID = 'e3000000-0000-4000-8000-000000000003';
+    await User.create({
+      id: OTHER_PASSENGER_ID, fullName: 'Other Rider', phone: '+962797333333',
+      countryCode: 'JO', role: 'passenger', passwordHash: 'hashed', isVerified: true,
+    });
+    const otherToken = generateAccessToken({ id: OTHER_PASSENGER_ID, role: 'passenger' });
+
+    const req = await getAgent()
+      .post('/api/ride-requests')
+      .set('Authorization', `Bearer ${passengerToken}`)
+      .send({ origin_city: 'Amman', destination_city: 'Zarqa' });
+    const requestId = req.body.ride_request.id;
+
+    const res = await getAgent()
+      .get(`/api/ride-requests/${requestId}/matches`)
+      .set('Authorization', `Bearer ${otherToken}`);
+
+    expect(res.status).toBe(403);
+    expect(res.body.code).toBe('YOU_CAN_ONLY_VIEW_MATCHES_FOR_YOUR_OWN_RIDE_REQUESTS');
   });
 });
