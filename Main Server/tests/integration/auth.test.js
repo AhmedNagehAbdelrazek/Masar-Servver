@@ -1,17 +1,21 @@
 const { getAgent, getRedisStore } = require('../setup/setup');
-const { User } = require('../../Models');
+const { User, PassengerProfile } = require('../../Models');
 
 const PHONE = '+962791234567';
 const COUNTRY_CODE = 'JO';
 const ROLE = 'driver';
 const PASSWORD = 'Test@1234';
 
+const PASSENGER_PHONE = '+962791234568';
+const PASSENGER_PASSWORD = 'Pass@1234';
+
 let registrationToken;
 let accessToken;
 let refreshToken;
 
 beforeEach(async () => {
-  await User.destroy({ where: { phone: PHONE }, force: true });
+  await PassengerProfile.destroy({ where: {}, force: true });
+  await User.destroy({ where: { phone: [PHONE, PASSENGER_PHONE] }, force: true });
 });
 
 describe('Auth Flow - Registration', () => {
@@ -177,6 +181,164 @@ describe('Auth Flow - Registration', () => {
 
       expect(res.status).toBe(401);
     });
+  });
+});
+
+describe('Auth Flow - Passenger submits profile after registration', () => {
+  let passengerRegToken;
+  let passengerAccessToken;
+
+  beforeEach(async () => {
+    await getAgent()
+      .post('/api/auth/register/phone')
+      .send({ country_code: COUNTRY_CODE, phone: '791234568', role: 'passenger' });
+
+    const store = getRedisStore();
+    const otpKey = `otp:${PASSENGER_PHONE}`;
+    const storedOTP = store.get(otpKey);
+
+    const verifyRes = await getAgent()
+      .post('/api/auth/register/verify-otp')
+      .send({ phone: PASSENGER_PHONE, otp: storedOTP });
+
+    passengerRegToken = verifyRes.body.registration_token;
+
+    const passRes = await getAgent()
+      .post('/api/auth/register/password')
+      .set('Authorization', `Bearer ${passengerRegToken}`)
+      .send({ password: PASSENGER_PASSWORD, confirmPassword: PASSENGER_PASSWORD });
+
+    passengerAccessToken = passRes.body.access_token;
+  });
+
+  it('should register the passenger without requiring profile fields', async () => {
+    const user = await User.findOne({ where: { phone: PASSENGER_PHONE } });
+    expect(user).not.toBeNull();
+    expect(user.role).toBe('passenger');
+    expect(user.fullName).toBeNull();
+
+    const profile = await PassengerProfile.findOne({ where: { passengerId: user.id } });
+    expect(profile).not.toBeNull();
+    expect(profile.nationalID).toBeNull();
+  });
+
+  it('should fill the user and passenger profile via the onboarding endpoint', async () => {
+    const res = await getAgent()
+      .post('/api/auth/onboarding/profile/passenger')
+      .set('Authorization', `Bearer ${passengerAccessToken}`)
+      .send({
+        fullname: 'Ahmad Passenger',
+        national_id: '9871234567',
+        age: 28,
+        home_address: 'Amman, Jabal Amman',
+        gender: 'male',
+      });
+
+    expect(res.status).toBe(201);
+    expect(res.body.passengerProfile).toBeDefined();
+
+    const user = await User.findOne({ where: { phone: PASSENGER_PHONE } });
+    expect(user.fullName).toBe('Ahmad Passenger');
+    expect(Number(user.age)).toBe(28);
+    expect(user.gender).toBe('male');
+
+    const profile = await PassengerProfile.findOne({ where: { passengerId: user.id } });
+    expect(profile.nationalID).toBe('9871234567');
+    expect(profile.homeAddress).toBe('Amman, Jabal Amman');
+  });
+
+  it('should reflect the submitted profile in GET /profile/passenger', async () => {
+    await getAgent()
+      .post('/api/auth/onboarding/profile/passenger')
+      .set('Authorization', `Bearer ${passengerAccessToken}`)
+      .send({
+        fullname: 'Ahmad Passenger',
+        national_id: '9871234567',
+        age: 28,
+        home_address: 'Amman, Jabal Amman',
+        gender: 'male',
+      });
+
+    const fetched = await getAgent()
+      .get('/api/profile/passenger')
+      .set('Authorization', `Bearer ${passengerAccessToken}`);
+
+    expect(fetched.status).toBe(200);
+    expect(fetched.body.passenger_profile.full_name).toBe('Ahmad Passenger');
+    expect(fetched.body.passenger_profile.age).toBe(28);
+    expect(fetched.body.passenger_profile.gender).toBe('male');
+    expect(fetched.body.passenger_profile.national_id).toBe('9871234567');
+    expect(fetched.body.passenger_profile.home_address).toBe('Amman, Jabal Amman');
+  });
+
+  it('should reject onboarding when a profile field is missing', async () => {
+    const res = await getAgent()
+      .post('/api/auth/onboarding/profile/passenger')
+      .set('Authorization', `Bearer ${passengerAccessToken}`)
+      .send({
+        fullname: 'Ahmad Passenger',
+        national_id: '9871234567',
+        age: 28,
+        gender: 'male',
+      });
+
+    expect(res.status).toBe(422);
+  });
+
+  it('should reject onboarding with an invalid gender', async () => {
+    const res = await getAgent()
+      .post('/api/auth/onboarding/profile/passenger')
+      .set('Authorization', `Bearer ${passengerAccessToken}`)
+      .send({
+        fullname: 'Ahmad Passenger',
+        national_id: '9871234567',
+        age: 28,
+        home_address: 'Amman, Jabal Amman',
+        gender: 'other',
+      });
+
+    expect(res.status).toBe(422);
+  });
+
+  it('should reject onboarding with an invalid age', async () => {
+    const res = await getAgent()
+      .post('/api/auth/onboarding/profile/passenger')
+      .set('Authorization', `Bearer ${passengerAccessToken}`)
+      .send({
+        fullname: 'Ahmad Passenger',
+        national_id: '9871234567',
+        age: 10,
+        home_address: 'Amman, Jabal Amman',
+        gender: 'male',
+      });
+
+    expect(res.status).toBe(422);
+  });
+
+  it('should reject a second submission once the profile is filled', async () => {
+    await getAgent()
+      .post('/api/auth/onboarding/profile/passenger')
+      .set('Authorization', `Bearer ${passengerAccessToken}`)
+      .send({
+        fullname: 'Ahmad Passenger',
+        national_id: '9871234567',
+        age: 28,
+        home_address: 'Amman, Jabal Amman',
+        gender: 'male',
+      });
+
+    const res = await getAgent()
+      .post('/api/auth/onboarding/profile/passenger')
+      .set('Authorization', `Bearer ${passengerAccessToken}`)
+      .send({
+        fullname: 'Ahmad Passenger',
+        national_id: '1112223334',
+        age: 29,
+        home_address: 'Amman, Downtown',
+        gender: 'male',
+      });
+
+    expect(res.status).toBe(409);
   });
 });
 

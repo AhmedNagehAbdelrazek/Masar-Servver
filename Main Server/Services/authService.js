@@ -137,7 +137,8 @@ async function verifyRegistrationOTP(phone, otp) {
 
 // ===== REGISTRATION STEP 2: Create Password =====
 
-async function registerPassword(authHeader, password) {
+async function registerPassword(authHeader, data) {
+  const password = data.password;
   const token = authHeader?.split(' ')[1];
   if (!token) {
     throw ApiErrors.unauthorized('REGISTRATION_TOKEN_IS_REQUIRED');
@@ -234,7 +235,9 @@ async function registerPassword(authHeader, password) {
     console.warn('[authService] failed to initialize notification settings:', err.message);
   }
 
-  // Create the passenger profile for new passengers (spec 009 US8).
+  // Create the passenger profile placeholder for new passengers (spec 009 US8).
+  // The passenger supplies their profile data via the passenger onboarding
+  // endpoint after registration: fullname, national_id, age, home_address, gender.
   if (decoded.role === 'passenger') {
     try {
       await PassengerProfile.findOrCreate({
@@ -691,6 +694,50 @@ async function getDriverProfile(userId) {
   return { driverProfile: profile || null };
 }
 
+// ===== ONBOARDING: Passenger Profile =====
+
+async function submitPassengerProfile(userId, data) {
+  const user = await User.findByPk(userId);
+  if (!user) {
+    throw ApiErrors.notFound('USER_NOT_FOUND');
+  }
+  if (user.role !== 'passenger') {
+    throw ApiErrors.forbidden('ONLY_PASSENGERS_CAN_SUBMIT_A_PASSENGER_PROFILE');
+  }
+
+  const [profile] = await PassengerProfile.findOrCreate({
+    where: { passengerId: userId },
+    defaults: { passengerId: userId },
+  });
+  if (profile.nationalID || profile.homeAddress) {
+    throw ApiErrors.conflict('PASSENGER_PROFILE_ALREADY_EXISTS');
+  }
+
+  const numericAge = Number(data.age);
+
+  await user.update({
+    fullName: data.fullname,
+    age: numericAge,
+    gender: data.gender,
+  });
+
+  await profile.update({
+    nationalID: data.national_id,
+    homeAddress: data.home_address,
+  });
+
+  auditService.track({
+    action: 'passenger_profile.submitted',
+    resourceType: 'passenger_profile',
+    resourceId: profile.id,
+    resourceLabel: user.fullName,
+    actorId: userId,
+    actorType: 'passenger',
+  });
+
+  return { passengerProfile: profile };
+}
+
 // ===== ONBOARDING: Vehicle =====
 
 async function submitVehicle(userId, data) {
@@ -811,6 +858,7 @@ module.exports = {
   resendOTP,
   submitDriverProfile,
   getDriverProfile,
+  submitPassengerProfile,
   submitVehicle,
   getVehicle,
   getOnboardingStatus,

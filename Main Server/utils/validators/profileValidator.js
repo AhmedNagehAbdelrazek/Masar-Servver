@@ -66,6 +66,14 @@ const updatePassengerProfileValidation = [
   body('smoking_preference')
     .optional()
     .isIn(['no_preference', 'non_smoking', 'smoking_allowed']).withMessage(V.SMOKING_PREFERENCE_MUST_BE_ONE_OF_NO_PREFERENCE_NON_SMOKING_SMOKING_ALLOWED),
+  body('national_id')
+    .optional()
+    .trim()
+    .isLength({ min: 5, max: 30 }).withMessage(V.NATIONAL_ID_MUST_BE_5_30_CHARACTERS),
+  body('home_address')
+    .optional()
+    .trim()
+    .isString().withMessage(V.HOME_ADDRESS_MUST_BE_A_STRING),
   body('saved_routes')
     .optional()
     .isArray().withMessage(V.SAVED_ROUTES_MUST_BE_AN_ARRAY),

@@ -30,6 +30,15 @@ PassengerProfile.init(
             allowNull: true,
             defaultValue: [],
         },
+        nationalID: {
+            type: DataTypes.STRING(30),
+            field: 'national_id',
+            allowNull: true,
+        },
+        homeAddress: {
+            type: DataTypes.STRING(255),
+            allowNull: true,
+        },
         emergencyContacts: {
             type: DataTypes.JSONB,
             allowNull: true,

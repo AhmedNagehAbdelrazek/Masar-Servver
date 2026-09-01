@@ -359,7 +359,7 @@
                     "password"
                   ]
                 },
-                "description": "Set your password using the `registration_token` from Step 2 (sent as `Authorization: Bearer`). Returns `access_token` and `refresh_token`.\n\n**Body fields**\n- `password` *(string, required)* â€” at least 8 characters with uppercase, lowercase, a number, and a special character (`@$!%*?&`).\n- `confirmPassword` *(string, required)* â€” must match `password`."
+                "description": "Sets the password and creates the account (the registration token comes from `Step 2 - Verify OTP`).\n\n**201** `{ access_token, refresh_token, user }`.\n\nAfter this step, a **passenger** must submit their profile data via `POST /auth/onboarding/profile/passenger` (see `Submit Passenger Onboarding Profile`). Drivers must submit their driver profile via `POST /auth/onboarding/profile`."
               },
               "response": [
                 {
@@ -13301,6 +13301,63 @@
           "name": "Passenger Profile",
           "item": [
             {
+              "name": "Submit Passenger Onboarding Profile",
+              "event": [
+                {
+                  "script": {
+                    "exec": [
+                      "pm.environment.get('access_token') ? pm.request.headers.add({ key: 'Authorization', value: 'Bearer ' + pm.environment.get('access_token') }) : console.warn('No access_token set');"
+                    ],
+                    "packages": {},
+                    "type": "text/javascript",
+                    "requests": {}
+                  },
+                  "listen": "prerequest"
+                }
+              ],
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{access_token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"fullname\": \"Ahmad Masar\", // required, max 120 chars\n  \"national_id\": \"9871234567\", // required, 5-30 chars\n  \"age\": 28, // required, integer 18-100\n  \"home_address\": \"Amman, Jabal Amman\", // required\n  \"gender\": \"male\" // required: \"male\" | \"female\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/auth/onboarding/profile/passenger",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "auth",
+                    "onboarding",
+                    "profile",
+                    "passenger"
+                  ]
+                },
+                "description": "Fill the passenger profile after phone-number confirmation and password setup.\n\nRequires role `passenger`.\n\n**Body fields**\n- `fullname` *(string, required)* — full name, max 120 chars.\n- `national_id` *(string, required)* — national ID, 5-30 chars.\n- `age` *(number, required)* — integer between 18 and 100.\n- `home_address` *(string, required)* — home address.\n- `gender` *(string, required)* — `male` | `female`.\n\n**201** `{ passengerProfile }`. A second submission returns **409** once the profile is already filled."
+              },
+              "response": []
+            },
+            {
               "name": "Get My Profile",
               "event": [
                 {
@@ -13355,7 +13412,7 @@
                     "passenger"
                   ]
                 },
-                "description": "Returns the caller's passenger preferences; creates a default profile lazily on first access."
+                "description": "Returns the caller's passenger personal data: full_name, age, phone, and national_id. The national_id is read from the passenger profile (created lazily on first access) and can be set via PUT /profile/passenger with { national_id }. Passenger only.\n\n**200** `{ passenger_profile: { full_name, age, phone, national_id } }`."
               },
               "response": [
                 {
@@ -13384,7 +13441,7 @@
                         "passenger"
                       ]
                     },
-                    "description": "Returns the caller's passenger preferences; creates a default profile lazily on first access."
+                    "description": "Returns the caller's passenger personal data: full_name, age, phone, and national_id. The national_id is read from the passenger profile (created lazily on first access) and can be set via PUT /profile/passenger with { national_id }. Passenger only.\n\n**200** `{ passenger_profile: { full_name, age, phone, national_id } }`."
                   },
                   "status": "OK",
                   "code": 200,
@@ -13397,7 +13454,7 @@
                     }
                   ],
                   "cookie": [],
-                  "body": "{\n  \"passenger_profile\": {\n    \"id\": \"d947d357-aaf0-4898-a3f2-72c4d04efbad\",\n    \"passenger_id\": \"07eccd0a-b14a-46a7-83e0-36cbeafcca87\",\n    \"preferred_gender\": \"any\",\n    \"smoking_preference\": \"no_preference\",\n    \"saved_routes\": [],\n    \"emergency_contacts\": [],\n    \"created_at\": \"2026-08-22T04:37:48.130Z\",\n    \"updated_at\": \"2026-08-22T04:37:48.130Z\"\n  }\n}"
+                  "body": "{\n  \"passenger_profile\": {\n    \"full_name\": \"Ahmad Masar\",\n    \"age\": 28,\n    \"gender\": \"male\",\n    \"phone\": \"+962790000000\",\n    \"national_id\": \"9871234567\",\n    \"home_address\": \"Amman, Jabal Amman\"\n  }\n}"
                 }
               ]
             },
@@ -13448,7 +13505,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"preferred_gender\": \"female\",          // male | female | any\n  \"smoking_preference\": \"non_smoking\",   // no_preference | non_smoking | smoking_allowed\n  \"saved_routes\": [\n    {\"label\": \"Home weekends\", \"origin\": \"Amman\", \"destination\": \"Irbid\"}\n  ],\n  \"emergency_contacts\": [\n    {\"name\": \"Mother\", \"phone\": \"+962791111111\"}\n  ]\n}",
+                  "raw": "{\n  \"preferred_gender\": \"female\",          // male | female | any\n  \"smoking_preference\": \"non_smoking\",   // no_preference | non_smoking | smoking_allowed\n  \"national_id\": \"9871234567\",           // 5-30 chars\n  \"home_address\": \"Amman, Jabal Amman\",  // string\n  \"saved_routes\": [\n    {\"label\": \"Home weekends\", \"origin\": \"Amman\", \"destination\": \"Irbid\"}\n  ],\n  \"emergency_contacts\": [\n    {\"name\": \"Mother\", \"phone\": \"+962791111111\"}\n  ]\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -13519,6 +13576,66 @@
                   "body": "{\n  \"passenger_profile\": {\n    \"id\": \"d947d357-aaf0-4898-a3f2-72c4d04efbad\",\n    \"preferred_gender\": \"female\",\n    \"smoking_preference\": \"non_smoking\",\n    \"updated_at\": \"2026-08-22T05:12:44.900Z\"\n  }\n}"
                 }
               ]
+            },
+            {
+              "name": "Get Passenger Account Summary",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "exec": [
+                      "pm.environment.get('access_token') ? pm.request.headers.add({ key: 'Authorization', value: 'Bearer ' + pm.environment.get('access_token') }) : console.warn('No access_token set');"
+                    ],
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Responds successfully', function () {",
+                      "    pm.response.to.be.oneOf([200, 201]);",
+                      "});",
+                      "pm.test('Returns a JSON body', function () {",
+                      "    pm.expect(pm.response.json()).to.be.an('object');",
+                      "});"
+                    ],
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/profile/passenger/account-summary",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "profile",
+                    "passenger",
+                    "account-summary"
+                  ]
+                },
+                "description": "Passenger account summary: counts of alerts, violations and sanctions on the user (mapped from penalties) plus complaints the user filed. Passenger only.\n\n**200** `{ account_summary: [{ type: \"alerts\"|\"violations\"|\"sanctions\"|\"complaints\", count }] }`."
+              },
+              "response": []
             },
             {
               "name": "Get Passenger Home",

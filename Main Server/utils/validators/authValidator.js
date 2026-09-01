@@ -57,6 +57,27 @@ const registerPasswordValidation = [
     }),
 ];
 
+const onboardingPassengerProfileValidation = [
+  body('fullname')
+    .trim()
+    .notEmpty().withMessage(V.FULL_NAME_IS_REQUIRED)
+    .isLength({ max: 120 }).withMessage(V.FULL_NAME_MUST_BE_AT_MOST_120_CHARACTERS),
+  body('national_id')
+    .trim()
+    .notEmpty().withMessage(V.NATIONAL_ID_IS_REQUIRED)
+    .isLength({ min: 5, max: 30 }).withMessage(V.NATIONAL_ID_MUST_BE_5_30_CHARACTERS),
+  body('age')
+    .notEmpty().withMessage(V.AGE_IS_REQUIRED)
+    .isInt({ min: 18, max: 100 }).withMessage(V.AGE_MUST_BE_AN_INTEGER_BETWEEN_18_AND_100),
+  body('home_address')
+    .trim()
+    .notEmpty().withMessage(V.HOME_ADDRESS_IS_REQUIRED)
+    .isString().withMessage(V.HOME_ADDRESS_MUST_BE_A_STRING),
+  body('gender')
+    .notEmpty().withMessage(V.GENDER_IS_REQUIRED)
+    .isIn(['male', 'female']).withMessage(V.GENDER_MUST_BE_MALE_OR_FEMALE),
+];
+
 const loginValidation = [
   body('phone')
     .trim()
@@ -208,5 +229,6 @@ module.exports = {
   resendOTPValidation,
   refreshValidation,
   onboardingProfileValidation,
+  onboardingPassengerProfileValidation,
   onboardingVehicleValidation,
 };

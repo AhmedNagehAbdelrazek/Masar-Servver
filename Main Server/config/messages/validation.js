@@ -134,6 +134,8 @@ const VALIDATION_MESSAGES = {
   FULL_NAME_MUST_BE_AT_MOST_120_CHARACTERS_2: { en: "full_name must be at most 120 characters", ar: "يجب ألا يتجاوز الاسم الكامل 120 حرفاً" },
   GENDER_IS_REQUIRED: { en: "Gender is required", ar: "الجنس مطلوب" },
   GENDER_MUST_BE_MALE_OR_FEMALE: { en: "Gender must be male or female", ar: "يجب أن يكون الجنس ذكراً أو أنثى" },
+  HOME_ADDRESS_IS_REQUIRED: { en: "Home address is required", ar: "العنوان المنزلي مطلوب" },
+  HOME_ADDRESS_MUST_BE_A_STRING: { en: "Home address must be a string", ar: "يجب أن يكون العنوان المنزلي نصاً" },
   GENDER_PREFERENCE_MUST_BE_ONE_OF_ALL_WOMEN_ONLY_MEN_ONLY: { en: "Gender preference must be one of: all, women_only, men_only", ar: "يجب أن يكون تفضيل الجنس أحد: all، women_only، men_only" },
   IMAGE_ID_MUST_BE_A_VALID_INTEGER: { en: "Image ID must be a valid integer", ar: "معرف الصورة يجب أن يكون رقماً صحيحاً صالحاً" },
   INSTRUCTIONS_MUST_BE_A_NON_EMPTY_ARRAY: { en: "Instructions must be a non-empty array", ar: "يجب أن تكون التعليمات مصفوفة غير فارغة" },

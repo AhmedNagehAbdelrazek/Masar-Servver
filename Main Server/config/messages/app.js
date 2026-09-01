@@ -212,6 +212,8 @@ const APP_MESSAGES = {
   DRIVER_VEHICLE_IS_NOT_VERIFIED: { en: 'Driver vehicle is not verified', ar: 'مركبة السائق غير موثقة' },
   ONLY_DRIVERS_CAN_ADD_VEHICLES: { en: 'Only drivers can add vehicles', ar: 'السائقون فقط يمكنهم إضافة المركبات' },
   ONLY_DRIVERS_CAN_SUBMIT_A_DRIVER_PROFILE: { en: 'Only drivers can submit a driver profile', ar: 'السائقون فقط يمكنهم تقديم ملف السائق' },
+  ONLY_PASSENGERS_CAN_SUBMIT_A_PASSENGER_PROFILE: { en: 'Only passengers can submit a passenger profile', ar: 'الركاب فقط يمكنهم تقديم ملف الراكب' },
+  PASSENGER_PROFILE_ALREADY_EXISTS: { en: 'Passenger profile already exists', ar: 'ملف الراكب موجود بالفعل' },
   PLEASE_COMPLETE_YOUR_DRIVER_PROFILE_FIRST: { en: 'Please complete your driver profile first', ar: 'يرجى إكمال ملف السائق أولاً' },
   YOU_ALREADY_HAVE_A_REGISTERED_VEHICLE_UPDATE_IT_INSTEAD: { en: 'You already have a registered vehicle. Update it instead.', ar: 'لديك بالفعل مركبة مسجلة. يمكنك تحديثها بدلاً من ذلك.' },
   A_VEHICLE_WITH_THIS_PLATE_NUMBER_ALREADY_EXISTS: { en: 'A vehicle with this plate number already exists', ar: 'توجد مركبة بهذا الرقم اللوحي بالفعل' },

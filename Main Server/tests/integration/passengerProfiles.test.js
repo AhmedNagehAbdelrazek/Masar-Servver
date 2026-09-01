@@ -38,17 +38,18 @@ beforeEach(async () => {
 });
 
 describe('US8 - passenger profile auto-creation', () => {
-  it('should lazily create a profile with defaults on first GET', async () => {
+  it('should return personal data and lazily create a profile on first GET', async () => {
     const res = await getAgent()
       .get('/api/profile/passenger')
       .set('Authorization', `Bearer ${passengerToken}`);
 
     expect(res.status).toBe(200);
-    expect(res.body.passenger_profile.passenger_id).toBe(PASSENGER_ID);
-    expect(res.body.passenger_profile.preferred_gender).toBe('any');
-    expect(res.body.passenger_profile.smoking_preference).toBe('no_preference');
-    expect(res.body.passenger_profile.saved_routes).toEqual([]);
-    expect(res.body.passenger_profile.emergency_contacts).toEqual([]);
+    expect(res.body.passenger_profile.full_name).toBe('Profile Passenger');
+    expect(res.body.passenger_profile.age).toBeNull();
+    expect(res.body.passenger_profile.gender).toBe('male');
+    expect(res.body.passenger_profile.phone).toBe(PASSENGER_PHONE);
+    expect(res.body.passenger_profile.national_id).toBeNull();
+    expect(res.body.passenger_profile.home_address).toBeNull();
 
     const rows = await PassengerProfile.findAll({ where: { passengerId: PASSENGER_ID } });
     expect(rows.length).toBe(1);
@@ -59,6 +60,32 @@ describe('US8 - passenger profile auto-creation', () => {
     expect(again.status).toBe(200);
     const rowsAfter = await PassengerProfile.findAll({ where: { passengerId: PASSENGER_ID } });
     expect(rowsAfter.length).toBe(1);
+  });
+
+  it('should return the stored national id from the profile', async () => {
+    await PassengerProfile.create({ passengerId: PASSENGER_ID, nationalID: '9871234567' });
+
+    const res = await getAgent()
+      .get('/api/profile/passenger')
+      .set('Authorization', `Bearer ${passengerToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.passenger_profile.national_id).toBe('9871234567');
+  });
+
+  it('should update and return the home address', async () => {
+    const res = await getAgent()
+      .put('/api/profile/passenger')
+      .set('Authorization', `Bearer ${passengerToken}`)
+      .send({ home_address: 'Amman, Jabal Amman' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.passenger_profile.home_address).toBe('Amman, Jabal Amman');
+
+    const fetched = await getAgent()
+      .get('/api/profile/passenger')
+      .set('Authorization', `Bearer ${passengerToken}`);
+    expect(fetched.body.passenger_profile.home_address).toBe('Amman, Jabal Amman');
   });
 
   it('should reject drivers', async () => {
@@ -105,10 +132,22 @@ describe('US8 - updating the passenger profile', () => {
     ]);
     expect(res.body.passenger_profile.emergency_contacts[0].name).toBe('Mom');
 
-    const fetched = await getAgent()
-      .get('/api/profile/passenger')
-      .set('Authorization', `Bearer ${passengerToken}`);
-    expect(fetched.body.passenger_profile.emergency_contacts.length).toBe(1);
+    const rows = await PassengerProfile.findAll({ where: { passengerId: PASSENGER_ID } });
+    expect(rows[0].emergencyContacts.length).toBe(1);
+    expect(rows[0].savedRoutes).toEqual([{ origin_city: 'Amman', destination_city: 'Irbid' }]);
+  });
+
+  it('should update the national id', async () => {
+    const res = await getAgent()
+      .put('/api/profile/passenger')
+      .set('Authorization', `Bearer ${passengerToken}`)
+      .send({ national_id: '9871234567' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.passenger_profile.national_id).toBe('9871234567');
+
+    const rows = await PassengerProfile.findAll({ where: { passengerId: PASSENGER_ID } });
+    expect(rows[0].nationalID).toBe('9871234567');
   });
 
   it('should validate enum fields', async () => {

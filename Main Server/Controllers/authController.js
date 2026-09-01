@@ -16,8 +16,7 @@ const verifyRegistrationOTP = catchAsync(async (req, res) => {
 });
 
 const registerPassword = catchAsync(async (req, res) => {
-  const { password } = req.body;
-  const result = await authService.registerPassword(req.headers.authorization, password);
+  const result = await authService.registerPassword(req.headers.authorization, req.body);
   markResource(res, { type: 'user', id: result.user.id, label: result.user.phone });
   successResponse(res, result, 201);
 });
@@ -91,6 +90,16 @@ const getDriverProfile = catchAsync(async (req, res) => {
   successResponse(res, result);
 });
 
+const submitPassengerProfile = catchAsync(async (req, res) => {
+  const result = await authService.submitPassengerProfile(req.user.id, req.body);
+  markResource(res, {
+    type: 'passenger_profile',
+    id: result.passengerProfile.id,
+    label: req.body.fullname,
+  });
+  successResponse(res, result, 201);
+});
+
 const submitVehicle = catchAsync(async (req, res) => {
   const result = await authService.submitVehicle(req.user.id, req.body);
   markResource(res, {
@@ -126,6 +135,7 @@ module.exports = {
   resendOTP,
   submitDriverProfile,
   getDriverProfile,
+  submitPassengerProfile,
   submitVehicle,
   getVehicle,
   getOnboardingStatus,

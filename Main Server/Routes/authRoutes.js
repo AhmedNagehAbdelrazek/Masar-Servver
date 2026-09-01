@@ -14,6 +14,7 @@ const {
   refreshValidation,
   changePasswordValidation,
   onboardingProfileValidation,
+  onboardingPassengerProfileValidation,
   onboardingVehicleValidation,
 } = require('../utils/validators/authValidator');
 
@@ -49,5 +50,8 @@ router.get('/onboarding/profile', protect, roleGuard(['driver']), c.getDriverPro
 router.post('/onboarding/vehicle', protect, roleGuard(['driver']), ...onboardingVehicleValidation, validate, c.submitVehicle);
 router.get('/onboarding/vehicle', protect, roleGuard(['driver']), c.getVehicle);
 router.get('/onboarding/status', protect, roleGuard(['driver']), c.getOnboardingStatus);
+
+// Onboarding - Passenger
+router.post('/onboarding/profile/passenger', protect, roleGuard(['passenger']), ...onboardingPassengerProfileValidation, validate, c.submitPassengerProfile);
 
 module.exports = router;
