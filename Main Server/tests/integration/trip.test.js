@@ -348,6 +348,24 @@ describe('Trip - Create Trip', () => {
       expect(res.status).toBe(422);
     });
 
+    it('should create a trip whose departure crosses midnight (regression)', async () => {
+      // A departure 30 minutes from now can fall on the next local day (e.g.
+      // 23:40 + 30min = 00:10). Date and time must come from the same local
+      // instant so the validator never pairs today's date with a time that
+      // already passed, nor rejects a future departure.
+      const dep = new Date(Date.now() + 30 * 60 * 1000);
+      const localDate = `${dep.getFullYear()}-${String(dep.getMonth() + 1).padStart(2, '0')}-${String(dep.getDate()).padStart(2, '0')}`;
+      const localTime = `${String(dep.getHours()).padStart(2, '0')}:${String(dep.getMinutes()).padStart(2, '0')}`;
+      const body = { ...VALID_TRIP_BODY, departure_date: localDate, departure_time: localTime };
+      const res = await getAgent()
+        .post('/api/trips')
+        .set('Authorization', `Bearer ${driverToken}`)
+        .send(body);
+
+      expect(res.status).toBe(201);
+      expect(res.body.trip_id).toBeDefined();
+    });
+
     it('should reject recurring trip without repeated_days', async () => {
       const body = {
         ...VALID_TRIP_BODY,

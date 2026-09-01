@@ -571,7 +571,9 @@ const getAvailableTrips = async (filters = {}) => {
   };
 
   // Base date/recurrence requirement, optionally narrowed by a time window.
-  const andConditions = [dateBranch];
+  const andConditions = [];
+  if(date)  andConditions.push(dateBranch);
+
   if (timeFrom || timeTo) {
     const [fhh, fmm] = (timeFrom || '00:00').split(':').map(Number);
     const [thh, tmm] = (timeTo || '23:59').split(':').map(Number);
@@ -603,7 +605,6 @@ const getAvailableTrips = async (filters = {}) => {
   if (vehicleType) {
     include[2] = { model: Vehicle, as: 'vehicle', where: { vehicleType } };
   }
-
   const trips = await Trip.findAll({
     where,
     include,
@@ -784,6 +785,9 @@ const completeTrip = async (driverId, tripId) => {
     }
   }
 
+  // US3: reflect completion in the cached driver + passenger homes.
+  await homeService.invalidateHomeForTrip(trip.id, driverId);
+
   trackTripMutation({
     action: 'trip.completed',
     driverId,
@@ -930,6 +934,9 @@ async function updateTrip(driverId, tripId, data) {
         data: { trip_id: trip.id },
       }
     );
+
+    // A departure change updates the time shown on driver/passenger homes.
+    await homeService.invalidateHomeForTrip(trip.id, driverId);
   }
 
   const attributes = await TripAttribute.findAll({ where: { tripId: trip.id } });
@@ -1004,6 +1011,9 @@ async function cancelTrip(driverId, tripId) {
       console.warn(`[tripService] failed to release seat lock for trip ${trip.id} seat ${seat.seatNumber}:`, err.message);
     }
   }
+
+  // Reflect the cancellation in the cached driver + passenger homes.
+  await homeService.invalidateHomeForTrip(trip.id, driverId);
 
   trackTripMutation({
     action: 'trip.cancelled',
@@ -1178,6 +1188,8 @@ async function cancelTripWithPenalty(driverId, tripId, { reason, note }) {
   } catch (err) {
     console.warn('[tripService] cancel notification failed:', err.message);
   }
+
+  await homeService.invalidateHomeForTrip(trip.id, driverId);
 
   trackTripMutation({
     action: 'trip.cancelled_by_driver',

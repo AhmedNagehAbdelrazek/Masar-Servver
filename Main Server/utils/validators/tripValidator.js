@@ -77,7 +77,7 @@ const createTripValidation = [
     .notEmpty().withMessage(V.DEPARTURE_DATE_IS_REQUIRED)
     .isDate().withMessage(V.DEPARTURE_DATE_MUST_BE_A_VALID_DATE_YYYY_MM_DD)
     .custom((value) => {
-      const date = new Date(value);
+      const date = new Date(`${value}T00:00:00`);
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       if (date < today) throw new Error(V.DEPARTURE_DATE_MUST_BE_TODAY_OR_IN_THE_FUTURE);
@@ -108,8 +108,8 @@ const createTripValidation = [
     .notEmpty().withMessage(V.END_DATE_IS_REQUIRED_FOR_RECURRING_TRIPS)
     .isDate().withMessage(V.END_DATE_MUST_BE_A_VALID_DATE)
     .custom((value, { req }) => {
-      const endDate = new Date(value);
-      const startDate = new Date(req.body.departure_date);
+      const endDate = new Date(`${value}T00:00:00`);
+      const startDate = new Date(`${req.body.departure_date}T00:00:00`);
       if (endDate <= startDate) throw new Error(V.END_DATE_MUST_BE_AFTER_DEPARTURE_DATE);
       return true;
     }),

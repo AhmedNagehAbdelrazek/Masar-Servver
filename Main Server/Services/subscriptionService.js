@@ -373,6 +373,16 @@ async function approve(subscriptionId, actorId) {
     console.warn('[subscriptionService] approval notification failed:', err.message);
   }
 
+  // Best-effort: the approved plan changes the driver-home `subscription`
+  // section and free-trips gating. Lazy require avoids a require cycle
+  // (homeService already requires this module).
+  try {
+    const homeService = require('./homeService');
+    await homeService.invalidateHomeCache(result.driverId);
+  } catch (err) {
+    console.warn('[subscriptionService] driver home cache invalidation failed:', err.message);
+  }
+
   return {
     message: 'SUBSCRIPTION_APPROVED_PLAN_ACTIVATED',
     subscription_id: result.subscriptionId,

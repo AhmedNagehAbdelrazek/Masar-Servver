@@ -5,6 +5,7 @@ const { ApiErrors } = require('../utils/ApiError');
 const balanceService = require('./balanceService');
 const subscriptionService = require('./subscriptionService');
 const recentSearchService = require('./recentSearchService');
+const realtimeService = require('./realtimeService');
 const { REDIS_KEYS, CACHE_TTL } = require('../utils/redisKeys');
 const { getKey, setKey, deleteKey } = require('../config/redis');
 const { seatNumbersFor } = require('../utils/seatSerializer');
@@ -374,4 +375,34 @@ async function invalidatePassengerHome(passengerId) {
   await deleteKey(REDIS_KEYS.PASSENGER_HOME(passengerId));
 }
 
-module.exports = { getHome, invalidateHomeCache, getSubscription, getPassengerHome, invalidatePassengerHome };
+/**
+ * Invalidate the driver + passenger home caches for a trip after any mutation
+ * that changes a trip's status or bookings (complete, cancel, departure
+ * change, booking cancelled), so the cached homes rebuild on next read.
+ * Also emits a `home:invalidate` socket event so open clients can refresh.
+ * Best-effort — never throws.
+ */
+async function invalidateHomeForTrip(tripId, driverId) {
+  try {
+    const bookings = await Booking.findAll({
+      where: { tripId },
+      attributes: ['passengerId'],
+    });
+
+    const userIds = new Set([driverId, ...bookings.map((b) => b.passengerId)]);
+    for (const userId of userIds) {
+      if (!userId) continue;
+      if (userId === driverId) await invalidateHomeCache(driverId);
+      else await invalidatePassengerHome(userId);
+      try {
+        realtimeService.emitToUser(userId, 'home:invalidate', { trip_id: tripId });
+      } catch (_err) {
+        // socket layer offline (e.g. tests) — ignore
+      }
+    }
+  } catch (err) {
+    console.warn('[homeService] trip home cache invalidation failed:', err.message);
+  }
+}
+
+module.exports = { getHome, invalidateHomeCache, getSubscription, getPassengerHome, invalidatePassengerHome, invalidateHomeForTrip };

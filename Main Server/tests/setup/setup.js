@@ -62,6 +62,12 @@ beforeAll(async () => {
 
 afterAll(async () => {
   try {
+    const { audit } = require('../../config/audit');
+    if (audit && typeof audit.close === 'function') await audit.close();
+  } catch (_err) {
+    // ignore
+  }
+  try {
     await sequelize.close();
   } catch (_err) {
     // ignore

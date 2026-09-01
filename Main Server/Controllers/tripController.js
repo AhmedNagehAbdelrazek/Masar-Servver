@@ -44,7 +44,7 @@ const getAvailableTrips = catchAsync(async (req, res) => {
   const trips = await tripService.getAvailableTrips({
     originCity: origin_city,
     destinationCity: destination_city,
-    date: date || new Date().toISOString().split('T')[0],
+    date: date,
     genderPreference: gender_preference,
     timeFrom: time_from,
     timeTo: time_to,

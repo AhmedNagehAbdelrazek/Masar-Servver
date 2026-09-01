@@ -17,6 +17,8 @@ const { checkSeatLock, releaseSeatLock } = require('../utils/seatLock');
 const auditService = require('./auditService');
 const notificationService = require('./notificationService');
 const { generateReferenceCode } = require('../utils/referenceCode');
+const homeService = require('./homeService');
+const realtimeService = require('./realtimeService');
 
 function serializeRoutePoints(trip) {
   return (trip.stops || [])
@@ -332,6 +334,21 @@ async function createBooking(passengerId, payload) {
     console.warn('[bookingService] passenger home cache invalidation failed:', err.message);
   }
 
+  // Best-effort: the driver's home shows the new booking (seats/capacity).
+  try {
+    await deleteKey(REDIS_KEYS.DRIVER_HOME(trip.driverId));
+  } catch (err) {
+    console.warn('[bookingService] driver home cache invalidation failed:', err.message);
+  }
+
+  // Tell both homes over socket.io so open clients refresh immediately.
+  try {
+    realtimeService.emitToUser(passengerId, 'home:invalidate', { trip_id });
+    realtimeService.emitToUser(trip.driverId, 'home:invalidate', { trip_id });
+  } catch (_err) {
+    // socket layer offline (e.g. tests) — ignore
+  }
+
   const routeLabel = `${trip.originCity} - ${trip.destinationCity}`;
   await Promise.allSettled([
     notificationService.sendToUser(user, 'BOOKING_CONFIRMED_PASSENGER', {
@@ -551,6 +568,8 @@ async function cancelBooking(passengerId, bookingId) {
     seat_number: booking.seatNumber,
     route: `${booking.trip.originCity} - ${booking.trip.destinationCity}`,
   });
+
+  await homeService.invalidateHomeForTrip(booking.tripId, booking.trip.driverId);
 
   return { booking: { id: booking.id, status: booking.status, cancelled_at: booking.cancelledAt } };
 }
