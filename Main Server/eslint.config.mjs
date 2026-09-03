@@ -1,4 +1,6 @@
 import globals from 'globals';
+import tsParser from '@typescript-eslint/parser';
+import tsPlugin from '@typescript-eslint/eslint-plugin';
 
 export default [
   {
@@ -9,19 +11,27 @@ export default [
       'external packages/**',
       'build.mjs',
       'migrations/versions/**',
+      'dist/**',
     ],
   },
   {
-    files: ['**/*.js'],
+    files: ['**/*.{js,ts}'],
     languageOptions: {
-      ecmaVersion: 2022,
-      sourceType: 'commonjs',
+      parser: tsParser,
+      parserOptions: {
+        ecmaVersion: 2022,
+        sourceType: 'commonjs',
+      },
       globals: {
         ...globals.node,
       },
     },
+    plugins: {
+      '@typescript-eslint': tsPlugin,
+    },
     rules: {
-      'no-unused-vars': ['warn', {
+      'no-unused-vars': 'off',
+      '@typescript-eslint/no-unused-vars': ['warn', {
         argsIgnorePattern: '^_',
         varsIgnorePattern: '^_',
         caughtErrorsIgnorePattern: '^_',
@@ -32,7 +42,7 @@ export default [
     },
   },
   {
-    files: ['tests/**/*.js'],
+    files: ['tests/**/*.{js,ts}'],
     languageOptions: {
       globals: {
         ...globals.jest,
