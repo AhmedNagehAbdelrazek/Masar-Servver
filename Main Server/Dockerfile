@@ -4,7 +4,7 @@ RUN corepack enable && corepack prepare pnpm@9 --activate
 
 WORKDIR /app
 
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.json ./
+COPY package.json pnpm-lock.yaml tsconfig.json ./
 # --ignore-scripts avoids postinstall (tsx scripts/patch-auto-migrations.ts) failing before source is copied
 # Fallback without --frozen-lockfile if lockfile is out of date on the VPS
 RUN pnpm install --frozen-lockfile --ignore-scripts || pnpm install --ignore-scripts
