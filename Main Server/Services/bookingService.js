@@ -400,6 +400,7 @@ function serializePassengerDetail(booking, trip, passenger) {
           origin: trip.originCity,
           destination: trip.destinationCity,
           price: Number(trip.farePerSeat),
+          departureTime: trip.departureTime,
           ...tripLocationData(trip),
         }
       : null,
