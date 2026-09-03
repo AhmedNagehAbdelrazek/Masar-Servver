@@ -10,7 +10,9 @@ COPY package.json pnpm-lock.yaml tsconfig.json ./
 RUN pnpm install --frozen-lockfile --ignore-scripts || pnpm install --ignore-scripts
 
 COPY . .
-RUN pnpm run build
+# Show files and versions to debug VPS build, then run tsc with full log on failure
+RUN ls -la && cat tsconfig.json && pnpm exec tsc --version && ls -la node_modules/.bin/tsc || true
+RUN pnpm exec tsc > /tmp/tsc.log 2>&1; status=$?; cat /tmp/tsc.log; if [ $status -ne 0 ]; then echo "===== TSC BUILD FAILED (exit $status) ====="; exit $status; fi
 # Keep only production deps for the final image (keeps native modules like bcrypt compiled)
 RUN pnpm prune --prod --ignore-scripts || pnpm install --prod --ignore-scripts
 
