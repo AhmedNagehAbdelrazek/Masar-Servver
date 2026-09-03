@@ -40,34 +40,79 @@ const getDriverTrips = catchAsync(async (req: Request, res: Response): Promise<v
 
 const getAvailableTrips = catchAsync(async (req: Request, res: Response): Promise<void> => {
   const authReq = req as AuthRequest;
-  const { origin_city, destination_city, date, gender_preference, time_from, time_to, vehicle_type, seats } = req.query as {
+  const { origin_city, destination_city, date, return_date, gender_preference, time_from, time_to, vehicle_type, seats } = req.query as {
     origin_city?: string;
     destination_city?: string;
     date?: string;
+    return_date?: string;
     gender_preference?: string;
     time_from?: string;
     time_to?: string;
     vehicle_type?: string;
     seats?: string;
   };
-  const trips = await (tripService as unknown as { getAvailableTrips: (opts: unknown) => Promise<unknown> }).getAvailableTrips({
+  const result: any = await (tripService as unknown as { getAvailableTrips: (opts: unknown) => Promise<any> }).getAvailableTrips({
     originCity: origin_city,
     destinationCity: destination_city,
     date,
+    returnDate: return_date,
     genderPreference: gender_preference,
     timeFrom: time_from,
     timeTo: time_to,
     vehicleType: vehicle_type,
     seats,
   });
+
+  // Service now returns { trips, returningTrips } (round-trip). Keep backward compat if array was returned.
+  const trips = Array.isArray(result) ? result : result.trips;
+  const returningTrips = Array.isArray(result) ? (result as any).returningTrips || [] : result.returningTrips || [];
+
+  // Serialize driver details inside each trip for frontend convenience (Image 2 shape)
+  const serializeWithDriver = (arr: any[]) =>
+    (arr || []).map((t: any) => {
+      const json = typeof t.toJSON === 'function' ? t.toJSON() : t;
+      // Ensure driver is exposed with friendly keys while preserving raw driver
+      if (json.driver) {
+        json.driver = {
+          id: json.driver.id,
+          full_name: json.driver.fullName || json.driver.full_name,
+          rating: Number(json.driver.avgRating ?? json.driver.rating) || 0,
+          profile_picture_url: json.driver.avatarUrl || json.driver.profile_picture_url || null,
+          avatar_url: json.driver.avatarUrl || json.driver.avatar_url || null,
+          gender: json.driver.gender || null,
+        };
+      }
+      // Normalize vehicle keys if present
+      if (json.vehicle) {
+        json.vehicle = {
+          id: json.vehicle.id,
+          vehicle_type: json.vehicle.vehicleType || json.vehicle.vehicle_type,
+          manufacturer: json.vehicle.manufacturer,
+          model: json.vehicle.model,
+          plate_number: json.vehicle.plateNumber || json.vehicle.plate_number,
+          plateNumber: json.vehicle.plateNumber || json.vehicle.plate_number,
+          color: json.vehicle.color,
+          seats: json.vehicle.seats,
+        };
+      }
+      return json;
+    });
+
+  const serializedTrips = serializeWithDriver(trips);
+  const serializedReturning = serializeWithDriver(returningTrips);
+  console.log("user",authReq.user);
+  console.log("user role",authReq?.user?.role);
+  console.log("origin_city",origin_city);
+  console.log("destination_city",destination_city);
   if (authReq.user && authReq.user.role === ROLES.PASSENGER && origin_city && destination_city) {
+    console.log('[tripController] record search');
     try {
-      await (recentSearchService as unknown as { recordSearch: (userId: string, origin: string, dest: string) => Promise<void> }).recordSearch(String(authReq.user.id), origin_city, destination_city);
+      await recentSearchService.recordSearch(String(authReq.user.id), origin_city, destination_city);
     } catch (err) {
       console.warn('[tripController] record search failed:', (err as Error).message);
     }
   }
-  successResponse(res, { trips });
+  successResponse(res, { trips: serializedTrips, returning_trips: serializedReturning });
 });
 
 const startTrip = catchAsync(async (req: Request, res: Response): Promise<void> => {

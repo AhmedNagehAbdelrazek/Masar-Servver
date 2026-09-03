@@ -519,37 +519,27 @@ const getDriverTrips = async (driverId, status = null) => {
  * Additive filters (spec 012): time window, vehicle type, minimum seat count.
  * The output keeps the existing raw-trip shape for backward compatibility.
  */
-const getAvailableTrips = async (filters = {}) => {
-  const {
-    originCity,
-    destinationCity,
-    date,
-    genderPreference = null,
-    timeFrom,
-    timeTo,
-    vehicleType,
-    seats,
-  } = filters;
-
-  const queryDate = new Date(date);
+/**
+ * Helper to build a Trip query for a specific date/direction.
+ * Includes driver details (name, rating, avatar) + vehicle.
+ */
+async function fetchTripsForDate({ targetDate, originCity, destinationCity, genderPreference, timeFrom, timeTo, vehicleType, seats }) {
+  const qd = new Date(targetDate);
+  const dayStart = new Date(qd);
+  dayStart.setHours(0, 0, 0, 0);
+  const dayEnd = new Date(qd);
+  dayEnd.setHours(23, 59, 59, 999);
 
   const dateBranch = {
     [Op.or]: [
-      // One-time trips for this date
       {
         isRecurring: false,
-        departureTime: {
-          [Op.and]: [
-            { [Op.gte]: new Date(queryDate.setHours(0, 0, 0, 0)) },
-            { [Op.lt]: new Date(queryDate.setHours(23, 59, 59, 999)) },
-          ],
-        },
+        departureTime: { [Op.gte]: dayStart, [Op.lte]: dayEnd },
       },
-      // Recurring trips matching this day of week
       {
         isRecurring: true,
-        recurrenceDays: { [Op.contains]: [queryDate.getDay()] },
-        recurrenceEndDate: { [Op.or]: [{ [Op.gte]: queryDate }, { [Op.is]: null }] },
+        recurrenceDays: { [Op.contains]: [qd.getDay()] },
+        recurrenceEndDate: { [Op.or]: [{ [Op.gte]: qd }, { [Op.is]: null }] },
       },
     ],
   };
@@ -560,14 +550,11 @@ const getAvailableTrips = async (filters = {}) => {
     availableSeats: { [Op.gt]: 0 },
   };
 
-  // Base date/recurrence requirement, optionally narrowed by a time window.
-  const andConditions = [];
-  if(date)  andConditions.push(dateBranch);
+  const andConditions = [dateBranch];
 
   if (timeFrom || timeTo) {
     const [fhh, fmm] = (timeFrom || '00:00').split(':').map(Number);
     const [thh, tmm] = (timeTo || '23:59').split(':').map(Number);
-    const dayStart = new Date(queryDate.setHours(0, 0, 0, 0));
     const windowStart = new Date(dayStart);
     windowStart.setHours(fhh, fmm, 0, 0);
     const windowEnd = new Date(dayStart);
@@ -591,10 +578,12 @@ const getAvailableTrips = async (filters = {}) => {
     { model: TripSeat, as: 'seats', where: { seatType: 'available' } },
     { model: TripStop, as: 'stops' },
     { model: Vehicle, as: 'vehicle' },
+    { model: User, as: 'driver', attributes: ['id', 'fullName', 'avgRating', 'avatarUrl', 'gender'] },
   ];
   if (vehicleType) {
     include[2] = { model: Vehicle, as: 'vehicle', where: { vehicleType } };
   }
+
   const trips = await Trip.findAll({
     where,
     include,
@@ -602,6 +591,77 @@ const getAvailableTrips = async (filters = {}) => {
   });
 
   return trips;
+}
+
+const getAvailableTrips = async (filters = {}) => {
+  const {
+    originCity,
+    destinationCity,
+    date,
+    returnDate,
+    genderPreference = null,
+    timeFrom,
+    timeTo,
+    vehicleType,
+    seats,
+  } = filters;
+  // if (!date) throw ApiErrors.validation('DATE_REQUIRED');
+  const queryDate = new Date(date);
+
+  // Guard: reject past search dates — returns localized DATE_CANNOT_BE_IN_THE_PAST (422)
+  // if (date) {
+  //   const today = new Date();
+  //   today.setHours(0, 0, 0, 0);
+  //   const normalizedQuery = new Date(queryDate);
+  //   normalizedQuery.setHours(0, 0, 0, 0);
+  //   if (normalizedQuery < today) {
+  //     throw ApiErrors.validation('DATE_CANNOT_BE_IN_THE_PAST');
+  //   }
+  // }
+  if (returnDate) {
+    const rd = new Date(returnDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const normReturn = new Date(rd);
+    normReturn.setHours(0, 0, 0, 0);
+    if (normReturn < today) throw ApiErrors.validation('DATE_CANNOT_BE_IN_THE_PAST');
+    const normQuery = new Date(queryDate);
+    normQuery.setHours(0, 0, 0, 0);
+    if (normReturn < normQuery) throw ApiErrors.validation('DATE_CANNOT_BE_IN_THE_PAST');
+  }
+
+  const trips = await fetchTripsForDate({
+    targetDate: date,
+    originCity,
+    destinationCity,
+    genderPreference,
+    timeFrom,
+    timeTo,
+    vehicleType,
+    seats,
+  });
+
+  let returningTrips = [];
+  if (returnDate && originCity && destinationCity) {
+    returningTrips = await fetchTripsForDate({
+      targetDate: returnDate,
+      originCity: destinationCity,
+      destinationCity: originCity,
+      genderPreference,
+      timeFrom,
+      timeTo,
+      vehicleType,
+      seats,
+    });
+  }
+
+  // Backward compat: callers that expect an array still get trips,
+  // but we also attach returningTrips as a property for new controller.
+  // Returning an object shape is the new contract for the controller.
+  const result = trips;
+  result.returningTrips = returningTrips;
+  // Also return object form for explicit destructuring
+  return { trips, returningTrips };
 };
 
 /**

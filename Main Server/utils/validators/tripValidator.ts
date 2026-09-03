@@ -162,9 +162,16 @@ export const searchAvailableTripsValidation: ValidationChain[] = [
     .trim()
     .isLength({ max: 100 }).withMessage(V.DESTINATION_CITY_MUST_BE_AT_MOST_100_CHARACTERS),
 
-  query('date')
-    .optional()
-    .isDate().withMessage(V.DATE_MUST_BE_A_VALID_DATE_YYYY_MM_DD),
+  // query('date')
+  //   .optional()
+  //   .isDate().withMessage(V.DATE_MUST_BE_A_VALID_DATE_YYYY_MM_DD)
+  //   .custom((value: unknown) => {
+  //     const date = new Date(`${String(value)}T00:00:00`);
+  //     const today = new Date();
+  //     today.setHours(0, 0, 0, 0);
+  //     if (date < today) throw new Error(V.DATE_CANNOT_BE_IN_THE_PAST);
+  //     return true;
+  //   }),
 
   query('gender_preference')
     .optional()

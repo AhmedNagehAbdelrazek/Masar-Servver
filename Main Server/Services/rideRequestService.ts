@@ -102,7 +102,7 @@ async function getMatches(user, requestId) {
 }
 
 
-function serializeRideRequest(request, options = {}) {
+function serializeRideRequest(request : RideRequest, options = {}) {
   const base = {
     id: request.id,
     passenger_id: request.passengerId,
