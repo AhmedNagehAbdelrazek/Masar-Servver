@@ -1,78 +1,94 @@
 "use strict";
-const { body, param, query } = require('express-validator');
-const { TICKET_STATUS, TICKET_PRIORITY } = require('../../config/constants');
-const V = require('../../config/messages/validation-keys');
-const ticketParamValidation = [
-    param('ticket_id')
-        .isUUID().withMessage(V.TICKET_ID_MUST_BE_A_VALID_UUID),
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.addMessageValidation = exports.updateTicketStatusValidation = exports.updateTicketValidation = exports.listTicketsValidation = exports.createTicketValidation = exports.ticketParamValidation = void 0;
+const express_validator_1 = require("express-validator");
+const constants_1 = require("../../config/constants");
+const validation_keys_1 = require("../../config/messages/validation-keys");
+exports.ticketParamValidation = [
+    (0, express_validator_1.param)('ticket_id')
+        .isUUID().withMessage(validation_keys_1.VALIDATION_KEYS.TICKET_ID_MUST_BE_A_VALID_UUID),
 ];
-const createTicketValidation = [
-    body('category')
-        .notEmpty().withMessage(V.CATEGORY_IS_REQUIRED_2)
-        .isString().trim().isLength({ max: 50 }).withMessage(V.CATEGORY_MUST_BE_AT_MOST_50_CHARACTERS),
-    body('subject')
-        .notEmpty().withMessage(V.SUBJECT_IS_REQUIRED)
-        .isString().trim().isLength({ max: 150 }).withMessage(V.SUBJECT_MUST_BE_AT_MOST_150_CHARACTERS),
-    body('description')
-        .notEmpty().withMessage(V.DESCRIPTION_IS_REQUIRED_2)
-        .isString().trim().isLength({ max: 5000 }).withMessage(V.DESCRIPTION_MUST_BE_AT_MOST_5000_CHARACTERS),
-    body('priority')
+exports.createTicketValidation = [
+    (0, express_validator_1.body)('category')
+        .notEmpty().withMessage(validation_keys_1.VALIDATION_KEYS.CATEGORY_IS_REQUIRED_2)
+        .isString().trim().isLength({ max: 50 }).withMessage(validation_keys_1.VALIDATION_KEYS.CATEGORY_MUST_BE_AT_MOST_50_CHARACTERS),
+    (0, express_validator_1.body)('subject')
+        .notEmpty().withMessage(validation_keys_1.VALIDATION_KEYS.SUBJECT_IS_REQUIRED)
+        .isString().trim().isLength({ max: 150 }).withMessage(validation_keys_1.VALIDATION_KEYS.SUBJECT_MUST_BE_AT_MOST_150_CHARACTERS),
+    (0, express_validator_1.body)('description')
+        .notEmpty().withMessage(validation_keys_1.VALIDATION_KEYS.DESCRIPTION_IS_REQUIRED_2)
+        .isString().trim().isLength({ max: 5000 }).withMessage(validation_keys_1.VALIDATION_KEYS.DESCRIPTION_MUST_BE_AT_MOST_5000_CHARACTERS),
+    (0, express_validator_1.body)('priority')
         .optional()
-        .isIn(Object.values(TICKET_PRIORITY)).withMessage(V.PRIORITY_MUST_BE_ONE_OF_LOW_MEDIUM_HIGH_URGENT),
-    body('booking_id')
+        .isIn(Object.values(constants_1.TICKET_PRIORITY)).withMessage(validation_keys_1.VALIDATION_KEYS.PRIORITY_MUST_BE_ONE_OF_LOW_MEDIUM_HIGH_URGENT),
+    (0, express_validator_1.body)('booking_id')
         .optional()
-        .isUUID().withMessage(V.BOOKING_ID_MUST_BE_A_VALID_UUID_2),
-    body('trip_id')
+        .isUUID().withMessage(validation_keys_1.VALIDATION_KEYS.BOOKING_ID_MUST_BE_A_VALID_UUID_2),
+    (0, express_validator_1.body)('trip_id')
         .optional()
-        .isUUID().withMessage(V.TRIP_ID_MUST_BE_A_VALID_UUID_2),
+        .isUUID().withMessage(validation_keys_1.VALIDATION_KEYS.TRIP_ID_MUST_BE_A_VALID_UUID_2),
 ];
-const listTicketsValidation = [
-    query('status')
+exports.listTicketsValidation = [
+    (0, express_validator_1.query)('status')
         .optional()
-        .isIn(Object.values(TICKET_STATUS)).withMessage(V.STATUS_MUST_BE_ONE_OF_OPEN_IN_PROGRESS_RESOLVED_CLOSED),
-    query('priority')
+        .isIn(Object.values(constants_1.TICKET_STATUS)).withMessage(validation_keys_1.VALIDATION_KEYS.STATUS_MUST_BE_ONE_OF_OPEN_IN_PROGRESS_RESOLVED_CLOSED),
+    (0, express_validator_1.query)('priority')
         .optional()
-        .isIn(Object.values(TICKET_PRIORITY)).withMessage(V.PRIORITY_MUST_BE_ONE_OF_LOW_MEDIUM_HIGH_URGENT),
-    query('page')
+        .isIn(Object.values(constants_1.TICKET_PRIORITY)).withMessage(validation_keys_1.VALIDATION_KEYS.PRIORITY_MUST_BE_ONE_OF_LOW_MEDIUM_HIGH_URGENT),
+    (0, express_validator_1.query)('page')
         .optional()
-        .isInt({ min: 1 }).withMessage(V.PAGE_MUST_BE_A_POSITIVE_INTEGER),
-    query('limit')
+        .isInt({ min: 1 }).withMessage(validation_keys_1.VALIDATION_KEYS.PAGE_MUST_BE_A_POSITIVE_INTEGER),
+    (0, express_validator_1.query)('limit')
         .optional()
-        .isInt({ min: 1, max: 100 }).withMessage(V.LIMIT_MUST_BE_AN_INTEGER_BETWEEN_1_AND_100),
+        .isInt({ min: 1, max: 100 }).withMessage(validation_keys_1.VALIDATION_KEYS.LIMIT_MUST_BE_AN_INTEGER_BETWEEN_1_AND_100),
 ];
-const updateTicketValidation = [
-    ...ticketParamValidation,
-    body('assigned_to')
+exports.updateTicketValidation = [
+    ...exports.ticketParamValidation,
+    (0, express_validator_1.body)('assigned_to')
         .optional()
-        .isUUID().withMessage(V.ASSIGNED_TO_MUST_BE_A_VALID_UUID),
-    body('priority')
+        .isUUID().withMessage(validation_keys_1.VALIDATION_KEYS.ASSIGNED_TO_MUST_BE_A_VALID_UUID),
+    (0, express_validator_1.body)('priority')
         .optional()
-        .isIn(Object.values(TICKET_PRIORITY)).withMessage(V.PRIORITY_MUST_BE_ONE_OF_LOW_MEDIUM_HIGH_URGENT),
-    body('category')
+        .isIn(Object.values(constants_1.TICKET_PRIORITY)).withMessage(validation_keys_1.VALIDATION_KEYS.PRIORITY_MUST_BE_ONE_OF_LOW_MEDIUM_HIGH_URGENT),
+    (0, express_validator_1.body)('category')
         .optional()
-        .isString().trim().isLength({ max: 50 }).withMessage(V.CATEGORY_MUST_BE_AT_MOST_50_CHARACTERS),
-    body('resolution_notes')
+        .isString().trim().isLength({ max: 50 }).withMessage(validation_keys_1.VALIDATION_KEYS.CATEGORY_MUST_BE_AT_MOST_50_CHARACTERS),
+    (0, express_validator_1.body)('resolution_notes')
         .optional()
-        .isString().trim().isLength({ max: 4000 }).withMessage(V.RESOLUTION_NOTES_MUST_BE_AT_MOST_4000_CHARACTERS),
+        .isString().trim().isLength({ max: 4000 }).withMessage(validation_keys_1.VALIDATION_KEYS.RESOLUTION_NOTES_MUST_BE_AT_MOST_4000_CHARACTERS),
 ];
-const updateTicketStatusValidation = [
-    ...ticketParamValidation,
-    body('status')
-        .notEmpty().withMessage(V.STATUS_IS_REQUIRED_2)
-        .isIn(Object.values(TICKET_STATUS)).withMessage(V.STATUS_MUST_BE_ONE_OF_OPEN_IN_PROGRESS_RESOLVED_CLOSED),
+exports.updateTicketStatusValidation = [
+    ...exports.ticketParamValidation,
+    (0, express_validator_1.body)('status')
+        .notEmpty().withMessage(validation_keys_1.VALIDATION_KEYS.STATUS_IS_REQUIRED_2)
+        .isIn(Object.values(constants_1.TICKET_STATUS)).withMessage(validation_keys_1.VALIDATION_KEYS.STATUS_MUST_BE_ONE_OF_OPEN_IN_PROGRESS_RESOLVED_CLOSED),
 ];
-const addMessageValidation = [
-    ...ticketParamValidation,
-    body('message')
-        .notEmpty().withMessage(V.MESSAGE_IS_REQUIRED)
-        .isString().trim().isLength({ max: 4000 }).withMessage(V.MESSAGE_MUST_BE_AT_MOST_4000_CHARACTERS),
+exports.addMessageValidation = [
+    ...exports.ticketParamValidation,
+    (0, express_validator_1.body)('message')
+        .notEmpty().withMessage(validation_keys_1.VALIDATION_KEYS.MESSAGE_IS_REQUIRED)
+        .isString().trim().isLength({ max: 4000 }).withMessage(validation_keys_1.VALIDATION_KEYS.MESSAGE_MUST_BE_AT_MOST_4000_CHARACTERS),
 ];
-module.exports = {
-    ticketParamValidation,
-    createTicketValidation,
-    listTicketsValidation,
-    updateTicketValidation,
-    updateTicketStatusValidation,
-    addMessageValidation,
-};
+const _exported = { ticketParamValidation: exports.ticketParamValidation, createTicketValidation: exports.createTicketValidation, listTicketsValidation: exports.listTicketsValidation, updateTicketValidation: exports.updateTicketValidation, updateTicketStatusValidation: exports.updateTicketStatusValidation, addMessageValidation: exports.addMessageValidation };
+exports.default = _exported;
+// CommonJS interop
+// @ts-ignore
+if (typeof module !== 'undefined' && module.exports) {
+    // @ts-ignore
+    module.exports = { ticketParamValidation: exports.ticketParamValidation, createTicketValidation: exports.createTicketValidation, listTicketsValidation: exports.listTicketsValidation, updateTicketValidation: exports.updateTicketValidation, updateTicketStatusValidation: exports.updateTicketStatusValidation, addMessageValidation: exports.addMessageValidation };
+    // @ts-ignore
+    module.exports.ticketParamValidation = exports.ticketParamValidation;
+    // @ts-ignore
+    module.exports.createTicketValidation = exports.createTicketValidation;
+    // @ts-ignore
+    module.exports.listTicketsValidation = exports.listTicketsValidation;
+    // @ts-ignore
+    module.exports.updateTicketValidation = exports.updateTicketValidation;
+    // @ts-ignore
+    module.exports.updateTicketStatusValidation = exports.updateTicketStatusValidation;
+    // @ts-ignore
+    module.exports.addMessageValidation = exports.addMessageValidation;
+    // @ts-ignore
+    module.exports.default = _exported;
+}
 //# sourceMappingURL=supportTicketValidator.js.map

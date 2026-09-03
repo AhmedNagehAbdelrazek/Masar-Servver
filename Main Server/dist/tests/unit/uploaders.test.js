@@ -1,105 +1,110 @@
 "use strict";
-const path = require('path');
-const fs = require('fs');
-jest.mock('../../config/cloudinary', () => ({
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const globals_1 = require("@jest/globals");
+const path_1 = __importDefault(require("path"));
+const fs_1 = __importDefault(require("fs"));
+globals_1.jest.mock('../../config/cloudinary', () => ({
     uploader: {
-        upload: jest.fn().mockResolvedValue({
+        upload: globals_1.jest.fn().mockResolvedValue({
             secure_url: 'https://res.cloudinary.com/test/image/upload/v1/test.png',
             public_id: 'test/hash',
         }),
-        destroy: jest.fn().mockResolvedValue({ result: 'ok' }),
+        destroy: globals_1.jest.fn().mockResolvedValue({ result: 'ok' }),
     },
 }));
 const { getUploader, resetUploader } = require('../../Services/uploaders');
 const cloudinary = require('../../config/cloudinary');
-afterEach(() => {
+(0, globals_1.afterEach)(() => {
     resetUploader();
-    jest.clearAllMocks();
+    globals_1.jest.clearAllMocks();
 });
-describe('getUploader factory', () => {
-    it('should return CloudinaryUploader by default', () => {
+(0, globals_1.describe)('getUploader factory', () => {
+    (0, globals_1.it)('should return CloudinaryUploader by default', () => {
         process.env.UPLOAD_PROVIDER = 'cloudinary';
         const uploader = getUploader();
-        expect(uploader.constructor.name).toBe('CloudinaryUploader');
+        (0, globals_1.expect)(uploader.constructor.name).toBe('CloudinaryUploader');
     });
-    it('should return LocalUploader when UPLOAD_PROVIDER=local', () => {
+    (0, globals_1.it)('should return LocalUploader when UPLOAD_PROVIDER=local', () => {
         process.env.UPLOAD_PROVIDER = 'local';
         const uploader = getUploader();
-        expect(uploader.constructor.name).toBe('LocalUploader');
+        (0, globals_1.expect)(uploader.constructor.name).toBe('LocalUploader');
     });
-    it('should throw for unknown provider', () => {
+    (0, globals_1.it)('should throw for unknown provider', () => {
         process.env.UPLOAD_PROVIDER = 'unknown';
-        expect(() => getUploader()).toThrow('Unknown upload provider "unknown"');
+        (0, globals_1.expect)(() => getUploader()).toThrow('Unknown upload provider "unknown"');
     });
-    it('should return the same instance on repeated calls', () => {
+    (0, globals_1.it)('should return the same instance on repeated calls', () => {
         process.env.UPLOAD_PROVIDER = 'local';
         const a = getUploader();
         const b = getUploader();
-        expect(a).toBe(b);
+        (0, globals_1.expect)(a).toBe(b);
     });
 });
-describe('LocalUploader', () => {
+(0, globals_1.describe)('LocalUploader', () => {
     let uploader;
-    const testDir = path.join(__dirname, '..', '__tmp_uploads__');
-    beforeAll(() => {
+    const testDir = path_1.default.join(__dirname, '..', '__tmp_uploads__');
+    (0, globals_1.beforeAll)(() => {
         process.env.UPLOAD_PROVIDER = 'local';
         process.env.LOCAL_UPLOAD_DIR = testDir;
         process.env.LOCAL_UPLOAD_BASE_URL = '/uploads';
         resetUploader();
         uploader = getUploader();
     });
-    afterAll(async () => {
+    (0, globals_1.afterAll)(async () => {
         resetUploader();
-        if (fs.existsSync(testDir)) {
-            const files = await fs.promises.readdir(testDir);
+        if (fs_1.default.existsSync(testDir)) {
+            const files = await fs_1.default.promises.readdir(testDir);
             for (const f of files)
-                await fs.promises.unlink(path.join(testDir, f));
-            await fs.promises.rmdir(testDir);
+                await fs_1.default.promises.unlink(path_1.default.join(testDir, f));
+            await fs_1.default.promises.rmdir(testDir);
         }
     });
-    it('should upload a file and return url + filename', async () => {
+    (0, globals_1.it)('should upload a file and return url + filename', async () => {
         const buffer = Buffer.from('fake image data');
         const result = await uploader.upload(buffer, {
             mimetype: 'image/png',
             originalname: 'test.png',
         });
-        expect(result.url).toMatch(/\/uploads\/.*\.png$/);
-        expect(result.filename).toMatch(/\.png$/);
-        const filePath = path.join(testDir, result.filename);
-        expect(fs.existsSync(filePath)).toBe(true);
+        (0, globals_1.expect)(result.url).toMatch(/\/uploads\/.*\.png$/);
+        (0, globals_1.expect)(result.filename).toMatch(/\.png$/);
+        const filePath = path_1.default.join(testDir, result.filename);
+        (0, globals_1.expect)(fs_1.default.existsSync(filePath)).toBe(true);
     });
-    it('should delete a file', async () => {
+    (0, globals_1.it)('should delete a file', async () => {
         const buffer = Buffer.from('to be deleted');
         const { filename } = await uploader.upload(buffer, {
             mimetype: 'image/jpeg',
             originalname: 'delete-me.jpg',
         });
-        const filePath = path.join(testDir, filename);
-        expect(fs.existsSync(filePath)).toBe(true);
+        const filePath = path_1.default.join(testDir, filename);
+        (0, globals_1.expect)(fs_1.default.existsSync(filePath)).toBe(true);
         await uploader.delete(filename);
-        expect(fs.existsSync(filePath)).toBe(false);
+        (0, globals_1.expect)(fs_1.default.existsSync(filePath)).toBe(false);
     });
-    it('should not throw when deleting non-existent file', async () => {
-        await expect(uploader.delete('nonexistent.jpg')).resolves.toBeUndefined();
+    (0, globals_1.it)('should not throw when deleting non-existent file', async () => {
+        await (0, globals_1.expect)(uploader.delete('nonexistent.jpg')).resolves.toBeUndefined();
     });
 });
-describe('CloudinaryUploader', () => {
+(0, globals_1.describe)('CloudinaryUploader', () => {
     let uploader;
-    beforeAll(() => {
+    (0, globals_1.beforeAll)(() => {
         process.env.UPLOAD_PROVIDER = 'cloudinary';
         resetUploader();
         uploader = getUploader();
     });
-    it('should upload via cloudinary SDK', async () => {
+    (0, globals_1.it)('should upload via cloudinary SDK', async () => {
         const buffer = Buffer.from('fake image data');
         const result = await uploader.upload(buffer, { mimetype: 'image/png' });
-        expect(result.url).toBe('https://res.cloudinary.com/test/image/upload/v1/test.png');
-        expect(result.filename).toBe('test/hash');
-        expect(cloudinary.uploader.upload).toHaveBeenCalledTimes(1);
+        (0, globals_1.expect)(result.url).toBe('https://res.cloudinary.com/test/image/upload/v1/test.png');
+        (0, globals_1.expect)(result.filename).toBe('test/hash');
+        (0, globals_1.expect)(cloudinary.uploader.upload).toHaveBeenCalledTimes(1);
     });
-    it('should delete via cloudinary SDK', async () => {
+    (0, globals_1.it)('should delete via cloudinary SDK', async () => {
         await uploader.delete('test/hash');
-        expect(cloudinary.uploader.destroy).toHaveBeenCalledWith('test/hash');
+        (0, globals_1.expect)(cloudinary.uploader.destroy).toHaveBeenCalledWith('test/hash');
     });
 });
 //# sourceMappingURL=uploaders.test.js.map

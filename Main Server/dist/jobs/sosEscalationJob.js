@@ -1,13 +1,11 @@
 "use strict";
-const { runEscalation } = require('../Services/sosService');
-/**
- * Re-alerts unresolved SOS events every 60s and bumps escalation to
- * high priority after 5 minutes unresolved (Requirement 6). Tested directly
- * (cron is disabled under NODE_ENV=test).
- */
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.runSosEscalation = runSosEscalation;
+const sosService_1 = require("../Services/sosService");
 async function runSosEscalation() {
-    const { alerted, escalated } = await runEscalation();
+    const { alerted, escalated } = await sosService_1.runEscalation();
     return { alerted, escalated };
 }
+exports.default = { runSosEscalation };
 module.exports = { runSosEscalation };
 //# sourceMappingURL=sosEscalationJob.js.map

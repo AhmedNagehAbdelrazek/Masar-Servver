@@ -1,62 +1,70 @@
 "use strict";
-const { Model, DataTypes } = require('sequelize');
-const sequelize = require('../config/database');
-const { COMPLAINT_STATUS } = require('../config/constants');
-class Complaint extends Model {
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.Complaint = void 0;
+const sequelize_1 = require("sequelize");
+const database_1 = __importDefault(require("../config/database"));
+const constants_1 = require("../config/constants");
+class Complaint extends sequelize_1.Model {
 }
+exports.Complaint = Complaint;
 Complaint.init({
     id: {
-        type: DataTypes.UUID,
-        defaultValue: DataTypes.UUIDV4,
+        type: sequelize_1.DataTypes.UUID,
+        defaultValue: sequelize_1.DataTypes.UUIDV4,
         primaryKey: true,
     },
     bookingId: {
-        type: DataTypes.UUID,
+        type: sequelize_1.DataTypes.UUID,
         allowNull: true,
     },
     reporterId: {
-        type: DataTypes.UUID,
+        type: sequelize_1.DataTypes.UUID,
         allowNull: false,
     },
     accusedId: {
-        type: DataTypes.UUID,
+        type: sequelize_1.DataTypes.UUID,
         allowNull: false,
     },
     category: {
-        type: DataTypes.STRING(30),
+        type: sequelize_1.DataTypes.STRING(30),
         allowNull: false,
     },
     description: {
-        type: DataTypes.TEXT,
+        type: sequelize_1.DataTypes.TEXT,
         allowNull: false,
     },
     evidenceUrls: {
-        type: DataTypes.ARRAY(DataTypes.TEXT),
+        type: sequelize_1.DataTypes.ARRAY(sequelize_1.DataTypes.TEXT),
         allowNull: true,
     },
     status: {
-        type: DataTypes.ENUM(Object.values(COMPLAINT_STATUS)),
+        type: sequelize_1.DataTypes.ENUM(...Object.values(constants_1.COMPLAINT_STATUS)),
         allowNull: false,
-        defaultValue: COMPLAINT_STATUS.OPEN,
+        defaultValue: constants_1.COMPLAINT_STATUS.OPEN,
     },
     resolution: {
-        type: DataTypes.TEXT,
+        type: sequelize_1.DataTypes.TEXT,
         allowNull: true,
     },
     resolvedBy: {
-        type: DataTypes.UUID,
+        type: sequelize_1.DataTypes.UUID,
         allowNull: true,
     },
     resolvedAt: {
-        type: DataTypes.DATE,
+        type: sequelize_1.DataTypes.DATE,
         allowNull: true,
     },
 }, {
-    sequelize,
+    sequelize: database_1.default,
     modelName: 'Complaint',
     tableName: 'complaints',
     underscored: true,
     timestamps: true,
 });
+exports.default = Complaint;
 module.exports = Complaint;
+Object.assign(module.exports, { default: Complaint });
 //# sourceMappingURL=Complaint.js.map

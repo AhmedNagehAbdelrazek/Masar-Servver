@@ -1,19 +1,33 @@
 "use strict";
-const { Op } = require('sequelize');
-const { DriverProfile, Vehicle, User, UploadedImage, VerificationStatusChange } = require('../Models');
-const { ApiErrors } = require('../utils/ApiError');
-const { maskPhone } = require('../utils/masking');
-const { parsePagination, buildPagination } = require('../utils/pagination');
-const { VERIFICATION_STATUS } = require('../config/constants');
-const notificationService = require('./notificationService');
-const auditService = require('./auditService');
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.syncUserVerification = syncUserVerification;
+exports.recordStatusChange = recordStatusChange;
+exports.getVerificationHistory = getVerificationHistory;
+exports.alertAdminsOfNewSubmission = alertAdminsOfNewSubmission;
+exports.getQueue = getQueue;
+exports.approveDriver = approveDriver;
+exports.rejectDriver = rejectDriver;
+exports.approveVehicle = approveVehicle;
+exports.rejectVehicle = rejectVehicle;
+// @ts-nocheck
+const sequelize_1 = require("sequelize");
+const Models_1 = require("../Models");
+const ApiError_1 = require("../utils/ApiError");
+const masking_1 = require("../utils/masking");
+const pagination_1 = require("../utils/pagination");
+const constants_1 = require("../config/constants");
+const notificationService_1 = __importDefault(require("./notificationService"));
+const auditService_1 = __importDefault(require("./auditService"));
 async function syncUserVerification(driverId) {
-    const profile = await DriverProfile.findOne({ where: { driverId } });
-    const vehicle = await Vehicle.findOne({ where: { driverId } });
+    const profile = await Models_1.DriverProfile.findOne({ where: { driverId } });
+    const vehicle = await Models_1.Vehicle.findOne({ where: { driverId } });
     const profileVerified = Boolean(profile && profile.idVerified);
     const vehicleVerified = Boolean(vehicle && vehicle.isVerified);
     const fullyVerified = profileVerified && vehicleVerified;
-    await User.update({ isVerified: fullyVerified }, { where: { id: driverId } });
+    await Models_1.User.update({ isVerified: fullyVerified }, { where: { id: driverId } });
     return { profileVerified, vehicleVerified, fullyVerified };
 }
 const DRIVER_DOC_LABELS = [
@@ -33,7 +47,7 @@ async function resolveImageUrls(imageIds) {
     const ids = [...new Set(imageIds.filter(Boolean))];
     if (ids.length === 0)
         return new Map();
-    const images = await UploadedImage.findAll({ where: { id: { [Op.in]: ids } } });
+    const images = await Models_1.UploadedImage.findAll({ where: { id: { [sequelize_1.Op.in]: ids } } });
     return new Map(images.map((img) => [img.id, img.url]));
 }
 function buildDocuments(record, labels, urls) {
@@ -52,7 +66,7 @@ function buildDocuments(record, labels, urls) {
  */
 async function recordStatusChange(driverId, fromStatus, toStatus, { reason = null, markedFields = null, changedBy = null, transaction = null } = {}) {
     const options = transaction ? { transaction } : {};
-    return VerificationStatusChange.create({
+    return Models_1.VerificationStatusChange.create({
         driverId,
         fromStatus,
         toStatus,
@@ -65,7 +79,7 @@ async function recordStatusChange(driverId, fromStatus, toStatus, { reason = nul
  * Ordered history of a driver's verification status transitions (audit).
  */
 async function getVerificationHistory(driverId, { limit = 50 } = {}) {
-    return VerificationStatusChange.findAll({
+    return Models_1.VerificationStatusChange.findAll({
         where: { driverId },
         order: [['createdat', 'DESC']],
         limit,
@@ -77,9 +91,9 @@ async function getVerificationHistory(driverId, { limit = 50 } = {}) {
  */
 async function alertAdminsOfNewSubmission({ driverId, fullName }) {
     try {
-        const admins = await User.findAll({ where: { role: 'admin', status: 'active' } });
+        const admins = await Models_1.User.findAll({ where: { role: 'admin', status: 'active' } });
         for (const admin of admins) {
-            await notificationService.sendToUser(admin, 'ADMIN_VERIFICATION_NEW', {
+            await notificationService_1.default.sendToUser(admin, 'ADMIN_VERIFICATION_NEW', {
                 channels: ['in_app', 'push'],
                 vars: { driver_name: fullName || 'A driver' },
                 data: { driver_id: driverId },
@@ -93,16 +107,16 @@ async function alertAdminsOfNewSubmission({ driverId, fullName }) {
     }
 }
 const QUEUE_STATUS_KEYS = {
-    pending: VERIFICATION_STATUS.PENDING,
-    approved: VERIFICATION_STATUS.APPROVED,
-    rejected: VERIFICATION_STATUS.REJECTED,
-    unverified: VERIFICATION_STATUS.UNVERIFIED,
+    pending: constants_1.VERIFICATION_STATUS.PENDING,
+    approved: constants_1.VERIFICATION_STATUS.APPROVED,
+    rejected: constants_1.VERIFICATION_STATUS.REJECTED,
+    unverified: constants_1.VERIFICATION_STATUS.UNVERIFIED,
 };
 function buildQueueDriverPayload(user, profile) {
     return {
         user_id: user.id,
         full_name: user.fullName,
-        phone: maskPhone(user.phone),
+        phone: (0, masking_1.maskPhone)(user.phone),
         profile_id: profile ? profile.id : null,
         national_id: profile ? profile.nationalID : null,
         license_number: profile ? profile.licenseNumber : null,
@@ -138,18 +152,18 @@ function buildQueueVehiclePayload(vehicle) {
  */
 async function getQueue(filters = {}) {
     const { status, search } = filters;
-    const { page, limit } = parsePagination(filters);
+    const { page, limit } = (0, pagination_1.parsePagination)(filters);
     const where = {};
     if (Object.prototype.hasOwnProperty.call(QUEUE_STATUS_KEYS, status)) {
         where.verificationStatus = QUEUE_STATUS_KEYS[status];
     }
     if (search) {
-        where[Op.or] = [
-            { fullName: { [Op.iLike]: `%${search}%` } },
-            { phone: { [Op.iLike]: `%${search}%` } },
+        where[sequelize_1.Op.or] = [
+            { fullName: { [sequelize_1.Op.iLike]: `%${search}%` } },
+            { phone: { [sequelize_1.Op.iLike]: `%${search}%` } },
         ];
     }
-    const { rows: users, count } = await User.findAndCountAll({
+    const { rows: users, count } = await Models_1.User.findAndCountAll({
         where,
         order: [
             ['verification_submitted_at', 'DESC'],
@@ -161,10 +175,10 @@ async function getQueue(filters = {}) {
     });
     const driverIds = users.map((u) => u.id);
     const profiles = driverIds.length
-        ? await DriverProfile.findAll({ where: { driverId: { [Op.in]: driverIds } } })
+        ? await Models_1.DriverProfile.findAll({ where: { driverId: { [sequelize_1.Op.in]: driverIds } } })
         : [];
     const vehicles = driverIds.length
-        ? await Vehicle.findAll({ where: { driverId: { [Op.in]: driverIds } } })
+        ? await Models_1.Vehicle.findAll({ where: { driverId: { [sequelize_1.Op.in]: driverIds } } })
         : [];
     const profileMap = new Map(profiles.map((p) => [p.driverId, p]));
     const vehicleMap = new Map(vehicles.map((v) => [v.driverId, v]));
@@ -192,33 +206,33 @@ async function getQueue(filters = {}) {
     });
     return {
         requests,
-        meta: buildPagination(count, page, limit),
+        meta: (0, pagination_1.buildPagination)(count, page, limit),
     };
 }
 async function approveDriver(adminId, driverId) {
-    const profile = await DriverProfile.findOne({ where: { driverId } });
+    const profile = await Models_1.DriverProfile.findOne({ where: { driverId } });
     if (!profile)
-        throw ApiErrors.notFound('DRIVER_PROFILE_NOT_FOUND');
-    const user = await User.findByPk(driverId);
+        throw ApiError_1.ApiErrors.notFound('DRIVER_PROFILE_NOT_FOUND');
+    const user = await Models_1.User.findByPk(driverId);
     if (!user)
-        throw ApiErrors.notFound('DRIVER_NOT_FOUND');
+        throw ApiError_1.ApiErrors.notFound('DRIVER_NOT_FOUND');
     const fromStatus = user.verificationStatus;
-    const vehicle = await Vehicle.findOne({ where: { driverId } });
+    const vehicle = await Models_1.Vehicle.findOne({ where: { driverId } });
     await profile.update({ idVerified: true });
     if (vehicle) {
         await vehicle.update({ isVerified: true, verifiedBy: adminId, verifiedAt: new Date() });
     }
     await user.update({
         isVerified: true,
-        verificationStatus: VERIFICATION_STATUS.APPROVED,
+        verificationStatus: constants_1.VERIFICATION_STATUS.APPROVED,
     });
-    await recordStatusChange(driverId, fromStatus, VERIFICATION_STATUS.APPROVED, { changedBy: adminId });
-    await notificationService.sendToUser(user, 'VERIFICATION_APPROVED', {
+    await recordStatusChange(driverId, fromStatus, constants_1.VERIFICATION_STATUS.APPROVED, { changedBy: adminId });
+    await notificationService_1.default.sendToUser(user, 'VERIFICATION_APPROVED', {
         channels: ['in_app', 'push'],
         vars: { subject: 'identity documents' },
         data: { driver_id: driverId },
     });
-    auditService.track({
+    auditService_1.default.track({
         action: 'verification.driver.approve',
         resourceType: 'driver_profile',
         resourceId: driverId,
@@ -229,14 +243,14 @@ async function approveDriver(adminId, driverId) {
     return { driver_id: driverId, id_verified: true, notified: true };
 }
 async function rejectDriver(adminId, driverId, reason, fieldsToFix) {
-    const profile = await DriverProfile.findOne({ where: { driverId } });
+    const profile = await Models_1.DriverProfile.findOne({ where: { driverId } });
     if (!profile)
-        throw ApiErrors.notFound('DRIVER_PROFILE_NOT_FOUND');
-    const user = await User.findByPk(driverId);
+        throw ApiError_1.ApiErrors.notFound('DRIVER_PROFILE_NOT_FOUND');
+    const user = await Models_1.User.findByPk(driverId);
     if (!user)
-        throw ApiErrors.notFound('DRIVER_NOT_FOUND');
+        throw ApiError_1.ApiErrors.notFound('DRIVER_NOT_FOUND');
     const fromStatus = user.verificationStatus;
-    const vehicle = await Vehicle.findOne({ where: { driverId } });
+    const vehicle = await Models_1.Vehicle.findOne({ where: { driverId } });
     await profile.update({ idVerified: false });
     if (vehicle) {
         await vehicle.update({
@@ -249,22 +263,22 @@ async function rejectDriver(adminId, driverId, reason, fieldsToFix) {
     const rejectedAt = new Date();
     await user.update({
         isVerified: false,
-        verificationStatus: VERIFICATION_STATUS.REJECTED,
+        verificationStatus: constants_1.VERIFICATION_STATUS.REJECTED,
         verificationRejectedAt: rejectedAt,
         verificationRejectionReason: reason,
         verificationRejectionFields: fieldsToFix || [],
     });
-    await recordStatusChange(driverId, fromStatus, VERIFICATION_STATUS.REJECTED, {
+    await recordStatusChange(driverId, fromStatus, constants_1.VERIFICATION_STATUS.REJECTED, {
         reason,
         markedFields: fieldsToFix || [],
         changedBy: adminId,
     });
-    await notificationService.sendToUser(user, 'VERIFICATION_REJECTED', {
+    await notificationService_1.default.sendToUser(user, 'VERIFICATION_REJECTED', {
         channels: ['in_app', 'push'],
         vars: { subject: 'identity documents', reason },
         data: { driver_id: driverId, reason, fields_to_fix: fieldsToFix || [] },
     });
-    auditService.track({
+    auditService_1.default.track({
         action: 'verification.driver.reject',
         resourceType: 'driver_profile',
         resourceId: driverId,
@@ -275,29 +289,29 @@ async function rejectDriver(adminId, driverId, reason, fieldsToFix) {
     return { driver_id: driverId, id_verified: false, reason, notified: true };
 }
 async function approveVehicle(adminId, vehicleId) {
-    const vehicle = await Vehicle.findByPk(vehicleId);
+    const vehicle = await Models_1.Vehicle.findByPk(vehicleId);
     if (!vehicle)
-        throw ApiErrors.notFound('VEHICLE_NOT_FOUND');
+        throw ApiError_1.ApiErrors.notFound('VEHICLE_NOT_FOUND');
     await vehicle.update({
         isVerified: true,
         verifiedBy: adminId,
         verifiedAt: new Date(),
     });
     const { fullyVerified } = await syncUserVerification(vehicle.driverId);
-    const owner = await User.findByPk(vehicle.driverId);
-    if (owner && fullyVerified && owner.verificationStatus !== VERIFICATION_STATUS.REJECTED) {
+    const owner = await Models_1.User.findByPk(vehicle.driverId);
+    if (owner && fullyVerified && owner.verificationStatus !== constants_1.VERIFICATION_STATUS.REJECTED) {
         const fromStatus = owner.verificationStatus;
-        await owner.update({ verificationStatus: VERIFICATION_STATUS.APPROVED });
-        await recordStatusChange(owner.id, fromStatus, VERIFICATION_STATUS.APPROVED, { changedBy: adminId });
+        await owner.update({ verificationStatus: constants_1.VERIFICATION_STATUS.APPROVED });
+        await recordStatusChange(owner.id, fromStatus, constants_1.VERIFICATION_STATUS.APPROVED, { changedBy: adminId });
     }
     if (owner) {
-        await notificationService.sendToUser(owner, 'VERIFICATION_APPROVED', {
+        await notificationService_1.default.sendToUser(owner, 'VERIFICATION_APPROVED', {
             channels: ['in_app', 'push'],
             vars: { subject: 'vehicle' },
             data: { vehicle_id: vehicleId },
         });
     }
-    auditService.track({
+    auditService_1.default.track({
         action: 'verification.vehicle.approve',
         resourceType: 'vehicle',
         resourceId: vehicleId,
@@ -308,9 +322,9 @@ async function approveVehicle(adminId, vehicleId) {
     return { vehicle_id: vehicleId, is_verified: true, notified: true };
 }
 async function rejectVehicle(adminId, vehicleId, reason, fieldsToFix) {
-    const vehicle = await Vehicle.findByPk(vehicleId);
+    const vehicle = await Models_1.Vehicle.findByPk(vehicleId);
     if (!vehicle)
-        throw ApiErrors.notFound('VEHICLE_NOT_FOUND');
+        throw ApiError_1.ApiErrors.notFound('VEHICLE_NOT_FOUND');
     await vehicle.update({
         isVerified: false,
         verificationNotes: reason,
@@ -318,30 +332,30 @@ async function rejectVehicle(adminId, vehicleId, reason, fieldsToFix) {
         verificationRejectedAt: new Date(),
     });
     await syncUserVerification(vehicle.driverId);
-    const owner = await User.findByPk(vehicle.driverId);
+    const owner = await Models_1.User.findByPk(vehicle.driverId);
     if (owner) {
         const fromStatus = owner.verificationStatus;
         await owner.update({
             isVerified: false,
-            verificationStatus: VERIFICATION_STATUS.REJECTED,
+            verificationStatus: constants_1.VERIFICATION_STATUS.REJECTED,
             verificationRejectedAt: new Date(),
             verificationRejectionReason: reason,
             verificationRejectionFields: fieldsToFix || [],
         });
-        await recordStatusChange(owner.id, fromStatus, VERIFICATION_STATUS.REJECTED, {
+        await recordStatusChange(owner.id, fromStatus, constants_1.VERIFICATION_STATUS.REJECTED, {
             reason,
             markedFields: fieldsToFix || [],
             changedBy: adminId,
         });
     }
     if (owner) {
-        await notificationService.sendToUser(owner, 'VERIFICATION_REJECTED', {
+        await notificationService_1.default.sendToUser(owner, 'VERIFICATION_REJECTED', {
             channels: ['in_app', 'push'],
             vars: { subject: 'vehicle', reason },
             data: { vehicle_id: vehicleId, reason, fields_to_fix: fieldsToFix || [] },
         });
     }
-    auditService.track({
+    auditService_1.default.track({
         action: 'verification.vehicle.reject',
         resourceType: 'vehicle',
         resourceId: vehicleId,
@@ -362,4 +376,5 @@ module.exports = {
     approveVehicle,
     rejectVehicle,
 };
+exports.default = module.exports;
 //# sourceMappingURL=verificationService.js.map

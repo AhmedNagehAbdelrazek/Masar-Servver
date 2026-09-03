@@ -1,19 +1,19 @@
 "use strict";
-const { Server } = require('socket.io');
-const socketAuth = require('./middlewares/socketAuth');
-const realtimeService = require('./Services/realtimeService');
-const realtimeMetrics = require('./Services/realtimeMetrics');
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.createSocketServer = createSocketServer;
+exports.getIO = getIO;
+exports.emitToUser = emitToUser;
+exports.disconnectUserSockets = disconnectUserSockets;
+const socket_io_1 = require("socket.io");
+const socketAuth_1 = __importDefault(require("./middlewares/socketAuth"));
+const realtimeService_1 = __importDefault(require("./Services/realtimeService"));
+const realtimeMetrics_1 = __importDefault(require("./Services/realtimeMetrics"));
 let ioInstance = null;
-/**
- * Creates the Socket.IO server, wires JWT auth, the Redis pub/sub adapter
- * (for multi-instance scale-out) and registers all realtime socket modules.
- *
- * Every connection must authenticate with an `access` JWT
- * (socket.handshake.auth.token). Unauthenticated sockets are rejected at the
- * handshake before any event handlers run.
- */
 function createSocketServer(httpServer) {
-    const io = new Server(httpServer, {
+    const io = new socket_io_1.Server(httpServer, {
         cors: {
             origin: '*',
             methods: ['GET', 'POST'],
@@ -24,9 +24,7 @@ function createSocketServer(httpServer) {
         },
     });
     ioInstance = io;
-    realtimeService.setIO(io);
-    // Redis pub/sub adapter for multi-instance delivery. Skipped in test where
-    // the redis client is mocked and has no pub/sub methods.
+    realtimeService_1.default.setIO(io);
     if (process.env.NODE_ENV !== 'test') {
         try {
             const { createAdapter } = require('@socket.io/redis-adapter');
@@ -36,29 +34,28 @@ function createSocketServer(httpServer) {
             io.adapter(createAdapter(pubClient, subClient));
         }
         catch (err) {
-            console.warn('[socket] Redis adapter unavailable, using single-node:', err.message);
+            const msg = err instanceof Error ? err.message : String(err);
+            console.warn('[socket] Redis adapter unavailable, using single-node:', msg);
         }
     }
-    console.log("[socket] Redis adapter", process.env.NODE_ENV !== 'test' ? 'enabled' : 'disabled');
-    io.use(socketAuth);
+    console.log('[socket] Redis adapter', process.env.NODE_ENV !== 'test' ? 'enabled' : 'disabled');
+    io.use(socketAuth_1.default);
     io.on('connection_error', () => {
-        realtimeMetrics.recordConnectionFailure();
+        realtimeMetrics_1.default.recordConnectionFailure();
     });
     io.on('connection', (socket) => {
-        const { user } = socket.data;
+        const user = socket.data.user;
         if (!user)
             return;
-        realtimeMetrics.recordConnection(user.id);
-        realtimeMetrics.recordEvent('connection');
+        realtimeMetrics_1.default.recordConnection(user.id);
+        realtimeMetrics_1.default.recordEvent('connection');
         if (socket.recovered || (socket.handshake.auth && socket.handshake.auth.reconnecting)) {
-            realtimeMetrics.recordReconnect();
-            realtimeMetrics.recordEvent('reconnect');
+            realtimeMetrics_1.default.recordReconnect();
+            realtimeMetrics_1.default.recordEvent('reconnect');
         }
         socket.join(`user:${user.id}`);
         socket.join(`role:${user.role}`);
         socket.data.connectedAt = Date.now();
-        // Register per-connection socket modules (lazy require so a broken module
-        // cannot take the whole connection down).
         for (const mod of [
             './sockets/chatSocket',
             './sockets/notificationSocket',
@@ -72,20 +69,17 @@ function createSocketServer(httpServer) {
                 require(mod)(io, socket);
             }
             catch (err) {
-                console.error(`[socket] failed to register ${mod}:`, err.message);
+                const msg = err instanceof Error ? err.message : String(err);
+                console.error(`[socket] failed to register ${mod}:`, msg);
             }
         }
         socket.on('disconnect', () => {
-            realtimeMetrics.recordDisconnection(user.id);
-            realtimeMetrics.recordEvent('disconnection');
+            realtimeMetrics_1.default.recordDisconnection(user.id);
+            realtimeMetrics_1.default.recordEvent('disconnection');
         });
     });
     return io;
 }
-/**
- * Force-disconnects every socket belonging to the given user. Used on logout
- * and when an enforcement action (suspension/ban) takes effect.
- */
 function disconnectUserSockets(userId) {
     if (!ioInstance || !userId)
         return;
@@ -103,10 +97,11 @@ function disconnectUserSockets(userId) {
     }
 }
 function getIO() {
-    return realtimeService.getIO();
+    return realtimeService_1.default.getIO();
 }
 function emitToUser(userId, event, data) {
-    return realtimeService.emitToUser(userId, event, data);
+    return realtimeService_1.default.emitToUser(userId, event, data);
 }
+exports.default = { createSocketServer, getIO, emitToUser, disconnectUserSockets };
 module.exports = { createSocketServer, getIO, emitToUser, disconnectUserSockets };
 //# sourceMappingURL=socketServer.js.map

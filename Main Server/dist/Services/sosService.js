@@ -1,16 +1,32 @@
 "use strict";
-const { Op } = require('sequelize');
-const { SosEvent, User, Trip } = require('../Models');
-const { ApiErrors } = require('../utils/ApiError');
-const { parsePagination, buildPagination } = require('../utils/pagination');
-const realtimeService = require('./realtimeService');
-const realtimeMetrics = require('./realtimeMetrics');
-const auditService = require('./auditService');
-const { SOS_STATUS, SOS_URGENCY, TRIP_STATUS, ROLES } = require('../config/constants');
-const ACTIVE_SOS_STATUSES = [SOS_STATUS.PENDING, SOS_STATUS.ACKNOWLEDGED];
-const ACTIVE_TRIP_STATUSES = [TRIP_STATUS.IN_PROGRESS, TRIP_STATUS.ONGOING];
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.ACTIVE_SOS_STATUSES = exports.ESCALATION_AFTER_MS = exports.RE_ALERT_INTERVAL_MS = void 0;
+exports.trigger = trigger;
+exports.listAdmin = listAdmin;
+exports.acknowledge = acknowledge;
+exports.resolve = resolve;
+exports.runEscalation = runEscalation;
+exports.findActiveForUser = findActiveForUser;
+exports.serialize = serialize;
+// @ts-nocheck
+const sequelize_1 = require("sequelize");
+const Models_1 = require("../Models");
+const ApiError_1 = require("../utils/ApiError");
+const pagination_1 = require("../utils/pagination");
+const realtimeService_1 = __importDefault(require("./realtimeService"));
+const realtimeMetrics_1 = __importDefault(require("./realtimeMetrics"));
+const auditService_1 = __importDefault(require("./auditService"));
+const constants_1 = require("../config/constants");
+const ACTIVE_SOS_STATUSES = [constants_1.SOS_STATUS.PENDING, constants_1.SOS_STATUS.ACKNOWLEDGED];
+exports.ACTIVE_SOS_STATUSES = ACTIVE_SOS_STATUSES;
+const ACTIVE_TRIP_STATUSES = [constants_1.TRIP_STATUS.IN_PROGRESS, constants_1.TRIP_STATUS.ONGOING];
 const RE_ALERT_INTERVAL_MS = 60 * 1000;
+exports.RE_ALERT_INTERVAL_MS = RE_ALERT_INTERVAL_MS;
 const ESCALATION_AFTER_MS = 5 * 60 * 1000;
+exports.ESCALATION_AFTER_MS = ESCALATION_AFTER_MS;
 function serialize(event, user = null) {
     return {
         id: event.id,
@@ -27,13 +43,13 @@ function serialize(event, user = null) {
     };
 }
 async function findActiveForUser(userId) {
-    return SosEvent.findOne({
-        where: { userId, status: { [Op.in]: ACTIVE_SOS_STATUSES } },
+    return Models_1.SosEvent.findOne({
+        where: { userId, status: { [sequelize_1.Op.in]: ACTIVE_SOS_STATUSES } },
         order: [['createdat', 'DESC']],
     });
 }
 async function alertPayload(event) {
-    const user = await User.findByPk(event.userId, { attributes: ['id', 'fullName'] });
+    const user = await Models_1.User.findByPk(event.userId, { attributes: ['id', 'fullName'] });
     return {
         sos_event_id: event.id,
         user_id: event.userId,
@@ -53,81 +69,81 @@ async function alertPayload(event) {
  * sender must be a confirmed participant of an active trip.
  */
 async function trigger(user, payload) {
-    const { tripId, lat, lng, urgency = SOS_URGENCY.HIGH } = payload || {};
+    const { tripId, lat, lng, urgency = constants_1.SOS_URGENCY.HIGH } = payload || {};
     if (!tripId)
-        throw ApiErrors.validation('TRIP_ID_IS_REQUIRED_FOR_SOS');
+        throw ApiError_1.ApiErrors.validation('TRIP_ID_IS_REQUIRED_FOR_SOS');
     if (lat === undefined || lng === undefined) {
-        throw ApiErrors.validation('LAT_AND_LNG_ARE_REQUIRED');
+        throw ApiError_1.ApiErrors.validation('LAT_AND_LNG_ARE_REQUIRED');
     }
-    const member = await realtimeService.isTripMember(user, tripId);
+    const member = await realtimeService_1.default.isTripMember(user, tripId);
     if (!member)
-        throw ApiErrors.forbidden('YOU_ARE_NOT_A_PARTICIPANT_OF_THIS_TRIP');
-    const trip = await Trip.findByPk(tripId, { attributes: ['id', 'status'] });
+        throw ApiError_1.ApiErrors.forbidden('YOU_ARE_NOT_A_PARTICIPANT_OF_THIS_TRIP');
+    const trip = await Models_1.Trip.findByPk(tripId, { attributes: ['id', 'status'] });
     if (!trip)
-        throw ApiErrors.notFound('TRIP_NOT_FOUND');
+        throw ApiError_1.ApiErrors.notFound('TRIP_NOT_FOUND');
     if (!ACTIVE_TRIP_STATUSES.includes(trip.status)) {
-        throw ApiErrors.conflict('SOS_IS_ONLY_AVAILABLE_DURING_AN_ACTIVE_TRIP');
+        throw ApiError_1.ApiErrors.conflict('SOS_IS_ONLY_AVAILABLE_DURING_AN_ACTIVE_TRIP');
     }
     const active = await findActiveForUser(user.id);
     if (active) {
         return { sos_event_id: active.id, reused: true };
     }
-    const event = await SosEvent.create({
+    const event = await Models_1.SosEvent.create({
         userId: user.id,
         tripId,
         lat,
         lng,
         urgency,
-        status: SOS_STATUS.PENDING,
+        status: constants_1.SOS_STATUS.PENDING,
         escalationLevel: 0,
         lastAlertAt: new Date(),
     });
     const payloadOut = await alertPayload(event);
-    realtimeService.emitToUser(user.id, 'sos:ack', {
+    realtimeService_1.default.emitToUser(user.id, 'sos:ack', {
         status: 'received',
         sos_event_id: event.id,
         assigned_support_id: null,
         timestamp: Date.now(),
     });
-    realtimeService.emitToRole(ROLES.ADMIN, 'sos:alert', payloadOut);
-    realtimeService.emitToRole(ROLES.ADMIN, 'admin:sos_alert', payloadOut);
-    realtimeMetrics.recordEvent('sos:alert');
-    realtimeMetrics.recordDelivery();
+    realtimeService_1.default.emitToRole(constants_1.ROLES.ADMIN, 'sos:alert', payloadOut);
+    realtimeService_1.default.emitToRole(constants_1.ROLES.ADMIN, 'admin:sos_alert', payloadOut);
+    realtimeMetrics_1.default.recordEvent('sos:alert');
+    realtimeMetrics_1.default.recordDelivery();
     return { sos_event_id: event.id, reused: false };
 }
 async function listAdmin(actor, { status, page, limit } = {}) {
     const where = {};
-    if (status && SOS_STATUS[status.toUpperCase()]) {
+    if (status && constants_1.SOS_STATUS[status.toUpperCase()]) {
         where.status = status.toLowerCase();
     }
-    const { page: p, limit: l, offset } = parsePagination({ page, limit });
-    const { rows, count } = await SosEvent.findAndCountAll({
+    const { page: p, limit: l, offset } = (0, pagination_1.parsePagination)({ page, limit });
+    const { rows, count } = await Models_1.SosEvent.findAndCountAll({
         where,
-        include: [{ model: User, as: 'user', attributes: ['id', 'fullName'], required: false }],
+        include: [{ model: Models_1.User, as: 'user', attributes: ['id', 'fullName'], required: false }],
         order: [['createdat', 'DESC']],
         offset,
         limit: l,
     });
     return {
         data: rows.map((r) => serialize(r, r.user)),
-        pagination: buildPagination(count, p, l),
+        pagination: (0, pagination_1.buildPagination)(count, p, l),
     };
 }
 async function acknowledge(actor, sosId) {
-    const event = await SosEvent.findByPk(sosId);
+    const event = await Models_1.SosEvent.findByPk(sosId);
     if (!event)
-        throw ApiErrors.notFound('SOS_EVENT_NOT_FOUND');
-    if (event.status === SOS_STATUS.RESOLVED || event.status === SOS_STATUS.CANCELLED) {
-        throw ApiErrors.conflict('SOS_EVENT_IS_ALREADY_CLOSED');
+        throw ApiError_1.ApiErrors.notFound('SOS_EVENT_NOT_FOUND');
+    if (event.status === constants_1.SOS_STATUS.RESOLVED || event.status === constants_1.SOS_STATUS.CANCELLED) {
+        throw ApiError_1.ApiErrors.conflict('SOS_EVENT_IS_ALREADY_CLOSED');
     }
-    if (event.status !== SOS_STATUS.ACKNOWLEDGED) {
+    if (event.status !== constants_1.SOS_STATUS.ACKNOWLEDGED) {
         await event.update({
-            status: SOS_STATUS.ACKNOWLEDGED,
+            status: constants_1.SOS_STATUS.ACKNOWLEDGED,
             acknowledgedBy: actor.id,
             acknowledgedAt: new Date(),
         });
     }
-    auditService.track({
+    auditService_1.default.track({
         action: 'sos.acknowledge',
         resourceType: 'sos_event',
         resourceId: event.id,
@@ -138,15 +154,15 @@ async function acknowledge(actor, sosId) {
     return { sos_event: serialize(event) };
 }
 async function resolve(actor, sosId, resolutionNote) {
-    const event = await SosEvent.findByPk(sosId);
+    const event = await Models_1.SosEvent.findByPk(sosId);
     if (!event)
-        throw ApiErrors.notFound('SOS_EVENT_NOT_FOUND');
-    if (event.status === SOS_STATUS.RESOLVED || event.status === SOS_STATUS.CANCELLED) {
-        throw ApiErrors.conflict('SOS_EVENT_IS_ALREADY_CLOSED');
+        throw ApiError_1.ApiErrors.notFound('SOS_EVENT_NOT_FOUND');
+    if (event.status === constants_1.SOS_STATUS.RESOLVED || event.status === constants_1.SOS_STATUS.CANCELLED) {
+        throw ApiError_1.ApiErrors.conflict('SOS_EVENT_IS_ALREADY_CLOSED');
     }
     const resolvedAt = new Date();
     await event.update({
-        status: SOS_STATUS.RESOLVED,
+        status: constants_1.SOS_STATUS.RESOLVED,
         resolvedBy: actor.id,
         resolutionNote: resolutionNote || null,
         resolvedAt,
@@ -158,10 +174,10 @@ async function resolve(actor, sosId, resolutionNote) {
         resolved_at: resolvedAt.toISOString(),
         timestamp: Date.now(),
     };
-    realtimeService.emitToUser(event.userId, 'sos:resolved', out);
-    realtimeService.emitToRole(ROLES.ADMIN, 'sos:resolved', out);
-    realtimeMetrics.recordEvent('sos:resolved');
-    auditService.track({
+    realtimeService_1.default.emitToUser(event.userId, 'sos:resolved', out);
+    realtimeService_1.default.emitToRole(constants_1.ROLES.ADMIN, 'sos:resolved', out);
+    realtimeMetrics_1.default.recordEvent('sos:resolved');
+    auditService_1.default.track({
         action: 'sos.resolve',
         resourceType: 'sos_event',
         resourceId: event.id,
@@ -177,8 +193,8 @@ async function resolve(actor, sosId, resolutionNote) {
  */
 async function runEscalation() {
     const now = Date.now();
-    const events = await SosEvent.findAll({
-        where: { status: { [Op.in]: ACTIVE_SOS_STATUSES } },
+    const events = await Models_1.SosEvent.findAll({
+        where: { status: { [sequelize_1.Op.in]: ACTIVE_SOS_STATUSES } },
     });
     let alerted = 0;
     let escalated = 0;
@@ -201,9 +217,9 @@ async function runEscalation() {
         }
         if (now - lastAlert >= RE_ALERT_INTERVAL_MS || event.escalationLevel === 1) {
             const payloadOut = await alertPayload(event);
-            realtimeService.emitToRole(ROLES.ADMIN, 'sos:alert', payloadOut);
-            realtimeService.emitToRole(ROLES.ADMIN, 'admin:sos_alert', payloadOut);
-            realtimeMetrics.recordEvent('sos:realert');
+            realtimeService_1.default.emitToRole(constants_1.ROLES.ADMIN, 'sos:alert', payloadOut);
+            realtimeService_1.default.emitToRole(constants_1.ROLES.ADMIN, 'admin:sos_alert', payloadOut);
+            realtimeMetrics_1.default.recordEvent('sos:realert');
         }
     }
     return { alerted, escalated };
@@ -220,4 +236,5 @@ module.exports = {
     ESCALATION_AFTER_MS,
     ACTIVE_SOS_STATUSES,
 };
+exports.default = module.exports;
 //# sourceMappingURL=sosService.js.map

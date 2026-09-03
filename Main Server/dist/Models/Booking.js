@@ -1,90 +1,98 @@
 "use strict";
-const { Model, DataTypes } = require('sequelize');
-const sequelize = require('../config/database');
-const { BOOKING_STATUS, PAYMENT_STATUS } = require('../config/constants');
-class Booking extends Model {
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.Booking = void 0;
+const sequelize_1 = require("sequelize");
+const database_1 = __importDefault(require("../config/database"));
+const constants_1 = require("../config/constants");
+class Booking extends sequelize_1.Model {
 }
+exports.Booking = Booking;
 Booking.init({
     id: {
-        type: DataTypes.UUID,
-        defaultValue: DataTypes.UUIDV4,
+        type: sequelize_1.DataTypes.UUID,
+        defaultValue: sequelize_1.DataTypes.UUIDV4,
         primaryKey: true,
     },
     tripId: {
-        type: DataTypes.UUID,
+        type: sequelize_1.DataTypes.UUID,
         allowNull: false,
     },
     passengerId: {
-        type: DataTypes.UUID,
+        type: sequelize_1.DataTypes.UUID,
         allowNull: false,
     },
     seatNumber: {
-        type: DataTypes.SMALLINT,
+        type: sequelize_1.DataTypes.SMALLINT,
         allowNull: true,
     },
     seatsBooked: {
-        type: DataTypes.SMALLINT,
+        type: sequelize_1.DataTypes.SMALLINT,
         allowNull: false,
         defaultValue: 1,
     },
     agreedFare: {
-        type: DataTypes.NUMERIC(10, 2),
+        type: sequelize_1.DataTypes.NUMERIC(10, 2),
         allowNull: false,
     },
     currency: {
-        type: DataTypes.STRING(3),
+        type: sequelize_1.DataTypes.STRING(3),
         allowNull: true,
         defaultValue: 'JOD',
     },
     dropoffPlace: {
-        type: DataTypes.STRING(120),
+        type: sequelize_1.DataTypes.STRING(120),
         allowNull: true,
     },
     dropoffDeadline: {
-        type: DataTypes.DATE,
+        type: sequelize_1.DataTypes.DATE,
         allowNull: true,
     },
     dropoffOrder: {
-        type: DataTypes.SMALLINT,
+        type: sequelize_1.DataTypes.SMALLINT,
         allowNull: true,
     },
     status: {
-        type: DataTypes.ENUM(Object.values(BOOKING_STATUS)),
+        type: sequelize_1.DataTypes.ENUM(...Object.values(constants_1.BOOKING_STATUS)),
         allowNull: false,
-        defaultValue: BOOKING_STATUS.CONFIRMED,
+        defaultValue: constants_1.BOOKING_STATUS.CONFIRMED,
     },
     referenceCode: {
-        type: DataTypes.STRING(12),
+        type: sequelize_1.DataTypes.STRING(12),
         allowNull: false,
         unique: true,
     },
     cancellationReason: {
-        type: DataTypes.TEXT,
+        type: sequelize_1.DataTypes.TEXT,
         allowNull: true,
     },
     cancelledBy: {
-        type: DataTypes.UUID,
+        type: sequelize_1.DataTypes.UUID,
         allowNull: true,
     },
     cancelledAt: {
-        type: DataTypes.DATE,
+        type: sequelize_1.DataTypes.DATE,
         allowNull: true,
     },
     paymentStatus: {
-        type: DataTypes.ENUM(Object.values(PAYMENT_STATUS)),
+        type: sequelize_1.DataTypes.ENUM(...Object.values(constants_1.PAYMENT_STATUS)),
         allowNull: true,
-        defaultValue: PAYMENT_STATUS.PENDING,
+        defaultValue: constants_1.PAYMENT_STATUS.PENDING,
     },
     completedAt: {
-        type: DataTypes.DATE,
+        type: sequelize_1.DataTypes.DATE,
         allowNull: true,
     },
 }, {
-    sequelize,
+    sequelize: database_1.default,
     modelName: 'Booking',
     tableName: 'bookings',
     underscored: true,
     timestamps: true,
 });
+exports.default = Booking;
 module.exports = Booking;
+Object.assign(module.exports, { default: Booking });
 //# sourceMappingURL=Booking.js.map

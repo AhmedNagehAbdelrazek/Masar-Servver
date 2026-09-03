@@ -1,5 +1,9 @@
 "use strict";
-const { incr, redis } = require('../config/redis');
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.LIMITS = void 0;
+exports.checkRateLimit = checkRateLimit;
+// @ts-nocheck
+const redis_1 = require("../config/redis");
 /**
  * Per-socket fixed-window rate limits, enforced on top of the global auth.
  * Limits are keyed by user so a user cannot bypass them by opening multiple
@@ -15,6 +19,7 @@ const LIMITS = {
     supportChat: { max: 10, windowSeconds: 10 },
     admin: { max: 60, windowSeconds: 60 },
 };
+exports.LIMITS = LIMITS;
 /**
  * Checks the limit for `userId` under `scope`+`limitKey`. Returns
  * { allowed, count, limit, remaining }. Fails OPEN (allows the request) when
@@ -25,10 +30,10 @@ async function checkRateLimit(scope, limitKey, userId) {
     const { max, windowSeconds } = LIMITS[limitKey] || { max: 30, windowSeconds: 60 };
     const key = `ratelimit:${scope}:${limitKey}:${userId}`;
     try {
-        const count = await incr(key);
+        const count = await (0, redis_1.incr)(key);
         if (count === 1) {
             try {
-                await redis.expire(key, windowSeconds);
+                await redis_1.redis.expire(key, windowSeconds);
             }
             catch (err) {
                 console.warn('[socketRateLimiter] failed to set TTL:', err.message);
@@ -47,4 +52,5 @@ async function checkRateLimit(scope, limitKey, userId) {
     }
 }
 module.exports = { checkRateLimit, LIMITS };
+exports.default = module.exports;
 //# sourceMappingURL=socketRateLimiter.js.map

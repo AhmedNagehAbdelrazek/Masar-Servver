@@ -1,104 +1,122 @@
 "use strict";
-const { body, query, param } = require('express-validator');
-const { BOOKING_STATUS } = require('../../config/constants');
-const V = require('../../config/messages/validation-keys');
-const bookingListValidation = [
-    query('status')
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.delayListValidation = exports.reportDelayValidation = exports.delayParamValidation = exports.cancelBookingValidation = exports.passengerBookingListValidation = exports.createBookingValidation = exports.bookingParamValidation = exports.bookingListValidation = void 0;
+const express_validator_1 = require("express-validator");
+const constants_1 = require("../../config/constants");
+const validation_keys_1 = require("../../config/messages/validation-keys");
+exports.bookingListValidation = [
+    (0, express_validator_1.query)('status')
         .optional()
-        .isIn(Object.values(BOOKING_STATUS)).withMessage(V.STATUS_MUST_BE_ONE_OF_PENDING_CONFIRMED_CANCELLED_COMPLETED_NO_SHOW),
-    query('date_from')
+        .isIn(Object.values(constants_1.BOOKING_STATUS)).withMessage(validation_keys_1.VALIDATION_KEYS.STATUS_MUST_BE_ONE_OF_PENDING_CONFIRMED_CANCELLED_COMPLETED_NO_SHOW),
+    (0, express_validator_1.query)('date_from')
         .optional()
-        .isISO8601().withMessage(V.DATE_FROM_MUST_BE_A_VALID_ISO_8601_DATE),
-    query('date_to')
+        .isISO8601().withMessage(validation_keys_1.VALIDATION_KEYS.DATE_FROM_MUST_BE_A_VALID_ISO_8601_DATE),
+    (0, express_validator_1.query)('date_to')
         .optional()
-        .isISO8601().withMessage(V.DATE_TO_MUST_BE_A_VALID_ISO_8601_DATE),
-    query('page')
+        .isISO8601().withMessage(validation_keys_1.VALIDATION_KEYS.DATE_TO_MUST_BE_A_VALID_ISO_8601_DATE),
+    (0, express_validator_1.query)('page')
         .optional()
-        .isInt({ min: 1 }).withMessage(V.PAGE_MUST_BE_A_POSITIVE_INTEGER),
-    query('limit')
+        .isInt({ min: 1 }).withMessage(validation_keys_1.VALIDATION_KEYS.PAGE_MUST_BE_A_POSITIVE_INTEGER),
+    (0, express_validator_1.query)('limit')
         .optional()
-        .isInt({ min: 1, max: 100 }).withMessage(V.LIMIT_MUST_BE_AN_INTEGER_BETWEEN_1_AND_100),
+        .isInt({ min: 1, max: 100 }).withMessage(validation_keys_1.VALIDATION_KEYS.LIMIT_MUST_BE_AN_INTEGER_BETWEEN_1_AND_100),
 ];
-const bookingParamValidation = [
-    param('booking_id')
-        .isUUID().withMessage(V.BOOKING_ID_MUST_BE_A_VALID_UUID),
+exports.bookingParamValidation = [
+    (0, express_validator_1.param)('booking_id')
+        .isUUID().withMessage(validation_keys_1.VALIDATION_KEYS.BOOKING_ID_MUST_BE_A_VALID_UUID),
 ];
-const createBookingValidation = [
-    body('trip_id')
-        .isUUID().withMessage(V.TRIP_ID_MUST_BE_A_VALID_UUID),
-    body('seat_number')
+exports.createBookingValidation = [
+    (0, express_validator_1.body)('trip_id')
+        .isUUID().withMessage(validation_keys_1.VALIDATION_KEYS.TRIP_ID_MUST_BE_A_VALID_UUID),
+    (0, express_validator_1.body)('seat_number')
         .optional()
-        .isInt({ min: 1 }).withMessage(V.SEAT_NUMBER_MUST_BE_A_POSITIVE_INTEGER),
-    body('seats')
+        .isInt({ min: 1 }).withMessage(validation_keys_1.VALIDATION_KEYS.SEAT_NUMBER_MUST_BE_A_POSITIVE_INTEGER),
+    (0, express_validator_1.body)('seats')
         .optional()
-        .isInt({ min: 1 }).withMessage(V.SEATS_MUST_BE_POSITIVE_INTEGER),
-    body('drop_off_point')
+        .isInt({ min: 1 }).withMessage(validation_keys_1.VALIDATION_KEYS.SEATS_MUST_BE_POSITIVE_INTEGER),
+    (0, express_validator_1.body)('drop_off_point')
         .optional()
-        .isUUID().withMessage(V.TRIP_ID_MUST_BE_A_VALID_UUID),
-    body('agreed_fare')
-        .notEmpty().withMessage(V.AGREED_FARE_IS_REQUIRED)
-        .isFloat({ min: 0 }).withMessage(V.AGREED_FARE_MUST_BE_A_NON_NEGATIVE_NUMBER),
-    body('dropoff_place')
+        .isUUID().withMessage(validation_keys_1.VALIDATION_KEYS.TRIP_ID_MUST_BE_A_VALID_UUID),
+    (0, express_validator_1.body)('agreed_fare')
+        .notEmpty().withMessage(validation_keys_1.VALIDATION_KEYS.AGREED_FARE_IS_REQUIRED)
+        .isFloat({ min: 0 }).withMessage(validation_keys_1.VALIDATION_KEYS.AGREED_FARE_MUST_BE_A_NON_NEGATIVE_NUMBER),
+    (0, express_validator_1.body)('dropoff_place')
         .optional()
-        .isString().trim().isLength({ max: 255 }).withMessage(V.DROPOFF_PLACE_MUST_BE_AT_MOST_255_CHARACTERS),
-    body('dropoff_deadline')
+        .isString().trim().isLength({ max: 255 }).withMessage(validation_keys_1.VALIDATION_KEYS.DROPOFF_PLACE_MUST_BE_AT_MOST_255_CHARACTERS),
+    (0, express_validator_1.body)('dropoff_deadline')
         .optional()
-        .isISO8601().withMessage(V.DROPOFF_DEADLINE_MUST_BE_A_VALID_ISO_8601_DATETIME),
+        .isISO8601().withMessage(validation_keys_1.VALIDATION_KEYS.DROPOFF_DEADLINE_MUST_BE_A_VALID_ISO_8601_DATETIME),
 ];
-const passengerBookingListValidation = [
-    query('status')
+exports.passengerBookingListValidation = [
+    (0, express_validator_1.query)('status')
         .optional()
-        .isIn(Object.values(BOOKING_STATUS)).withMessage(V.STATUS_MUST_BE_ONE_OF_PENDING_CONFIRMED_CANCELLED_COMPLETED_NO_SHOW),
-    query('trip_id')
+        .isIn(Object.values(constants_1.BOOKING_STATUS)).withMessage(validation_keys_1.VALIDATION_KEYS.STATUS_MUST_BE_ONE_OF_PENDING_CONFIRMED_CANCELLED_COMPLETED_NO_SHOW),
+    (0, express_validator_1.query)('trip_id')
         .optional()
-        .isUUID().withMessage(V.TRIP_ID_MUST_BE_A_VALID_UUID_2),
-    query('page')
+        .isUUID().withMessage(validation_keys_1.VALIDATION_KEYS.TRIP_ID_MUST_BE_A_VALID_UUID_2),
+    (0, express_validator_1.query)('page')
         .optional()
-        .isInt({ min: 1 }).withMessage(V.PAGE_MUST_BE_A_POSITIVE_INTEGER),
-    query('limit')
+        .isInt({ min: 1 }).withMessage(validation_keys_1.VALIDATION_KEYS.PAGE_MUST_BE_A_POSITIVE_INTEGER),
+    (0, express_validator_1.query)('limit')
         .optional()
-        .isInt({ min: 1, max: 100 }).withMessage(V.LIMIT_MUST_BE_AN_INTEGER_BETWEEN_1_AND_100),
+        .isInt({ min: 1, max: 100 }).withMessage(validation_keys_1.VALIDATION_KEYS.LIMIT_MUST_BE_AN_INTEGER_BETWEEN_1_AND_100),
 ];
-const cancelBookingValidation = [
-    param('booking_id')
-        .isUUID().withMessage(V.BOOKING_ID_MUST_BE_A_VALID_UUID),
+exports.cancelBookingValidation = [
+    (0, express_validator_1.param)('booking_id')
+        .isUUID().withMessage(validation_keys_1.VALIDATION_KEYS.BOOKING_ID_MUST_BE_A_VALID_UUID),
 ];
-const delayParamValidation = [
-    param('booking_id')
-        .isUUID().withMessage(V.BOOKING_ID_MUST_BE_A_VALID_UUID),
+exports.delayParamValidation = [
+    (0, express_validator_1.param)('booking_id')
+        .isUUID().withMessage(validation_keys_1.VALIDATION_KEYS.BOOKING_ID_MUST_BE_A_VALID_UUID),
 ];
-const reportDelayValidation = [
-    ...delayParamValidation,
-    body('party')
-        .notEmpty().withMessage(V.PARTY_IS_REQUIRED)
-        .isIn(['driver', 'passenger']).withMessage(V.PARTY_MUST_BE_DRIVER_OR_PASSENGER),
-    body('delay_minutes')
-        .notEmpty().withMessage(V.DELAY_MINUTES_IS_REQUIRED)
-        .isInt({ min: 1, max: 720 }).withMessage(V.DELAY_MINUTES_MUST_BE_AN_INTEGER_BETWEEN_1_AND_720),
-    body('reason')
+exports.reportDelayValidation = [
+    ...exports.delayParamValidation,
+    (0, express_validator_1.body)('party')
+        .notEmpty().withMessage(validation_keys_1.VALIDATION_KEYS.PARTY_IS_REQUIRED)
+        .isIn(['driver', 'passenger']).withMessage(validation_keys_1.VALIDATION_KEYS.PARTY_MUST_BE_DRIVER_OR_PASSENGER),
+    (0, express_validator_1.body)('delay_minutes')
+        .notEmpty().withMessage(validation_keys_1.VALIDATION_KEYS.DELAY_MINUTES_IS_REQUIRED)
+        .isInt({ min: 1, max: 720 }).withMessage(validation_keys_1.VALIDATION_KEYS.DELAY_MINUTES_MUST_BE_AN_INTEGER_BETWEEN_1_AND_720),
+    (0, express_validator_1.body)('reason')
         .optional()
-        .isString().trim().isLength({ max: 1000 }).withMessage(V.REASON_MUST_BE_AT_MOST_1000_CHARACTERS),
+        .isString().trim().isLength({ max: 1000 }).withMessage(validation_keys_1.VALIDATION_KEYS.REASON_MUST_BE_AT_MOST_1000_CHARACTERS),
 ];
-const delayListValidation = [
-    ...delayParamValidation,
-    query('party')
+exports.delayListValidation = [
+    ...exports.delayParamValidation,
+    (0, express_validator_1.query)('party')
         .optional()
-        .isIn(['driver', 'passenger']).withMessage(V.PARTY_MUST_BE_DRIVER_OR_PASSENGER),
-    query('page')
+        .isIn(['driver', 'passenger']).withMessage(validation_keys_1.VALIDATION_KEYS.PARTY_MUST_BE_DRIVER_OR_PASSENGER),
+    (0, express_validator_1.query)('page')
         .optional()
-        .isInt({ min: 1 }).withMessage(V.PAGE_MUST_BE_A_POSITIVE_INTEGER),
-    query('limit')
+        .isInt({ min: 1 }).withMessage(validation_keys_1.VALIDATION_KEYS.PAGE_MUST_BE_A_POSITIVE_INTEGER),
+    (0, express_validator_1.query)('limit')
         .optional()
-        .isInt({ min: 1, max: 100 }).withMessage(V.LIMIT_MUST_BE_AN_INTEGER_BETWEEN_1_AND_100),
+        .isInt({ min: 1, max: 100 }).withMessage(validation_keys_1.VALIDATION_KEYS.LIMIT_MUST_BE_AN_INTEGER_BETWEEN_1_AND_100),
 ];
-module.exports = {
-    bookingListValidation,
-    bookingParamValidation,
-    createBookingValidation,
-    passengerBookingListValidation,
-    cancelBookingValidation,
-    delayParamValidation,
-    reportDelayValidation,
-    delayListValidation,
-};
+const _exported = { bookingListValidation: exports.bookingListValidation, bookingParamValidation: exports.bookingParamValidation, createBookingValidation: exports.createBookingValidation, passengerBookingListValidation: exports.passengerBookingListValidation, cancelBookingValidation: exports.cancelBookingValidation, delayParamValidation: exports.delayParamValidation, reportDelayValidation: exports.reportDelayValidation, delayListValidation: exports.delayListValidation };
+exports.default = _exported;
+// CommonJS interop
+// @ts-ignore
+if (typeof module !== 'undefined' && module.exports) {
+    // @ts-ignore
+    module.exports = { bookingListValidation: exports.bookingListValidation, bookingParamValidation: exports.bookingParamValidation, createBookingValidation: exports.createBookingValidation, passengerBookingListValidation: exports.passengerBookingListValidation, cancelBookingValidation: exports.cancelBookingValidation, delayParamValidation: exports.delayParamValidation, reportDelayValidation: exports.reportDelayValidation, delayListValidation: exports.delayListValidation };
+    // @ts-ignore
+    module.exports.bookingListValidation = exports.bookingListValidation;
+    // @ts-ignore
+    module.exports.bookingParamValidation = exports.bookingParamValidation;
+    // @ts-ignore
+    module.exports.createBookingValidation = exports.createBookingValidation;
+    // @ts-ignore
+    module.exports.passengerBookingListValidation = exports.passengerBookingListValidation;
+    // @ts-ignore
+    module.exports.cancelBookingValidation = exports.cancelBookingValidation;
+    // @ts-ignore
+    module.exports.delayParamValidation = exports.delayParamValidation;
+    // @ts-ignore
+    module.exports.reportDelayValidation = exports.reportDelayValidation;
+    // @ts-ignore
+    module.exports.delayListValidation = exports.delayListValidation;
+    // @ts-ignore
+    module.exports.default = _exported;
+}
 //# sourceMappingURL=bookingValidator.js.map

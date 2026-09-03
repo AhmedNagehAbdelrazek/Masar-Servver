@@ -1,17 +1,56 @@
 "use strict";
-const router = require('express').Router();
-const c = require('../Controllers/adminVerificationController');
-const protect = require('../middlewares/protect');
-const { roleGuard } = require('../middlewares/roleGuard');
-const validate = require('../middlewares/validatorMiddleware');
-const { verificationQueueValidation, driverParamValidation, vehicleParamValidation, rejectValidation, } = require('../utils/validators/verificationValidator');
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const router = (0, express_1.Router)();
+const c = __importStar(require("../Controllers/adminVerificationController"));
+const protect_1 = __importDefault(require("../middlewares/protect"));
+const roleGuard_1 = require("../middlewares/roleGuard");
+const validatorMiddleware_1 = __importDefault(require("../middlewares/validatorMiddleware"));
+const verificationValidator_1 = require("../utils/validators/verificationValidator");
 // Verification queue
-router.get('/queue', protect, roleGuard(['admin']), ...verificationQueueValidation, validate, c.getQueue);
+router.get('/queue', protect_1.default, (0, roleGuard_1.roleGuard)(['admin']), ...verificationValidator_1.verificationQueueValidation, validatorMiddleware_1.default, c.getQueue);
 // Approve / reject driver
-router.post('/drivers/:driver_id/approve', protect, roleGuard(['admin']), ...driverParamValidation, validate, c.approveDriver);
-router.post('/drivers/:driver_id/reject', protect, roleGuard(['admin']), ...driverParamValidation, ...rejectValidation, validate, c.rejectDriver);
+router.post('/drivers/:driver_id/approve', protect_1.default, (0, roleGuard_1.roleGuard)(['admin']), ...verificationValidator_1.driverParamValidation, validatorMiddleware_1.default, c.approveDriver);
+router.post('/drivers/:driver_id/reject', protect_1.default, (0, roleGuard_1.roleGuard)(['admin']), ...verificationValidator_1.driverParamValidation, ...verificationValidator_1.rejectValidation, validatorMiddleware_1.default, c.rejectDriver);
 // Approve / reject vehicle
-router.post('/vehicles/:vehicle_id/approve', protect, roleGuard(['admin']), ...vehicleParamValidation, validate, c.approveVehicle);
-router.post('/vehicles/:vehicle_id/reject', protect, roleGuard(['admin']), ...vehicleParamValidation, ...rejectValidation, validate, c.rejectVehicle);
+router.post('/vehicles/:vehicle_id/approve', protect_1.default, (0, roleGuard_1.roleGuard)(['admin']), ...verificationValidator_1.vehicleParamValidation, validatorMiddleware_1.default, c.approveVehicle);
+router.post('/vehicles/:vehicle_id/reject', protect_1.default, (0, roleGuard_1.roleGuard)(['admin']), ...verificationValidator_1.vehicleParamValidation, ...verificationValidator_1.rejectValidation, validatorMiddleware_1.default, c.rejectVehicle);
+exports.default = router;
 module.exports = router;
 //# sourceMappingURL=adminVerificationRoutes.js.map

@@ -1,7 +1,6 @@
 import { body, ValidationChain, Meta } from 'express-validator';
 import { validatePhone } from '../phoneValidator';
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-import V = require('../../config/messages/validation-keys');
+import V from '../../config/messages/validation-keys';
 
 const passwordRegex: RegExp = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
 
@@ -240,5 +239,4 @@ const authValidator = {
 };
 
 export default authValidator;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-(module.exports as any) = authValidator;
+module.exports = authValidator;

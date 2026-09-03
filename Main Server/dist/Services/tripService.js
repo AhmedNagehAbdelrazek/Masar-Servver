@@ -1,15 +1,26 @@
 "use strict";
-const { Op } = require('sequelize');
-const { Trip, TripSeat, TripStop, TripAttribute, Vehicle, User, Booking, DriverSubscription, SubscriptionPlan, Penalty, } = require('../Models');
-const { ApiErrors } = require('../utils/ApiError');
-const { TRIP_STATUS, GENDER_PREFERENCE, BOOKING_STATUS, FREE_OFFER_TYPE, PENALTY_TYPES, PENALTY_CATEGORY, PENALTY_SEVERITY, CANCELLATION_ESCALATION } = require('../config/constants');
-const commissionService = require('./commissionService');
-const notificationService = require('./notificationService');
-const { releaseSeatLock } = require('../utils/seatLock');
-const homeService = require('./homeService');
-const { seatNumbersFor } = require('../utils/seatSerializer');
-const auditService = require('./auditService');
-const { hasFreeTripsOffer, freeTripsLimit } = require('../utils/freeTrips');
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.completeTrip = exports.startTrip = exports.getAvailableTrips = exports.getDriverTrips = exports.getTripOptions = exports.getTripById = exports.createTrip = void 0;
+exports.updateTrip = updateTrip;
+exports.cancelTrip = cancelTrip;
+exports.cancelTripWithPenalty = cancelTripWithPenalty;
+exports.getTripAttributes = getTripAttributes;
+exports.getTripPassengers = getTripPassengers;
+// @ts-nocheck
+const sequelize_1 = require("sequelize");
+const ApiError_1 = require("../utils/ApiError");
+const constants_1 = require("../config/constants");
+const commissionService_1 = __importDefault(require("./commissionService"));
+const notificationService_1 = __importDefault(require("./notificationService"));
+const seatLock_1 = require("../utils/seatLock");
+const homeService_1 = __importDefault(require("./homeService"));
+const seatSerializer_1 = require("../utils/seatSerializer");
+const auditService_1 = __importDefault(require("./auditService"));
+const freeTrips_1 = require("../utils/freeTrips");
+const Models_1 = require("../Models");
 /**
  * US3 minimum-balance gate. Rejects with NO_ACTIVE_PLAN when the driver has
  * no active plan, or INSUFFICIENT_BALANCE when the total balance cannot
@@ -17,36 +28,36 @@ const { hasFreeTripsOffer, freeTripsLimit } = require('../utils/freeTrips');
  */
 async function hasRemainingFreeTrips(driverId) {
     const now = new Date();
-    const subscription = await DriverSubscription.findOne({
+    const subscription = await Models_1.DriverSubscription.findOne({
         where: {
             driverId,
             status: 'active',
-            expiresAt: { [Op.gt]: now },
+            expiresAt: { [sequelize_1.Op.gt]: now },
         },
         include: [{
-                model: SubscriptionPlan,
+                model: Models_1.SubscriptionPlan,
                 as: 'plan',
                 attributes: ['id', 'isFree'],
             }],
     });
-    if (!subscription || !hasFreeTripsOffer(subscription))
+    if (!subscription || !(0, freeTrips_1.hasFreeTripsOffer)(subscription))
         return false;
     if (!subscription.plan || !subscription.plan.isFree)
         return false;
     const used = Number(subscription.freeTripsUsed) || 0;
-    return used < freeTripsLimit(subscription);
+    return used < (0, freeTrips_1.freeTripsLimit)(subscription);
 }
 async function assertCanPublish(driverId, farePerSeat) {
-    const { current, minimum, totalBalance } = await commissionService.getGatingSnapshot(driverId, farePerSeat);
+    const { current, minimum, totalBalance } = await commissionService_1.default.getGatingSnapshot(driverId, farePerSeat);
     if (!current) {
-        throw ApiErrors.custom('YOU_NEED_AN_ACTIVE_PLAN_TO_PUBLISH_TRIPS', 422, 'NO_ACTIVE_PLAN');
+        throw ApiError_1.ApiErrors.custom('YOU_NEED_AN_ACTIVE_PLAN_TO_PUBLISH_TRIPS', 422, 'NO_ACTIVE_PLAN');
     }
     // Free-trip allowance covers publishing without needing a pre-funded balance.
     if (await hasRemainingFreeTrips(driverId)) {
         return { minimum, totalBalance, freeTrips: true };
     }
     if (totalBalance < minimum) {
-        throw ApiErrors.custom('INSUFFICIENT_BALANCE_TO_PUBLISH_TRIP', 422, 'INSUFFICIENT_BALANCE', null, { minimum: minimum.toFixed(2), balance: totalBalance.toFixed(2) });
+        throw ApiError_1.ApiErrors.custom('INSUFFICIENT_BALANCE_TO_PUBLISH_TRIP', 422, 'INSUFFICIENT_BALANCE', null, { minimum: minimum.toFixed(2), balance: totalBalance.toFixed(2) });
     }
     return { minimum, totalBalance };
 }
@@ -59,14 +70,14 @@ async function assertCanPublish(driverId, farePerSeat) {
 async function assertFreeTripsAvailable(driverId) {
     const now = new Date();
     // Find the driver's current active subscription (free plan has queue priority).
-    const subscription = await DriverSubscription.findOne({
+    const subscription = await Models_1.DriverSubscription.findOne({
         where: {
             driverId,
             status: 'active',
-            expiresAt: { [Op.gt]: now },
+            expiresAt: { [sequelize_1.Op.gt]: now },
         },
         include: [{
-                model: SubscriptionPlan,
+                model: Models_1.SubscriptionPlan,
                 as: 'plan',
                 attributes: ['id', 'isFree'],
             }],
@@ -78,24 +89,24 @@ async function assertFreeTripsAvailable(driverId) {
     const freeOffer = subscription.freeOffer;
     if (!freeOffer)
         return;
-    if (freeOffer.type !== FREE_OFFER_TYPE.TRIPS)
+    if (freeOffer.type !== constants_1.FREE_OFFER_TYPE.TRIPS)
         return;
     // Only block if this is a free plan subscription.
     if (!subscription.plan || !subscription.plan.isFree)
         return;
-    const limit = freeTripsLimit(subscription);
+    const limit = (0, freeTrips_1.freeTripsLimit)(subscription);
     const used = Number(subscription.freeTripsUsed) || 0;
     if (used < limit)
         return;
     // Free trips exhausted. Check if the driver has an active paid subscription.
-    const paidSub = await DriverSubscription.findOne({
+    const paidSub = await Models_1.DriverSubscription.findOne({
         where: {
             driverId,
             status: 'active',
-            expiresAt: { [Op.gt]: now },
+            expiresAt: { [sequelize_1.Op.gt]: now },
         },
         include: [{
-                model: SubscriptionPlan,
+                model: Models_1.SubscriptionPlan,
                 as: 'plan',
                 where: { isFree: false },
                 attributes: ['id'],
@@ -103,63 +114,63 @@ async function assertFreeTripsAvailable(driverId) {
     });
     if (paidSub)
         return;
-    throw ApiErrors.custom('FREE_TRIPS_EXHAUSTED_PUBLISHING', 422, 'FREE_TRIPS_EXHAUSTED', null, { limit });
+    throw ApiError_1.ApiErrors.custom('FREE_TRIPS_EXHAUSTED_PUBLISHING', 422, 'FREE_TRIPS_EXHAUSTED', null, { limit });
 }
 /**
  * Create a new trip with seats, waypoints, and recurrence
  */
 const createTrip = async (driverId, data) => {
     // Verify driver exists and is verified
-    const driver = await User.findByPk(driverId);
+    const driver = await Models_1.User.findByPk(driverId);
     if (!driver)
-        throw ApiErrors.notFound('USER_NOT_FOUND');
+        throw ApiError_1.ApiErrors.notFound('USER_NOT_FOUND');
     if (driver.role !== 'driver')
-        throw ApiErrors.forbidden('ONLY_DRIVERS_CAN_CREATE_TRIPS');
+        throw ApiError_1.ApiErrors.forbidden('ONLY_DRIVERS_CAN_CREATE_TRIPS');
     if (!driver.isVerified)
-        throw ApiErrors.forbidden('DRIVER_NOT_VERIFIED');
+        throw ApiError_1.ApiErrors.forbidden('DRIVER_NOT_VERIFIED');
     // Fetch driver's vehicle (each driver has exactly one vehicle)
-    const vehicle = await Vehicle.findOne({ where: { driverId } });
+    const vehicle = await Models_1.Vehicle.findOne({ where: { driverId } });
     if (!vehicle)
-        throw ApiErrors.forbidden('DRIVER_HAS_NO_REGISTERED_VEHICLE');
+        throw ApiError_1.ApiErrors.forbidden('DRIVER_HAS_NO_REGISTERED_VEHICLE');
     if (!vehicle.isVerified)
-        throw ApiErrors.forbidden('DRIVER_VEHICLE_IS_NOT_VERIFIED');
+        throw ApiError_1.ApiErrors.forbidden('DRIVER_VEHICLE_IS_NOT_VERIFIED');
     // Validate seat configuration matches vehicle
     if (data.seats.length !== vehicle.seats) {
-        throw ApiErrors.validation('SEAT_COUNT_DOES_NOT_MATCH_VEHICLE_TOTAL_SEATS');
+        throw ApiError_1.ApiErrors.validation('SEAT_COUNT_DOES_NOT_MATCH_VEHICLE_TOTAL_SEATS');
     }
     // Validate seat numbers are sequential 1 to N
     const seatNumbers = data.seats.map((s) => s.seat_number).sort((a, b) => a - b);
     const expectedNumbers = Array.from({ length: vehicle.seats }, (_, i) => i + 1);
     if (JSON.stringify(seatNumbers) !== JSON.stringify(expectedNumbers)) {
-        throw ApiErrors.validation('SEAT_NUMBERS_MUST_BE_SEQUENTIAL_FROM_1_TO_TOTAL_SEATS');
+        throw ApiError_1.ApiErrors.validation('SEAT_NUMBERS_MUST_BE_SEQUENTIAL_FROM_1_TO_TOTAL_SEATS');
     }
     // Validate at least one available seat
     const availableSeats = data.seats.filter((s) => s.type === 'available');
     if (availableSeats.length === 0) {
-        throw ApiErrors.validation('AT_LEAST_ONE_SEAT_MUST_BE_AVAILABLE');
+        throw ApiError_1.ApiErrors.validation('AT_LEAST_ONE_SEAT_MUST_BE_AVAILABLE');
     }
     // Validate exactly one driver seat
     const driverSeats = data.seats.filter((s) => s.type === 'driver');
     if (driverSeats.length !== 1) {
-        throw ApiErrors.validation('EXACTLY_ONE_SEAT_MUST_BE_MARKED_AS_DRIVER');
+        throw ApiError_1.ApiErrors.validation('EXACTLY_ONE_SEAT_MUST_BE_MARKED_AS_DRIVER');
     }
     // Validate departure time is in the future
     const departureDateTime = new Date(`${data.departure_date}T${data.departure_time}`);
     if (departureDateTime <= new Date()) {
-        throw ApiErrors.validation('DEPARTURE_TIME_MUST_BE_IN_THE_FUTURE');
+        throw ApiError_1.ApiErrors.validation('DEPARTURE_TIME_MUST_BE_IN_THE_FUTURE');
     }
     // Validate recurrence
     const isRecurring = data.type_of_trip === 'repeated';
     if (isRecurring && (!data.repeated_days || data.repeated_days.length === 0)) {
-        throw ApiErrors.validation('REPEATED_DAYS_ARE_REQUIRED_FOR_RECURRING_TRIPS');
+        throw ApiError_1.ApiErrors.validation('REPEATED_DAYS_ARE_REQUIRED_FOR_RECURRING_TRIPS');
     }
     if (isRecurring && !data.repeated_end_date) {
-        throw ApiErrors.validation('END_DATE_IS_REQUIRED_FOR_RECURRING_TRIPS');
+        throw ApiError_1.ApiErrors.validation('END_DATE_IS_REQUIRED_FOR_RECURRING_TRIPS');
     }
     if (isRecurring) {
         const endDate = new Date(data.repeated_end_date);
         if (endDate <= departureDateTime) {
-            throw ApiErrors.validation('END_DATE_MUST_BE_AFTER_DEPARTURE_DATE');
+            throw ApiError_1.ApiErrors.validation('END_DATE_MUST_BE_AFTER_DEPARTURE_DATE');
         }
     }
     // Free-trips gate: block if the driver exhausted their free trip allowance.
@@ -167,7 +178,7 @@ const createTrip = async (driverId, data) => {
     // US3: minimum-balance gate before publishing.
     await assertCanPublish(driverId, data.fare_per_seat);
     // Create trip
-    const trip = await Trip.create({
+    const trip = await Models_1.Trip.create({
         driverId,
         vehicleId: vehicle.id,
         originCity: data.origin_city,
@@ -185,10 +196,10 @@ const createTrip = async (driverId, data) => {
         isRecurring,
         recurrenceDays: isRecurring ? data.repeated_days : null,
         recurrenceEndDate: isRecurring ? data.repeated_end_date : null,
-        genderPreference: data.allowed_type || GENDER_PREFERENCE.ALL,
+        genderPreference: data.allowed_type || constants_1.GENDER_PREFERENCE.ALL,
         driverInstructions: data.instructions || null,
         additionalInstructions: data.additional_instructions || null,
-        status: TRIP_STATUS.PUBLISHED,
+        status: constants_1.TRIP_STATUS.PUBLISHED,
     });
     // Create seat configurations
     const seatRecords = data.seats.map((s) => ({
@@ -196,7 +207,7 @@ const createTrip = async (driverId, data) => {
         seatNumber: s.seat_number,
         seatType: s.type,
     }));
-    await TripSeat.bulkCreate(seatRecords);
+    await Models_1.TripSeat.bulkCreate(seatRecords);
     // Create waypoints
     if (data.waypoints && data.waypoints.length > 0) {
         const stopRecords = data.waypoints.map((w, index) => ({
@@ -206,7 +217,7 @@ const createTrip = async (driverId, data) => {
             stopLat: w.stop_lat || null,
             stopLng: w.stop_lng || null,
         }));
-        await TripStop.bulkCreate(stopRecords);
+        await Models_1.TripStop.bulkCreate(stopRecords);
     }
     trackTripMutation({
         action: 'trip.created',
@@ -231,11 +242,12 @@ const createTrip = async (driverId, data) => {
         message: 'TRIP_PUBLISHED_SUCCESSFULLY',
     };
 };
+exports.createTrip = createTrip;
 /**
  * Audit a driver trip mutation with the trip as the resource.
  */
 function trackTripMutation({ action, driverId, tripId, payload = {} }) {
-    auditService.track({
+    auditService_1.default.track({
         action,
         resourceType: 'trip',
         resourceId: tripId,
@@ -251,29 +263,29 @@ function trackTripMutation({ action, driverId, tripId, payload = {} }) {
  * passengers + admins.
  */
 const getTripById = async (tripId) => {
-    const trip = await Trip.findByPk(tripId, {
+    const trip = await Models_1.Trip.findByPk(tripId, {
         include: [
             {
-                model: User,
+                model: Models_1.User,
                 as: 'driver',
                 attributes: ['id', 'fullName', 'phone', 'avgRating', 'avatarUrl'],
             },
             {
-                model: Vehicle,
+                model: Models_1.Vehicle,
                 as: 'vehicle',
                 attributes: ['id', 'manufacturer', 'model', 'modelYear', 'plateNumber', 'color', 'seats'],
             },
-            { model: TripSeat, as: 'seats' },
-            { model: TripStop, as: 'stops' },
-            { model: TripAttribute, as: 'attributes' },
+            { model: Models_1.TripSeat, as: 'seats' },
+            { model: Models_1.TripStop, as: 'stops' },
+            { model: Models_1.TripAttribute, as: 'attributes' },
             {
-                model: Booking,
+                model: Models_1.Booking,
                 as: 'bookings',
-                where: { status: BOOKING_STATUS.CONFIRMED },
+                where: { status: constants_1.BOOKING_STATUS.CONFIRMED },
                 required: false,
                 include: [
                     {
-                        model: User,
+                        model: Models_1.User,
                         as: 'passenger',
                         attributes: ['id', 'fullName', 'phone', 'avgRating', 'avatarUrl'],
                     },
@@ -282,7 +294,7 @@ const getTripById = async (tripId) => {
         ],
     });
     if (!trip)
-        throw ApiErrors.notFound('TRIP_NOT_FOUND');
+        throw ApiError_1.ApiErrors.notFound('TRIP_NOT_FOUND');
     const data = trip.toJSON();
     const confirmedBookings = data.bookings || [];
     data.trip = {
@@ -353,7 +365,7 @@ const getTripById = async (tripId) => {
             }
             : null,
         seats_booked: b.seatsBooked,
-        seat_numbers: seatNumbersFor(b),
+        seat_numbers: (0, seatSerializer_1.seatNumbersFor)(b),
         agreed_fare: Number(b.agreedFare),
         booking_status: b.status,
         dropoff_place: b.dropoffPlace,
@@ -394,20 +406,21 @@ const getTripById = async (tripId) => {
     delete data.arrivalTime;
     return data;
 };
+exports.getTripById = getTripById;
 /**
  * Get trip booking options (spec 012 US2): the current open-seat count and the
  * ordered drop-off points (the trip's stops). Refused for trips that have
  * already started or ended (not bookable).
  */
 const getTripOptions = async (tripId) => {
-    const trip = await Trip.findByPk(tripId, {
+    const trip = await Models_1.Trip.findByPk(tripId, {
         attributes: ['id', 'status', 'availableSeats'],
-        include: [{ model: TripStop, as: 'stops' }],
+        include: [{ model: Models_1.TripStop, as: 'stops' }],
     });
     if (!trip)
-        throw ApiErrors.notFound('TRIP_NOT_FOUND');
-    if (![TRIP_STATUS.PUBLISHED, TRIP_STATUS.FULL].includes(trip.status)) {
-        throw ApiErrors.conflict('TRIP_NOT_BOOKABLE');
+        throw ApiError_1.ApiErrors.notFound('TRIP_NOT_FOUND');
+    if (![constants_1.TRIP_STATUS.PUBLISHED, constants_1.TRIP_STATUS.FULL].includes(trip.status)) {
+        throw ApiError_1.ApiErrors.conflict('TRIP_NOT_BOOKABLE');
     }
     const dropOffPoints = (trip.stops || [])
         .slice()
@@ -427,6 +440,7 @@ const getTripOptions = async (tripId) => {
         drop_off_points: dropOffPoints,
     };
 };
+exports.getTripOptions = getTripOptions;
 /**
  * Get trips for a driver (contract D-list). Each trip is serialized with its
  * current lifecycle `status` included.
@@ -435,11 +449,11 @@ const getDriverTrips = async (driverId, status = null) => {
     const where = { driverId };
     if (status)
         where.status = status;
-    const trips = await Trip.findAll({
+    const trips = await Models_1.Trip.findAll({
         where,
         include: [
-            { model: TripSeat, as: 'seats' },
-            { model: TripStop, as: 'stops' },
+            { model: Models_1.TripSeat, as: 'seats' },
+            { model: Models_1.TripStop, as: 'stops' },
         ],
         order: [['departure_time', 'ASC']],
     });
@@ -474,6 +488,7 @@ const getDriverTrips = async (driverId, status = null) => {
         created_at: trip.createdat || trip.createdAt,
     }));
 };
+exports.getDriverTrips = getDriverTrips;
 /**
  * Get available trips for passengers (with recurrence expansion).
  * Additive filters (spec 012): time window, vehicle type, minimum seat count.
@@ -483,29 +498,29 @@ const getAvailableTrips = async (filters = {}) => {
     const { originCity, destinationCity, date, genderPreference = null, timeFrom, timeTo, vehicleType, seats, } = filters;
     const queryDate = new Date(date);
     const dateBranch = {
-        [Op.or]: [
+        [sequelize_1.Op.or]: [
             // One-time trips for this date
             {
                 isRecurring: false,
                 departureTime: {
-                    [Op.and]: [
-                        { [Op.gte]: new Date(queryDate.setHours(0, 0, 0, 0)) },
-                        { [Op.lt]: new Date(queryDate.setHours(23, 59, 59, 999)) },
+                    [sequelize_1.Op.and]: [
+                        { [sequelize_1.Op.gte]: new Date(queryDate.setHours(0, 0, 0, 0)) },
+                        { [sequelize_1.Op.lt]: new Date(queryDate.setHours(23, 59, 59, 999)) },
                     ],
                 },
             },
             // Recurring trips matching this day of week
             {
                 isRecurring: true,
-                recurrenceDays: { [Op.contains]: [queryDate.getDay()] },
-                recurrenceEndDate: { [Op.or]: [{ [Op.gte]: queryDate }, { [Op.is]: null }] },
+                recurrenceDays: { [sequelize_1.Op.contains]: [queryDate.getDay()] },
+                recurrenceEndDate: { [sequelize_1.Op.or]: [{ [sequelize_1.Op.gte]: queryDate }, { [sequelize_1.Op.is]: null }] },
             },
         ],
     };
     const where = {
-        status: TRIP_STATUS.PUBLISHED,
+        status: constants_1.TRIP_STATUS.PUBLISHED,
         isModerated: false,
-        availableSeats: { [Op.gt]: 0 },
+        availableSeats: { [sequelize_1.Op.gt]: 0 },
     };
     // Base date/recurrence requirement, optionally narrowed by a time window.
     const andConditions = [];
@@ -520,64 +535,65 @@ const getAvailableTrips = async (filters = {}) => {
         const windowEnd = new Date(dayStart);
         windowEnd.setHours(thh, tmm, 59, 999);
         andConditions.push({
-            departureTime: { [Op.gte]: windowStart, [Op.lte]: windowEnd },
+            departureTime: { [sequelize_1.Op.gte]: windowStart, [sequelize_1.Op.lte]: windowEnd },
         });
     }
-    where[Op.and] = andConditions;
+    where[sequelize_1.Op.and] = andConditions;
     if (originCity)
         where.originCity = originCity;
     if (destinationCity)
         where.destinationCity = destinationCity;
-    if (genderPreference && genderPreference !== GENDER_PREFERENCE.ALL) {
-        where.genderPreference = { [Op.in]: [genderPreference] };
+    if (genderPreference && genderPreference !== constants_1.GENDER_PREFERENCE.ALL) {
+        where.genderPreference = { [sequelize_1.Op.in]: [genderPreference] };
     }
     if (seats && Number(seats) > 0) {
-        where.availableSeats = { [Op.gte]: Number(seats) };
+        where.availableSeats = { [sequelize_1.Op.gte]: Number(seats) };
     }
     const include = [
-        { model: TripSeat, as: 'seats', where: { seatType: 'available' } },
-        { model: TripStop, as: 'stops' },
-        { model: Vehicle, as: 'vehicle' },
+        { model: Models_1.TripSeat, as: 'seats', where: { seatType: 'available' } },
+        { model: Models_1.TripStop, as: 'stops' },
+        { model: Models_1.Vehicle, as: 'vehicle' },
     ];
     if (vehicleType) {
-        include[2] = { model: Vehicle, as: 'vehicle', where: { vehicleType } };
+        include[2] = { model: Models_1.Vehicle, as: 'vehicle', where: { vehicleType } };
     }
-    const trips = await Trip.findAll({
+    const trips = await Models_1.Trip.findAll({
         where,
         include,
         order: [['departure_time', 'ASC']],
     });
     return trips;
 };
+exports.getAvailableTrips = getAvailableTrips;
 /**
  * Start a trip (US3). Re-verifies the minimum balance and marks the trip
  * in-progress. Sends an INSUFFICIENT_BALANCE_START notification when the
  * balance check fails.
  */
 const startTrip = async (driverId, tripId) => {
-    const trip = await Trip.findByPk(tripId);
+    const trip = await Models_1.Trip.findByPk(tripId);
     if (!trip)
-        throw ApiErrors.notFound('TRIP_NOT_FOUND');
+        throw ApiError_1.ApiErrors.notFound('TRIP_NOT_FOUND');
     if (trip.driverId !== driverId)
-        throw ApiErrors.forbidden('YOU_CAN_ONLY_START_YOUR_OWN_TRIPS');
-    if (![TRIP_STATUS.PUBLISHED, TRIP_STATUS.FULL].includes(trip.status)) {
-        throw ApiErrors.custom('TRIP_CANNOT_BE_STARTED_FROM_ITS_CURRENT_STATUS', 422, 'INVALID_TRIP_STATUS');
+        throw ApiError_1.ApiErrors.forbidden('YOU_CAN_ONLY_START_YOUR_OWN_TRIPS');
+    if (![constants_1.TRIP_STATUS.PUBLISHED, constants_1.TRIP_STATUS.FULL].includes(trip.status)) {
+        throw ApiError_1.ApiErrors.custom('TRIP_CANNOT_BE_STARTED_FROM_ITS_CURRENT_STATUS', 422, 'INVALID_TRIP_STATUS');
     }
     // US2: departure window — reject starting more than 1 hour before departure.
     const now = Date.now();
     const START_WINDOW_MS = 60 * 60 * 1000;
     if (trip.departureTime.getTime() - now > START_WINDOW_MS) {
-        throw ApiErrors.custom('TRIP_CANNOT_BE_STARTED_YET_IT_CAN_ONLY_BE_STARTED', 400, 'TOO_EARLY_TO_START');
+        throw ApiError_1.ApiErrors.custom('TRIP_CANNOT_BE_STARTED_YET_IT_CAN_ONLY_BE_STARTED', 400, 'TOO_EARLY_TO_START');
     }
-    const { current, minimum, totalBalance } = await commissionService.getGatingSnapshot(driverId, trip.farePerSeat);
+    const { current, minimum, totalBalance } = await commissionService_1.default.getGatingSnapshot(driverId, trip.farePerSeat);
     if (!current) {
-        throw ApiErrors.custom('YOU_NEED_AN_ACTIVE_PLAN_TO_START_TRIPS', 422, 'NO_ACTIVE_PLAN');
+        throw ApiError_1.ApiErrors.custom('YOU_NEED_AN_ACTIVE_PLAN_TO_START_TRIPS', 422, 'NO_ACTIVE_PLAN');
     }
     if (!(await hasRemainingFreeTrips(driverId)) && totalBalance < minimum) {
-        const user = await User.findByPk(driverId);
+        const user = await Models_1.User.findByPk(driverId);
         if (user) {
             try {
-                await notificationService.sendToUser(user, 'INSUFFICIENT_BALANCE_START', {
+                await notificationService_1.default.sendToUser(user, 'INSUFFICIENT_BALANCE_START', {
                     channels: ['sms', 'in_app', 'push'],
                     data: { trip_id: tripId, required: minimum, balance: totalBalance },
                 });
@@ -586,19 +602,19 @@ const startTrip = async (driverId, tripId) => {
                 console.warn('[tripService] insufficient balance notification failed:', err.message);
             }
         }
-        throw ApiErrors.custom('YOUR_TRIP_CANNOT_BE_STARTED_BECAUSE_YOUR_BALANCE_IS_INSUFFICIENT', 422, 'INSUFFICIENT_BALANCE');
+        throw ApiError_1.ApiErrors.custom('YOUR_TRIP_CANNOT_BE_STARTED_BECAUSE_YOUR_BALANCE_IS_INSUFFICIENT', 422, 'INSUFFICIENT_BALANCE');
     }
-    await trip.update({ status: TRIP_STATUS.IN_PROGRESS });
+    await trip.update({ status: constants_1.TRIP_STATUS.IN_PROGRESS });
     // US2: best-effort notify confirmed passengers that the trip has started.
     try {
-        await notificationService.notifyConfirmedPassengers([trip.id], 'TRIP_STARTED', { data: { trip_id: trip.id } });
+        await notificationService_1.default.notifyConfirmedPassengers([trip.id], 'TRIP_STARTED', { data: { trip_id: trip.id } });
     }
     catch (err) {
         console.warn('[tripService] TRIP_STARTED notification failed:', err.message);
     }
     // US2: drop the cached home payload so it reflects the new trip status.
     try {
-        await homeService.invalidateHomeCache(driverId);
+        await homeService_1.default.invalidateHomeCache(driverId);
     }
     catch (err) {
         console.warn('[tripService] home cache invalidation failed:', err.message);
@@ -617,36 +633,37 @@ const startTrip = async (driverId, tripId) => {
         tracking_link: trackingLink,
     };
 };
+exports.startTrip = startTrip;
 /**
  * Complete a trip (US3). Deducts the commission (total paid fare × current
  * plan rate) FIFO from the active plans and marks the trip completed. If the
  * deduction pushes the driver into debt their trips are blocked.
  */
 const completeTrip = async (driverId, tripId) => {
-    const trip = await Trip.findByPk(tripId);
+    const trip = await Models_1.Trip.findByPk(tripId);
     if (!trip)
-        throw ApiErrors.notFound('TRIP_NOT_FOUND');
+        throw ApiError_1.ApiErrors.notFound('TRIP_NOT_FOUND');
     if (trip.driverId !== driverId)
-        throw ApiErrors.forbidden('YOU_CAN_ONLY_COMPLETE_YOUR_OWN_TRIPS');
-    if (![TRIP_STATUS.IN_PROGRESS, TRIP_STATUS.ONGOING].includes(trip.status)) {
-        throw ApiErrors.custom('TRIP_CANNOT_BE_COMPLETED_FROM_ITS_CURRENT_STATUS', 422, 'INVALID_TRIP_STATUS');
+        throw ApiError_1.ApiErrors.forbidden('YOU_CAN_ONLY_COMPLETE_YOUR_OWN_TRIPS');
+    if (![constants_1.TRIP_STATUS.IN_PROGRESS, constants_1.TRIP_STATUS.ONGOING].includes(trip.status)) {
+        throw ApiError_1.ApiErrors.custom('TRIP_CANNOT_BE_COMPLETED_FROM_ITS_CURRENT_STATUS', 422, 'INVALID_TRIP_STATUS');
     }
-    const result = await commissionService.deductCommission(trip, driverId);
-    await trip.update({ status: TRIP_STATUS.COMPLETED });
+    const result = await commissionService_1.default.deductCommission(trip, driverId);
+    await trip.update({ status: constants_1.TRIP_STATUS.COMPLETED });
     // Finalize confirmed bookings (spec 009 US3): completed + paid_cash + timestamp.
-    const confirmedBookings = await Booking.findAll({
-        where: { tripId: trip.id, status: BOOKING_STATUS.CONFIRMED },
-        include: [{ model: User, as: 'passenger', attributes: ['id', 'fullName'] }],
+    const confirmedBookings = await Models_1.Booking.findAll({
+        where: { tripId: trip.id, status: constants_1.BOOKING_STATUS.CONFIRMED },
+        include: [{ model: Models_1.User, as: 'passenger', attributes: ['id', 'fullName'] }],
     });
     for (const booking of confirmedBookings) {
         await booking.update({
-            status: BOOKING_STATUS.COMPLETED,
+            status: constants_1.BOOKING_STATUS.COMPLETED,
             paymentStatus: 'paid_cash',
             completedAt: new Date(),
         });
         if (booking.passenger) {
             try {
-                await notificationService.sendToUser(booking.passenger, 'TRIP_COMPLETED_PROMPT', {
+                await notificationService_1.default.sendToUser(booking.passenger, 'TRIP_COMPLETED_PROMPT', {
                     channels: ['in_app'],
                     vars: { route: `${trip.originCity} - ${trip.destinationCity}` },
                 });
@@ -659,14 +676,14 @@ const completeTrip = async (driverId, tripId) => {
     // Increment free trips counter if the driver's subscription has a free trips offer.
     try {
         const now = new Date();
-        const subscription = await DriverSubscription.findOne({
+        const subscription = await Models_1.DriverSubscription.findOne({
             where: {
                 driverId,
                 status: 'active',
-                expiresAt: { [Op.gt]: now },
+                expiresAt: { [sequelize_1.Op.gt]: now },
             },
             include: [{
-                    model: SubscriptionPlan,
+                    model: Models_1.SubscriptionPlan,
                     as: 'plan',
                     where: { isFree: true },
                     attributes: ['id'],
@@ -674,7 +691,7 @@ const completeTrip = async (driverId, tripId) => {
         });
         // Use the snapshot from the subscription, not the current plan.
         if (subscription && subscription.freeOffer &&
-            subscription.freeOffer.type === FREE_OFFER_TYPE.TRIPS) {
+            subscription.freeOffer.type === constants_1.FREE_OFFER_TYPE.TRIPS) {
             await subscription.increment('freeTripsUsed');
         }
     }
@@ -682,10 +699,10 @@ const completeTrip = async (driverId, tripId) => {
         console.warn('[tripService] failed to increment free trips counter:', err.message);
     }
     if (result.isInDebt) {
-        const user = await User.findByPk(driverId);
+        const user = await Models_1.User.findByPk(driverId);
         if (user) {
             try {
-                await notificationService.sendToUser(user, 'DEBT', {
+                await notificationService_1.default.sendToUser(user, 'DEBT', {
                     channels: ['in_app', 'push'],
                     vars: { balance: Number(result.balanceAfter).toFixed(2) },
                     data: { trip_id: tripId, commission: result.commission },
@@ -697,7 +714,7 @@ const completeTrip = async (driverId, tripId) => {
         }
     }
     // US3: reflect completion in the cached driver + passenger homes.
-    await homeService.invalidateHomeForTrip(trip.id, driverId);
+    await homeService_1.default.invalidateHomeForTrip(trip.id, driverId);
     trackTripMutation({
         action: 'trip.completed',
         driverId,
@@ -717,6 +734,7 @@ const completeTrip = async (driverId, tripId) => {
         is_in_debt: result.isInDebt,
     };
 };
+exports.completeTrip = completeTrip;
 module.exports = {
     createTrip,
     getTripById,
@@ -737,18 +755,18 @@ module.exports = {
  * Defaults to CONFIRMED + COMPLETED bookings; `status` narrows to one.
  */
 async function getTripPassengers(driverId, tripId, filters = {}) {
-    const trip = await Trip.findByPk(tripId, {
+    const trip = await Models_1.Trip.findByPk(tripId, {
         attributes: ['id', 'driverId', 'originCity', 'destinationCity', 'departureTime', 'status'],
     });
     if (!trip)
-        throw ApiErrors.notFound('TRIP_NOT_FOUND');
+        throw ApiError_1.ApiErrors.notFound('TRIP_NOT_FOUND');
     if (trip.driverId !== driverId) {
-        throw ApiErrors.forbidden('YOU_CAN_ONLY_VIEW_PASSENGERS_ON_YOUR_OWN_TRIPS');
+        throw ApiError_1.ApiErrors.forbidden('YOU_CAN_ONLY_VIEW_PASSENGERS_ON_YOUR_OWN_TRIPS');
     }
-    const status = filters.status || [BOOKING_STATUS.CONFIRMED, BOOKING_STATUS.COMPLETED];
-    const bookings = await Booking.findAll({
+    const status = filters.status || [constants_1.BOOKING_STATUS.CONFIRMED, constants_1.BOOKING_STATUS.COMPLETED];
+    const bookings = await Models_1.Booking.findAll({
         where: { tripId: trip.id, status },
-        include: [{ model: User, as: 'passenger', attributes: ['id', 'fullName', 'avatarUrl', 'avgRating'] }],
+        include: [{ model: Models_1.User, as: 'passenger', attributes: ['id', 'fullName', 'avatarUrl', 'avgRating'] }],
         order: [['createdat', 'ASC']],
     });
     return {
@@ -767,7 +785,7 @@ async function getTripPassengers(driverId, tripId, filters = {}) {
                 }
                 : null,
             seats_booked: b.seatsBooked,
-            seat_numbers: seatNumbersFor(b),
+            seat_numbers: (0, seatSerializer_1.seatNumbersFor)(b),
             booking_status: b.status,
         })),
     };
@@ -779,15 +797,15 @@ async function getTripPassengers(driverId, tripId, filters = {}) {
  * change notifies all confirmed passengers (best-effort, never throws).
  */
 async function updateTrip(driverId, tripId, data) {
-    const trip = await Trip.findByPk(tripId, {
-        include: [{ model: TripAttribute, as: 'attributes' }],
+    const trip = await Models_1.Trip.findByPk(tripId, {
+        include: [{ model: Models_1.TripAttribute, as: 'attributes' }],
     });
     if (!trip)
-        throw ApiErrors.notFound('TRIP_NOT_FOUND');
+        throw ApiError_1.ApiErrors.notFound('TRIP_NOT_FOUND');
     if (trip.driverId !== driverId)
-        throw ApiErrors.forbidden('YOU_CAN_ONLY_EDIT_YOUR_OWN_TRIPS');
-    if ([TRIP_STATUS.COMPLETED, TRIP_STATUS.CANCELLED].includes(trip.status)) {
-        throw ApiErrors.custom('TRIP_CANNOT_BE_EDITED_FROM_ITS_CURRENT_STATUS', 422, 'INVALID_TRIP_STATUS');
+        throw ApiError_1.ApiErrors.forbidden('YOU_CAN_ONLY_EDIT_YOUR_OWN_TRIPS');
+    if ([constants_1.TRIP_STATUS.COMPLETED, constants_1.TRIP_STATUS.CANCELLED].includes(trip.status)) {
+        throw ApiError_1.ApiErrors.custom('TRIP_CANNOT_BE_EDITED_FROM_ITS_CURRENT_STATUS', 422, 'INVALID_TRIP_STATUS');
     }
     const fields = {};
     if (data.fare_per_seat !== undefined)
@@ -806,17 +824,17 @@ async function updateTrip(driverId, tripId, data) {
         fields.departureTime = new Date(data.departure_time);
     await trip.update(fields);
     if (data.attributes !== undefined) {
-        await TripAttribute.destroy({ where: { tripId: trip.id } });
+        await Models_1.TripAttribute.destroy({ where: { tripId: trip.id } });
         const records = (data.attributes || []).map((a) => ({
             tripId: trip.id,
             attrKey: a.attr_key,
             attrValue: a.attr_value,
         }));
         if (records.length > 0)
-            await TripAttribute.bulkCreate(records);
+            await Models_1.TripAttribute.bulkCreate(records);
     }
     if (data.stops !== undefined) {
-        await TripStop.destroy({ where: { tripId: trip.id } });
+        await Models_1.TripStop.destroy({ where: { tripId: trip.id } });
         const records = (data.stops || []).map((s, i) => ({
             tripId: trip.id,
             stopOrder: s.stop_order !== undefined ? s.stop_order : i + 1,
@@ -829,19 +847,19 @@ async function updateTrip(driverId, tripId, data) {
             estimatedArrival: s.estimated_arrival ? new Date(s.estimated_arrival) : null,
         }));
         if (records.length > 0)
-            await TripStop.bulkCreate(records);
+            await Models_1.TripStop.bulkCreate(records);
     }
     let notifiedPassengers = 0;
     if (departureChanged) {
         const departure = new Date(trip.departureTime);
-        notifiedPassengers = await notificationService.notifyConfirmedPassengers([trip.id], 'TRIP_TIME_CHANGED', {
+        notifiedPassengers = await notificationService_1.default.notifyConfirmedPassengers([trip.id], 'TRIP_TIME_CHANGED', {
             vars: { time: departure.toISOString() },
             data: { trip_id: trip.id },
         });
         // A departure change updates the time shown on driver/passenger homes.
-        await homeService.invalidateHomeForTrip(trip.id, driverId);
+        await homeService_1.default.invalidateHomeForTrip(trip.id, driverId);
     }
-    const attributes = await TripAttribute.findAll({ where: { tripId: trip.id } });
+    const attributes = await Models_1.TripAttribute.findAll({ where: { tripId: trip.id } });
     trackTripMutation({
         action: 'trip.updated',
         driverId,
@@ -867,42 +885,42 @@ async function updateTrip(driverId, tripId, data) {
  * trip's seats, and notifies confirmed passengers (best-effort).
  */
 async function cancelTrip(driverId, tripId) {
-    const trip = await Trip.findByPk(tripId);
+    const trip = await Models_1.Trip.findByPk(tripId);
     if (!trip)
-        throw ApiErrors.notFound('TRIP_NOT_FOUND');
+        throw ApiError_1.ApiErrors.notFound('TRIP_NOT_FOUND');
     if (trip.driverId !== driverId)
-        throw ApiErrors.forbidden('YOU_CAN_ONLY_CANCEL_YOUR_OWN_TRIPS');
-    if ([TRIP_STATUS.IN_PROGRESS, TRIP_STATUS.ONGOING, TRIP_STATUS.COMPLETED].includes(trip.status)) {
-        throw ApiErrors.forbidden('A_TRIP_THAT_HAS_ALREADY_STARTED_CANNOT_BE_CANCELLED');
+        throw ApiError_1.ApiErrors.forbidden('YOU_CAN_ONLY_CANCEL_YOUR_OWN_TRIPS');
+    if ([constants_1.TRIP_STATUS.IN_PROGRESS, constants_1.TRIP_STATUS.ONGOING, constants_1.TRIP_STATUS.COMPLETED].includes(trip.status)) {
+        throw ApiError_1.ApiErrors.forbidden('A_TRIP_THAT_HAS_ALREADY_STARTED_CANNOT_BE_CANCELLED');
     }
-    if (trip.status === TRIP_STATUS.CANCELLED) {
-        throw ApiErrors.custom('TRIP_IS_ALREADY_CANCELLED', 409, 'ALREADY_CANCELLED');
+    if (trip.status === constants_1.TRIP_STATUS.CANCELLED) {
+        throw ApiError_1.ApiErrors.custom('TRIP_IS_ALREADY_CANCELLED', 409, 'ALREADY_CANCELLED');
     }
-    await trip.update({ status: TRIP_STATUS.CANCELLED });
+    await trip.update({ status: constants_1.TRIP_STATUS.CANCELLED });
     let notifiedPassengers = 0;
     try {
-        notifiedPassengers = await notificationService.notifyConfirmedPassengers([trip.id], 'TRIP_CANCELLED', { data: { trip_id: trip.id } });
+        notifiedPassengers = await notificationService_1.default.notifyConfirmedPassengers([trip.id], 'TRIP_CANCELLED', { data: { trip_id: trip.id } });
     }
     catch (err) {
         console.warn('[tripService] cancel notification failed:', err.message);
     }
-    await Booking.update({
-        status: BOOKING_STATUS.CANCELLED,
+    await Models_1.Booking.update({
+        status: constants_1.BOOKING_STATUS.CANCELLED,
         cancellationReason: 'Trip cancelled by driver',
         cancelledBy: driverId,
         cancelledAt: new Date(),
-    }, { where: { tripId: trip.id, status: [BOOKING_STATUS.CONFIRMED, BOOKING_STATUS.PENDING] } });
-    const seats = await TripSeat.findAll({ where: { tripId: trip.id }, attributes: ['seatNumber'] });
+    }, { where: { tripId: trip.id, status: [constants_1.BOOKING_STATUS.CONFIRMED, constants_1.BOOKING_STATUS.PENDING] } });
+    const seats = await Models_1.TripSeat.findAll({ where: { tripId: trip.id }, attributes: ['seatNumber'] });
     for (const seat of seats) {
         try {
-            await releaseSeatLock(trip.id, seat.seatNumber);
+            await (0, seatLock_1.releaseSeatLock)(trip.id, seat.seatNumber);
         }
         catch (err) {
             console.warn(`[tripService] failed to release seat lock for trip ${trip.id} seat ${seat.seatNumber}:`, err.message);
         }
     }
     // Reflect the cancellation in the cached driver + passenger homes.
-    await homeService.invalidateHomeForTrip(trip.id, driverId);
+    await homeService_1.default.invalidateHomeForTrip(trip.id, driverId);
     trackTripMutation({
         action: 'trip.cancelled',
         driverId,
@@ -921,10 +939,10 @@ async function cancelTrip(driverId, tripId) {
  * Get the attribute key/value pairs for a trip (contract D11).
  */
 async function getTripAttributes(tripId) {
-    const trip = await Trip.findByPk(tripId, { attributes: ['id'] });
+    const trip = await Models_1.Trip.findByPk(tripId, { attributes: ['id'] });
     if (!trip)
-        throw ApiErrors.notFound('TRIP_NOT_FOUND');
-    const attributes = await TripAttribute.findAll({ where: { tripId: trip.id } });
+        throw ApiError_1.ApiErrors.notFound('TRIP_NOT_FOUND');
+    const attributes = await Models_1.TripAttribute.findAll({ where: { tripId: trip.id } });
     return {
         trip_id: trip.id,
         attributes: attributes.map((a) => ({ attr_key: a.attrKey, attr_value: a.attrValue })),
@@ -936,11 +954,11 @@ async function getTripAttributes(tripId) {
 async function countRecentCancellations(driverId) {
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    const count = await Penalty.count({
+    const count = await Models_1.Penalty.count({
         where: {
             userId: driverId,
-            penaltyType: PENALTY_CATEGORY.TRIP_CANCELLATION,
-            createdat: { [Op.gte]: thirtyDaysAgo },
+            penaltyType: constants_1.PENALTY_CATEGORY.TRIP_CANCELLATION,
+            createdat: { [sequelize_1.Op.gte]: thirtyDaysAgo },
         },
     });
     return count;
@@ -950,16 +968,16 @@ async function countRecentCancellations(driverId) {
  * Returns { severity, suspensionDays }.
  */
 function getEscalationLevel(cancellationCount) {
-    if (cancellationCount >= CANCELLATION_ESCALATION.SUSPENSION_30D_MIN) {
-        return { severity: PENALTY_SEVERITY.MAJOR, suspensionDays: 30 };
+    if (cancellationCount >= constants_1.CANCELLATION_ESCALATION.SUSPENSION_30D_MIN) {
+        return { severity: constants_1.PENALTY_SEVERITY.MAJOR, suspensionDays: 30 };
     }
-    if (cancellationCount >= CANCELLATION_ESCALATION.SUSPENSION_7D_MIN) {
-        return { severity: PENALTY_SEVERITY.MAJOR, suspensionDays: 7 };
+    if (cancellationCount >= constants_1.CANCELLATION_ESCALATION.SUSPENSION_7D_MIN) {
+        return { severity: constants_1.PENALTY_SEVERITY.MAJOR, suspensionDays: 7 };
     }
-    if (cancellationCount >= CANCELLATION_ESCALATION.WARNING_MIN) {
-        return { severity: PENALTY_SEVERITY.MODERATE, suspensionDays: null };
+    if (cancellationCount >= constants_1.CANCELLATION_ESCALATION.WARNING_MIN) {
+        return { severity: constants_1.PENALTY_SEVERITY.MODERATE, suspensionDays: null };
     }
-    return { severity: PENALTY_SEVERITY.MINOR, suspensionDays: null };
+    return { severity: constants_1.PENALTY_SEVERITY.MINOR, suspensionDays: null };
 }
 /**
  * Apply escalation after a cancellation penalty: check 30-day window count,
@@ -980,11 +998,11 @@ async function applyEscalation(penalty, driverId) {
     if (suspensionDays) {
         const endsAt = new Date();
         endsAt.setDate(endsAt.getDate() + suspensionDays);
-        await User.update({ status: 'suspended' }, { where: { id: driverId } });
-        const driver = await User.findByPk(driverId);
+        await Models_1.User.update({ status: 'suspended' }, { where: { id: driverId } });
+        const driver = await Models_1.User.findByPk(driverId);
         if (driver) {
             try {
-                await notificationService.sendToUser(driver, 'PENALTY_ISSUED', {
+                await notificationService_1.default.sendToUser(driver, 'PENALTY_ISSUED', {
                     channels: ['in_app', 'push'],
                     vars: {
                         severity: `suspension (${suspensionDays} days)`,
@@ -998,11 +1016,11 @@ async function applyEscalation(penalty, driverId) {
             }
         }
     }
-    else if (severity === PENALTY_SEVERITY.MODERATE) {
-        const driver = await User.findByPk(driverId);
+    else if (severity === constants_1.PENALTY_SEVERITY.MODERATE) {
+        const driver = await Models_1.User.findByPk(driverId);
         if (driver) {
             try {
-                await notificationService.sendToUser(driver, 'PENALTY_ISSUED', {
+                await notificationService_1.default.sendToUser(driver, 'PENALTY_ISSUED', {
                     channels: ['in_app', 'push'],
                     vars: {
                         severity: 'warning',
@@ -1024,30 +1042,30 @@ async function applyEscalation(penalty, driverId) {
  * Creates a penalty record and applies escalation logic.
  */
 async function cancelTripWithPenalty(driverId, tripId, { reason, note }) {
-    const trip = await Trip.findByPk(tripId);
+    const trip = await Models_1.Trip.findByPk(tripId);
     if (!trip)
-        throw ApiErrors.notFound('TRIP_NOT_FOUND');
+        throw ApiError_1.ApiErrors.notFound('TRIP_NOT_FOUND');
     if (trip.driverId !== driverId)
-        throw ApiErrors.forbidden('YOU_CAN_ONLY_CANCEL_YOUR_OWN_TRIPS');
-    if (![TRIP_STATUS.PUBLISHED, TRIP_STATUS.FULL].includes(trip.status)) {
-        throw ApiErrors.conflict('TRIP_IS_ALREADY_ONGOING_OR_COMPLETED_CANNOT_CANCEL');
+        throw ApiError_1.ApiErrors.forbidden('YOU_CAN_ONLY_CANCEL_YOUR_OWN_TRIPS');
+    if (![constants_1.TRIP_STATUS.PUBLISHED, constants_1.TRIP_STATUS.FULL].includes(trip.status)) {
+        throw ApiError_1.ApiErrors.conflict('TRIP_IS_ALREADY_ONGOING_OR_COMPLETED_CANNOT_CANCEL');
     }
-    if (trip.status === TRIP_STATUS.CANCELLED) {
-        throw ApiErrors.custom('TRIP_IS_ALREADY_CANCELLED', 409, 'ALREADY_CANCELLED');
+    if (trip.status === constants_1.TRIP_STATUS.CANCELLED) {
+        throw ApiError_1.ApiErrors.custom('TRIP_IS_ALREADY_CANCELLED', 409, 'ALREADY_CANCELLED');
     }
-    const confirmedCount = await Booking.count({
-        where: { tripId: trip.id, status: BOOKING_STATUS.CONFIRMED },
+    const confirmedCount = await Models_1.Booking.count({
+        where: { tripId: trip.id, status: constants_1.BOOKING_STATUS.CONFIRMED },
     });
     if (confirmedCount > 0) {
-        throw ApiErrors.conflict('CANNOT_CANCEL_TRIP_THERE_ARE_CONFIRMED_BOOKINGS_PLEASE_CONTACT_SUPPORT');
+        throw ApiError_1.ApiErrors.conflict('CANNOT_CANCEL_TRIP_THERE_ARE_CONFIRMED_BOOKINGS_PLEASE_CONTACT_SUPPORT');
     }
-    await trip.update({ status: TRIP_STATUS.CANCELLED });
-    const penalty = await Penalty.create({
+    await trip.update({ status: constants_1.TRIP_STATUS.CANCELLED });
+    const penalty = await Models_1.Penalty.create({
         userId: driverId,
         tripId: trip.id,
-        type: PENALTY_TYPES.WARNING,
-        penaltyType: PENALTY_CATEGORY.TRIP_CANCELLATION,
-        severity: PENALTY_SEVERITY.MINOR,
+        type: constants_1.PENALTY_TYPES.WARNING,
+        penaltyType: constants_1.PENALTY_CATEGORY.TRIP_CANCELLATION,
+        severity: constants_1.PENALTY_SEVERITY.MINOR,
         reason: reason,
         details: note || null,
         startsAt: new Date(),
@@ -1056,12 +1074,12 @@ async function cancelTripWithPenalty(driverId, tripId, { reason, note }) {
     const escalation = await applyEscalation(penalty, driverId);
     let notifiedPassengers = 0;
     try {
-        notifiedPassengers = await notificationService.notifyBookedPassengers([trip.id], 'TRIP_CANCELLED', { data: { trip_id: trip.id } });
+        notifiedPassengers = await notificationService_1.default.notifyBookedPassengers([trip.id], 'TRIP_CANCELLED', { data: { trip_id: trip.id } });
     }
     catch (err) {
         console.warn('[tripService] cancel notification failed:', err.message);
     }
-    await homeService.invalidateHomeForTrip(trip.id, driverId);
+    await homeService_1.default.invalidateHomeForTrip(trip.id, driverId);
     trackTripMutation({
         action: 'trip.cancelled_by_driver',
         driverId,
@@ -1084,4 +1102,5 @@ async function cancelTripWithPenalty(driverId, tripId, { reason, note }) {
         penalty_type: escalation.severity,
     };
 }
+exports.default = module.exports;
 //# sourceMappingURL=tripService.js.map

@@ -1,28 +1,34 @@
 "use strict";
-const { Model, DataTypes } = require('sequelize');
-const sequelize = require('../config/database');
-class SupportTicketMessage extends Model {
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.SupportTicketMessage = void 0;
+const sequelize_1 = require("sequelize");
+const database_1 = __importDefault(require("../config/database"));
+class SupportTicketMessage extends sequelize_1.Model {
 }
+exports.SupportTicketMessage = SupportTicketMessage;
 SupportTicketMessage.init({
     id: {
-        type: DataTypes.UUID,
-        defaultValue: DataTypes.UUIDV4,
+        type: sequelize_1.DataTypes.UUID,
+        defaultValue: sequelize_1.DataTypes.UUIDV4,
         primaryKey: true,
     },
     ticketId: {
-        type: DataTypes.UUID,
+        type: sequelize_1.DataTypes.UUID,
         allowNull: false,
     },
     senderId: {
-        type: DataTypes.UUID,
+        type: sequelize_1.DataTypes.UUID,
         allowNull: false,
     },
     message: {
-        type: DataTypes.TEXT,
+        type: sequelize_1.DataTypes.TEXT,
         allowNull: false,
     },
 }, {
-    sequelize,
+    sequelize: database_1.default,
     modelName: 'SupportTicketMessage',
     tableName: 'support_ticket_messages',
     underscored: true,
@@ -34,5 +40,7 @@ SupportTicketMessage.init({
         },
     ],
 });
+exports.default = SupportTicketMessage;
 module.exports = SupportTicketMessage;
+Object.assign(module.exports, { default: SupportTicketMessage });
 //# sourceMappingURL=SupportTicketMessage.js.map

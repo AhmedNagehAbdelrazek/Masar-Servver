@@ -1,10 +1,22 @@
 "use strict";
-const { Trip, TripLocation } = require('../Models');
-const { ApiErrors } = require('../utils/ApiError');
-const realtimeService = require('./realtimeService');
-const realtimeMetrics = require('./realtimeMetrics');
-const { TRIP_STATUS } = require('../config/constants');
-const ACTIVE_TRIP_STATUSES = [TRIP_STATUS.IN_PROGRESS, TRIP_STATUS.ONGOING];
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.ACTIVE_TRIP_STATUSES = void 0;
+exports.updateLocation = updateLocation;
+exports.startTracking = startTracking;
+exports.stopTracking = stopTracking;
+exports.getLatest = getLatest;
+exports.getHistory = getHistory;
+// @ts-nocheck
+const Models_1 = require("../Models");
+const ApiError_1 = require("../utils/ApiError");
+const realtimeService_1 = __importDefault(require("./realtimeService"));
+const realtimeMetrics_1 = __importDefault(require("./realtimeMetrics"));
+const constants_1 = require("../config/constants");
+const ACTIVE_TRIP_STATUSES = [constants_1.TRIP_STATUS.IN_PROGRESS, constants_1.TRIP_STATUS.ONGOING];
+exports.ACTIVE_TRIP_STATUSES = ACTIVE_TRIP_STATUSES;
 function serialize(point) {
     return {
         trip_id: point.tripId,
@@ -30,29 +42,29 @@ function haversineKm(lat1, lng1, lat2, lng2) {
 }
 async function assertDriverOfActiveTrip(user, tripId) {
     if (!tripId)
-        throw ApiErrors.validation('TRIP_ID_IS_REQUIRED');
-    const trip = await Trip.findByPk(tripId, {
+        throw ApiError_1.ApiErrors.validation('TRIP_ID_IS_REQUIRED');
+    const trip = await Models_1.Trip.findByPk(tripId, {
         attributes: ['id', 'driverId', 'status', 'destinationLat', 'destinationLng'],
     });
     if (!trip)
-        throw ApiErrors.notFound('TRIP_NOT_FOUND');
+        throw ApiError_1.ApiErrors.notFound('TRIP_NOT_FOUND');
     if (trip.driverId !== user.id)
-        throw ApiErrors.forbidden('ONLY_THE_TRIP_DRIVER_CAN_SHARE_TRACKING');
+        throw ApiError_1.ApiErrors.forbidden('ONLY_THE_TRIP_DRIVER_CAN_SHARE_TRACKING');
     if (!ACTIVE_TRIP_STATUSES.includes(trip.status)) {
-        throw ApiErrors.conflict('TRACKING_IS_ONLY_AVAILABLE_FOR_ACTIVE_TRIPS');
+        throw ApiError_1.ApiErrors.conflict('TRACKING_IS_ONLY_AVAILABLE_FOR_ACTIVE_TRIPS');
     }
     return trip;
 }
 async function updateLocation(user, payload) {
     const { tripId, lat, lng, speed, heading } = payload || {};
     if (lat === undefined || lng === undefined) {
-        throw ApiErrors.validation('LAT_AND_LNG_ARE_REQUIRED');
+        throw ApiError_1.ApiErrors.validation('LAT_AND_LNG_ARE_REQUIRED');
     }
     if (Number.isNaN(Number(lat)) || Number.isNaN(Number(lng))) {
-        throw ApiErrors.validation('LAT_AND_LNG_MUST_BE_NUMBERS');
+        throw ApiError_1.ApiErrors.validation('LAT_AND_LNG_MUST_BE_NUMBERS');
     }
     const trip = await assertDriverOfActiveTrip(user, tripId);
-    const point = await TripLocation.create({
+    const point = await Models_1.TripLocation.create({
         tripId,
         driverId: user.id,
         lat,
@@ -77,9 +89,9 @@ async function updateLocation(user, payload) {
         status: 'en_route',
         timestamp: point.createdat ? point.createdat.toISOString() : new Date().toISOString(),
     };
-    realtimeService.emitToRoom(`trip:${tripId}`, 'tracking:update', out);
-    realtimeMetrics.recordEvent('tracking:update');
-    realtimeMetrics.recordDelivery();
+    realtimeService_1.default.emitToRoom(`trip:${tripId}`, 'tracking:update', out);
+    realtimeMetrics_1.default.recordEvent('tracking:update');
+    realtimeMetrics_1.default.recordDelivery();
     return out;
 }
 async function startTracking(user, tripId) {
@@ -92,8 +104,8 @@ async function startTracking(user, tripId) {
         status: 'en_route',
         timestamp: new Date().toISOString(),
     };
-    realtimeService.emitToRoom(`trip:${tripId}`, 'tracking:update', out);
-    realtimeMetrics.recordEvent('tracking:start');
+    realtimeService_1.default.emitToRoom(`trip:${tripId}`, 'tracking:update', out);
+    realtimeMetrics_1.default.recordEvent('tracking:start');
     return out;
 }
 async function stopTracking(user, tripId) {
@@ -106,20 +118,20 @@ async function stopTracking(user, tripId) {
         status: 'stopped',
         timestamp: new Date().toISOString(),
     };
-    realtimeService.emitToRoom(`trip:${tripId}`, 'tracking:update', out);
-    realtimeMetrics.recordEvent('tracking:stop');
+    realtimeService_1.default.emitToRoom(`trip:${tripId}`, 'tracking:update', out);
+    realtimeMetrics_1.default.recordEvent('tracking:stop');
     return out;
 }
 async function assertTripMember(user, tripId) {
-    const member = await realtimeService.isTripMember(user, tripId);
+    const member = await realtimeService_1.default.isTripMember(user, tripId);
     if (!member)
-        throw ApiErrors.forbidden('YOU_ARE_NOT_A_MEMBER_OF_THIS_TRIP');
+        throw ApiError_1.ApiErrors.forbidden('YOU_ARE_NOT_A_MEMBER_OF_THIS_TRIP');
 }
 async function getLatest(user, tripId) {
     if (!tripId)
-        throw ApiErrors.validation('TRIP_ID_IS_REQUIRED');
+        throw ApiError_1.ApiErrors.validation('TRIP_ID_IS_REQUIRED');
     await assertTripMember(user, tripId);
-    const point = await TripLocation.findOne({
+    const point = await Models_1.TripLocation.findOne({
         where: { tripId },
         order: [['createdat', 'DESC']],
     });
@@ -127,10 +139,10 @@ async function getLatest(user, tripId) {
 }
 async function getHistory(user, tripId, { limit = 50 } = {}) {
     if (!tripId)
-        throw ApiErrors.validation('TRIP_ID_IS_REQUIRED');
+        throw ApiError_1.ApiErrors.validation('TRIP_ID_IS_REQUIRED');
     await assertTripMember(user, tripId);
     const n = Math.min(500, Math.max(1, parseInt(limit, 10) || 50));
-    const rows = await TripLocation.findAll({
+    const rows = await Models_1.TripLocation.findAll({
         where: { tripId },
         order: [['createdat', 'DESC']],
         limit: n,
@@ -145,4 +157,5 @@ module.exports = {
     getHistory,
     ACTIVE_TRIP_STATUSES,
 };
+exports.default = module.exports;
 //# sourceMappingURL=trackingService.js.map

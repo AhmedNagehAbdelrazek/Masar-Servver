@@ -1,54 +1,62 @@
 "use strict";
-const { Model, DataTypes } = require('sequelize');
-const sequelize = require('../config/database');
-class PassengerProfile extends Model {
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.PassengerProfile = void 0;
+const sequelize_1 = require("sequelize");
+const database_1 = __importDefault(require("../config/database"));
+class PassengerProfile extends sequelize_1.Model {
 }
+exports.PassengerProfile = PassengerProfile;
 PassengerProfile.init({
     id: {
-        type: DataTypes.UUID,
-        defaultValue: DataTypes.UUIDV4,
+        type: sequelize_1.DataTypes.UUID,
+        defaultValue: sequelize_1.DataTypes.UUIDV4,
         primaryKey: true,
     },
     passengerId: {
-        type: DataTypes.UUID,
+        type: sequelize_1.DataTypes.UUID,
         allowNull: false,
         unique: true,
     },
     preferredGender: {
-        type: DataTypes.ENUM('male', 'female', 'any'),
+        type: sequelize_1.DataTypes.ENUM('male', 'female', 'any'),
         allowNull: true,
         defaultValue: 'any',
     },
     smokingPreference: {
-        type: DataTypes.ENUM('no_preference', 'non_smoking', 'smoking_allowed'),
+        type: sequelize_1.DataTypes.ENUM('no_preference', 'non_smoking', 'smoking_allowed'),
         allowNull: true,
         defaultValue: 'no_preference',
     },
     savedRoutes: {
-        type: DataTypes.JSONB,
+        type: sequelize_1.DataTypes.JSONB,
         allowNull: true,
         defaultValue: [],
     },
     nationalID: {
-        type: DataTypes.STRING(30),
+        type: sequelize_1.DataTypes.STRING(30),
         field: 'national_id',
         allowNull: true,
     },
     homeAddress: {
-        type: DataTypes.STRING(255),
+        type: sequelize_1.DataTypes.STRING(255),
         allowNull: true,
     },
     emergencyContacts: {
-        type: DataTypes.JSONB,
+        type: sequelize_1.DataTypes.JSONB,
         allowNull: true,
         defaultValue: [],
     },
 }, {
-    sequelize,
+    sequelize: database_1.default,
     modelName: 'PassengerProfile',
     tableName: 'passenger_profiles',
     underscored: true,
     timestamps: true,
 });
+exports.default = PassengerProfile;
 module.exports = PassengerProfile;
+Object.assign(module.exports, { default: PassengerProfile });
 //# sourceMappingURL=PassengerProfile.js.map

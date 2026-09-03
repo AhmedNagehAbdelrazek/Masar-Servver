@@ -1,152 +1,158 @@
 "use strict";
-const { Model, DataTypes } = require('sequelize');
-const sequelize = require('../config/database');
-const { TRIP_STATUS, GENDER_PREFERENCE } = require('../config/constants');
-class Trip extends Model {
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.Trip = void 0;
+const sequelize_1 = require("sequelize");
+const database_1 = __importDefault(require("../config/database"));
+const constants_1 = require("../config/constants");
+class Trip extends sequelize_1.Model {
 }
+exports.Trip = Trip;
 Trip.init({
     id: {
-        type: DataTypes.UUID,
-        defaultValue: DataTypes.UUIDV4,
+        type: sequelize_1.DataTypes.UUID,
+        defaultValue: sequelize_1.DataTypes.UUIDV4,
         primaryKey: true,
     },
     driverId: {
-        type: DataTypes.UUID,
+        type: sequelize_1.DataTypes.UUID,
         allowNull: false,
     },
     vehicleId: {
-        type: DataTypes.UUID,
+        type: sequelize_1.DataTypes.UUID,
         allowNull: false,
     },
     originCity: {
-        type: DataTypes.STRING(100),
+        type: sequelize_1.DataTypes.STRING(100),
         allowNull: false,
     },
     originArea: {
-        type: DataTypes.STRING(120),
+        type: sequelize_1.DataTypes.STRING(120),
         allowNull: true,
     },
     originAddress: {
-        type: DataTypes.STRING(255),
+        type: sequelize_1.DataTypes.STRING(255),
         allowNull: true,
     },
     originLat: {
-        type: DataTypes.NUMERIC(10, 8),
+        type: sequelize_1.DataTypes.NUMERIC(10, 8),
         allowNull: true,
     },
     originLng: {
-        type: DataTypes.NUMERIC(11, 8),
+        type: sequelize_1.DataTypes.NUMERIC(11, 8),
         allowNull: true,
     },
     destinationCity: {
-        type: DataTypes.STRING(100),
+        type: sequelize_1.DataTypes.STRING(100),
         allowNull: false,
     },
     destinationArea: {
-        type: DataTypes.STRING(120),
+        type: sequelize_1.DataTypes.STRING(120),
         allowNull: true,
     },
     destinationAddress: {
-        type: DataTypes.STRING(255),
+        type: sequelize_1.DataTypes.STRING(255),
         allowNull: true,
     },
     destinationLat: {
-        type: DataTypes.NUMERIC(10, 8),
+        type: sequelize_1.DataTypes.NUMERIC(10, 8),
         allowNull: true,
     },
     destinationLng: {
-        type: DataTypes.NUMERIC(11, 8),
+        type: sequelize_1.DataTypes.NUMERIC(11, 8),
         allowNull: true,
     },
     departureTime: {
-        type: DataTypes.DATE,
+        type: sequelize_1.DataTypes.DATE,
         allowNull: false,
     },
     arrivalTime: {
-        type: DataTypes.DATE,
+        type: sequelize_1.DataTypes.DATE,
         allowNull: true,
     },
     totalSeats: {
-        type: DataTypes.SMALLINT,
+        type: sequelize_1.DataTypes.SMALLINT,
         allowNull: false,
     },
     availableSeats: {
-        type: DataTypes.SMALLINT,
+        type: sequelize_1.DataTypes.SMALLINT,
         allowNull: false,
     },
     farePerSeat: {
-        type: DataTypes.NUMERIC(10, 2),
+        type: sequelize_1.DataTypes.NUMERIC(10, 2),
         allowNull: false,
     },
     currency: {
-        type: DataTypes.STRING(3),
+        type: sequelize_1.DataTypes.STRING(3),
         allowNull: true,
         defaultValue: 'JOD',
     },
     isRecurring: {
-        type: DataTypes.BOOLEAN,
+        type: sequelize_1.DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: false,
     },
     recurrencePattern: {
-        type: DataTypes.JSONB,
+        type: sequelize_1.DataTypes.JSONB,
         allowNull: true,
     },
     recurrenceDays: {
-        type: DataTypes.ARRAY(DataTypes.SMALLINT),
+        type: sequelize_1.DataTypes.ARRAY(sequelize_1.DataTypes.SMALLINT),
         allowNull: true,
     },
     recurrenceEndDate: {
-        type: DataTypes.DATE,
+        type: sequelize_1.DataTypes.DATE,
         allowNull: true,
     },
     genderPreference: {
-        type: DataTypes.ENUM(Object.values(GENDER_PREFERENCE)),
+        type: sequelize_1.DataTypes.ENUM(...Object.values(constants_1.GENDER_PREFERENCE)),
         allowNull: false,
-        defaultValue: GENDER_PREFERENCE.ALL,
+        defaultValue: constants_1.GENDER_PREFERENCE.ALL,
     },
     driverInstructions: {
-        type: DataTypes.ARRAY(DataTypes.TEXT),
+        type: sequelize_1.DataTypes.ARRAY(sequelize_1.DataTypes.TEXT),
         allowNull: true,
     },
     additionalInstructions: {
-        type: DataTypes.TEXT,
+        type: sequelize_1.DataTypes.TEXT,
         allowNull: true,
     },
     status: {
-        type: DataTypes.ENUM(Object.values(TRIP_STATUS)),
+        type: sequelize_1.DataTypes.ENUM(...Object.values(constants_1.TRIP_STATUS)),
         allowNull: false,
-        defaultValue: TRIP_STATUS.PUBLISHED,
+        defaultValue: constants_1.TRIP_STATUS.PUBLISHED,
     },
     isFeatured: {
-        type: DataTypes.BOOLEAN,
+        type: sequelize_1.DataTypes.BOOLEAN,
         allowNull: true,
         defaultValue: false,
     },
     featuredUntil: {
-        type: DataTypes.DATE,
+        type: sequelize_1.DataTypes.DATE,
         allowNull: true,
     },
     isBlockedByBalance: {
-        type: DataTypes.BOOLEAN,
+        type: sequelize_1.DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: false,
     },
     isModerated: {
-        type: DataTypes.BOOLEAN,
+        type: sequelize_1.DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: false,
     },
     moderationReason: {
-        type: DataTypes.TEXT,
+        type: sequelize_1.DataTypes.TEXT,
         allowNull: true,
     },
     moderatedBy: {
-        type: DataTypes.UUID,
+        type: sequelize_1.DataTypes.UUID,
         allowNull: true,
     },
 }, {
-    sequelize,
+    sequelize: database_1.default,
     modelName: 'Trip',
     tableName: 'trips',
     underscored: true,
@@ -171,5 +177,7 @@ Trip.init({
         },
     ],
 });
+exports.default = Trip;
 module.exports = Trip;
+Object.assign(module.exports, { default: Trip });
 //# sourceMappingURL=Trip.js.map

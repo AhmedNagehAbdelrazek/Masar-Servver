@@ -1,11 +1,18 @@
 "use strict";
-const CloudinaryUploader = require('./cloudinary');
-const LocalUploader = require('./local');
-const S3Uploader = require('./s3');
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.getUploader = getUploader;
+exports.resetUploader = resetUploader;
+// @ts-nocheck
+const cloudinary_1 = __importDefault(require("./cloudinary"));
+const local_1 = __importDefault(require("./local"));
+const s3_1 = __importDefault(require("./s3"));
 const providers = {
-    cloudinary: CloudinaryUploader,
-    local: LocalUploader,
-    s3: S3Uploader,
+    cloudinary: cloudinary_1.default,
+    local: local_1.default,
+    s3: s3_1.default,
 };
 let instance = null;
 function getUploader(provider) {
@@ -23,4 +30,5 @@ function resetUploader() {
     instance = null;
 }
 module.exports = { getUploader, resetUploader };
+exports.default = module.exports;
 //# sourceMappingURL=index.js.map

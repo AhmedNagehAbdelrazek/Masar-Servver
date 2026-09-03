@@ -1,108 +1,163 @@
 "use strict";
-const authService = require('../Services/authService');
-const { successResponse } = require('../utils/httpResponse');
-const catchAsync = require('../utils/catchAsync');
-const { markResource } = require('../Services/auditService');
-const registerPhone = catchAsync(async (req, res) => {
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.getOnboardingStatus = exports.getVehicle = exports.submitVehicle = exports.submitPassengerProfile = exports.getDriverProfile = exports.submitDriverProfile = exports.resendOTP = exports.changePassword = exports.resetPassword = exports.verifyForgotPasswordOTP = exports.forgotPassword = exports.me = exports.logout = exports.refresh = exports.login = exports.registerPassword = exports.verifyRegistrationOTP = exports.registerPhone = void 0;
+const catchAsync_1 = require("../utils/catchAsync");
+const httpResponse_1 = require("../utils/httpResponse");
+const authService = __importStar(require("../Services/authService"));
+const auditService = __importStar(require("../Services/auditService"));
+const registerPhone = (0, catchAsync_1.catchAsync)(async (req, res) => {
     const { country_code, phone, role } = req.body;
     const result = await authService.registerPhone(country_code, phone, role);
-    successResponse(res, result, 201);
+    (0, httpResponse_1.successResponse)(res, result, 201);
 });
-const verifyRegistrationOTP = catchAsync(async (req, res) => {
+exports.registerPhone = registerPhone;
+const verifyRegistrationOTP = (0, catchAsync_1.catchAsync)(async (req, res) => {
     const { phone, otp } = req.body;
     const result = await authService.verifyRegistrationOTP(phone, otp);
-    successResponse(res, result, 201);
+    (0, httpResponse_1.successResponse)(res, result, 201);
 });
-const registerPassword = catchAsync(async (req, res) => {
+exports.verifyRegistrationOTP = verifyRegistrationOTP;
+const registerPassword = (0, catchAsync_1.catchAsync)(async (req, res) => {
     const result = await authService.registerPassword(req.headers.authorization, req.body);
-    markResource(res, { type: 'user', id: result.user.id, label: result.user.phone });
-    successResponse(res, result, 201);
+    auditService.markResource(res, { type: 'user', id: result.user.id, label: result.user.phone });
+    (0, httpResponse_1.successResponse)(res, result, 201);
 });
-const login = catchAsync(async (req, res) => {
+exports.registerPassword = registerPassword;
+const login = (0, catchAsync_1.catchAsync)(async (req, res) => {
     const { phone, password } = req.body;
     const result = await authService.login(phone, password);
-    markResource(res, { type: 'user', id: result.user.id, label: result.user.phone });
-    successResponse(res, result);
+    auditService.markResource(res, { type: 'user', id: result.user.id, label: result.user.phone });
+    (0, httpResponse_1.successResponse)(res, result);
 });
-const refresh = catchAsync(async (req, res) => {
+exports.login = login;
+const refresh = (0, catchAsync_1.catchAsync)(async (req, res) => {
     const { refresh_token } = req.body;
     const result = await authService.refreshToken(refresh_token);
-    successResponse(res, result);
+    (0, httpResponse_1.successResponse)(res, result);
 });
-const logout = catchAsync(async (req, res) => {
+exports.refresh = refresh;
+const logout = (0, catchAsync_1.catchAsync)(async (req, res) => {
+    const authReq = req;
     const { refresh_token } = req.body;
     const accessToken = req.headers.authorization?.split(' ')[1];
-    const result = await authService.logout(req.user.id, refresh_token, accessToken);
-    markResource(res, { type: 'user', id: req.user.id });
-    successResponse(res, result);
+    const result = await authService.logout(String(authReq.user?.id), refresh_token, accessToken);
+    auditService.markResource(res, { type: 'user', id: authReq.user?.id });
+    (0, httpResponse_1.successResponse)(res, result);
 });
-const changePassword = catchAsync(async (req, res) => {
+exports.logout = logout;
+const changePassword = (0, catchAsync_1.catchAsync)(async (req, res) => {
+    const authReq = req;
     const { current_password, new_password } = req.body;
     const accessToken = req.headers.authorization?.split(' ')[1];
-    const result = await authService.changePassword(req.user.id, current_password, new_password, accessToken);
-    markResource(res, { type: 'user', id: req.user.id });
-    successResponse(res, result);
+    const result = await authService.changePassword(String(authReq.user?.id), current_password, new_password, accessToken);
+    auditService.markResource(res, { type: 'user', id: authReq.user?.id });
+    (0, httpResponse_1.successResponse)(res, result);
 });
-const me = catchAsync(async (req, res) => {
-    const user = await authService.me(req.user.id);
-    successResponse(res, user);
+exports.changePassword = changePassword;
+const me = (0, catchAsync_1.catchAsync)(async (req, res) => {
+    const authReq = req;
+    const user = await authService.me(String(authReq.user?.id));
+    (0, httpResponse_1.successResponse)(res, user);
 });
-const forgotPassword = catchAsync(async (req, res) => {
+exports.me = me;
+const forgotPassword = (0, catchAsync_1.catchAsync)(async (req, res) => {
     const { phone } = req.body;
     const result = await authService.forgotPassword(phone);
-    successResponse(res, result);
+    (0, httpResponse_1.successResponse)(res, result);
 });
-const verifyForgotPasswordOTP = catchAsync(async (req, res) => {
+exports.forgotPassword = forgotPassword;
+const verifyForgotPasswordOTP = (0, catchAsync_1.catchAsync)(async (req, res) => {
     const { phone, otp } = req.body;
     const result = await authService.verifyForgotPasswordOTP(phone, otp);
-    successResponse(res, result);
+    (0, httpResponse_1.successResponse)(res, result);
 });
-const resetPassword = catchAsync(async (req, res) => {
+exports.verifyForgotPasswordOTP = verifyForgotPasswordOTP;
+const resetPassword = (0, catchAsync_1.catchAsync)(async (req, res) => {
     const { password } = req.body;
     const result = await authService.resetPassword(req.headers.authorization, password);
-    successResponse(res, result);
+    (0, httpResponse_1.successResponse)(res, result);
 });
-const resendOTP = catchAsync(async (req, res) => {
+exports.resetPassword = resetPassword;
+const resendOTP = (0, catchAsync_1.catchAsync)(async (req, res) => {
     const { phone, purpose } = req.body;
     const result = await authService.resendOTP(phone, purpose);
-    successResponse(res, result);
+    (0, httpResponse_1.successResponse)(res, result);
 });
-const submitDriverProfile = catchAsync(async (req, res) => {
-    const result = await authService.submitDriverProfile(req.user.id, req.body);
-    markResource(res, { type: 'driver_profile', id: result.driverProfile.id });
-    successResponse(res, result, 201);
+exports.resendOTP = resendOTP;
+const submitDriverProfile = (0, catchAsync_1.catchAsync)(async (req, res) => {
+    const authReq = req;
+    const result = await authService.submitDriverProfile(String(authReq.user?.id), req.body);
+    auditService.markResource(res, { type: 'driver_profile', id: result.driverProfile.id });
+    (0, httpResponse_1.successResponse)(res, result, 201);
 });
-const getDriverProfile = catchAsync(async (req, res) => {
-    const result = await authService.getDriverProfile(req.user.id);
-    successResponse(res, result);
+exports.submitDriverProfile = submitDriverProfile;
+const getDriverProfile = (0, catchAsync_1.catchAsync)(async (req, res) => {
+    const authReq = req;
+    const result = await authService.getDriverProfile(String(authReq.user?.id));
+    (0, httpResponse_1.successResponse)(res, result);
 });
-const submitPassengerProfile = catchAsync(async (req, res) => {
-    const result = await authService.submitPassengerProfile(req.user.id, req.body);
-    markResource(res, {
-        type: 'passenger_profile',
-        id: result.passengerProfile.id,
-        label: req.body.fullname,
-    });
-    successResponse(res, result, 201);
+exports.getDriverProfile = getDriverProfile;
+const submitPassengerProfile = (0, catchAsync_1.catchAsync)(async (req, res) => {
+    const authReq = req;
+    const result = await authService.submitPassengerProfile(String(authReq.user?.id), req.body);
+    const { fullname } = req.body;
+    auditService.markResource(res, { type: 'passenger_profile', id: result.passengerProfile.id, label: fullname });
+    (0, httpResponse_1.successResponse)(res, result, 201);
 });
-const submitVehicle = catchAsync(async (req, res) => {
-    const result = await authService.submitVehicle(req.user.id, req.body);
-    markResource(res, {
-        type: 'vehicle',
-        id: result.vehicle.id,
-        label: result.vehicle.plateNumber,
-    });
-    successResponse(res, result, 201);
+exports.submitPassengerProfile = submitPassengerProfile;
+const submitVehicle = (0, catchAsync_1.catchAsync)(async (req, res) => {
+    const authReq = req;
+    const result = await authService.submitVehicle(String(authReq.user?.id), req.body);
+    auditService.markResource(res, { type: 'vehicle', id: result.vehicle.id, label: result.vehicle.plateNumber });
+    (0, httpResponse_1.successResponse)(res, result, 201);
 });
-const getVehicle = catchAsync(async (req, res) => {
-    const result = await authService.getVehicle(req.user.id);
-    successResponse(res, result);
+exports.submitVehicle = submitVehicle;
+const getVehicle = (0, catchAsync_1.catchAsync)(async (req, res) => {
+    const authReq = req;
+    const result = await authService.getVehicle(String(authReq.user?.id));
+    (0, httpResponse_1.successResponse)(res, result);
 });
-const getOnboardingStatus = catchAsync(async (req, res) => {
-    const result = await authService.getOnboardingStatus(req.user.id);
-    successResponse(res, result);
+exports.getVehicle = getVehicle;
+const getOnboardingStatus = (0, catchAsync_1.catchAsync)(async (req, res) => {
+    const authReq = req;
+    const result = await authService.getOnboardingStatus(String(authReq.user?.id));
+    (0, httpResponse_1.successResponse)(res, result);
 });
-module.exports = {
+exports.getOnboardingStatus = getOnboardingStatus;
+exports.default = {
     registerPhone,
     verifyRegistrationOTP,
     registerPassword,

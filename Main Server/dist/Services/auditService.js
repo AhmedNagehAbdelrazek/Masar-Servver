@@ -1,5 +1,9 @@
 "use strict";
-const { audit, getTraceContext } = require('../config/audit');
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.track = track;
+exports.markResource = markResource;
+// @ts-nocheck
+const audit_1 = require("../config/audit");
 /**
  * Shared audit helper for administrative and domain mutations.
  * Wraps the existing audit client with a stable convention: every call
@@ -11,8 +15,8 @@ const { audit, getTraceContext } = require('../config/audit');
  */
 function track({ eventType = 'domain.event', action, resourceType, resourceId, resourceLabel, actorId, actorType = 'admin', outcome = 'success', error, payload = {} }) {
     try {
-        const trace = getTraceContext();
-        audit.track({
+        const trace = (0, audit_1.getTraceContext)();
+        audit_1.audit.track({
             event_type: eventType,
             action,
             outcome,
@@ -47,4 +51,5 @@ function markResource(res, resource) {
     }
 }
 module.exports = { track, markResource };
+exports.default = module.exports;
 //# sourceMappingURL=auditService.js.map

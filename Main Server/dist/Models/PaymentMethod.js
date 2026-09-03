@@ -1,38 +1,44 @@
 "use strict";
-const { Model, DataTypes } = require('sequelize');
-const sequelize = require('../config/database');
-const { PAYMENT_METHOD_TYPE } = require('../config/constants');
-class PaymentMethod extends Model {
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.PaymentMethod = void 0;
+const sequelize_1 = require("sequelize");
+const database_1 = __importDefault(require("../config/database"));
+const constants_1 = require("../config/constants");
+class PaymentMethod extends sequelize_1.Model {
 }
+exports.PaymentMethod = PaymentMethod;
 PaymentMethod.init({
     id: {
-        type: DataTypes.UUID,
-        defaultValue: DataTypes.UUIDV4,
+        type: sequelize_1.DataTypes.UUID,
+        defaultValue: sequelize_1.DataTypes.UUIDV4,
         primaryKey: true,
     },
     name: {
-        type: DataTypes.STRING(100),
+        type: sequelize_1.DataTypes.STRING(100),
         allowNull: false,
     },
     accountNumber: {
-        type: DataTypes.STRING(50),
+        type: sequelize_1.DataTypes.STRING(50),
         allowNull: false,
     },
     type: {
-        type: DataTypes.ENUM(Object.values(PAYMENT_METHOD_TYPE)),
+        type: sequelize_1.DataTypes.ENUM(...Object.values(constants_1.PAYMENT_METHOD_TYPE)),
         allowNull: false,
     },
     email: {
-        type: DataTypes.STRING(100),
+        type: sequelize_1.DataTypes.STRING(100),
         allowNull: true,
     },
     isActive: {
-        type: DataTypes.BOOLEAN,
+        type: sequelize_1.DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: true,
     },
 }, {
-    sequelize,
+    sequelize: database_1.default,
     modelName: 'PaymentMethod',
     tableName: 'payment_methods',
     underscored: true,
@@ -44,5 +50,7 @@ PaymentMethod.init({
         },
     ],
 });
+exports.default = PaymentMethod;
 module.exports = PaymentMethod;
+Object.assign(module.exports, { default: PaymentMethod });
 //# sourceMappingURL=PaymentMethod.js.map

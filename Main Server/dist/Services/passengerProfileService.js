@@ -1,9 +1,17 @@
 "use strict";
-const { Op } = require('sequelize');
-const { User, PassengerProfile, Penalty, Complaint } = require('../Models');
-const { ApiErrors } = require('../utils/ApiError');
-const { PENALTY_TYPES } = require('../config/constants');
-const auditService = require('./auditService');
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.getMyProfile = getMyProfile;
+exports.updateMyProfile = updateMyProfile;
+exports.getAccountSummary = getAccountSummary;
+// @ts-nocheck
+const sequelize_1 = require("sequelize");
+const Models_1 = require("../Models");
+const ApiError_1 = require("../utils/ApiError");
+const constants_1 = require("../config/constants");
+const auditService_1 = __importDefault(require("./auditService"));
 function serializeProfile(profile) {
     return {
         id: profile.id,
@@ -28,14 +36,14 @@ function serializePersonal(user) {
 }
 async function getMyProfile(passengerId) {
     const [user, profile] = await Promise.all([
-        User.findByPk(passengerId),
-        PassengerProfile.findOrCreate({
+        Models_1.User.findByPk(passengerId),
+        Models_1.PassengerProfile.findOrCreate({
             where: { passengerId },
             defaults: { passengerId },
         }),
     ]);
     if (!user)
-        throw ApiErrors.notFound('USER_NOT_FOUND');
+        throw ApiError_1.ApiErrors.notFound('USER_NOT_FOUND');
     return {
         passenger_profile: {
             ...serializePersonal(user),
@@ -45,7 +53,7 @@ async function getMyProfile(passengerId) {
     };
 }
 async function updateMyProfile(passengerId, payload) {
-    const [profile, created] = await PassengerProfile.findOrCreate({
+    const [profile, created] = await Models_1.PassengerProfile.findOrCreate({
         where: { passengerId },
         defaults: { passengerId },
     });
@@ -63,10 +71,10 @@ async function updateMyProfile(passengerId, payload) {
     if (payload.emergency_contacts !== undefined)
         updates.emergencyContacts = payload.emergency_contacts;
     if (Object.keys(updates).length === 0) {
-        throw ApiErrors.validation('NO_UPDATABLE_FIELDS_PROVIDED');
+        throw ApiError_1.ApiErrors.validation('NO_UPDATABLE_FIELDS_PROVIDED');
     }
     await profile.update(updates);
-    auditService.track({
+    auditService_1.default.track({
         action: 'passenger_profile.updated',
         resourceType: 'passenger_profile',
         resourceId: profile.id,
@@ -86,15 +94,15 @@ async function updateMyProfile(passengerId, payload) {
  */
 async function getAccountSummary(passengerId) {
     const [alerts, violations, sanctions, complaints] = await Promise.all([
-        Penalty.count({ where: { userId: passengerId, type: PENALTY_TYPES.WARNING } }),
-        Penalty.count({ where: { userId: passengerId, penaltyType: 'violation' } }),
-        Penalty.count({
+        Models_1.Penalty.count({ where: { userId: passengerId, type: constants_1.PENALTY_TYPES.WARNING } }),
+        Models_1.Penalty.count({ where: { userId: passengerId, penaltyType: 'violation' } }),
+        Models_1.Penalty.count({
             where: {
                 userId: passengerId,
-                type: { [Op.in]: [PENALTY_TYPES.SUSPENSION, PENALTY_TYPES.BAN] },
+                type: { [sequelize_1.Op.in]: [constants_1.PENALTY_TYPES.SUSPENSION, constants_1.PENALTY_TYPES.BAN] },
             },
         }),
-        Complaint.count({ where: { reporterId: passengerId } }),
+        Models_1.Complaint.count({ where: { reporterId: passengerId } }),
     ]);
     const summary = [
         { type: 'alerts', count: alerts },
@@ -102,7 +110,7 @@ async function getAccountSummary(passengerId) {
         { type: 'sanctions', count: sanctions },
         { type: 'complaints', count: complaints },
     ];
-    auditService.track({
+    auditService_1.default.track({
         action: 'passenger_account.summary_viewed',
         resourceType: 'passenger_profile',
         resourceId: passengerId,
@@ -112,4 +120,5 @@ async function getAccountSummary(passengerId) {
     return { account_summary: summary };
 }
 module.exports = { getMyProfile, updateMyProfile, getAccountSummary };
+exports.default = module.exports;
 //# sourceMappingURL=passengerProfileService.js.map

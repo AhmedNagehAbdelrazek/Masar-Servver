@@ -121,7 +121,7 @@ export function normalizePhone(phone: string, countryCode?: string | null): stri
 
 export async function registerPhone(countryCode: string, phone: string, role: string): Promise<{ message: string }> {
   const normalizedPhone: string = normalizePhone(phone, countryCode);
-  const existingUser = await (User as unknown as { findOne: (opts: unknown) => Promise<any | null> }).findOne({ where: { phone: normalizedPhone } });
+  const existingUser = await (User as unknown as { findOne: (opts: unknown) => Promise<unknown | null> }).findOne({ where: { phone: normalizedPhone } });
   if (existingUser) {
     if ((TEST_PHONES as readonly string[]).includes(normalizedPhone)) {
       await (existingUser as unknown as { destroy: () => Promise<void> }).destroy();
@@ -156,7 +156,7 @@ export async function verifyRegistrationOTP(phone: string, otp: string): Promise
     throw ApiErrors.badRequest('INVALID_OTP');
   }
 
-  const existingUser = await (User as unknown as { findOne: (opts: unknown) => Promise<any | null> }).findOne({ where: { phone } });
+  const existingUser = await (User as unknown as { findOne: (opts: unknown) => Promise<unknown | null> }).findOne({ where: { phone } });
   if (existingUser) {
     throw ApiErrors.conflict('PHONE_NUMBER_IS_ALREADY_REGISTERED');
   }
@@ -200,20 +200,20 @@ export async function registerPassword(authHeader: string | undefined, data: { p
 
   await deleteKey(`reg_token:${regPayload.phone}`);
 
-  const existingUser = await (User as unknown as { findOne: (opts: unknown) => Promise<any | null> }).findOne({ where: { phone: regPayload.phone } });
+  const existingUser = await (User as unknown as { findOne: (opts: unknown) => Promise<unknown | null> }).findOne({ where: { phone: regPayload.phone } });
   if (existingUser) {
     throw ApiErrors.conflict('PHONE_NUMBER_IS_ALREADY_REGISTERED');
   }
 
   const passwordHash: string = await bcrypt.hash(password, SALT_ROUNDS);
 
-  const user = await (User as unknown as { create: (data: unknown) => Promise<any> }).create({
+  const user = await (User as unknown as { create: (data: unknown) => Promise<unknown> }).create({
     phone: regPayload.phone,
     countryCode: regPayload.countryCode || null,
     role: regPayload.role,
     passwordHash,
     locale: 'ar',
-  }) as any & { id: string; phone: string; countryCode: string | null; role: string; fullName: string | null; isVerified: boolean; update: (data: unknown) => Promise<void> };
+  }) as unknown & { id: string; phone: string; countryCode: string | null; role: string; fullName: string | null; isVerified: boolean; update: (data: unknown) => Promise<void> };
 
   // Auto-assign the active free plan to new drivers.
   if (regPayload.role === 'driver') {
@@ -320,7 +320,7 @@ export async function registerPassword(authHeader: string | undefined, data: { p
 // ===== LOGIN =====
 
 export async function login(phone: string, password: string): Promise<{ access_token: string; refresh_token: string; user: { id: string; phone: string; countryCode: string | null | undefined; role: string; fullName: string | null | undefined; isVerified: boolean } }> {
-  const user = await (User as unknown as { findOne: (opts: unknown) => Promise<(any & { id: string; phone: string; countryCode: string | null; role: string; fullName: string | null; isVerified: boolean; status: string; passwordHash: string; update: (data: unknown) => Promise<void> }) | null> }).findOne({ where: { phone } });
+  const user = await (User as unknown as { findOne: (opts: unknown) => Promise<(unknown & { id: string; phone: string; countryCode: string | null; role: string; fullName: string | null; isVerified: boolean; status: string; passwordHash: string; update: (data: unknown) => Promise<void> }) | null> }).findOne({ where: { phone } });
   if (!user) {
     throw ApiErrors.unauthorized('INVALID_PHONE_OR_PASSWORD');
   }
@@ -390,7 +390,7 @@ export async function refreshToken(refreshTokenValue: string): Promise<{ access_
 
   await removeRefreshToken(payload.id, payload.jti);
 
-  const user = await (User as unknown as { findByPk: (id: string) => Promise<(any & { id: string; phone: string; status: string }) | null> }).findByPk(payload.id);
+  const user = await (User as unknown as { findByPk: (id: string) => Promise<(unknown & { id: string; phone: string; status: string }) | null> }).findByPk(payload.id);
   if (!user) {
     throw ApiErrors.unauthorized('USER_NOT_FOUND');
   }
@@ -469,7 +469,7 @@ export async function logout(userId: string, refreshTokenValue: string | null | 
 // ===== ME =====
 
 export async function me(id: string): Promise<{ id: string; phone: string; countryCode: string | null | undefined; fullName: string | null | undefined; email: string | null | undefined; role: string; gender: string | undefined; age: number | null | undefined; avatarUrl: string | null | undefined; isVerified: boolean; avgRating: number | undefined; status: string; locale: string }> {
-  const user = await (User as unknown as { findByPk: (id: string) => Promise<any | null> }).findByPk(id) as (any & { id: string; phone: string; countryCode: string | null | undefined; fullName: string | null | undefined; email: string | null | undefined; role: string; gender: string | undefined; age: number | null | undefined; avatarUrl: string | null | undefined; isVerified: boolean; avgRating: number | undefined; status: string; locale: string }) | null;
+  const user = await (User as unknown as { findByPk: (id: string) => Promise<unknown | null> }).findByPk(id) as (unknown & { id: string; phone: string; countryCode: string | null | undefined; fullName: string | null | undefined; email: string | null | undefined; role: string; gender: string | undefined; age: number | null | undefined; avatarUrl: string | null | undefined; isVerified: boolean; avgRating: number | undefined; status: string; locale: string }) | null;
   if (!user) {
     throw ApiErrors.notFound('USER_NOT_FOUND');
   }
@@ -493,7 +493,7 @@ export async function me(id: string): Promise<{ id: string; phone: string; count
 // ===== FORGOT PASSWORD =====
 
 export async function forgotPassword(phone: string): Promise<{ message: string }> {
-  const user = await (User as unknown as { findOne: (opts: unknown) => Promise<any | null> }).findOne({ where: { phone } });
+  const user = await (User as unknown as { findOne: (opts: unknown) => Promise<unknown | null> }).findOne({ where: { phone } });
   if (!user) {
     return { message: 'OTP_IF_REGISTERED' };
   }
@@ -550,7 +550,7 @@ export async function resetPassword(authHeader: string | undefined, password: st
 
   await deleteKey(`reset_token:${payload.phone}`);
 
-  const user = await (User as unknown as { findOne: (opts: unknown) => Promise<(any & { id: string; phone: string; update: (data: unknown) => Promise<void> }) | null> }).findOne({ where: { phone: payload.phone } });
+  const user = await (User as unknown as { findOne: (opts: unknown) => Promise<(unknown & { id: string; phone: string; update: (data: unknown) => Promise<void> }) | null> }).findOne({ where: { phone: payload.phone } });
   if (!user) {
     throw ApiErrors.notFound('USER_NOT_FOUND');
   }
@@ -586,7 +586,7 @@ export async function resetPassword(authHeader: string | undefined, password: st
  * forcing a fresh login on other devices (`requires_relogin`).
  */
 export async function changePassword(userId: string, currentPassword: string, newPassword: string, accessToken?: string | null): Promise<{ message: string; requires_relogin: boolean }> {
-  const user = await (User as unknown as { findByPk: (id: string) => Promise<(any & { id: string; phone: string; passwordHash: string; update: (data: unknown) => Promise<void> }) | null> }).findByPk(userId);
+  const user = await (User as unknown as { findByPk: (id: string) => Promise<(unknown & { id: string; phone: string; passwordHash: string; update: (data: unknown) => Promise<void> }) | null> }).findByPk(userId);
   if (!user) {
     throw ApiErrors.notFound('USER_NOT_FOUND');
   }
@@ -631,14 +631,14 @@ export async function changePassword(userId: string, currentPassword: string, ne
 
 export async function resendOTP(phone: string, purpose: string): Promise<{ message: string }> {
   if (purpose === 'register') {
-    const existingUser = await (User as unknown as { findOne: (opts: unknown) => Promise<any | null> }).findOne({ where: { phone } });
+    const existingUser = await (User as unknown as { findOne: (opts: unknown) => Promise<unknown | null> }).findOne({ where: { phone } });
     if (existingUser) {
       throw ApiErrors.conflict('PHONE_NUMBER_IS_ALREADY_REGISTERED');
     }
   }
 
   if (purpose === 'forgot_password') {
-    const user = await (User as unknown as { findOne: (opts: unknown) => Promise<any | null> }).findOne({ where: { phone } });
+    const user = await (User as unknown as { findOne: (opts: unknown) => Promise<unknown | null> }).findOne({ where: { phone } });
     if (!user) {
       return { message: 'OTP_IF_REGISTERED' };
     }
@@ -670,7 +670,7 @@ interface DriverProfileData {
 }
 
 export async function submitDriverProfile(userId: string, data: DriverProfileData): Promise<{ driverProfile: unknown }> {
-  const user = await (User as unknown as { findByPk: (id: string) => Promise<(any & { id: string; role: string; fullName: string | null; update: (data: unknown) => Promise<void>; verificationStatus: string }) | null> }).findByPk(userId);
+  const user = await (User as unknown as { findByPk: (id: string) => Promise<(unknown & { id: string; role: string; fullName: string | null; update: (data: unknown) => Promise<void>; verificationStatus: string }) | null> }).findByPk(userId);
   if (!user) {
     throw ApiErrors.notFound('USER_NOT_FOUND');
   }
@@ -754,7 +754,7 @@ interface PassengerProfileData {
 }
 
 export async function submitPassengerProfile(userId: string, data: PassengerProfileData): Promise<{ passengerProfile: unknown }> {
-  const user = await (User as unknown as { findByPk: (id: string) => Promise<(any & { id: string; role: string; fullName: string | null; update: (data: unknown) => Promise<void> }) | null> }).findByPk(userId);
+  const user = await (User as unknown as { findByPk: (id: string) => Promise<(unknown & { id: string; role: string; fullName: string | null; update: (data: unknown) => Promise<void> }) | null> }).findByPk(userId);
   if (!user) {
     throw ApiErrors.notFound('USER_NOT_FOUND');
   }
@@ -813,7 +813,7 @@ interface VehicleData {
 }
 
 export async function submitVehicle(userId: string, data: VehicleData): Promise<{ vehicle: unknown }> {
-  const user = await (User as unknown as { findByPk: (id: string) => Promise<(any & { id: string; role: string; update: (data: unknown) => Promise<void> }) | null> }).findByPk(userId);
+  const user = await (User as unknown as { findByPk: (id: string) => Promise<(unknown & { id: string; role: string; update: (data: unknown) => Promise<void> }) | null> }).findByPk(userId);
   if (!user) {
     throw ApiErrors.notFound('USER_NOT_FOUND');
   }
@@ -896,7 +896,7 @@ export async function getVehicle(userId: string): Promise<{ vehicles: unknown[] 
 // ===== ONBOARDING: Status =====
 
 export async function getOnboardingStatus(userId: string): Promise<{ role: string; passwordSet: boolean; profileSubmitted: boolean; profileVerified: boolean; vehicleSubmitted: boolean; vehicleVerified: boolean; fullyVerified: boolean }> {
-  const user = await (User as unknown as { findByPk: (id: string) => Promise<(any & { id: string; role: string; passwordHash: string; isVerified: boolean }) | null> }).findByPk(userId);
+  const user = await (User as unknown as { findByPk: (id: string) => Promise<(unknown & { id: string; role: string; passwordHash: string; isVerified: boolean }) | null> }).findByPk(userId);
   if (!user) {
     throw ApiErrors.notFound('USER_NOT_FOUND');
   }
@@ -948,5 +948,4 @@ const authService = {
 };
 
 export default authService;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-(module.exports as any) = authService;
+module.exports = authService;

@@ -1,86 +1,99 @@
 "use strict";
-const { body } = require('express-validator');
-const { VEHICLE_TYPES } = require('../../config/constants');
-const V = require('../../config/messages/validation-keys');
-const documentId = (field, label) => body(field)
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.driverVerificationValidation = void 0;
+const express_validator_1 = require("express-validator");
+const constants_1 = require("../../config/constants");
+const validation_keys_1 = require("../../config/messages/validation-keys");
+const documentId = (field, label) => (0, express_validator_1.body)(field)
     .optional()
     .isInt({ min: 1 })
     .withMessage(`${label} must be a valid uploaded image id (positive integer)`);
-const driverVerificationValidation = [
-    body('full_name')
+exports.driverVerificationValidation = [
+    (0, express_validator_1.body)('full_name')
         .optional()
-        .isString().withMessage(V.FULL_NAME_MUST_BE_A_STRING)
+        .isString().withMessage(validation_keys_1.VALIDATION_KEYS.FULL_NAME_MUST_BE_A_STRING)
         .trim()
-        .isLength({ max: 120 }).withMessage(V.FULL_NAME_MUST_BE_AT_MOST_120_CHARACTERS_2),
-    body('national_id')
+        .isLength({ max: 120 }).withMessage(validation_keys_1.VALIDATION_KEYS.FULL_NAME_MUST_BE_AT_MOST_120_CHARACTERS_2),
+    (0, express_validator_1.body)('national_id')
         .optional()
-        .isString().withMessage(V.NATIONAL_ID_MUST_BE_A_STRING)
+        .isString().withMessage(validation_keys_1.VALIDATION_KEYS.NATIONAL_ID_MUST_BE_A_STRING)
         .trim()
-        .isLength({ max: 30 }).withMessage(V.NATIONAL_ID_MUST_BE_AT_MOST_30_CHARACTERS),
-    body('license_number')
+        .isLength({ max: 30 }).withMessage(validation_keys_1.VALIDATION_KEYS.NATIONAL_ID_MUST_BE_AT_MOST_30_CHARACTERS),
+    (0, express_validator_1.body)('license_number')
         .optional()
-        .isString().withMessage(V.LICENSE_NUMBER_MUST_BE_A_STRING)
+        .isString().withMessage(validation_keys_1.VALIDATION_KEYS.LICENSE_NUMBER_MUST_BE_A_STRING)
         .trim()
-        .isLength({ max: 50 }).withMessage(V.LICENSE_NUMBER_MUST_BE_AT_MOST_50_CHARACTERS),
-    body('license_expiry')
+        .isLength({ max: 50 }).withMessage(validation_keys_1.VALIDATION_KEYS.LICENSE_NUMBER_MUST_BE_AT_MOST_50_CHARACTERS),
+    (0, express_validator_1.body)('license_expiry')
         .optional()
-        .isDate().withMessage(V.LICENSE_EXPIRY_MUST_BE_A_VALID_DATE),
-    body('phone')
-        .not().exists().withMessage(V.PHONE_CANNOT_BE_CHANGED_DURING_VERIFICATION),
+        .isDate().withMessage(validation_keys_1.VALIDATION_KEYS.LICENSE_EXPIRY_MUST_BE_A_VALID_DATE),
+    (0, express_validator_1.body)('phone')
+        .not().exists().withMessage(validation_keys_1.VALIDATION_KEYS.PHONE_CANNOT_BE_CHANGED_DURING_VERIFICATION),
     documentId('user_identification_front', 'user_identification_front'),
     documentId('user_identification_back', 'user_identification_back'),
     documentId('lincese_front', 'lincese_front'),
     documentId('lincese_back', 'lincese_back'),
     documentId('personal_image_with_id', 'personal_image_with_id'),
-    body('vehicle')
-        .exists().withMessage(V.VEHICLE_IS_REQUIRED)
-        .isObject().withMessage(V.VEHICLE_MUST_BE_AN_OBJECT),
-    body('vehicle.manufacturer')
-        .exists().withMessage(V.VEHICLE_MANUFACTURER_IS_REQUIRED)
-        .isString().withMessage(V.VEHICLE_MANUFACTURER_MUST_BE_A_STRING)
+    (0, express_validator_1.body)('vehicle')
+        .exists().withMessage(validation_keys_1.VALIDATION_KEYS.VEHICLE_IS_REQUIRED)
+        .isObject().withMessage(validation_keys_1.VALIDATION_KEYS.VEHICLE_MUST_BE_AN_OBJECT),
+    (0, express_validator_1.body)('vehicle.manufacturer')
+        .exists().withMessage(validation_keys_1.VALIDATION_KEYS.VEHICLE_MANUFACTURER_IS_REQUIRED)
+        .isString().withMessage(validation_keys_1.VALIDATION_KEYS.VEHICLE_MANUFACTURER_MUST_BE_A_STRING)
         .trim()
-        .isLength({ max: 80 }).withMessage(V.VEHICLE_MANUFACTURER_MUST_BE_AT_MOST_80_CHARACTERS),
-    body('vehicle.model')
-        .exists().withMessage(V.VEHICLE_MODEL_IS_REQUIRED)
-        .isString().withMessage(V.VEHICLE_MODEL_MUST_BE_A_STRING)
+        .isLength({ max: 80 }).withMessage(validation_keys_1.VALIDATION_KEYS.VEHICLE_MANUFACTURER_MUST_BE_AT_MOST_80_CHARACTERS),
+    (0, express_validator_1.body)('vehicle.model')
+        .exists().withMessage(validation_keys_1.VALIDATION_KEYS.VEHICLE_MODEL_IS_REQUIRED)
+        .isString().withMessage(validation_keys_1.VALIDATION_KEYS.VEHICLE_MODEL_MUST_BE_A_STRING)
         .trim()
-        .isLength({ max: 80 }).withMessage(V.VEHICLE_MODEL_MUST_BE_AT_MOST_80_CHARACTERS),
-    body('vehicle.vehicle_type')
-        .exists().withMessage(V.VEHICLE_VEHICLE_TYPE_IS_REQUIRED)
-        .isIn(Object.values(VEHICLE_TYPES)).withMessage(V.VEHICLE_VEHICLE_TYPE_MUST_BE_ONE_OF_SEDAN_SUV_VAN_BUS_HATCHBACK),
-    body('vehicle.model_year')
+        .isLength({ max: 80 }).withMessage(validation_keys_1.VALIDATION_KEYS.VEHICLE_MODEL_MUST_BE_AT_MOST_80_CHARACTERS),
+    (0, express_validator_1.body)('vehicle.vehicle_type')
+        .exists().withMessage(validation_keys_1.VALIDATION_KEYS.VEHICLE_VEHICLE_TYPE_IS_REQUIRED)
+        .isIn(Object.values(constants_1.VEHICLE_TYPES)).withMessage(validation_keys_1.VALIDATION_KEYS.VEHICLE_VEHICLE_TYPE_MUST_BE_ONE_OF_SEDAN_SUV_VAN_BUS_HATCHBACK),
+    (0, express_validator_1.body)('vehicle.model_year')
         .optional()
-        .isInt().withMessage(V.VEHICLE_MODEL_YEAR_MUST_BE_A_VALID_YEAR)
+        .isInt().withMessage(validation_keys_1.VALIDATION_KEYS.VEHICLE_MODEL_YEAR_MUST_BE_A_VALID_YEAR)
         .custom((value) => {
         const currentYear = new Date().getFullYear();
         const minYear = currentYear - 10;
-        if (value < minYear || value > currentYear) {
+        if (Number(value) < minYear || Number(value) > currentYear) {
             throw new Error(`vehicle.model_year must be between ${minYear} and ${currentYear} (within the last 10 years)`);
         }
         return true;
     }),
-    body('vehicle.plate_number')
-        .exists().withMessage(V.VEHICLE_PLATE_NUMBER_IS_REQUIRED)
-        .isString().withMessage(V.VEHICLE_PLATE_NUMBER_MUST_BE_A_STRING)
+    (0, express_validator_1.body)('vehicle.plate_number')
+        .exists().withMessage(validation_keys_1.VALIDATION_KEYS.VEHICLE_PLATE_NUMBER_IS_REQUIRED)
+        .isString().withMessage(validation_keys_1.VALIDATION_KEYS.VEHICLE_PLATE_NUMBER_MUST_BE_A_STRING)
         .trim()
-        .isLength({ max: 20 }).withMessage(V.VEHICLE_PLATE_NUMBER_MUST_BE_AT_MOST_20_CHARACTERS),
-    body('vehicle.code_number')
+        .isLength({ max: 20 }).withMessage(validation_keys_1.VALIDATION_KEYS.VEHICLE_PLATE_NUMBER_MUST_BE_AT_MOST_20_CHARACTERS),
+    (0, express_validator_1.body)('vehicle.code_number')
         .optional()
-        .isString().withMessage(V.VEHICLE_CODE_NUMBER_MUST_BE_A_STRING)
+        .isString().withMessage(validation_keys_1.VALIDATION_KEYS.VEHICLE_CODE_NUMBER_MUST_BE_A_STRING)
         .trim()
-        .isLength({ max: 20 }).withMessage(V.VEHICLE_CODE_NUMBER_MUST_BE_AT_MOST_20_CHARACTERS),
-    body('vehicle.color')
+        .isLength({ max: 20 }).withMessage(validation_keys_1.VALIDATION_KEYS.VEHICLE_CODE_NUMBER_MUST_BE_AT_MOST_20_CHARACTERS),
+    (0, express_validator_1.body)('vehicle.color')
         .optional()
-        .isString().withMessage(V.VEHICLE_COLOR_MUST_BE_A_STRING)
+        .isString().withMessage(validation_keys_1.VALIDATION_KEYS.VEHICLE_COLOR_MUST_BE_A_STRING)
         .trim()
-        .isLength({ max: 30 }).withMessage(V.VEHICLE_COLOR_MUST_BE_AT_MOST_30_CHARACTERS),
-    body('vehicle.seats')
-        .exists().withMessage(V.VEHICLE_SEATS_IS_REQUIRED)
-        .isInt({ min: 1, max: 50 }).withMessage(V.VEHICLE_SEATS_MUST_BE_AN_INTEGER_BETWEEN_1_AND_50),
+        .isLength({ max: 30 }).withMessage(validation_keys_1.VALIDATION_KEYS.VEHICLE_COLOR_MUST_BE_AT_MOST_30_CHARACTERS),
+    (0, express_validator_1.body)('vehicle.seats')
+        .exists().withMessage(validation_keys_1.VALIDATION_KEYS.VEHICLE_SEATS_IS_REQUIRED)
+        .isInt({ min: 1, max: 50 }).withMessage(validation_keys_1.VALIDATION_KEYS.VEHICLE_SEATS_MUST_BE_AN_INTEGER_BETWEEN_1_AND_50),
     documentId('vehicle.registration_doc_front', 'vehicle.registration_doc_front'),
     documentId('vehicle.registration_doc_back', 'vehicle.registration_doc_back'),
     documentId('vehicle.vehicle_photo_front', 'vehicle.vehicle_photo_front'),
     documentId('vehicle.vehicle_photo_back', 'vehicle.vehicle_photo_back'),
 ];
-module.exports = { driverVerificationValidation };
+const _exported = { driverVerificationValidation: exports.driverVerificationValidation };
+exports.default = _exported;
+// CommonJS interop
+// @ts-ignore
+if (typeof module !== 'undefined' && module.exports) {
+    // @ts-ignore
+    module.exports = { driverVerificationValidation: exports.driverVerificationValidation };
+    // @ts-ignore
+    module.exports.driverVerificationValidation = exports.driverVerificationValidation;
+    // @ts-ignore
+    module.exports.default = _exported;
+}
 //# sourceMappingURL=driverVerificationValidator.js.map

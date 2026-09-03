@@ -1,11 +1,36 @@
 "use strict";
-const { Op, fn, col, literal } = require('sequelize');
-const sequelize = require('../config/database');
-const { User, DriverProfile, Vehicle, UploadedImage, Trip, Booking, Rating, Complaint, Penalty, DriverSubscription, DocumentReview, VerificationStatusChange, } = require('../Models');
-const { TRIP_STATUS, BOOKING_STATUS, COMPLAINT_STATUS, PENALTY_TYPES, VERIFICATION_STATUS } = require('../config/constants');
-const { parsePagination, buildPagination } = require('../utils/pagination');
-const { ApiErrors } = require('../utils/ApiError');
-const { maskPhone } = require('../utils/masking');
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.ALL_DOCUMENT_KEYS = exports.DOCUMENT_KEYS = void 0;
+exports.deriveAccountStatus = deriveAccountStatus;
+exports.getSummary = getSummary;
+exports.getRecentTrips = getRecentTrips;
+exports.getTopRoutes = getTopRoutes;
+exports.getPendingRequests = getPendingRequests;
+exports.getLatestComplaints = getLatestComplaints;
+exports.listDrivers = listDrivers;
+exports.getDriverStats = getDriverStats;
+exports.getDriverHeader = getDriverHeader;
+exports.getDriverOverview = getDriverOverview;
+exports.listDriverTrips = listDriverTrips;
+exports.getDriverEvaluations = getDriverEvaluations;
+exports.getAccountLog = getAccountLog;
+exports.getCarDetails = getCarDetails;
+exports.getDocuments = getDocuments;
+exports.setDriverStatus = setDriverStatus;
+exports.applyStandingAction = applyStandingAction;
+exports.decideDocument = decideDocument;
+exports.listReservations = listReservations;
+// @ts-nocheck
+const sequelize_1 = require("sequelize");
+const database_1 = __importDefault(require("../config/database"));
+const constants_1 = require("../config/constants");
+const pagination_1 = require("../utils/pagination");
+const ApiError_1 = require("../utils/ApiError");
+const masking_1 = require("../utils/masking");
+const Models_1 = require("../Models");
 // ===== Canonical document registry (data-model.md) =====
 const DOCUMENT_KEYS = {
     personal_documents: [
@@ -21,20 +46,22 @@ const DOCUMENT_KEYS = {
         { key: 'insurance', source: null, column: null },
     ],
 };
+exports.DOCUMENT_KEYS = DOCUMENT_KEYS;
 const ALL_DOCUMENT_KEYS = Object.values(DOCUMENT_KEYS).flat();
+exports.ALL_DOCUMENT_KEYS = ALL_DOCUMENT_KEYS;
 const DRIVER_STATUSES = ['active', 'suspended', 'pending', 'blocked'];
 const STANDING_ACTIONS = ['suspend', 'reactivate', 'unblock'];
-const TRIP_ACTIVE_STATUSES = [TRIP_STATUS.PUBLISHED, TRIP_STATUS.FULL, TRIP_STATUS.IN_PROGRESS, TRIP_STATUS.ONGOING];
+const TRIP_ACTIVE_STATUSES = [constants_1.TRIP_STATUS.PUBLISHED, constants_1.TRIP_STATUS.FULL, constants_1.TRIP_STATUS.IN_PROGRESS, constants_1.TRIP_STATUS.ONGOING];
 // Derived dashboard status buckets (research R7)
 const ACTIVE_BUCKET = {
     role: 'driver',
-    status: { [Op.in]: ['active', 'warned'] },
-    verificationStatus: VERIFICATION_STATUS.APPROVED,
+    status: { [sequelize_1.Op.in]: ['active', 'warned'] },
+    verificationStatus: constants_1.VERIFICATION_STATUS.APPROVED,
 };
 const PENDING_BUCKET = {
     role: 'driver',
-    status: { [Op.in]: ['active', 'warned'] },
-    verificationStatus: { [Op.in]: [VERIFICATION_STATUS.UNVERIFIED, VERIFICATION_STATUS.PENDING, VERIFICATION_STATUS.REJECTED] },
+    status: { [sequelize_1.Op.in]: ['active', 'warned'] },
+    verificationStatus: { [sequelize_1.Op.in]: [constants_1.VERIFICATION_STATUS.UNVERIFIED, constants_1.VERIFICATION_STATUS.PENDING, constants_1.VERIFICATION_STATUS.REJECTED] },
 };
 const SUSPENDED_BUCKET = { role: 'driver', status: 'suspended' };
 const BLOCKED_BUCKET = { role: 'driver', status: 'banned' };
@@ -43,8 +70,8 @@ function deriveAccountStatus(user) {
         return 'blocked';
     if (user.status === 'suspended')
         return 'suspended';
-    if (Object.values(VERIFICATION_STATUS).includes(user.verificationStatus)
-        && user.verificationStatus !== VERIFICATION_STATUS.APPROVED)
+    if (Object.values(constants_1.VERIFICATION_STATUS).includes(user.verificationStatus)
+        && user.verificationStatus !== constants_1.VERIFICATION_STATUS.APPROVED)
         return 'pending';
     return 'active';
 }
@@ -59,29 +86,29 @@ function bucketWhereFor(statusFilter) {
 }
 function mapTripStatusFilter(status) {
     switch (status) {
-        case 'pending': return { [Op.in]: [TRIP_STATUS.PUBLISHED, TRIP_STATUS.FULL] };
-        case 'active': return { [Op.in]: [TRIP_STATUS.IN_PROGRESS, TRIP_STATUS.ONGOING] };
-        case 'completed': return TRIP_STATUS.COMPLETED;
+        case 'pending': return { [sequelize_1.Op.in]: [constants_1.TRIP_STATUS.PUBLISHED, constants_1.TRIP_STATUS.FULL] };
+        case 'active': return { [sequelize_1.Op.in]: [constants_1.TRIP_STATUS.IN_PROGRESS, constants_1.TRIP_STATUS.ONGOING] };
+        case 'completed': return constants_1.TRIP_STATUS.COMPLETED;
         case 'canceled':
-        case 'cancelled': return TRIP_STATUS.CANCELLED;
+        case 'cancelled': return constants_1.TRIP_STATUS.CANCELLED;
         default: return null;
     }
 }
 async function getDriverOrThrow(driverId) {
-    const driver = await User.findByPk(driverId);
+    const driver = await Models_1.User.findByPk(driverId);
     if (!driver || driver.role !== 'driver')
-        throw ApiErrors.notFound('DRIVER_NOT_FOUND');
+        throw ApiError_1.ApiErrors.notFound('DRIVER_NOT_FOUND');
     return driver;
 }
 async function loadDossierContext(driverId) {
     const [driver, profile, vehicle] = await Promise.all([
-        User.findByPk(driverId),
-        DriverProfile.findOne({ where: { driverId } }),
-        Vehicle.findOne({ where: { driverId } }),
+        Models_1.User.findByPk(driverId),
+        Models_1.DriverProfile.findOne({ where: { driverId } }),
+        Models_1.Vehicle.findOne({ where: { driverId } }),
     ]);
     if (!driver || driver.role !== 'driver')
-        throw ApiErrors.notFound('DRIVER_NOT_FOUND');
-    const reviews = await DocumentReview.findAll({ where: { driverId } });
+        throw ApiError_1.ApiErrors.notFound('DRIVER_NOT_FOUND');
+    const reviews = await Models_1.DocumentReview.findAll({ where: { driverId } });
     const reviewByKey = new Map(reviews.map((r) => [r.documentKey, r]));
     return { driver, profile, vehicle, reviewByKey };
 }
@@ -89,7 +116,7 @@ async function resolveImages(imageIds) {
     const ids = [...new Set(imageIds.filter((v) => v != null))];
     if (ids.length === 0)
         return new Map();
-    const rows = await UploadedImage.findAll({ where: { id: { [Op.in]: ids } } });
+    const rows = await Models_1.UploadedImage.findAll({ where: { id: { [sequelize_1.Op.in]: ids } } });
     return new Map(rows.map((r) => [r.id, r]));
 }
 function documentEntry(def, profile, vehicle, reviewByKey, imageMap) {
@@ -128,9 +155,9 @@ async function pendingDocumentKeysFor(driverIds) {
     if (driverIds.length === 0)
         return new Map();
     const [profiles, vehicles, reviews] = await Promise.all([
-        DriverProfile.findAll({ where: { driverId: { [Op.in]: driverIds } } }),
-        Vehicle.findAll({ where: { driverId: { [Op.in]: driverIds } } }),
-        DocumentReview.findAll({ where: { driverId: { [Op.in]: driverIds } } }),
+        Models_1.DriverProfile.findAll({ where: { driverId: { [sequelize_1.Op.in]: driverIds } } }),
+        Models_1.Vehicle.findAll({ where: { driverId: { [sequelize_1.Op.in]: driverIds } } }),
+        Models_1.DocumentReview.findAll({ where: { driverId: { [sequelize_1.Op.in]: driverIds } } }),
     ]);
     const profileByDriver = new Map(profiles.map((p) => [p.driverId, p]));
     const vehicleByDriver = new Map(vehicles.map((v) => [v.driverId, v]));
@@ -169,17 +196,17 @@ async function countPendingDocuments() {
         ...fileColumns.map((c) => `SELECT COUNT(*)::int AS cnt FROM driver_profiles dp JOIN users u ON u.id = dp.driver_id AND u.role = 'driver' WHERE dp.${c} IS NOT NULL`),
         ...vehicleColumns.map((c) => `SELECT COUNT(*)::int AS cnt FROM vehicles v JOIN users u ON u.id = v.driver_id AND u.role = 'driver' WHERE v.${c} IS NOT NULL`),
     ].join(' UNION ALL ');
-    const [uploaded] = await sequelize.query(`SELECT SUM(cnt)::int AS total FROM (${selects}) s`);
+    const [uploaded] = await database_1.default.query(`SELECT SUM(cnt)::int AS total FROM (${selects}) s`);
     const uploadedTotal = Number(uploaded?.[0]?.total || 0);
-    const decided = await DocumentReview.count();
+    const decided = await Models_1.DocumentReview.count();
     return Math.max(0, uploadedTotal - decided);
 }
 function tripPassengerAggregates(tripIds) {
     if (tripIds.length === 0)
         return Promise.resolve(new Map());
-    return Booking.findAll({
-        attributes: ['tripId', [fn('COUNT', col('id')), 'reservations_count'], [fn('SUM', col('seats_booked')), 'passengers_count']],
-        where: { tripId: { [Op.in]: tripIds }, status: { [Op.ne]: BOOKING_STATUS.CANCELLED } },
+    return Models_1.Booking.findAll({
+        attributes: ['tripId', [(0, sequelize_1.fn)('COUNT', (0, sequelize_1.col)('id')), 'reservations_count'], [(0, sequelize_1.fn)('SUM', (0, sequelize_1.col)('seats_booked')), 'passengers_count']],
+        where: { tripId: { [sequelize_1.Op.in]: tripIds }, status: { [sequelize_1.Op.ne]: constants_1.BOOKING_STATUS.CANCELLED } },
         group: ['tripId'],
     }).then((rows) => new Map(rows.map((r) => [
         r.tripId,
@@ -201,9 +228,9 @@ async function fetchRecentTrips({ limit, offset = 0, status = null }) {
     const where = {};
     if (status)
         where.status = mapTripStatusFilter(status) || status;
-    const { rows, count } = await Trip.findAndCountAll({
+    const { rows, count } = await Models_1.Trip.findAndCountAll({
         where,
-        include: [{ model: User, as: 'driver', attributes: ['id', 'fullName'] }],
+        include: [{ model: Models_1.User, as: 'driver', attributes: ['id', 'fullName'] }],
         order: [['departure_time', 'DESC']],
         offset,
         limit,
@@ -211,36 +238,36 @@ async function fetchRecentTrips({ limit, offset = 0, status = null }) {
     const aggs = await tripPassengerAggregates(rows.map((t) => t.id));
     return {
         data: rows.map((t) => recentTripShape(t, t.driver, aggs.get(t.id))),
-        pagination: buildPagination(count, Math.floor(offset / limit) + 1, limit),
+        pagination: (0, pagination_1.buildPagination)(count, Math.floor(offset / limit) + 1, limit),
     };
 }
 // ===== US1: Global dashboard =====
 async function getSummary() {
     const [totalDrivers, activeDrivers, totalTrips, activeTrips, totalVehicles, pendingDocsCount, pendingDriversRows, unresolvedComplaints, topRoutes, recentTripRows, latestComplaints,] = await Promise.all([
-        User.count({ where: { role: 'driver' } }),
-        User.count({ where: ACTIVE_BUCKET }),
-        Trip.count(),
-        Trip.count({ where: { status: { [Op.in]: TRIP_ACTIVE_STATUSES } } }),
-        Vehicle.count(),
+        Models_1.User.count({ where: { role: 'driver' } }),
+        Models_1.User.count({ where: ACTIVE_BUCKET }),
+        Models_1.Trip.count(),
+        Models_1.Trip.count({ where: { status: { [sequelize_1.Op.in]: TRIP_ACTIVE_STATUSES } } }),
+        Models_1.Vehicle.count(),
         countPendingDocuments(),
-        User.findAll({ where: PENDING_BUCKET, attributes: ['id', 'fullName', 'phone', 'verificationSubmittedAt', 'createdat'], order: [['createdat', 'ASC']], limit: 10 }),
-        Complaint.count({ where: { status: { [Op.in]: [COMPLAINT_STATUS.OPEN, COMPLAINT_STATUS.REVIEWING] } } }),
-        Trip.findAll({
-            attributes: ['originCity', 'destinationCity', [fn('COUNT', col('id')), 'trips_count']],
+        Models_1.User.findAll({ where: PENDING_BUCKET, attributes: ['id', 'fullName', 'phone', 'verificationSubmittedAt', 'createdat'], order: [['createdat', 'ASC']], limit: 10 }),
+        Models_1.Complaint.count({ where: { status: { [sequelize_1.Op.in]: [constants_1.COMPLAINT_STATUS.OPEN, constants_1.COMPLAINT_STATUS.REVIEWING] } } }),
+        Models_1.Trip.findAll({
+            attributes: ['originCity', 'destinationCity', [(0, sequelize_1.fn)('COUNT', (0, sequelize_1.col)('id')), 'trips_count']],
             group: ['originCity', 'destinationCity'],
-            order: [[literal('trips_count'), 'DESC']],
+            order: [[(0, sequelize_1.literal)('trips_count'), 'DESC']],
             limit: 5,
         }),
-        Trip.findAll({
+        Models_1.Trip.findAll({
             where: {},
-            include: [{ model: User, as: 'driver', attributes: ['id', 'fullName'] }],
+            include: [{ model: Models_1.User, as: 'driver', attributes: ['id', 'fullName'] }],
             order: [['departure_time', 'DESC']],
             limit: 5,
         }),
-        Complaint.findAll({
+        Models_1.Complaint.findAll({
             include: [
-                { model: User, as: 'reporter', attributes: ['id', 'fullName'] },
-                { model: User, as: 'accused', attributes: ['id', 'fullName'] },
+                { model: Models_1.User, as: 'reporter', attributes: ['id', 'fullName'] },
+                { model: Models_1.User, as: 'accused', attributes: ['id', 'fullName'] },
             ],
             order: [['createdat', 'DESC']],
             limit: 5,
@@ -271,7 +298,7 @@ async function getSummary() {
         pending_requests: pendingDriversRows.map((u) => ({
             driver_id: u.id,
             name: u.fullName,
-            phone: maskPhone(u.phone),
+            phone: (0, masking_1.maskPhone)(u.phone),
             submitted_at: u.verificationSubmittedAt || u.createdat,
             pending_documents: pendingDocKeys.get(u.id) || [],
         })),
@@ -286,16 +313,16 @@ async function getSummary() {
     };
 }
 async function getRecentTrips(query) {
-    const { page, limit, offset } = parsePagination(query);
+    const { page, limit, offset } = (0, pagination_1.parsePagination)(query);
     const result = await fetchRecentTrips({ limit, offset, status: query.status || null });
     result.pagination.page = page;
     return result;
 }
 async function getTopRoutes() {
-    const rows = await Trip.findAll({
-        attributes: ['originCity', 'destinationCity', [fn('COUNT', col('id')), 'trips_count']],
+    const rows = await Models_1.Trip.findAll({
+        attributes: ['originCity', 'destinationCity', [(0, sequelize_1.fn)('COUNT', (0, sequelize_1.col)('id')), 'trips_count']],
         group: ['originCity', 'destinationCity'],
-        order: [[literal('trips_count'), 'DESC']],
+        order: [[(0, sequelize_1.literal)('trips_count'), 'DESC']],
         limit: 5,
     });
     return {
@@ -307,8 +334,8 @@ async function getTopRoutes() {
     };
 }
 async function getPendingRequests(query) {
-    const { page, limit, offset } = parsePagination(query);
-    const { rows, count } = await User.findAndCountAll({
+    const { page, limit, offset } = (0, pagination_1.parsePagination)(query);
+    const { rows, count } = await Models_1.User.findAndCountAll({
         where: PENDING_BUCKET,
         attributes: ['id', 'fullName', 'phone', 'verificationSubmittedAt', 'createdat'],
         order: [['createdat', 'ASC']],
@@ -320,19 +347,19 @@ async function getPendingRequests(query) {
         data: rows.map((u) => ({
             driver_id: u.id,
             name: u.fullName,
-            phone: maskPhone(u.phone),
+            phone: (0, masking_1.maskPhone)(u.phone),
             submitted_at: u.verificationSubmittedAt || u.createdat,
             pending_documents: pendingDocKeys.get(u.id) || [],
         })),
-        pagination: buildPagination(count, page, limit),
+        pagination: (0, pagination_1.buildPagination)(count, page, limit),
     };
 }
 async function getLatestComplaints(query) {
-    const { page, limit, offset } = parsePagination(query);
-    const { rows, count } = await Complaint.findAndCountAll({
+    const { page, limit, offset } = (0, pagination_1.parsePagination)(query);
+    const { rows, count } = await Models_1.Complaint.findAndCountAll({
         include: [
-            { model: User, as: 'reporter', attributes: ['id', 'fullName'] },
-            { model: User, as: 'accused', attributes: ['id', 'fullName'] },
+            { model: Models_1.User, as: 'reporter', attributes: ['id', 'fullName'] },
+            { model: Models_1.User, as: 'accused', attributes: ['id', 'fullName'] },
         ],
         order: [['createdat', 'DESC']],
         offset,
@@ -347,7 +374,7 @@ async function getLatestComplaints(query) {
             subject: c.category,
             status: c.status,
         })),
-        pagination: buildPagination(count, page, limit),
+        pagination: (0, pagination_1.buildPagination)(count, page, limit),
     };
 }
 // ===== US2: Drivers directory =====
@@ -357,27 +384,27 @@ const SORT_COLUMNS = {
     avg_rating: 'avgRating',
 };
 async function listDrivers(query) {
-    const { page, limit, offset } = parsePagination(query);
+    const { page, limit, offset } = (0, pagination_1.parsePagination)(query);
     const where = bucketWhereFor(query.status) || { role: 'driver' };
     if (query.search) {
         const term = `%${query.search}%`;
-        where[Op.or] = [{ fullName: { [Op.iLike]: term } }, { phone: { [Op.iLike]: term } }];
+        where[sequelize_1.Op.or] = [{ fullName: { [sequelize_1.Op.iLike]: term } }, { phone: { [sequelize_1.Op.iLike]: term } }];
     }
     if (query.registration_from || query.registration_to) {
         where.createdat = {};
         if (query.registration_from)
-            where.createdat[Op.gte] = new Date(`${query.registration_from}T00:00:00.000Z`);
+            where.createdat[sequelize_1.Op.gte] = new Date(`${query.registration_from}T00:00:00.000Z`);
         if (query.registration_to) {
             const to = new Date(`${query.registration_to}T23:59:59.999Z`);
-            where.createdat[Op.lte] = to;
+            where.createdat[sequelize_1.Op.lte] = to;
         }
     }
     const sortColumn = SORT_COLUMNS[query.sort_by] || SORT_COLUMNS.created_at;
     const sortOrder = (query.sort_order || 'desc').toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
-    const { rows, count } = await User.findAndCountAll({
+    const { rows, count } = await Models_1.User.findAndCountAll({
         where,
         attributes: ['id', 'fullName', 'phone', 'avgRating', 'totalBalance', 'status', 'verificationStatus', 'createdat'],
-        include: [{ model: DriverProfile, as: 'driverProfile', attributes: ['totalTrips'] }],
+        include: [{ model: Models_1.DriverProfile, as: 'driverProfile', attributes: ['totalTrips'] }],
         order: [[sortColumn, sortOrder]],
         offset,
         limit,
@@ -386,22 +413,22 @@ async function listDrivers(query) {
         data: rows.map((u) => ({
             id: u.id,
             name: u.fullName,
-            phone: maskPhone(u.phone),
+            phone: (0, masking_1.maskPhone)(u.phone),
             registration_date: u.createdat,
             avg_rating: Number(u.avgRating || 0),
             total_trips: u.driverProfile?.totalTrips ?? 0,
             balance: Number(u.totalBalance || 0),
             account_status: deriveAccountStatus(u),
         })),
-        pagination: buildPagination(count, page, limit),
+        pagination: (0, pagination_1.buildPagination)(count, page, limit),
     };
 }
 async function getDriverStats() {
     const [total, active, suspended, pending] = await Promise.all([
-        User.count({ where: { role: 'driver' } }),
-        User.count({ where: ACTIVE_BUCKET }),
-        User.count({ where: SUSPENDED_BUCKET }),
-        User.count({ where: PENDING_BUCKET }),
+        Models_1.User.count({ where: { role: 'driver' } }),
+        Models_1.User.count({ where: ACTIVE_BUCKET }),
+        Models_1.User.count({ where: SUSPENDED_BUCKET }),
+        Models_1.User.count({ where: PENDING_BUCKET }),
     ]);
     return { total_drivers: total, active_drivers: active, suspended_drivers: suspended, pending_drivers: pending };
 }
@@ -409,17 +436,17 @@ async function getDriverStats() {
 async function getDriverHeader(driverId) {
     const driver = await getDriverOrThrow(driverId);
     const [totalTrips, completedTrips, canceledTrips, reviewsCount, ratingAgg] = await Promise.all([
-        Trip.count({ where: { driverId } }),
-        Trip.count({ where: { driverId, status: TRIP_STATUS.COMPLETED } }),
-        Trip.count({ where: { driverId, status: TRIP_STATUS.CANCELLED } }),
-        Rating.count({ where: { rateeId: driverId } }),
-        Rating.findOne({ attributes: [[fn('AVG', col('stars')), 'avg']], where: { rateeId: driverId } }),
+        Models_1.Trip.count({ where: { driverId } }),
+        Models_1.Trip.count({ where: { driverId, status: constants_1.TRIP_STATUS.COMPLETED } }),
+        Models_1.Trip.count({ where: { driverId, status: constants_1.TRIP_STATUS.CANCELLED } }),
+        Models_1.Rating.count({ where: { rateeId: driverId } }),
+        Models_1.Rating.findOne({ attributes: [[(0, sequelize_1.fn)('AVG', (0, sequelize_1.col)('stars')), 'avg']], where: { rateeId: driverId } }),
     ]);
     const computedAvg = ratingAgg?.get('avg') ? parseFloat(ratingAgg.get('avg')) : null;
     return {
         id: driver.id,
         name: driver.fullName,
-        phone: maskPhone(driver.phone),
+        phone: (0, masking_1.maskPhone)(driver.phone),
         age: driver.age != null ? Number(driver.age) : null,
         city: null,
         avatar_url: driver.avatarUrl,
@@ -433,17 +460,17 @@ async function getDriverHeader(driverId) {
 async function getDriverOverview(driverId) {
     const driver = await getDriverOrThrow(driverId);
     const [totalTrips, completedTrips, canceledTrips, ratingAgg, subscription] = await Promise.all([
-        Trip.count({ where: { driverId } }),
-        Trip.count({ where: { driverId, status: TRIP_STATUS.COMPLETED } }),
-        Trip.count({ where: { driverId, status: TRIP_STATUS.CANCELLED } }),
-        Rating.findOne({ attributes: [[fn('AVG', col('stars')), 'avg']], where: { rateeId: driverId } }),
-        DriverSubscription.findOne({ where: { driverId }, order: [['createdat', 'DESC']] }),
+        Models_1.Trip.count({ where: { driverId } }),
+        Models_1.Trip.count({ where: { driverId, status: constants_1.TRIP_STATUS.COMPLETED } }),
+        Models_1.Trip.count({ where: { driverId, status: constants_1.TRIP_STATUS.CANCELLED } }),
+        Models_1.Rating.findOne({ attributes: [[(0, sequelize_1.fn)('AVG', (0, sequelize_1.col)('stars')), 'avg']], where: { rateeId: driverId } }),
+        Models_1.DriverSubscription.findOne({ where: { driverId }, order: [['createdat', 'DESC']] }),
     ]);
     const avg = ratingAgg?.get('avg') ? parseFloat(ratingAgg.get('avg')) : Number(driver.avgRating || 0);
     return {
         personal_info: {
             name: driver.fullName,
-            phone: maskPhone(driver.phone),
+            phone: (0, masking_1.maskPhone)(driver.phone),
             registration_date: driver.createdat,
             last_login: driver.lastLoginAt,
             city: null,
@@ -462,7 +489,7 @@ async function getDriverOverview(driverId) {
 }
 async function listDriverTrips(driverId, query) {
     await getDriverOrThrow(driverId);
-    const { page, limit, offset } = parsePagination(query);
+    const { page, limit, offset } = (0, pagination_1.parsePagination)(query);
     const where = { driverId };
     if (query.status && query.status !== 'all') {
         const mapped = mapTripStatusFilter(query.status);
@@ -473,9 +500,9 @@ async function listDriverTrips(driverId, query) {
         const [y, m] = String(query.month).split('-').map(Number);
         const start = new Date(Date.UTC(y, m - 1, 1));
         const end = new Date(Date.UTC(y, m, 1));
-        where.departureTime = { [Op.gte]: start, [Op.lt]: end };
+        where.departureTime = { [sequelize_1.Op.gte]: start, [sequelize_1.Op.lt]: end };
     }
-    const { rows, count } = await Trip.findAndCountAll({
+    const { rows, count } = await Models_1.Trip.findAndCountAll({
         where,
         order: [['departure_time', 'DESC']],
         offset,
@@ -492,19 +519,19 @@ async function listDriverTrips(driverId, query) {
             price: Number(t.farePerSeat),
             status: t.status,
         })),
-        pagination: buildPagination(count, page, limit),
+        pagination: (0, pagination_1.buildPagination)(count, page, limit),
     };
 }
 async function getDriverEvaluations(driverId, query) {
     await getDriverOrThrow(driverId);
-    const { page, limit, offset } = parsePagination(query);
+    const { page, limit, offset } = (0, pagination_1.parsePagination)(query);
     const [summaryRow, distRows, tagRows, { rows, count }] = await Promise.all([
-        Rating.findOne({ attributes: [[fn('AVG', col('stars')), 'avg'], [fn('COUNT', col('id')), 'total']], where: { rateeId: driverId } }),
-        Rating.findAll({ attributes: ['stars', [fn('COUNT', col('id')), 'cnt']], where: { rateeId: driverId }, group: ['stars'] }),
-        Rating.findAll({ attributes: ['tags'], where: { rateeId: driverId, tags: { [Op.ne]: null } } }),
-        Rating.findAndCountAll({
+        Models_1.Rating.findOne({ attributes: [[(0, sequelize_1.fn)('AVG', (0, sequelize_1.col)('stars')), 'avg'], [(0, sequelize_1.fn)('COUNT', (0, sequelize_1.col)('id')), 'total']], where: { rateeId: driverId } }),
+        Models_1.Rating.findAll({ attributes: ['stars', [(0, sequelize_1.fn)('COUNT', (0, sequelize_1.col)('id')), 'cnt']], where: { rateeId: driverId }, group: ['stars'] }),
+        Models_1.Rating.findAll({ attributes: ['tags'], where: { rateeId: driverId, tags: { [sequelize_1.Op.ne]: null } } }),
+        Models_1.Rating.findAndCountAll({
             where: { rateeId: driverId },
-            include: [{ model: User, as: 'rater', attributes: ['id', 'fullName', 'avatarUrl'] }],
+            include: [{ model: Models_1.User, as: 'rater', attributes: ['id', 'fullName', 'avatarUrl'] }],
             order: [['createdat', 'DESC']],
             offset,
             limit,
@@ -532,16 +559,16 @@ async function getDriverEvaluations(driverId, query) {
             was_late: r.wasLate,
             date: r.createdat,
         })),
-        pagination: buildPagination(count, page, limit),
+        pagination: (0, pagination_1.buildPagination)(count, page, limit),
     };
 }
 async function getAccountLog(driverId) {
     await getDriverOrThrow(driverId);
     const now = new Date();
     const [penalties, complaints] = await Promise.all([
-        Penalty.findAll({ where: { userId: driverId }, order: [['starts_at', 'DESC']] }),
-        Complaint.findAll({
-            where: { [Op.or]: [{ reporterId: driverId }, { accusedId: driverId }] },
+        Models_1.Penalty.findAll({ where: { userId: driverId }, order: [['starts_at', 'DESC']] }),
+        Models_1.Complaint.findAll({
+            where: { [sequelize_1.Op.or]: [{ reporterId: driverId }, { accusedId: driverId }] },
             order: [['createdat', 'DESC']],
         }),
     ]);
@@ -563,15 +590,15 @@ async function getAccountLog(driverId) {
             related_trip_id: null,
             date: c.createdat,
             type: 'enquiry',
-            status: [COMPLAINT_STATUS.OPEN, COMPLAINT_STATUS.REVIEWING].includes(c.status) ? 'pending' : 'resolved',
+            status: [constants_1.COMPLAINT_STATUS.OPEN, constants_1.COMPLAINT_STATUS.REVIEWING].includes(c.status) ? 'pending' : 'resolved',
             direction: c.reporterId === driverId ? 'by_driver' : 'against_driver',
         })),
     ].sort((a, b) => new Date(b.date) - new Date(a.date));
     return {
         summary: {
             violations: penalties.length,
-            warnings: penalties.filter((p) => p.type === PENALTY_TYPES.WARNING).length,
-            suspensions: penalties.filter((p) => p.type !== PENALTY_TYPES.WARNING).length,
+            warnings: penalties.filter((p) => p.type === constants_1.PENALTY_TYPES.WARNING).length,
+            suspensions: penalties.filter((p) => p.type !== constants_1.PENALTY_TYPES.WARNING).length,
             complaints_against: complaints.filter((c) => c.accusedId === driverId).length,
             complaints_by: complaints.filter((c) => c.reporterId === driverId).length,
         },
@@ -615,10 +642,10 @@ async function getDocuments(driverId) {
 async function setDriverStatus(adminId, driverId, requestedStatus) {
     const driver = await getDriverOrThrow(driverId);
     if (!DRIVER_STATUSES.includes(requestedStatus))
-        throw ApiErrors.validation('INVALID_DRIVER_STATUS_VALUE');
+        throw ApiError_1.ApiErrors.validation('INVALID_DRIVER_STATUS_VALUE');
     const currentDerived = deriveAccountStatus(driver);
     if (currentDerived === requestedStatus)
-        throw ApiErrors.conflict('DRIVER_ALREADY_IN_STATE');
+        throw ApiError_1.ApiErrors.conflict('DRIVER_ALREADY_IN_STATE');
     const originalVerification = driver.verificationStatus;
     const updates = {};
     if (requestedStatus === 'active')
@@ -629,11 +656,11 @@ async function setDriverStatus(adminId, driverId, requestedStatus) {
         updates.status = 'banned';
     if (requestedStatus === 'pending') {
         updates.status = 'active';
-        updates.verificationStatus = VERIFICATION_STATUS.PENDING;
+        updates.verificationStatus = constants_1.VERIFICATION_STATUS.PENDING;
     }
     await driver.update(updates);
     if (updates.verificationStatus && originalVerification !== updates.verificationStatus) {
-        await VerificationStatusChange.create({
+        await Models_1.VerificationStatusChange.create({
             driverId,
             fromStatus: originalVerification,
             toStatus: updates.verificationStatus,
@@ -645,16 +672,16 @@ async function setDriverStatus(adminId, driverId, requestedStatus) {
 }
 async function applyStandingAction(adminId, driverId, action, reason) {
     if (!STANDING_ACTIONS.includes(action))
-        throw ApiErrors.validation('INVALID_ACCOUNT_ACTION');
+        throw ApiError_1.ApiErrors.validation('INVALID_ACCOUNT_ACTION');
     const driver = await getDriverOrThrow(driverId);
     const currentDerived = deriveAccountStatus(driver);
     if (action === 'suspend') {
         if (currentDerived === 'suspended')
-            throw ApiErrors.conflict('DRIVER_ALREADY_IN_STATE');
+            throw ApiError_1.ApiErrors.conflict('DRIVER_ALREADY_IN_STATE');
         await driver.update({ status: 'suspended' });
-        await Penalty.create({
+        await Models_1.Penalty.create({
             userId: driverId,
-            type: PENALTY_TYPES.SUSPENSION,
+            type: constants_1.PENALTY_TYPES.SUSPENSION,
             penaltyType: 'general',
             severity: 'moderate',
             reason: reason || 'Suspended by administrator from the dashboard',
@@ -664,24 +691,24 @@ async function applyStandingAction(adminId, driverId, action, reason) {
     }
     else {
         if (currentDerived === 'active')
-            throw ApiErrors.conflict('DRIVER_ALREADY_IN_STATE');
+            throw ApiError_1.ApiErrors.conflict('DRIVER_ALREADY_IN_STATE');
         await driver.update({ status: 'active' });
-        await Penalty.update({ endsAt: new Date() }, { where: { userId: driverId, type: PENALTY_TYPES.SUSPENSION, endsAt: null } });
+        await Models_1.Penalty.update({ endsAt: new Date() }, { where: { userId: driverId, type: constants_1.PENALTY_TYPES.SUSPENSION, endsAt: null } });
     }
     return { driver: { id: driver.id, account_status: deriveAccountStatus(await driver.reload()) } };
 }
 async function decideDocument(adminId, driverId, documentKey, decision, reason) {
     const def = ALL_DOCUMENT_KEYS.find((d) => d.key === documentKey);
     if (!def)
-        throw ApiErrors.badRequest('DOCUMENT_KEY_NOT_RECOGNIZED');
+        throw ApiError_1.ApiErrors.badRequest('DOCUMENT_KEY_NOT_RECOGNIZED');
     await getDriverOrThrow(driverId);
     if (!def.source)
-        throw ApiErrors.badRequest('DOCUMENT_HAS_NO_BACKING_FILE');
+        throw ApiError_1.ApiErrors.badRequest('DOCUMENT_HAS_NO_BACKING_FILE');
     const { profile, vehicle } = await loadDossierContext(driverId);
     const imageId = def.source === 'profile' ? profile?.[def.column] : vehicle?.[def.column];
     if (imageId == null)
-        throw ApiErrors.badRequest('DOCUMENT_HAS_NO_BACKING_FILE');
-    const [review, created] = await DocumentReview.findOrCreate({
+        throw ApiError_1.ApiErrors.badRequest('DOCUMENT_HAS_NO_BACKING_FILE');
+    const [review, created] = await Models_1.DocumentReview.findOrCreate({
         where: { driverId, documentKey },
         defaults: {
             decision,
@@ -710,20 +737,20 @@ async function decideDocument(adminId, driverId, documentKey, decision, reason) 
 }
 // ===== US5: Shared listings =====
 async function listReservations(query) {
-    const { page, limit, offset } = parsePagination(query);
+    const { page, limit, offset } = (0, pagination_1.parsePagination)(query);
     const where = {};
-    if (query.status && Object.values(BOOKING_STATUS).includes(query.status))
+    if (query.status && Object.values(constants_1.BOOKING_STATUS).includes(query.status))
         where.status = query.status;
-    const { rows, count } = await Booking.findAndCountAll({
+    const { rows, count } = await Models_1.Booking.findAndCountAll({
         where,
         include: [
             {
-                model: Trip,
+                model: Models_1.Trip,
                 as: 'trip',
                 attributes: ['id', 'originCity', 'destinationCity', 'departureTime'],
-                include: [{ model: User, as: 'driver', attributes: ['id', 'fullName'] }],
+                include: [{ model: Models_1.User, as: 'driver', attributes: ['id', 'fullName'] }],
             },
-            { model: User, as: 'passenger', attributes: ['id', 'fullName'] },
+            { model: Models_1.User, as: 'passenger', attributes: ['id', 'fullName'] },
         ],
         order: [['createdat', 'DESC']],
         offset,
@@ -746,7 +773,7 @@ async function listReservations(query) {
             currency: b.currency,
             status: b.status,
         })),
-        pagination: buildPagination(count, page, limit),
+        pagination: (0, pagination_1.buildPagination)(count, page, limit),
     };
 }
 module.exports = {
@@ -772,4 +799,5 @@ module.exports = {
     decideDocument,
     listReservations,
 };
+exports.default = module.exports;
 //# sourceMappingURL=adminDashboardService.js.map

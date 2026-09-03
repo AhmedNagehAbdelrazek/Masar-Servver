@@ -1,4 +1,11 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.send = send;
+// @ts-nocheck
+const twilio_1 = __importDefault(require("twilio"));
 /**
  * SMS channel.
  *
@@ -10,8 +17,7 @@ const provider = process.env.SMS_PROVIDER || 'log';
 function buildProvider() {
     if (provider === 'twilio') {
         try {
-            const twilio = require('twilio');
-            const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+            const client = (0, twilio_1.default)(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
             return {
                 async send({ to, body }) {
                     await client.messages.create({
@@ -43,4 +49,5 @@ async function send(user, message) {
     await sms.send({ to: user.phone, body: message.body });
 }
 module.exports = { send };
+exports.default = module.exports;
 //# sourceMappingURL=sms.js.map

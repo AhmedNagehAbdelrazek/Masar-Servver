@@ -1,26 +1,23 @@
 "use strict";
-const { Op } = require('sequelize');
-const { Trip, User } = require('../Models');
-const { TRIP_STATUS } = require('../config/constants');
-const commissionService = require('../Services/commissionService');
-const notificationService = require('../Services/notificationService');
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.runLowBalanceWarning = runLowBalanceWarning;
+const sequelize_1 = require("sequelize");
+const Models_1 = require("../Models");
+const constants_1 = require("../config/constants");
+const commissionService_1 = __importDefault(require("../Services/commissionService"));
+const notificationService_1 = __importDefault(require("../Services/notificationService"));
 const WARNING_WINDOW_MS = 24 * 60 * 60 * 1000;
-/**
- * Low-balance warnings (T049).
- *
- * Warns each driver once (in-app + push) when they have an upcoming trip
- * within the next 24 hours but their total balance cannot cover the
- * commission for one seat at their current plan's rate. Deduplicated per
- * driver using their earliest upcoming trip.
- */
 async function runLowBalanceWarning() {
     const now = new Date();
     const horizon = new Date(now.getTime() + WARNING_WINDOW_MS);
-    const upcoming = await Trip.findAll({
+    const upcoming = await Models_1.Trip.findAll({
         where: {
-            status: { [Op.in]: [TRIP_STATUS.PUBLISHED, TRIP_STATUS.FULL] },
+            status: { [sequelize_1.Op.in]: [constants_1.TRIP_STATUS.PUBLISHED, constants_1.TRIP_STATUS.FULL] },
             isBlockedByBalance: false,
-            departureTime: { [Op.gt]: now, [Op.lte]: horizon },
+            departureTime: { [sequelize_1.Op.gt]: now, [sequelize_1.Op.lte]: horizon },
         },
         order: [['departureTime', 'ASC']],
     });
@@ -32,13 +29,13 @@ async function runLowBalanceWarning() {
     const warned = [];
     for (const [driverId, trip] of byDriver) {
         try {
-            const { current, minimum, totalBalance } = await commissionService.getGatingSnapshot(driverId, trip.farePerSeat);
+            const { current, minimum, totalBalance } = await commissionService_1.default.getGatingSnapshot(driverId, trip.farePerSeat);
             if (!current || totalBalance >= minimum)
                 continue;
-            const user = await User.findByPk(driverId);
+            const user = await Models_1.User.findByPk(driverId);
             if (!user)
                 continue;
-            await notificationService.sendToUser(user, 'LOW_BALANCE_WARNING', {
+            await notificationService_1.default.sendToUser(user, 'LOW_BALANCE_WARNING', {
                 channels: ['in_app', 'push'],
                 vars: { route: trip.destinationCity || '' },
                 data: { trip_id: trip.id, required: minimum, balance: totalBalance },
@@ -46,10 +43,12 @@ async function runLowBalanceWarning() {
             warned.push({ driverId, tripId: trip.id, minimum, balance: totalBalance });
         }
         catch (err) {
-            console.warn('[lowBalanceWarningJob] notification failed:', err.message);
+            const msg = err instanceof Error ? err.message : String(err);
+            console.warn('[lowBalanceWarningJob] notification failed:', msg);
         }
     }
     return warned;
 }
+exports.default = { runLowBalanceWarning };
 module.exports = { runLowBalanceWarning };
 //# sourceMappingURL=lowBalanceWarningJob.js.map

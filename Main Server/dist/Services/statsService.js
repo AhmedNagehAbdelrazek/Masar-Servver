@@ -1,21 +1,24 @@
 "use strict";
-const { Op } = require('sequelize');
-const { User, Trip, Booking, DriverProfile } = require('../Models');
-const { TRIP_STATUS, BOOKING_STATUS } = require('../config/constants');
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.lifetime = lifetime;
+// @ts-nocheck
+const sequelize_1 = require("sequelize");
+const Models_1 = require("../Models");
+const constants_1 = require("../config/constants");
 /**
  * Lifetime driver statistics (contract D10). Read-only aggregation over the
  * existing status transitions; returns zeros for empty accounts.
  */
 async function lifetime(driverId) {
-    const user = await User.findByPk(driverId, { attributes: ['id', 'avgRating'] });
-    const profile = await DriverProfile.findOne({
+    const user = await Models_1.User.findByPk(driverId, { attributes: ['id', 'avgRating'] });
+    const profile = await Models_1.DriverProfile.findOne({
         where: { driverId },
         attributes: ['responseRate'],
     });
-    const totalTrips = await Trip.count({ where: { driverId } });
-    const completedTrips = await Trip.count({ where: { driverId, status: TRIP_STATUS.COMPLETED } });
-    const cancelledTrips = await Trip.count({ where: { driverId, status: TRIP_STATUS.CANCELLED } });
-    const tripIds = await Trip.findAll({
+    const totalTrips = await Models_1.Trip.count({ where: { driverId } });
+    const completedTrips = await Models_1.Trip.count({ where: { driverId, status: constants_1.TRIP_STATUS.COMPLETED } });
+    const cancelledTrips = await Models_1.Trip.count({ where: { driverId, status: constants_1.TRIP_STATUS.CANCELLED } });
+    const tripIds = await Models_1.Trip.findAll({
         where: { driverId },
         attributes: ['id'],
     }).then((rows) => rows.map((r) => r.id));
@@ -23,17 +26,17 @@ async function lifetime(driverId) {
     let noShowBookings = 0;
     let totalEarnings = 0;
     if (tripIds.length > 0) {
-        totalBookings = await Booking.count({
-            where: { tripId: { [Op.in]: tripIds } },
+        totalBookings = await Models_1.Booking.count({
+            where: { tripId: { [sequelize_1.Op.in]: tripIds } },
         });
-        noShowBookings = await Booking.count({
-            where: { tripId: { [Op.in]: tripIds }, status: BOOKING_STATUS.NO_SHOW },
+        noShowBookings = await Models_1.Booking.count({
+            where: { tripId: { [sequelize_1.Op.in]: tripIds }, status: constants_1.BOOKING_STATUS.NO_SHOW },
         });
-        const earnings = await Booking.findOne({
+        const earnings = await Models_1.Booking.findOne({
             attributes: [
-                [require('sequelize').fn('SUM', require('sequelize').col('agreed_fare')), 'total'],
+                [fn('SUM', col('agreed_fare')), 'total'],
             ],
-            where: { tripId: { [Op.in]: tripIds }, status: BOOKING_STATUS.COMPLETED },
+            where: { tripId: { [sequelize_1.Op.in]: tripIds }, status: constants_1.BOOKING_STATUS.COMPLETED },
             raw: true,
         });
         totalEarnings = Number(earnings && earnings.total ? earnings.total : 0);
@@ -55,4 +58,5 @@ async function lifetime(driverId) {
     };
 }
 module.exports = { lifetime };
+exports.default = module.exports;
 //# sourceMappingURL=statsService.js.map

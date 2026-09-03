@@ -1,23 +1,21 @@
 "use strict";
-const { Op } = require('sequelize');
-const { DriverSubscription, User } = require('../Models');
-const { SUBSCRIPTION_STATUS } = require('../config/constants');
-const notificationService = require('../Services/notificationService');
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.runExpiryReminder = runExpiryReminder;
+const sequelize_1 = require("sequelize");
+const Models_1 = require("../Models");
+const constants_1 = require("../config/constants");
+const notificationService_1 = __importDefault(require("../Services/notificationService"));
 const REMINDER_WINDOW_MS = 24 * 60 * 60 * 1000;
-/**
- * 24h-before-expiry reminders (T048).
- *
- * Notifies each driver once (in-app + push) about their earliest plan that
- * expires within the next 24 hours. Deduplicated per driver to avoid spam
- * when several plans expire around the same time.
- */
 async function runExpiryReminder() {
     const now = new Date();
     const horizon = new Date(now.getTime() + REMINDER_WINDOW_MS);
-    const expiring = await DriverSubscription.findAll({
+    const expiring = await Models_1.DriverSubscription.findAll({
         where: {
-            status: SUBSCRIPTION_STATUS.ACTIVE,
-            expiresAt: { [Op.gt]: now, [Op.lte]: horizon },
+            status: constants_1.SUBSCRIPTION_STATUS.ACTIVE,
+            expiresAt: { [sequelize_1.Op.gt]: now, [sequelize_1.Op.lte]: horizon },
         },
         order: [['expiresAt', 'ASC']],
     });
@@ -29,10 +27,10 @@ async function runExpiryReminder() {
     const notified = [];
     for (const [driverId, sub] of byDriver) {
         try {
-            const user = await User.findByPk(driverId);
+            const user = await Models_1.User.findByPk(driverId);
             if (!user)
                 continue;
-            await notificationService.sendToUser(user, 'PLAN_EXPIRING_SOON', {
+            await notificationService_1.default.sendToUser(user, 'PLAN_EXPIRING_SOON', {
                 channels: ['in_app', 'push'],
                 vars: { plan: sub.planName },
                 data: { subscription_id: sub.id, expires_at: sub.expiresAt },
@@ -40,10 +38,12 @@ async function runExpiryReminder() {
             notified.push({ driverId, subscriptionId: sub.id, planName: sub.planName });
         }
         catch (err) {
-            console.warn('[expiryReminderJob] notification failed:', err.message);
+            const msg = err instanceof Error ? err.message : String(err);
+            console.warn('[expiryReminderJob] notification failed:', msg);
         }
     }
     return notified;
 }
+exports.default = { runExpiryReminder };
 module.exports = { runExpiryReminder };
 //# sourceMappingURL=expiryReminderJob.js.map

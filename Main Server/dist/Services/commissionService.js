@@ -1,8 +1,18 @@
 "use strict";
-const { Op } = require('sequelize');
-const { Booking } = require('../Models');
-const { BOOKING_STATUS } = require('../config/constants');
-const balanceService = require('./balanceService');
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.round = round;
+exports.minimumBalanceForPlan = minimumBalanceForPlan;
+exports.getGatingSnapshot = getGatingSnapshot;
+exports.getTotalFare = getTotalFare;
+exports.deductCommission = deductCommission;
+// @ts-nocheck
+const sequelize_1 = require("sequelize");
+const Models_1 = require("../Models");
+const constants_1 = require("../config/constants");
+const balanceService_1 = __importDefault(require("./balanceService"));
 function round(n) {
     return Math.round((Number(n) + Number.EPSILON) * 100) / 100;
 }
@@ -19,11 +29,11 @@ function minimumBalanceForPlan(plan, farePerSeat) {
  * Returns `{ current, minimum, totalBalance }`.
  */
 async function getGatingSnapshot(driverId, farePerSeat) {
-    const current = await balanceService.findCurrentSubscription(driverId);
+    const current = await balanceService_1.default.findCurrentSubscription(driverId);
     if (!current) {
         return { current: null, minimum: 0, totalBalance: 0 };
     }
-    const overview = await balanceService.getBalanceOverview(driverId);
+    const overview = await balanceService_1.default.getBalanceOverview(driverId);
     return {
         current,
         minimum: minimumBalanceForPlan(current, farePerSeat),
@@ -34,10 +44,10 @@ async function getGatingSnapshot(driverId, farePerSeat) {
  * Compute total paid fare for a trip (confirmed/completed bookings).
  */
 async function getTotalFare(tripId) {
-    const bookings = await Booking.findAll({
+    const bookings = await Models_1.Booking.findAll({
         where: {
             tripId,
-            status: { [Op.in]: [BOOKING_STATUS.CONFIRMED, BOOKING_STATUS.COMPLETED] },
+            status: { [sequelize_1.Op.in]: [constants_1.BOOKING_STATUS.CONFIRMED, constants_1.BOOKING_STATUS.COMPLETED] },
         },
         attributes: ['agreedFare'],
     });
@@ -52,10 +62,10 @@ async function getTotalFare(tripId) {
  */
 async function deductCommission(trip, actorId = null) {
     const totalFare = await getTotalFare(trip.id);
-    const current = await balanceService.findCurrentSubscription(trip.driverId);
+    const current = await balanceService_1.default.findCurrentSubscription(trip.driverId);
     const rate = current ? Number(current.planPercentageCut) : 0;
     const commission = round(totalFare * (rate / 100));
-    const result = await balanceService.deductCommission({
+    const result = await balanceService_1.default.deductCommission({
         driverId: trip.driverId,
         amount: commission,
         actorId,
@@ -78,4 +88,5 @@ module.exports = {
     getTotalFare,
     deductCommission,
 };
+exports.default = module.exports;
 //# sourceMappingURL=commissionService.js.map

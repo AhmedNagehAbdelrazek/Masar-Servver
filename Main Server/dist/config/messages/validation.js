@@ -4,7 +4,9 @@
  * error text used across utils/validators/*.js.
  * Call sites reference these via config/messages/validation-keys (V.*).
  */
-const VALIDATION_MESSAGES = {
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.VALIDATION_MESSAGES = void 0;
+exports.VALIDATION_MESSAGES = {
     ACCOUNT_NUMBER_IS_REQUIRED: { en: "account_number is required", ar: "رقم الحساب مطلوب" },
     ACCOUNT_NUMBER_IS_REQUIRED_2: { en: "Account number is required", ar: "رقم الحساب مطلوب" },
     ACCOUNT_NUMBER_MUST_BE_AT_MOST_50_CHARACTERS: { en: "account_number must be at most 50 characters", ar: "يجب ألا يتجاوز رقم الحساب 50 حرفاً" },
@@ -330,5 +332,15 @@ const VALIDATION_MESSAGES = {
     WAYPOINTS_MUST_BE_AN_ARRAY: { en: "Waypoints must be an array", ar: "يجب أن تكون نقاط الطريق مصفوفة" },
     YOU_CANNOT_FILE_A_COMPLAINT_AGAINST_YOURSELF: { en: "You cannot file a complaint against yourself", ar: "لا يمكنك تقديم شكوى ضد نفسك" },
 };
-module.exports = { VALIDATION_MESSAGES };
+exports.default = exports.VALIDATION_MESSAGES;
+// CommonJS interop
+// @ts-ignore
+if (typeof module !== 'undefined' && module.exports) {
+    // @ts-ignore
+    module.exports = { VALIDATION_MESSAGES: exports.VALIDATION_MESSAGES };
+    // @ts-ignore
+    module.exports.VALIDATION_MESSAGES = exports.VALIDATION_MESSAGES;
+    // @ts-ignore
+    module.exports.default = exports.VALIDATION_MESSAGES;
+}
 //# sourceMappingURL=validation.js.map

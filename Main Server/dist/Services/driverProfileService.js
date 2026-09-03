@@ -1,10 +1,24 @@
 "use strict";
-const { Op } = require('sequelize');
-const { DriverProfile, Vehicle, Rating, Penalty, DriverSubscription } = require('../Models');
-const statsService = require('./statsService');
-const balanceService = require('./balanceService');
-const { USER_STATUS, PENALTY_TYPES, SUBSCRIPTION_STATUS } = require('../config/constants');
-const { loadDriverUser, ensureReadable } = require('../utils/userAccess');
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.MENU_ITEMS = void 0;
+exports.formatMemberSince = formatMemberSince;
+exports.computePunctualityRate = computePunctualityRate;
+exports.deriveBadges = deriveBadges;
+exports.serializeVehicle = serializeVehicle;
+exports.buildSubscriptionCard = buildSubscriptionCard;
+exports.getFullProfile = getFullProfile;
+exports.getAccountStatus = getAccountStatus;
+// @ts-nocheck
+const sequelize_1 = require("sequelize");
+const Models_1 = require("../Models");
+const statsService_1 = __importDefault(require("./statsService"));
+const balanceService_1 = __importDefault(require("./balanceService"));
+const constants_1 = require("../config/constants");
+const userAccess_1 = require("../utils/userAccess");
+const deletionRequestService_1 = __importDefault(require("./deletionRequestService"));
 // Arabic month names for the member_since label (spec 010)
 const AR_MONTHS = [
     'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو',
@@ -22,6 +36,7 @@ const MENU_ITEMS = [
     { key: 'about', label: 'عن تطبيق مسار', icon: 'info' },
     { key: 'delete_account', label: 'حذف الحساب', icon: 'trash' },
 ];
+exports.MENU_ITEMS = MENU_ITEMS;
 function formatMemberSince(date) {
     if (!date)
         return null;
@@ -33,11 +48,11 @@ function formatMemberSince(date) {
  * Returns 0 when there are no ratings.
  */
 async function computePunctualityRate(rateeId) {
-    const total = await Rating.count({ where: { rateeId, isVisible: { [Op.ne]: false } } });
+    const total = await Models_1.Rating.count({ where: { rateeId, isVisible: { [sequelize_1.Op.ne]: false } } });
     if (!total)
         return 0;
-    const onTime = await Rating.count({
-        where: { rateeId, isVisible: { [Op.ne]: false }, wasLate: false },
+    const onTime = await Models_1.Rating.count({
+        where: { rateeId, isVisible: { [sequelize_1.Op.ne]: false }, wasLate: false },
     });
     return Math.round((onTime / total) * 100);
 }
@@ -76,11 +91,11 @@ function serializeVehicle(vehicle) {
 function buildSubscriptionCard(subscription) {
     if (!subscription)
         return null;
-    const plain = subscription instanceof DriverSubscription
+    const plain = subscription instanceof Models_1.DriverSubscription
         ? subscription.get({ plain: true })
         : subscription;
     // findCurrentSubscription already filters to status=active & not expired.
-    const isActive = plain.status === SUBSCRIPTION_STATUS.ACTIVE
+    const isActive = plain.status === constants_1.SUBSCRIPTION_STATUS.ACTIVE
         && (!plain.expiresAt || new Date(plain.expiresAt) > new Date());
     if (!isActive)
         return null;
@@ -100,22 +115,22 @@ function buildSubscriptionCard(subscription) {
 }
 /** Aggregated payload powering GET /api/driver/profile/full (contracts §1). */
 async function getFullProfile(driverId) {
-    const user = await loadDriverUser(driverId);
-    ensureReadable(user);
+    const user = await (0, userAccess_1.loadDriverUser)(driverId);
+    (0, userAccess_1.ensureReadable)(user);
     const [driverProfile, vehicle, lifetime] = await Promise.all([
-        DriverProfile.findOne({ where: { driverId } }),
-        Vehicle.findOne({ where: { driverId } }),
-        statsService.lifetime(driverId),
+        Models_1.DriverProfile.findOne({ where: { driverId } }),
+        Models_1.Vehicle.findOne({ where: { driverId } }),
+        statsService_1.default.lifetime(driverId),
     ]);
     let subscription = null;
     try {
-        subscription = await balanceService.findCurrentSubscription(driverId);
+        subscription = await balanceService_1.default.findCurrentSubscription(driverId);
     }
     catch (_err) {
         subscription = null;
     }
     const punctualityRate = await computePunctualityRate(driverId);
-    const totalRatings = await Rating.count({ where: { rateeId: driverId, isVisible: { [Op.ne]: false } } });
+    const totalRatings = await Models_1.Rating.count({ where: { rateeId: driverId, isVisible: { [sequelize_1.Op.ne]: false } } });
     return {
         driver: {
             id: user.id,
@@ -133,7 +148,7 @@ async function getFullProfile(driverId) {
             verification_status: user.verificationStatus,
         },
         vehicle: serializeVehicle(vehicle),
-        subscription: buildSubscriptionCard(subscription instanceof DriverSubscription
+        subscription: buildSubscriptionCard(subscription instanceof Models_1.DriverSubscription
             ? subscription.get({ plain: true })
             : subscription),
         stats: (() => {
@@ -158,26 +173,25 @@ async function getFullProfile(driverId) {
 }
 /** Account standing overview powering GET /api/driver/account-status. */
 async function getAccountStatus(driverId) {
-    const user = await loadDriverUser(driverId);
-    ensureReadable(user);
+    const user = await (0, userAccess_1.loadDriverUser)(driverId);
+    (0, userAccess_1.ensureReadable)(user);
     const now = new Date();
-    const activePenalties = await Penalty.findAll({
+    const activePenalties = await Models_1.Penalty.findAll({
         where: {
             userId: driverId,
-            startsAt: { [Op.lte]: now },
-            [Op.or]: [{ endsAt: null }, { endsAt: { [Op.gt]: now } }],
+            startsAt: { [sequelize_1.Op.lte]: now },
+            [sequelize_1.Op.or]: [{ endsAt: null }, { endsAt: { [sequelize_1.Op.gt]: now } }],
         },
         order: [['createdat', 'DESC']],
     });
-    const deletionRequestService = require('./deletionRequestService');
-    const hasDeletionRequest = await deletionRequestService.hasPendingRequest(driverId);
-    const suspension = activePenalties.find((p) => p.type === PENALTY_TYPES.SUSPENSION);
+    const hasDeletionRequest = await deletionRequestService_1.default.hasPendingRequest(driverId);
+    const suspension = activePenalties.find((p) => p.type === constants_1.PENALTY_TYPES.SUSPENSION);
     return {
         status: user.status,
         verification_status: user.verificationStatus,
         is_verified: user.isVerified === true,
-        is_suspended: user.status === USER_STATUS.SUSPENDED,
-        is_banned: user.status === USER_STATUS.BANNED,
+        is_suspended: user.status === constants_1.USER_STATUS.SUSPENDED,
+        is_banned: user.status === constants_1.USER_STATUS.BANNED,
         suspension_details: suspension
             ? {
                 reason: suspension.reason,
@@ -193,7 +207,7 @@ async function getAccountStatus(driverId) {
             expires_at: p.endsAt || null,
         })),
         is_deletion_requested: hasDeletionRequest,
-        can_delete: user.status !== USER_STATUS.BANNED && !hasDeletionRequest,
+        can_delete: user.status !== constants_1.USER_STATUS.BANNED && !hasDeletionRequest,
         can_logout: true,
     };
 }
@@ -207,4 +221,5 @@ module.exports = {
     getFullProfile,
     getAccountStatus,
 };
+exports.default = module.exports;
 //# sourceMappingURL=driverProfileService.js.map

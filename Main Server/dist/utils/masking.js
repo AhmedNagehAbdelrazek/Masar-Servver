@@ -1,4 +1,7 @@
 "use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.maskPhone = maskPhone;
+exports.maskNationalId = maskNationalId;
 /**
  * Mask a phone number so only the trailing digits are visible.
  * Example: "+962791111111" -> "+96279***1111"
@@ -23,5 +26,18 @@ function maskNationalId(id) {
         return '***';
     return `${str.slice(0, 3)}***${str.slice(-3)}`;
 }
-module.exports = { maskPhone, maskNationalId };
+const masking = { maskPhone, maskNationalId };
+exports.default = masking;
+// CommonJS interop
+// @ts-ignore
+if (typeof module !== 'undefined' && module.exports) {
+    // @ts-ignore
+    module.exports = { maskPhone, maskNationalId };
+    // @ts-ignore
+    module.exports.maskPhone = maskPhone;
+    // @ts-ignore
+    module.exports.maskNationalId = maskNationalId;
+    // @ts-ignore
+    module.exports.default = masking;
+}
 //# sourceMappingURL=masking.js.map

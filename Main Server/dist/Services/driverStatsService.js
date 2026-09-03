@@ -1,7 +1,11 @@
 "use strict";
-const { Op } = require('sequelize');
-const { DriverProfile, Trip, Rating } = require('../Models');
-const { TRIP_STATUS } = require('../config/constants');
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.recomputeForDriver = recomputeForDriver;
+exports.recomputeAllDrivers = recomputeAllDrivers;
+// @ts-nocheck
+const sequelize_1 = require("sequelize");
+const Models_1 = require("../Models");
+const constants_1 = require("../config/constants");
 const PROFESSIONAL_MIN_TRIPS = 20;
 const PROFESSIONAL_MIN_PUNCTUALITY = 90;
 /**
@@ -15,10 +19,10 @@ const PROFESSIONAL_MIN_PUNCTUALITY = 90;
  *                           punctuality (if known) >= PROFESSIONAL_MIN_PUNCTUALITY
  */
 async function recomputeForDriver(driverId) {
-    const completedTrips = await Trip.count({
-        where: { driverId, status: TRIP_STATUS.COMPLETED },
+    const completedTrips = await Models_1.Trip.count({
+        where: { driverId, status: constants_1.TRIP_STATUS.COMPLETED },
     });
-    const ratings = await Rating.findAndCountAll({
+    const ratings = await Models_1.Rating.findAndCountAll({
         where: { rateeId: driverId, isVisible: true },
         attributes: ['wasLate'],
     });
@@ -29,7 +33,7 @@ async function recomputeForDriver(driverId) {
     }
     const professional = completedTrips >= PROFESSIONAL_MIN_TRIPS &&
         (punctuality == null || punctuality >= PROFESSIONAL_MIN_PUNCTUALITY);
-    const [profile] = await DriverProfile.findOrCreate({
+    const [profile] = await Models_1.DriverProfile.findOrCreate({
         where: { driverId },
         defaults: { driverId },
     });
@@ -50,13 +54,13 @@ async function recomputeForDriver(driverId) {
  * so the one-off/batch job converges with a single pass.
  */
 async function recomputeAllDrivers() {
-    const tripDrivers = await Trip.findAll({
-        where: { driverId: { [Op.not]: null } },
+    const tripDrivers = await Models_1.Trip.findAll({
+        where: { driverId: { [sequelize_1.Op.not]: null } },
         attributes: ['driverId'],
         group: ['driverId'],
     });
-    const ratingDrivers = await Rating.findAll({
-        where: { rateeId: { [Op.not]: null } },
+    const ratingDrivers = await Models_1.Rating.findAll({
+        where: { rateeId: { [sequelize_1.Op.not]: null } },
         attributes: ['rateeId'],
         group: ['rateeId'],
     });
@@ -68,4 +72,5 @@ async function recomputeAllDrivers() {
     return results;
 }
 module.exports = { recomputeForDriver, recomputeAllDrivers };
+exports.default = module.exports;
 //# sourceMappingURL=driverStatsService.js.map

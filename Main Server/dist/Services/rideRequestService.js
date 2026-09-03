@@ -1,13 +1,30 @@
 "use strict";
-const { Op } = require('sequelize');
-const { RideRequest, RequestOffer, Booking, Trip, User, sequelize, } = require('../Models');
-const { ApiErrors } = require('../utils/ApiError');
-const { parsePagination, buildPagination } = require('../utils/pagination');
-const { maskPhone } = require('../utils/masking');
-const { BOOKING_STATUS, PAYMENT_STATUS, TRIP_STATUS, REQUEST_OFFER_STATUS, RIDE_REQUEST_STATUS, REQUEST_OFFER_TTL_HOURS, } = require('../config/constants');
-const auditService = require('./auditService');
-const notificationService = require('./notificationService');
-const { generateReferenceCode } = require('../utils/referenceCode');
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.createRideRequest = createRideRequest;
+exports.listRequests = listRequests;
+exports.getRequest = getRequest;
+exports.updateRideRequest = updateRideRequest;
+exports.submitOffer = submitOffer;
+exports.listOffersForRequest = listOffersForRequest;
+exports.listDriverOffers = listDriverOffers;
+exports.decideOffer = decideOffer;
+exports.agreeOfferPrice = agreeOfferPrice;
+exports.attachOfferToTrip = attachOfferToTrip;
+exports.getMatches = getMatches;
+exports.expireStale = expireStale;
+// @ts-nocheck
+const sequelize_1 = require("sequelize");
+const ApiError_1 = require("../utils/ApiError");
+const pagination_1 = require("../utils/pagination");
+const masking_1 = require("../utils/masking");
+const auditService_1 = __importDefault(require("./auditService"));
+const notificationService_1 = __importDefault(require("./notificationService"));
+const referenceCode_1 = require("../utils/referenceCode");
+const Models_1 = require("../Models");
+const constants_1 = require("../config/constants");
 const MATCH_WINDOW_BEFORE_MS = 24 * 60 * 60 * 1000;
 const MATCH_WINDOW_AFTER_MS = 2 * 24 * 60 * 60 * 1000;
 const MATCH_LIMIT = 10; // support at least 10 candidates
@@ -41,11 +58,11 @@ function matchScore(trip, request) {
 /** US6: ranked trip suggestions for a passenger's ride request (never books). */
 async function getMatches(user, requestId) {
     await expireStale();
-    const request = await RideRequest.findByPk(requestId);
+    const request = await Models_1.RideRequest.findByPk(requestId);
     if (!request)
-        throw ApiErrors.notFound('RIDE_REQUEST_NOT_FOUND');
+        throw ApiError_1.ApiErrors.notFound('RIDE_REQUEST_NOT_FOUND');
     if (request.passengerId !== user.id) {
-        throw ApiErrors.custom('YOU_CAN_ONLY_VIEW_MATCHES_FOR_YOUR_OWN_RIDE_REQUESTS', 403, 'YOU_CAN_ONLY_VIEW_MATCHES_FOR_YOUR_OWN_RIDE_REQUESTS');
+        throw ApiError_1.ApiErrors.custom('YOU_CAN_ONLY_VIEW_MATCHES_FOR_YOUR_OWN_RIDE_REQUESTS', 403, 'YOU_CAN_ONLY_VIEW_MATCHES_FOR_YOUR_OWN_RIDE_REQUESTS');
     }
     const seatsNeeded = Math.max(1, request.seatsNeeded || 1);
     const requestedMs = request.originTime
@@ -53,13 +70,13 @@ async function getMatches(user, requestId) {
         : Date.now();
     const windowStart = new Date(requestedMs - MATCH_WINDOW_BEFORE_MS);
     const windowEnd = new Date(requestedMs + MATCH_WINDOW_AFTER_MS);
-    const trips = await Trip.findAll({
+    const trips = await Models_1.Trip.findAll({
         where: {
-            status: { [Op.in]: [TRIP_STATUS.PUBLISHED, TRIP_STATUS.FULL] },
-            availableSeats: { [Op.gte]: seatsNeeded },
-            departureTime: { [Op.between]: [windowStart, windowEnd] },
+            status: { [sequelize_1.Op.in]: [constants_1.TRIP_STATUS.PUBLISHED, constants_1.TRIP_STATUS.FULL] },
+            availableSeats: { [sequelize_1.Op.gte]: seatsNeeded },
+            departureTime: { [sequelize_1.Op.between]: [windowStart, windowEnd] },
         },
-        include: [{ model: User, as: 'driver', attributes: ['id', 'fullName', 'avgRating'] }],
+        include: [{ model: Models_1.User, as: 'driver', attributes: ['id', 'fullName', 'avgRating'] }],
         order: [['departureTime', 'ASC']],
     });
     const scored = trips
@@ -97,7 +114,7 @@ function serializeRideRequest(request, options = {}) {
         id: request.id,
         passenger_id: request.passengerId,
         passenger_name: request.passenger ? request.passenger.fullName : null,
-        passenger_phone_masked: request.passenger ? maskPhone(request.passenger.phone) : null,
+        passenger_phone_masked: request.passenger ? (0, masking_1.maskPhone)(request.passenger.phone) : null,
         origin_place: request.originPlace,
         origin_city: request.originCity,
         origin_lat: request.originLat !== null && request.originLat !== undefined ? Number(request.originLat) : null,
@@ -143,20 +160,20 @@ function serializeOffer(offer) {
  */
 async function expireStale() {
     const now = new Date();
-    await RideRequest.update({ status: RIDE_REQUEST_STATUS.EXPIRED }, {
+    await Models_1.RideRequest.update({ status: constants_1.RIDE_REQUEST_STATUS.EXPIRED }, {
         where: {
-            status: { [Op.in]: [RIDE_REQUEST_STATUS.OPEN, RIDE_REQUEST_STATUS.OFFERED] },
-            [Op.or]: [
-                { arrivalDeadline: { [Op.and]: [{ [Op.ne]: null }, { [Op.lt]: now }] } },
-                { expiresAt: { [Op.lt]: now } },
+            status: { [sequelize_1.Op.in]: [constants_1.RIDE_REQUEST_STATUS.OPEN, constants_1.RIDE_REQUEST_STATUS.OFFERED] },
+            [sequelize_1.Op.or]: [
+                { arrivalDeadline: { [sequelize_1.Op.and]: [{ [sequelize_1.Op.ne]: null }, { [sequelize_1.Op.lt]: now }] } },
+                { expiresAt: { [sequelize_1.Op.lt]: now } },
             ],
         },
     });
-    const ttlCutoff = new Date(now.getTime() - REQUEST_OFFER_TTL_HOURS * 60 * 60 * 1000);
-    await RequestOffer.update({ status: REQUEST_OFFER_STATUS.EXPIRED }, {
+    const ttlCutoff = new Date(now.getTime() - constants_1.REQUEST_OFFER_TTL_HOURS * 60 * 60 * 1000);
+    await Models_1.RequestOffer.update({ status: constants_1.REQUEST_OFFER_STATUS.EXPIRED }, {
         where: {
-            status: REQUEST_OFFER_STATUS.SENT,
-            createdat: { [Op.lt]: ttlCutoff },
+            status: constants_1.REQUEST_OFFER_STATUS.SENT,
+            createdat: { [sequelize_1.Op.lt]: ttlCutoff },
         },
     });
 }
@@ -164,13 +181,13 @@ function computeExpiresAt(arrivalDeadline, originTime) {
     if (arrivalDeadline)
         return new Date(arrivalDeadline);
     const base = originTime ? new Date(originTime) : new Date();
-    return new Date(base.getTime() + REQUEST_OFFER_TTL_HOURS * 60 * 60 * 1000);
+    return new Date(base.getTime() + constants_1.REQUEST_OFFER_TTL_HOURS * 60 * 60 * 1000);
 }
 async function createRideRequest(userId, payload) {
-    const user = await User.findByPk(userId);
+    const user = await Models_1.User.findByPk(userId);
     if (!user)
-        throw ApiErrors.notFound('USER_NOT_FOUND');
-    const request = await RideRequest.create({
+        throw ApiError_1.ApiErrors.notFound('USER_NOT_FOUND');
+    const request = await Models_1.RideRequest.create({
         passengerId: userId,
         originPlace: payload.origin_place || payload.origin_city,
         originCity: payload.origin_city,
@@ -186,10 +203,10 @@ async function createRideRequest(userId, payload) {
         maxBudget: payload.max_budget !== undefined ? payload.max_budget : null,
         currency: 'JOD',
         attributesPreferred: payload.attributes_preferred || {},
-        status: RIDE_REQUEST_STATUS.OPEN,
+        status: constants_1.RIDE_REQUEST_STATUS.OPEN,
         expiresAt: computeExpiresAt(payload.arrival_deadline, payload.origin_time),
     });
-    auditService.track({
+    auditService_1.default.track({
         action: 'ride_request.created',
         resourceType: 'ride_request',
         resourceId: request.id,
@@ -202,66 +219,66 @@ async function createRideRequest(userId, payload) {
 async function listRequests(user, filters = {}) {
     await expireStale();
     const { status } = filters;
-    const { page, limit, offset } = parsePagination(filters);
+    const { page, limit, offset } = (0, pagination_1.parsePagination)(filters);
     let where = {};
     if (user.role === 'driver') {
-        where = { passengerId: { [Op.ne]: user.id } };
-        where.status = status || RIDE_REQUEST_STATUS.OPEN;
+        where = { passengerId: { [sequelize_1.Op.ne]: user.id } };
+        where.status = status || constants_1.RIDE_REQUEST_STATUS.OPEN;
     }
     else {
         where = { passengerId: user.id };
         if (status)
             where.status = status;
     }
-    const { rows, count } = await RideRequest.findAndCountAll({
+    const { rows, count } = await Models_1.RideRequest.findAndCountAll({
         where,
-        include: [{ model: User, as: 'passenger', attributes: ['id', 'fullName', 'phone'] }],
+        include: [{ model: Models_1.User, as: 'passenger', attributes: ['id', 'fullName', 'phone'] }],
         order: [['createdat', 'DESC']],
         offset,
         limit,
     });
     return {
         data: rows.map((r) => serializeRideRequest(r)),
-        pagination: buildPagination(count, page, limit),
+        pagination: (0, pagination_1.buildPagination)(count, page, limit),
     };
 }
 async function getRequest(user, requestId) {
     await expireStale();
-    const request = await RideRequest.findByPk(requestId, {
+    const request = await Models_1.RideRequest.findByPk(requestId, {
         include: [
-            { model: User, as: 'passenger', attributes: ['id', 'fullName', 'phone'] },
+            { model: Models_1.User, as: 'passenger', attributes: ['id', 'fullName', 'phone'] },
             {
-                model: RequestOffer,
+                model: Models_1.RequestOffer,
                 as: 'offers',
-                include: [{ model: User, as: 'driver', attributes: ['id', 'fullName', 'phone'] }],
+                include: [{ model: Models_1.User, as: 'driver', attributes: ['id', 'fullName', 'phone'] }],
             },
         ],
     });
     if (!request)
-        throw ApiErrors.notFound('RIDE_REQUEST_NOT_FOUND');
+        throw ApiError_1.ApiErrors.notFound('RIDE_REQUEST_NOT_FOUND');
     const isOwner = request.passengerId === user.id;
     const isDriver = user.role === 'driver';
     if (!isOwner && !isDriver) {
-        throw ApiErrors.forbidden('YOU_CAN_ONLY_VIEW_YOUR_OWN_RIDE_REQUESTS');
+        throw ApiError_1.ApiErrors.forbidden('YOU_CAN_ONLY_VIEW_YOUR_OWN_RIDE_REQUESTS');
     }
     return { ride_request: serializeRideRequest(request, { includeOffers: true }) };
 }
 async function updateRideRequest(userId, requestId, payload) {
     await expireStale();
-    const request = await RideRequest.findByPk(requestId);
+    const request = await Models_1.RideRequest.findByPk(requestId);
     if (!request)
-        throw ApiErrors.notFound('RIDE_REQUEST_NOT_FOUND');
+        throw ApiError_1.ApiErrors.notFound('RIDE_REQUEST_NOT_FOUND');
     if (request.passengerId !== userId) {
-        throw ApiErrors.forbidden('YOU_CAN_ONLY_UPDATE_YOUR_OWN_RIDE_REQUESTS');
+        throw ApiError_1.ApiErrors.forbidden('YOU_CAN_ONLY_UPDATE_YOUR_OWN_RIDE_REQUESTS');
     }
-    if (![RIDE_REQUEST_STATUS.OPEN, RIDE_REQUEST_STATUS.OFFERED].includes(request.status)) {
-        throw ApiErrors.conflict('ONLY_OPEN_OR_OFFERED_RIDE_REQUESTS_CAN_BE_UPDATED');
+    if (![constants_1.RIDE_REQUEST_STATUS.OPEN, constants_1.RIDE_REQUEST_STATUS.OFFERED].includes(request.status)) {
+        throw ApiError_1.ApiErrors.conflict('ONLY_OPEN_OR_OFFERED_RIDE_REQUESTS_CAN_BE_UPDATED');
     }
     if (payload.action === 'cancel') {
-        request.status = RIDE_REQUEST_STATUS.CANCELLED;
+        request.status = constants_1.RIDE_REQUEST_STATUS.CANCELLED;
         await request.save();
-        await RequestOffer.update({ status: REQUEST_OFFER_STATUS.DECLINED }, { where: { requestId: request.id, status: REQUEST_OFFER_STATUS.SENT } });
-        auditService.track({
+        await Models_1.RequestOffer.update({ status: constants_1.REQUEST_OFFER_STATUS.DECLINED }, { where: { requestId: request.id, status: constants_1.REQUEST_OFFER_STATUS.SENT } });
+        auditService_1.default.track({
             action: 'ride_request.cancelled',
             resourceType: 'ride_request',
             resourceId: request.id,
@@ -293,7 +310,7 @@ async function updateRideRequest(userId, requestId, payload) {
         request.expiresAt = computeExpiresAt(request.arrivalDeadline, request.originTime);
         await request.save();
     }
-    auditService.track({
+    auditService_1.default.track({
         action: 'ride_request.updated',
         resourceType: 'ride_request',
         resourceId: request.id,
@@ -305,38 +322,38 @@ async function updateRideRequest(userId, requestId, payload) {
 }
 async function submitOffer(driverId, requestId, payload) {
     await expireStale();
-    const driver = await User.findByPk(driverId);
+    const driver = await Models_1.User.findByPk(driverId);
     if (!driver)
-        throw ApiErrors.notFound('USER_NOT_FOUND');
-    const request = await RideRequest.findByPk(requestId);
+        throw ApiError_1.ApiErrors.notFound('USER_NOT_FOUND');
+    const request = await Models_1.RideRequest.findByPk(requestId);
     if (!request)
-        throw ApiErrors.notFound('RIDE_REQUEST_NOT_FOUND');
-    if (![RIDE_REQUEST_STATUS.OPEN, RIDE_REQUEST_STATUS.OFFERED].includes(request.status)) {
-        throw ApiErrors.conflict('THIS_RIDE_REQUEST_IS_NO_LONGER_ACCEPTING_OFFERS');
+        throw ApiError_1.ApiErrors.notFound('RIDE_REQUEST_NOT_FOUND');
+    if (![constants_1.RIDE_REQUEST_STATUS.OPEN, constants_1.RIDE_REQUEST_STATUS.OFFERED].includes(request.status)) {
+        throw ApiError_1.ApiErrors.conflict('THIS_RIDE_REQUEST_IS_NO_LONGER_ACCEPTING_OFFERS');
     }
-    const duplicate = await RequestOffer.findOne({
+    const duplicate = await Models_1.RequestOffer.findOne({
         where: {
             requestId,
             driverId,
-            status: REQUEST_OFFER_STATUS.SENT,
+            status: constants_1.REQUEST_OFFER_STATUS.SENT,
         },
     });
     if (duplicate) {
-        throw ApiErrors.conflict('YOU_ALREADY_HAVE_A_PENDING_OFFER_ON_THIS_RIDE_REQUEST');
+        throw ApiError_1.ApiErrors.conflict('YOU_ALREADY_HAVE_A_PENDING_OFFER_ON_THIS_RIDE_REQUEST');
     }
-    const offer = await RequestOffer.create({
+    const offer = await Models_1.RequestOffer.create({
         requestId,
         driverId,
         tripId: payload.trip_id || null,
         offeredFare: payload.offered_fare !== undefined ? payload.offered_fare : null,
         message: payload.message || null,
-        status: REQUEST_OFFER_STATUS.SENT,
+        status: constants_1.REQUEST_OFFER_STATUS.SENT,
     });
-    if (request.status === RIDE_REQUEST_STATUS.OPEN) {
-        request.status = RIDE_REQUEST_STATUS.OFFERED;
+    if (request.status === constants_1.RIDE_REQUEST_STATUS.OPEN) {
+        request.status = constants_1.RIDE_REQUEST_STATUS.OFFERED;
         await request.save();
     }
-    auditService.track({
+    auditService_1.default.track({
         action: 'offer.submitted',
         resourceType: 'request_offer',
         resourceId: offer.id,
@@ -344,9 +361,9 @@ async function submitOffer(driverId, requestId, payload) {
         actorType: 'driver',
         payload: { request_id: requestId, offered_fare: offer.offeredFare },
     });
-    const passenger = await User.findByPk(request.passengerId);
+    const passenger = await Models_1.User.findByPk(request.passengerId);
     if (passenger) {
-        await notificationService.sendToUser(passenger, 'OFFER_RECEIVED', {
+        await notificationService_1.default.sendToUser(passenger, 'OFFER_RECEIVED', {
             channels: ['in_app', 'push'],
             vars: {
                 driver: driver.fullName,
@@ -358,37 +375,37 @@ async function submitOffer(driverId, requestId, payload) {
 }
 async function listOffersForRequest(userId, requestId) {
     await expireStale();
-    const request = await RideRequest.findByPk(requestId, {
+    const request = await Models_1.RideRequest.findByPk(requestId, {
         include: [
             {
-                model: RequestOffer,
+                model: Models_1.RequestOffer,
                 as: 'offers',
-                include: [{ model: User, as: 'driver', attributes: ['id', 'fullName', 'phone'] }],
+                include: [{ model: Models_1.User, as: 'driver', attributes: ['id', 'fullName', 'phone'] }],
             },
         ],
     });
     if (!request)
-        throw ApiErrors.notFound('RIDE_REQUEST_NOT_FOUND');
+        throw ApiError_1.ApiErrors.notFound('RIDE_REQUEST_NOT_FOUND');
     const isOwner = request.passengerId === userId;
     const participates = (request.offers || []).some((o) => o.driverId === userId);
     if (!isOwner && !participates) {
         // drivers who never offered cannot browse others' offers
-        throw ApiErrors.forbidden('YOU_CAN_ONLY_VIEW_OFFERS_ON_YOUR_OWN_REQUESTS_OR');
+        throw ApiError_1.ApiErrors.forbidden('YOU_CAN_ONLY_VIEW_OFFERS_ON_YOUR_OWN_REQUESTS_OR');
     }
     return { data: (request.offers || []).map(serializeOffer) };
 }
 async function listDriverOffers(driverId, filters = {}) {
     await expireStale();
     const { status } = filters;
-    const { page, limit, offset } = parsePagination(filters);
+    const { page, limit, offset } = (0, pagination_1.parsePagination)(filters);
     const where = { driverId };
     if (status)
         where.status = status;
-    const { rows, count } = await RequestOffer.findAndCountAll({
+    const { rows, count } = await Models_1.RequestOffer.findAndCountAll({
         where,
         include: [
             {
-                model: RideRequest,
+                model: Models_1.RideRequest,
                 as: 'rideRequest',
                 attributes: ['id', 'originCity', 'destinationCity', 'originTime', 'status', 'seatsNeeded'],
             },
@@ -411,38 +428,38 @@ async function listDriverOffers(driverId, filters = {}) {
                 }
                 : null,
         })),
-        pagination: buildPagination(count, page, limit),
+        pagination: (0, pagination_1.buildPagination)(count, page, limit),
     };
 }
 async function decideOffer(passengerId, offerId, action) {
     await expireStale();
-    const offer = await RequestOffer.findByPk(offerId, {
+    const offer = await Models_1.RequestOffer.findByPk(offerId, {
         include: [
-            { model: RideRequest, as: 'rideRequest' },
-            { model: User, as: 'driver', attributes: ['id', 'fullName'] },
+            { model: Models_1.RideRequest, as: 'rideRequest' },
+            { model: Models_1.User, as: 'driver', attributes: ['id', 'fullName'] },
         ],
     });
     if (!offer)
-        throw ApiErrors.notFound('OFFER_NOT_FOUND');
+        throw ApiError_1.ApiErrors.notFound('OFFER_NOT_FOUND');
     if (!offer.rideRequest || offer.rideRequest.passengerId !== passengerId) {
-        throw ApiErrors.forbidden('YOU_CAN_ONLY_DECIDE_ON_OFFERS_TO_YOUR_OWN_RIDE');
+        throw ApiError_1.ApiErrors.forbidden('YOU_CAN_ONLY_DECIDE_ON_OFFERS_TO_YOUR_OWN_RIDE');
     }
-    if (offer.status !== REQUEST_OFFER_STATUS.SENT) {
-        throw ApiErrors.conflict('OFFER_NO_LONGER_DECIDABLE', null, { status: offer.status });
+    if (offer.status !== constants_1.REQUEST_OFFER_STATUS.SENT) {
+        throw ApiError_1.ApiErrors.conflict('OFFER_NO_LONGER_DECIDABLE', null, { status: offer.status });
     }
     if (action === 'accept') {
-        offer.status = REQUEST_OFFER_STATUS.ACCEPTED;
+        offer.status = constants_1.REQUEST_OFFER_STATUS.ACCEPTED;
         await offer.save();
-        offer.rideRequest.status = RIDE_REQUEST_STATUS.ACCEPTED;
+        offer.rideRequest.status = constants_1.RIDE_REQUEST_STATUS.ACCEPTED;
         await offer.rideRequest.save();
-        await RequestOffer.update({ status: REQUEST_OFFER_STATUS.DECLINED }, {
+        await Models_1.RequestOffer.update({ status: constants_1.REQUEST_OFFER_STATUS.DECLINED }, {
             where: {
                 requestId: offer.requestId,
-                id: { [Op.ne]: offer.id },
-                status: REQUEST_OFFER_STATUS.SENT,
+                id: { [sequelize_1.Op.ne]: offer.id },
+                status: constants_1.REQUEST_OFFER_STATUS.SENT,
             },
         });
-        auditService.track({
+        auditService_1.default.track({
             action: 'offer.accepted',
             resourceType: 'request_offer',
             resourceId: offer.id,
@@ -451,24 +468,24 @@ async function decideOffer(passengerId, offerId, action) {
             payload: { request_id: offer.requestId, driver_id: offer.driverId },
         });
         if (offer.driver) {
-            await notificationService.sendToUser(offer.driver, 'OFFER_ACCEPTED', {
+            await notificationService_1.default.sendToUser(offer.driver, 'OFFER_ACCEPTED', {
                 channels: ['in_app', 'push'],
                 vars: {},
             });
         }
     }
     else {
-        offer.status = REQUEST_OFFER_STATUS.DECLINED;
+        offer.status = constants_1.REQUEST_OFFER_STATUS.DECLINED;
         await offer.save();
-        const remaining = await RequestOffer.count({
-            where: { requestId: offer.requestId, status: REQUEST_OFFER_STATUS.SENT },
+        const remaining = await Models_1.RequestOffer.count({
+            where: { requestId: offer.requestId, status: constants_1.REQUEST_OFFER_STATUS.SENT },
         });
         if (remaining === 0 &&
-            offer.rideRequest.status === RIDE_REQUEST_STATUS.OFFERED) {
-            offer.rideRequest.status = RIDE_REQUEST_STATUS.OPEN;
+            offer.rideRequest.status === constants_1.RIDE_REQUEST_STATUS.OFFERED) {
+            offer.rideRequest.status = constants_1.RIDE_REQUEST_STATUS.OPEN;
             await offer.rideRequest.save();
         }
-        auditService.track({
+        auditService_1.default.track({
             action: 'offer.declined',
             resourceType: 'request_offer',
             resourceId: offer.id,
@@ -477,7 +494,7 @@ async function decideOffer(passengerId, offerId, action) {
             payload: { request_id: offer.requestId },
         });
         if (offer.driver) {
-            await notificationService.sendToUser(offer.driver, 'OFFER_DECLINED', {
+            await notificationService_1.default.sendToUser(offer.driver, 'OFFER_DECLINED', {
                 channels: ['in_app', 'push'],
                 vars: {},
             });
@@ -487,26 +504,26 @@ async function decideOffer(passengerId, offerId, action) {
 }
 async function agreeOfferPrice(passengerId, offerId, agreedFare) {
     await expireStale();
-    const offer = await RequestOffer.findByPk(offerId, {
+    const offer = await Models_1.RequestOffer.findByPk(offerId, {
         include: [
-            { model: RideRequest, as: 'rideRequest' },
-            { model: User, as: 'driver', attributes: ['id', 'fullName'] },
+            { model: Models_1.RideRequest, as: 'rideRequest' },
+            { model: Models_1.User, as: 'driver', attributes: ['id', 'fullName'] },
         ],
     });
     if (!offer)
-        throw ApiErrors.notFound('OFFER_NOT_FOUND');
+        throw ApiError_1.ApiErrors.notFound('OFFER_NOT_FOUND');
     if (!offer.rideRequest || offer.rideRequest.passengerId !== passengerId) {
-        throw ApiErrors.forbidden('YOU_CAN_ONLY_AGREE_PRICES_ON_OFFERS_TO_YOUR_OWN');
+        throw ApiError_1.ApiErrors.forbidden('YOU_CAN_ONLY_AGREE_PRICES_ON_OFFERS_TO_YOUR_OWN');
     }
-    if (offer.status !== REQUEST_OFFER_STATUS.ACCEPTED) {
-        throw ApiErrors.conflict('ACCEPT_THE_OFFER_BEFORE_AGREEING_ON_A_FINAL_PRICE');
+    if (offer.status !== constants_1.REQUEST_OFFER_STATUS.ACCEPTED) {
+        throw ApiError_1.ApiErrors.conflict('ACCEPT_THE_OFFER_BEFORE_AGREEING_ON_A_FINAL_PRICE');
     }
-    if (offer.rideRequest.status === RIDE_REQUEST_STATUS.CANCELLED || offer.rideRequest.status === RIDE_REQUEST_STATUS.EXPIRED) {
-        throw ApiErrors.conflict('THE_RIDE_REQUEST_IS_NO_LONGER_ACTIVE');
+    if (offer.rideRequest.status === constants_1.RIDE_REQUEST_STATUS.CANCELLED || offer.rideRequest.status === constants_1.RIDE_REQUEST_STATUS.EXPIRED) {
+        throw ApiError_1.ApiErrors.conflict('THE_RIDE_REQUEST_IS_NO_LONGER_ACTIVE');
     }
     offer.agreedFare = agreedFare;
     await offer.save();
-    auditService.track({
+    auditService_1.default.track({
         action: 'offer.price_agreed',
         resourceType: 'request_offer',
         resourceId: offer.id,
@@ -515,7 +532,7 @@ async function agreeOfferPrice(passengerId, offerId, agreedFare) {
         payload: { request_id: offer.requestId, agreed_fare: agreedFare },
     });
     if (offer.driver) {
-        await notificationService.sendToUser(offer.driver, 'OFFER_PRICE_AGREED', {
+        await notificationService_1.default.sendToUser(offer.driver, 'OFFER_PRICE_AGREED', {
             channels: ['in_app', 'push'],
             vars: { agreed_fare: String(agreedFare) },
         });
@@ -528,56 +545,56 @@ async function agreeOfferPrice(passengerId, offerId, agreedFare) {
  * attaches the offer to one of their trips.
  */
 async function attachOfferToTrip(driverId, tripId, offerId, payload = {}) {
-    const offer = await RequestOffer.findByPk(offerId, {
+    const offer = await Models_1.RequestOffer.findByPk(offerId, {
         include: [
-            { model: RideRequest, as: 'rideRequest' },
-            { model: User, as: 'driver', attributes: ['id', 'fullName'] },
+            { model: Models_1.RideRequest, as: 'rideRequest' },
+            { model: Models_1.User, as: 'driver', attributes: ['id', 'fullName'] },
         ],
     });
     if (!offer)
-        throw ApiErrors.notFound('OFFER_NOT_FOUND');
+        throw ApiError_1.ApiErrors.notFound('OFFER_NOT_FOUND');
     if (offer.driverId !== driverId) {
-        throw ApiErrors.forbidden('YOU_CAN_ONLY_ATTACH_YOUR_OWN_OFFERS');
+        throw ApiError_1.ApiErrors.forbidden('YOU_CAN_ONLY_ATTACH_YOUR_OWN_OFFERS');
     }
     if (offer.bookingId) {
-        throw ApiErrors.conflict('OFFER_ALREADY_ATTACHED_TO_A_BOOKING');
+        throw ApiError_1.ApiErrors.conflict('OFFER_ALREADY_ATTACHED_TO_A_BOOKING');
     }
-    if (offer.status !== REQUEST_OFFER_STATUS.ACCEPTED) {
-        throw ApiErrors.conflict('ONLY_ACCEPTED_OFFERS_CAN_BE_ATTACHED_TO_A_TRIP');
+    if (offer.status !== constants_1.REQUEST_OFFER_STATUS.ACCEPTED) {
+        throw ApiError_1.ApiErrors.conflict('ONLY_ACCEPTED_OFFERS_CAN_BE_ATTACHED_TO_A_TRIP');
     }
-    if (!offer.rideRequest || offer.rideRequest.status !== RIDE_REQUEST_STATUS.ACCEPTED) {
-        throw ApiErrors.conflict('THE_UNDERLYING_RIDE_REQUEST_IS_NOT_IN_AN_ACCEPTED_STATE');
+    if (!offer.rideRequest || offer.rideRequest.status !== constants_1.RIDE_REQUEST_STATUS.ACCEPTED) {
+        throw ApiError_1.ApiErrors.conflict('THE_UNDERLYING_RIDE_REQUEST_IS_NOT_IN_AN_ACCEPTED_STATE');
     }
     if (offer.agreedFare === null || offer.agreedFare === undefined) {
-        throw ApiErrors.conflict('AGREE_ON_A_FINAL_PRICE_BEFORE_ATTACHING_THE_OFFER_TO');
+        throw ApiError_1.ApiErrors.conflict('AGREE_ON_A_FINAL_PRICE_BEFORE_ATTACHING_THE_OFFER_TO');
     }
-    const trip = await Trip.findByPk(tripId);
+    const trip = await Models_1.Trip.findByPk(tripId);
     if (!trip)
-        throw ApiErrors.notFound('TRIP_NOT_FOUND');
+        throw ApiError_1.ApiErrors.notFound('TRIP_NOT_FOUND');
     if (trip.driverId !== driverId) {
-        throw ApiErrors.forbidden('YOU_CAN_ONLY_ATTACH_OFFERS_TO_YOUR_OWN_TRIPS');
+        throw ApiError_1.ApiErrors.forbidden('YOU_CAN_ONLY_ATTACH_OFFERS_TO_YOUR_OWN_TRIPS');
     }
-    if (![TRIP_STATUS.PUBLISHED, TRIP_STATUS.FULL].includes(trip.status)) {
-        throw ApiErrors.conflict('TRIP_IS_ALREADY_ONGOING_OR_COMPLETED');
+    if (![constants_1.TRIP_STATUS.PUBLISHED, constants_1.TRIP_STATUS.FULL].includes(trip.status)) {
+        throw ApiError_1.ApiErrors.conflict('TRIP_IS_ALREADY_ONGOING_OR_COMPLETED');
     }
     const seatsNeeded = offer.rideRequest.seatsNeeded || 1;
     async function uniqueBookingCode() {
         for (let attempt = 0; attempt < 5; attempt++) {
-            const code = generateReferenceCode('MSR');
-            const existing = await Booking.findOne({ where: { referenceCode: code } });
+            const code = (0, referenceCode_1.generateReferenceCode)('MSR');
+            const existing = await Models_1.Booking.findOne({ where: { referenceCode: code } });
             if (!existing)
                 return code;
         }
-        throw ApiErrors.serverError('COULD_NOT_GENERATE_A_UNIQUE_REFERENCE_CODE');
+        throw ApiError_1.ApiErrors.serverError('COULD_NOT_GENERATE_A_UNIQUE_REFERENCE_CODE');
     }
     const referenceCode = await uniqueBookingCode();
-    const booking = await sequelize.transaction(async (t) => {
-        const freshTrip = await Trip.findByPk(tripId, { transaction: t, lock: t.LOCK.UPDATE });
+    const booking = await Models_1.sequelize.transaction(async (t) => {
+        const freshTrip = await Models_1.Trip.findByPk(tripId, { transaction: t, lock: t.LOCK.UPDATE });
         const remainingSeats = freshTrip.availableSeats - seatsNeeded;
         if (remainingSeats < 0) {
-            throw ApiErrors.conflict('NOT_ENOUGH_AVAILABLE_SEATS_ON_THE_SELECTED_TRIP');
+            throw ApiError_1.ApiErrors.conflict('NOT_ENOUGH_AVAILABLE_SEATS_ON_THE_SELECTED_TRIP');
         }
-        const row = await Booking.create({
+        const row = await Models_1.Booking.create({
             tripId,
             passengerId: offer.rideRequest.passengerId,
             seatNumber: null,
@@ -586,21 +603,21 @@ async function attachOfferToTrip(driverId, tripId, offerId, payload = {}) {
             currency: offer.rideRequest.currency || 'JOD',
             dropoffPlace: payload.dropoff_place || null,
             dropoffDeadline: payload.dropoff_deadline ? new Date(payload.dropoff_deadline) : null,
-            status: BOOKING_STATUS.CONFIRMED,
-            paymentStatus: PAYMENT_STATUS.PENDING,
+            status: constants_1.BOOKING_STATUS.CONFIRMED,
+            paymentStatus: constants_1.PAYMENT_STATUS.PENDING,
             referenceCode,
             cancelledBy: null,
         }, { transaction: t });
         freshTrip.availableSeats = remainingSeats;
-        if (remainingSeats === 0 && freshTrip.status === TRIP_STATUS.PUBLISHED) {
-            freshTrip.status = TRIP_STATUS.FULL;
+        if (remainingSeats === 0 && freshTrip.status === constants_1.TRIP_STATUS.PUBLISHED) {
+            freshTrip.status = constants_1.TRIP_STATUS.FULL;
         }
         await freshTrip.save({ transaction: t });
         offer.bookingId = row.id;
         await offer.save({ transaction: t });
         return row;
     });
-    auditService.track({
+    auditService_1.default.track({
         action: 'booking.created_from_offer',
         resourceType: 'booking',
         resourceId: booking.id,
@@ -613,9 +630,9 @@ async function attachOfferToTrip(driverId, tripId, offerId, payload = {}) {
             reference_code: booking.referenceCode,
         },
     });
-    const passenger = await User.findByPk(offer.rideRequest.passengerId);
+    const passenger = await Models_1.User.findByPk(offer.rideRequest.passengerId);
     if (passenger) {
-        await notificationService.sendToUser(passenger, 'BOOKING_CREATED_FROM_OFFER', {
+        await notificationService_1.default.sendToUser(passenger, 'BOOKING_CREATED_FROM_OFFER', {
             channels: ['in_app', 'push'],
             vars: { reference_code: booking.referenceCode },
         });
@@ -632,7 +649,7 @@ async function attachOfferToTrip(driverId, tripId, offerId, payload = {}) {
             status: booking.status,
             payment_status: booking.paymentStatus,
         },
-        offer: serializeOffer(await RequestOffer.findByPk(offer.id)),
+        offer: serializeOffer(await Models_1.RequestOffer.findByPk(offer.id)),
     };
 }
 module.exports = {
@@ -649,4 +666,5 @@ module.exports = {
     getMatches,
     expireStale,
 };
+exports.default = module.exports;
 //# sourceMappingURL=rideRequestService.js.map

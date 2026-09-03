@@ -1,115 +1,181 @@
 "use strict";
-const adminDashboardService = require('../Services/adminDashboardService');
-const { successResponse } = require('../utils/httpResponse');
-const auditService = require('../Services/auditService');
-const { markResource } = auditService;
-const catchAsync = require('../utils/catchAsync');
-// ===== US1: Global dashboard =====
-const getSummary = catchAsync(async (req, res) => {
-    successResponse(res, await adminDashboardService.getSummary());
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
 });
-const getRecentTrips = catchAsync(async (req, res) => {
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.listReservations = exports.rejectDocument = exports.approveDocument = exports.applyStandingAction = exports.setDriverStatus = exports.getDocuments = exports.getCarDetails = exports.getAccountLog = exports.getDriverEvaluations = exports.listDriverTrips = exports.getDriverOverview = exports.getDriverHeader = exports.getDriverStats = exports.listDrivers = exports.getLatestComplaints = exports.getPendingRequests = exports.getTopRoutes = exports.getRecentTrips = exports.getSummary = void 0;
+const catchAsync_1 = require("../utils/catchAsync");
+const httpResponse_1 = require("../utils/httpResponse");
+const adminDashboardService = __importStar(require("../Services/adminDashboardService"));
+const auditService = __importStar(require("../Services/auditService"));
+const getSummary = (0, catchAsync_1.catchAsync)(async (req, res) => {
+    (0, httpResponse_1.successResponse)(res, await adminDashboardService.getSummary());
+});
+exports.getSummary = getSummary;
+const getRecentTrips = (0, catchAsync_1.catchAsync)(async (req, res) => {
     const result = await adminDashboardService.getRecentTrips(req.query);
-    successResponse(res, result);
+    (0, httpResponse_1.successResponse)(res, result);
 });
-const getTopRoutes = catchAsync(async (req, res) => {
-    successResponse(res, await adminDashboardService.getTopRoutes());
+exports.getRecentTrips = getRecentTrips;
+const getTopRoutes = (0, catchAsync_1.catchAsync)(async (req, res) => {
+    (0, httpResponse_1.successResponse)(res, await adminDashboardService.getTopRoutes());
 });
-const getPendingRequests = catchAsync(async (req, res) => {
+exports.getTopRoutes = getTopRoutes;
+const getPendingRequests = (0, catchAsync_1.catchAsync)(async (req, res) => {
     const result = await adminDashboardService.getPendingRequests(req.query);
-    successResponse(res, result);
+    (0, httpResponse_1.successResponse)(res, result);
 });
-const getLatestComplaints = catchAsync(async (req, res) => {
+exports.getPendingRequests = getPendingRequests;
+const getLatestComplaints = (0, catchAsync_1.catchAsync)(async (req, res) => {
     const result = await adminDashboardService.getLatestComplaints(req.query);
-    successResponse(res, result);
+    (0, httpResponse_1.successResponse)(res, result);
 });
-// ===== US2: Drivers directory =====
-const listDrivers = catchAsync(async (req, res) => {
+exports.getLatestComplaints = getLatestComplaints;
+const listDrivers = (0, catchAsync_1.catchAsync)(async (req, res) => {
     const result = await adminDashboardService.listDrivers(req.query);
-    successResponse(res, result);
+    (0, httpResponse_1.successResponse)(res, result);
 });
-const getDriverStats = catchAsync(async (req, res) => {
-    successResponse(res, await adminDashboardService.getDriverStats());
+exports.listDrivers = listDrivers;
+const getDriverStats = (0, catchAsync_1.catchAsync)(async (req, res) => {
+    (0, httpResponse_1.successResponse)(res, await adminDashboardService.getDriverStats());
 });
-// ===== US3: Driver dossier =====
-const getDriverHeader = catchAsync(async (req, res) => {
-    successResponse(res, await adminDashboardService.getDriverHeader(req.params.driver_id));
+exports.getDriverStats = getDriverStats;
+const getDriverHeader = (0, catchAsync_1.catchAsync)(async (req, res) => {
+    const { driver_id } = req.params;
+    (0, httpResponse_1.successResponse)(res, await adminDashboardService.getDriverHeader(driver_id));
 });
-const getDriverOverview = catchAsync(async (req, res) => {
-    successResponse(res, await adminDashboardService.getDriverOverview(req.params.driver_id));
+exports.getDriverHeader = getDriverHeader;
+const getDriverOverview = (0, catchAsync_1.catchAsync)(async (req, res) => {
+    const { driver_id } = req.params;
+    (0, httpResponse_1.successResponse)(res, await adminDashboardService.getDriverOverview(driver_id));
 });
-const listDriverTrips = catchAsync(async (req, res) => {
-    const result = await adminDashboardService.listDriverTrips(req.params.driver_id, req.query);
-    successResponse(res, result);
+exports.getDriverOverview = getDriverOverview;
+const listDriverTrips = (0, catchAsync_1.catchAsync)(async (req, res) => {
+    const { driver_id } = req.params;
+    const result = await adminDashboardService.listDriverTrips(driver_id, req.query);
+    (0, httpResponse_1.successResponse)(res, result);
 });
-const getDriverEvaluations = catchAsync(async (req, res) => {
-    const result = await adminDashboardService.getDriverEvaluations(req.params.driver_id, req.query);
-    successResponse(res, result);
+exports.listDriverTrips = listDriverTrips;
+const getDriverEvaluations = (0, catchAsync_1.catchAsync)(async (req, res) => {
+    const { driver_id } = req.params;
+    const result = await adminDashboardService.getDriverEvaluations(driver_id, req.query);
+    (0, httpResponse_1.successResponse)(res, result);
 });
-const getAccountLog = catchAsync(async (req, res) => {
-    successResponse(res, await adminDashboardService.getAccountLog(req.params.driver_id));
+exports.getDriverEvaluations = getDriverEvaluations;
+const getAccountLog = (0, catchAsync_1.catchAsync)(async (req, res) => {
+    const { driver_id } = req.params;
+    (0, httpResponse_1.successResponse)(res, await adminDashboardService.getAccountLog(driver_id));
 });
-const getCarDetails = catchAsync(async (req, res) => {
-    successResponse(res, await adminDashboardService.getCarDetails(req.params.driver_id));
+exports.getAccountLog = getAccountLog;
+const getCarDetails = (0, catchAsync_1.catchAsync)(async (req, res) => {
+    const { driver_id } = req.params;
+    (0, httpResponse_1.successResponse)(res, await adminDashboardService.getCarDetails(driver_id));
 });
-const getDocuments = catchAsync(async (req, res) => {
-    successResponse(res, await adminDashboardService.getDocuments(req.params.driver_id));
+exports.getCarDetails = getCarDetails;
+const getDocuments = (0, catchAsync_1.catchAsync)(async (req, res) => {
+    const { driver_id } = req.params;
+    (0, httpResponse_1.successResponse)(res, await adminDashboardService.getDocuments(driver_id));
 });
-// ===== US4: Actions =====
-const setDriverStatus = catchAsync(async (req, res) => {
-    const result = await adminDashboardService.setDriverStatus(req.user.id, req.params.driver_id, req.body.status);
+exports.getDocuments = getDocuments;
+const setDriverStatus = (0, catchAsync_1.catchAsync)(async (req, res) => {
+    const authReq = req;
+    const { driver_id } = req.params;
+    const { status } = req.body;
+    const result = await adminDashboardService.setDriverStatus(String(authReq.user?.id), driver_id, status);
     auditService.track({
-        action: `dashboard.driver_status.${req.body.status}`,
+        action: `dashboard.driver_status.${status}`,
         resourceType: 'driver',
-        resourceId: req.params.driver_id,
-        actorId: req.user.id,
-        payload: { status: req.body.status },
+        resourceId: driver_id,
+        actorId: authReq.user?.id,
+        payload: { status },
     });
-    markResource(res, { type: 'driver', id: req.params.driver_id });
-    successResponse(res, result);
+    auditService.markResource(res, { type: 'driver', id: driver_id });
+    (0, httpResponse_1.successResponse)(res, result);
 });
-const applyStandingAction = catchAsync(async (req, res) => {
-    const result = await adminDashboardService.applyStandingAction(req.user.id, req.params.driver_id, req.body.action, req.body.reason);
+exports.setDriverStatus = setDriverStatus;
+const applyStandingAction = (0, catchAsync_1.catchAsync)(async (req, res) => {
+    const authReq = req;
+    const { driver_id } = req.params;
+    const { action, reason } = req.body;
+    const result = await adminDashboardService.applyStandingAction(String(authReq.user?.id), driver_id, action, reason);
     auditService.track({
-        action: `dashboard.account_action.${req.body.action}`,
+        action: `dashboard.account_action.${action}`,
         resourceType: 'driver',
-        resourceId: req.params.driver_id,
-        actorId: req.user.id,
-        payload: { action: req.body.action, reason: req.body.reason || null },
+        resourceId: driver_id,
+        actorId: authReq.user?.id,
+        payload: { action, reason: reason || null },
     });
-    markResource(res, { type: 'driver', id: req.params.driver_id });
-    successResponse(res, result);
+    auditService.markResource(res, { type: 'driver', id: driver_id });
+    (0, httpResponse_1.successResponse)(res, result);
 });
-const approveDocument = catchAsync(async (req, res) => {
-    const result = await adminDashboardService.decideDocument(req.user.id, req.params.driver_id, req.params.document_key, 'approved', null);
+exports.applyStandingAction = applyStandingAction;
+const approveDocument = (0, catchAsync_1.catchAsync)(async (req, res) => {
+    const authReq = req;
+    const { driver_id, document_key } = req.params;
+    const result = await adminDashboardService.decideDocument(String(authReq.user?.id), driver_id, document_key, 'approved', null);
     auditService.track({
         action: 'dashboard.document.approve',
         resourceType: 'document_review',
-        resourceId: `${req.params.driver_id}:${req.params.document_key}`,
-        actorId: req.user.id,
-        payload: { document_key: req.params.document_key },
+        resourceId: `${driver_id}:${document_key}`,
+        actorId: authReq.user?.id,
+        payload: { document_key },
     });
-    markResource(res, { type: 'document_review', id: `${req.params.driver_id}:${req.params.document_key}` });
-    successResponse(res, result);
+    auditService.markResource(res, { type: 'document_review', id: `${driver_id}:${document_key}` });
+    (0, httpResponse_1.successResponse)(res, result);
 });
-const rejectDocument = catchAsync(async (req, res) => {
-    const result = await adminDashboardService.decideDocument(req.user.id, req.params.driver_id, req.params.document_key, 'rejected', req.body.reason);
+exports.approveDocument = approveDocument;
+const rejectDocument = (0, catchAsync_1.catchAsync)(async (req, res) => {
+    const authReq = req;
+    const { driver_id, document_key } = req.params;
+    const { reason } = req.body;
+    const result = await adminDashboardService.decideDocument(String(authReq.user?.id), driver_id, document_key, 'rejected', reason);
     auditService.track({
         action: 'dashboard.document.reject',
         resourceType: 'document_review',
-        resourceId: `${req.params.driver_id}:${req.params.document_key}`,
-        actorId: req.user.id,
-        payload: { document_key: req.params.document_key, reason: req.body.reason || null },
+        resourceId: `${driver_id}:${document_key}`,
+        actorId: authReq.user?.id,
+        payload: { document_key, reason: reason || null },
     });
-    markResource(res, { type: 'document_review', id: `${req.params.driver_id}:${req.params.document_key}` });
-    successResponse(res, result);
+    auditService.markResource(res, { type: 'document_review', id: `${driver_id}:${document_key}` });
+    (0, httpResponse_1.successResponse)(res, result);
 });
-// ===== US5: Shared listings =====
-const listReservations = catchAsync(async (req, res) => {
+exports.rejectDocument = rejectDocument;
+const listReservations = (0, catchAsync_1.catchAsync)(async (req, res) => {
     const result = await adminDashboardService.listReservations(req.query);
-    successResponse(res, result);
+    (0, httpResponse_1.successResponse)(res, result);
 });
-module.exports = {
+exports.listReservations = listReservations;
+exports.default = {
     getSummary,
     getRecentTrips,
     getTopRoutes,

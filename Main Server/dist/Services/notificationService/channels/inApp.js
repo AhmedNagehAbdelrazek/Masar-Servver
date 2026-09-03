@@ -1,7 +1,13 @@
 "use strict";
-const { Notification } = require('../../../Models');
-const realtimeService = require('../../realtimeService');
-const realtimeMetrics = require('../../realtimeMetrics');
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.send = send;
+// @ts-nocheck
+const Models_1 = require("../../../Models");
+const realtimeService_1 = __importDefault(require("../../realtimeService"));
+const realtimeMetrics_1 = __importDefault(require("../../realtimeMetrics"));
 /**
  * In-app channel.
  *
@@ -13,7 +19,7 @@ const realtimeMetrics = require('../../realtimeMetrics');
 async function send(user, message, data = {}) {
     if (!user || !user.id)
         return null;
-    const notification = await Notification.create({
+    const notification = await Models_1.Notification.create({
         userId: user.id,
         type: message.type,
         title: message.title,
@@ -34,12 +40,12 @@ async function send(user, message, data = {}) {
             : new Date().toISOString(),
         timestamp: Date.now(),
     };
-    realtimeService.emitToUser(user.id, 'notification:new', payload);
-    realtimeMetrics.recordEvent('notification:new');
-    realtimeMetrics.recordDelivery();
-    Notification.count({ where: { userId: user.id, isRead: false } })
+    realtimeService_1.default.emitToUser(user.id, 'notification:new', payload);
+    realtimeMetrics_1.default.recordEvent('notification:new');
+    realtimeMetrics_1.default.recordDelivery();
+    Models_1.Notification.count({ where: { userId: user.id, isRead: false } })
         .then((unreadCount) => {
-        realtimeService.emitToUser(user.id, 'notification:count', {
+        realtimeService_1.default.emitToUser(user.id, 'notification:count', {
             unread_count: unreadCount,
             timestamp: Date.now(),
         });
@@ -48,4 +54,5 @@ async function send(user, message, data = {}) {
     return notification;
 }
 module.exports = { send };
+exports.default = module.exports;
 //# sourceMappingURL=inApp.js.map

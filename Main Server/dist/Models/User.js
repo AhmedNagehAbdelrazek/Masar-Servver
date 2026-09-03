@@ -52,7 +52,6 @@ User.init({
         allowNull: false,
     },
     age: {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         type: sequelize_1.DataTypes.DECIMAL(3),
         allowNull: true,
     },
@@ -88,7 +87,6 @@ User.init({
         defaultValue: [],
     },
     avgRating: {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         type: sequelize_1.DataTypes.DECIMAL(2, 1),
         defaultValue: 0,
     },
@@ -133,8 +131,6 @@ User.init({
     timestamps: true,
 });
 exports.default = User;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 module.exports = User;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-module.exports.default = User;
+Object.assign(module.exports, { default: User });
 //# sourceMappingURL=User.js.map

@@ -1,18 +1,30 @@
 "use strict";
-const { Op } = require('sequelize');
-const { Booking, Trip, User, TripSeat, TripStop, Rating, Vehicle, DriverProfile, sequelize } = require('../Models');
-const { ApiErrors } = require('../utils/ApiError');
-const { parsePagination, buildPagination } = require('../utils/pagination');
-const { maskPhone } = require('../utils/masking');
-const { REDIS_KEYS } = require('../utils/redisKeys');
-const { deleteKey } = require('../config/redis');
-const { BOOKING_STATUS, PAYMENT_STATUS, TRIP_STATUS, SEAT_TYPE, USER_STATUS, STOP_TYPE, } = require('../config/constants');
-const { checkSeatLock, releaseSeatLock } = require('../utils/seatLock');
-const auditService = require('./auditService');
-const notificationService = require('./notificationService');
-const { generateReferenceCode } = require('../utils/referenceCode');
-const homeService = require('./homeService');
-const realtimeService = require('./realtimeService');
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.listForDriver = listForDriver;
+exports.getForDriver = getForDriver;
+exports.createBooking = createBooking;
+exports.listForPassenger = listForPassenger;
+exports.getForPassenger = getForPassenger;
+exports.cancelBooking = cancelBooking;
+exports.getDriverReveal = getDriverReveal;
+// @ts-nocheck
+const sequelize_1 = require("sequelize");
+const Models_1 = require("../Models");
+const ApiError_1 = require("../utils/ApiError");
+const pagination_1 = require("../utils/pagination");
+const masking_1 = require("../utils/masking");
+const redisKeys_1 = require("../utils/redisKeys");
+const redis_1 = require("../config/redis");
+const seatLock_1 = require("../utils/seatLock");
+const auditService_1 = __importDefault(require("./auditService"));
+const notificationService_1 = __importDefault(require("./notificationService"));
+const referenceCode_1 = require("../utils/referenceCode");
+const homeService_1 = __importDefault(require("./homeService"));
+const realtimeService_1 = __importDefault(require("./realtimeService"));
+const constants_1 = require("../config/constants");
 function serializeRoutePoints(trip) {
     return (trip.stops || [])
         .slice()
@@ -29,8 +41,8 @@ function serializeRoutePoints(trip) {
     }));
 }
 function getMeetingPoint(trip) {
-    const pickup = (trip.stops || []).find((s) => s.stopType === STOP_TYPE.PICKUP) ||
-        (trip.stops || []).find((s) => s.stopType === STOP_TYPE.BOTH);
+    const pickup = (trip.stops || []).find((s) => s.stopType === constants_1.STOP_TYPE.PICKUP) ||
+        (trip.stops || []).find((s) => s.stopType === constants_1.STOP_TYPE.BOTH);
     if (pickup) {
         return {
             stop_name: pickup.stopName,
@@ -74,7 +86,7 @@ function serializeListRow(booking) {
     return {
         id: booking.id,
         passenger_name: booking.passenger ? booking.passenger.fullName : null,
-        passenger_phone: maskPhone(booking.passenger ? booking.passenger.phone : null),
+        passenger_phone: (0, masking_1.maskPhone)(booking.passenger ? booking.passenger.phone : null),
         passenger_rating: booking.passenger ? Number(booking.passenger.avgRating) || 0 : null,
         seats_booked: booking.seatsBooked,
         agreed_fare: Number(booking.agreedFare),
@@ -99,7 +111,7 @@ function serializeDetail(booking) {
     return {
         id: booking.id,
         passenger_name: booking.passenger ? booking.passenger.fullName : null,
-        passenger_phone: maskPhone(booking.passenger ? booking.passenger.phone : null),
+        passenger_phone: (0, masking_1.maskPhone)(booking.passenger ? booking.passenger.phone : null),
         passenger_rating: booking.passenger ? Number(booking.passenger.avgRating) || 0 : null,
         seats_booked: booking.seatsBooked,
         seat_number: booking.seatNumber,
@@ -127,22 +139,22 @@ function serializeDetail(booking) {
  */
 async function listForDriver(driverId, filters = {}) {
     const { status, date_from, date_to } = filters;
-    const { page, limit, offset } = parsePagination(filters);
+    const { page, limit, offset } = (0, pagination_1.parsePagination)(filters);
     const bookingWhere = {};
     if (status)
         bookingWhere.status = status;
     if (date_from || date_to) {
         bookingWhere.createdat = {};
         if (date_from)
-            bookingWhere.createdat[Op.gte] = new Date(date_from);
+            bookingWhere.createdat[sequelize_1.Op.gte] = new Date(date_from);
         if (date_to)
-            bookingWhere.createdat[Op.lte] = new Date(new Date(date_to).setHours(23, 59, 59, 999));
+            bookingWhere.createdat[sequelize_1.Op.lte] = new Date(new Date(date_to).setHours(23, 59, 59, 999));
     }
-    const { rows, count } = await Booking.findAndCountAll({
+    const { rows, count } = await Models_1.Booking.findAndCountAll({
         where: bookingWhere,
         include: [
-            { model: Trip, as: 'trip', where: { driverId }, attributes: ['id', 'originCity', 'originArea', 'originLat', 'originLng', 'destinationCity', 'destinationArea', 'destinationLat', 'destinationLng', 'farePerSeat'], include: [{ model: TripStop, as: 'stops' }] },
-            { model: User, as: 'passenger', attributes: ['id', 'fullName', 'phone', 'avgRating'] },
+            { model: Models_1.Trip, as: 'trip', where: { driverId }, attributes: ['id', 'originCity', 'originArea', 'originLat', 'originLng', 'destinationCity', 'destinationArea', 'destinationLat', 'destinationLng', 'farePerSeat'], include: [{ model: Models_1.TripStop, as: 'stops' }] },
+            { model: Models_1.User, as: 'passenger', attributes: ['id', 'fullName', 'phone', 'avgRating'] },
         ],
         order: [['createdat', 'DESC']],
         offset,
@@ -150,64 +162,64 @@ async function listForDriver(driverId, filters = {}) {
     });
     return {
         data: rows.map(serializeListRow),
-        pagination: buildPagination(count, page, limit),
+        pagination: (0, pagination_1.buildPagination)(count, page, limit),
     };
 }
 /**
  * Get a single booking on the driver's own trip (contract D4).
  */
 async function getForDriver(driverId, bookingId) {
-    const booking = await Booking.findByPk(bookingId, {
+    const booking = await Models_1.Booking.findByPk(bookingId, {
         include: [
-            { model: Trip, as: 'trip', attributes: ['id', 'driverId', 'originCity', 'originArea', 'originLat', 'originLng', 'destinationCity', 'destinationArea', 'destinationLat', 'destinationLng', 'farePerSeat'], include: [{ model: TripStop, as: 'stops' }] },
-            { model: User, as: 'passenger', attributes: ['id', 'fullName', 'phone', 'avgRating'] },
+            { model: Models_1.Trip, as: 'trip', attributes: ['id', 'driverId', 'originCity', 'originArea', 'originLat', 'originLng', 'destinationCity', 'destinationArea', 'destinationLat', 'destinationLng', 'farePerSeat'], include: [{ model: Models_1.TripStop, as: 'stops' }] },
+            { model: Models_1.User, as: 'passenger', attributes: ['id', 'fullName', 'phone', 'avgRating'] },
         ],
     });
     if (!booking)
-        throw ApiErrors.notFound('BOOKING_NOT_FOUND');
+        throw ApiError_1.ApiErrors.notFound('BOOKING_NOT_FOUND');
     if (!booking.trip || booking.trip.driverId !== driverId) {
-        throw ApiErrors.forbidden('YOU_CAN_ONLY_VIEW_BOOKINGS_ON_YOUR_OWN_TRIPS');
+        throw ApiError_1.ApiErrors.forbidden('YOU_CAN_ONLY_VIEW_BOOKINGS_ON_YOUR_OWN_TRIPS');
     }
     return { booking: serializeDetail(booking) };
 }
 // ===== PASSENGER-SIDE BOOKING FLOW (spec 009 US1) =====
 async function uniqueBookingCode() {
     for (let attempt = 0; attempt < 5; attempt++) {
-        const code = generateReferenceCode('MSR');
-        const existing = await Booking.findOne({ where: { referenceCode: code } });
+        const code = (0, referenceCode_1.generateReferenceCode)('MSR');
+        const existing = await Models_1.Booking.findOne({ where: { referenceCode: code } });
         if (!existing)
             return code;
     }
-    throw ApiErrors.serverError('COULD_NOT_GENERATE_A_UNIQUE_REFERENCE_CODE');
+    throw ApiError_1.ApiErrors.serverError('COULD_NOT_GENERATE_A_UNIQUE_REFERENCE_CODE');
 }
 async function notifyDriver(trip, template, vars) {
-    const driver = await User.findByPk(trip.driverId);
+    const driver = await Models_1.User.findByPk(trip.driverId);
     if (driver) {
-        await notificationService.sendToUser(driver, template, { channels: ['in_app', 'push'], vars });
+        await notificationService_1.default.sendToUser(driver, template, { channels: ['in_app', 'push'], vars });
     }
 }
 async function createBooking(passengerId, payload) {
     const { trip_id, seat_number, seats, agreed_fare, dropoff_place, dropoff_deadline, drop_off_point, } = payload;
-    const user = await User.findByPk(passengerId);
+    const user = await Models_1.User.findByPk(passengerId);
     if (!user)
-        throw ApiErrors.notFound('USER_NOT_FOUND');
-    if ([USER_STATUS.SUSPENDED, USER_STATUS.BANNED].includes(user.status)) {
-        throw ApiErrors.forbidden('ACCOUNT_IS_SUSPENDED_YOU_CANNOT_BOOK_TRIPS');
+        throw ApiError_1.ApiErrors.notFound('USER_NOT_FOUND');
+    if ([constants_1.USER_STATUS.SUSPENDED, constants_1.USER_STATUS.BANNED].includes(user.status)) {
+        throw ApiError_1.ApiErrors.forbidden('ACCOUNT_IS_SUSPENDED_YOU_CANNOT_BOOK_TRIPS');
     }
     const requestedSeats = seats === undefined ? 1 : Number(seats);
     if (!Number.isInteger(requestedSeats) || requestedSeats < 1) {
-        throw ApiErrors.validation('SEATS_MUST_BE_POSITIVE_INTEGER');
+        throw ApiError_1.ApiErrors.validation('SEATS_MUST_BE_POSITIVE_INTEGER');
     }
-    const trip = await Trip.findByPk(trip_id, {
-        include: [{ model: TripStop, as: 'stops' }],
+    const trip = await Models_1.Trip.findByPk(trip_id, {
+        include: [{ model: Models_1.TripStop, as: 'stops' }],
     });
     if (!trip)
-        throw ApiErrors.notFound('TRIP_NOT_FOUND');
-    if (![TRIP_STATUS.PUBLISHED, TRIP_STATUS.FULL].includes(trip.status)) {
-        throw ApiErrors.conflict('TRIP_NOT_BOOKABLE');
+        throw ApiError_1.ApiErrors.notFound('TRIP_NOT_FOUND');
+    if (![constants_1.TRIP_STATUS.PUBLISHED, constants_1.TRIP_STATUS.FULL].includes(trip.status)) {
+        throw ApiError_1.ApiErrors.conflict('TRIP_NOT_BOOKABLE');
     }
     if (Number(agreed_fare) !== Number(trip.farePerSeat)) {
-        throw ApiErrors.validation('AGREED_FARE_DOES_NOT_MATCH_THE_CURRENT_TRIP_FARE');
+        throw ApiError_1.ApiErrors.validation('AGREED_FARE_DOES_NOT_MATCH_THE_CURRENT_TRIP_FARE');
     }
     // Resolve the chosen drop-off point (must belong to this trip's route).
     let resolvedDropoffPlace = dropoff_place || null;
@@ -216,47 +228,47 @@ async function createBooking(passengerId, payload) {
         const stops = (trip.stops || []).slice().sort((a, b) => a.stopOrder - b.stopOrder);
         const stop = stops.find((s) => s.id === drop_off_point);
         if (!stop)
-            throw ApiErrors.custom('DROP_OFF_POINT_NOT_ON_TRIP', 409, 'DROP_OFF_POINT_NOT_ON_TRIP');
+            throw ApiError_1.ApiErrors.custom('DROP_OFF_POINT_NOT_ON_TRIP', 409, 'DROP_OFF_POINT_NOT_ON_TRIP');
         resolvedDropoffPlace = stop.stopName || stop.city || dropoff_place || null;
         resolvedDropoffOrder = stop.stopOrder;
     }
     // Could the booking be satisfied right now? (re-checked atomically below)
     if (requestedSeats > Number(trip.availableSeats)) {
-        throw ApiErrors.custom('NOT_ENOUGH_AVAILABLE_SEATS_ON_THE_SELECTED_TRIP', 409, 'NOT_ENOUGH_AVAILABLE_SEATS_ON_THE_SELECTED_TRIP');
+        throw ApiError_1.ApiErrors.custom('NOT_ENOUGH_AVAILABLE_SEATS_ON_THE_SELECTED_TRIP', 409, 'NOT_ENOUGH_AVAILABLE_SEATS_ON_THE_SELECTED_TRIP');
     }
     // Legacy single-seat path uses an explicit seat lock + specific seat row.
     const isSingleSeatLocked = seat_number !== undefined && seat_number !== null;
     if (isSingleSeatLocked && requestedSeats !== 1) {
-        throw ApiErrors.validation('SEATS_MUST_BE_1');
+        throw ApiError_1.ApiErrors.validation('SEATS_MUST_BE_1');
     }
     let seat = null;
     if (isSingleSeatLocked) {
-        const lockStatus = await checkSeatLock(trip_id, seat_number);
+        const lockStatus = await (0, seatLock_1.checkSeatLock)(trip_id, seat_number);
         if (!lockStatus.locked || lockStatus.passengerId !== passengerId) {
-            throw ApiErrors.custom('SEAT_LOCK_EXPIRED_OR_NOT_HELD', 404, 'SEAT_LOCK_EXPIRED');
+            throw ApiError_1.ApiErrors.custom('SEAT_LOCK_EXPIRED_OR_NOT_HELD', 404, 'SEAT_LOCK_EXPIRED');
         }
-        seat = await TripSeat.findOne({ where: { tripId: trip_id, seatNumber: seat_number } });
+        seat = await Models_1.TripSeat.findOne({ where: { tripId: trip_id, seatNumber: seat_number } });
         if (!seat)
-            throw ApiErrors.notFound('SEAT_NOT_FOUND_ON_THIS_TRIP');
-        if (seat.seatType !== SEAT_TYPE.AVAILABLE) {
-            throw ApiErrors.conflict('SEAT_ALREADY_BOOKED');
+            throw ApiError_1.ApiErrors.notFound('SEAT_NOT_FOUND_ON_THIS_TRIP');
+        if (seat.seatType !== constants_1.SEAT_TYPE.AVAILABLE) {
+            throw ApiError_1.ApiErrors.conflict('SEAT_ALREADY_BOOKED');
         }
     }
     const referenceCode = await uniqueBookingCode();
-    const booking = await sequelize.transaction(async (t) => {
-        const freshTrip = await Trip.findByPk(trip_id, { transaction: t, lock: t.LOCK.UPDATE });
-        if (![TRIP_STATUS.PUBLISHED, TRIP_STATUS.FULL].includes(freshTrip.status)) {
-            throw ApiErrors.conflict('TRIP_NOT_BOOKABLE');
+    const booking = await Models_1.sequelize.transaction(async (t) => {
+        const freshTrip = await Models_1.Trip.findByPk(trip_id, { transaction: t, lock: t.LOCK.UPDATE });
+        if (![constants_1.TRIP_STATUS.PUBLISHED, constants_1.TRIP_STATUS.FULL].includes(freshTrip.status)) {
+            throw ApiError_1.ApiErrors.conflict('TRIP_NOT_BOOKABLE');
         }
         const remainingSeats = Number(freshTrip.availableSeats) - requestedSeats;
         if (remainingSeats < 0) {
-            throw ApiErrors.custom('NOT_ENOUGH_AVAILABLE_SEATS_ON_THE_SELECTED_TRIP', 409, 'NOT_ENOUGH_AVAILABLE_SEATS_ON_THE_SELECTED_TRIP');
+            throw ApiError_1.ApiErrors.custom('NOT_ENOUGH_AVAILABLE_SEATS_ON_THE_SELECTED_TRIP', 409, 'NOT_ENOUGH_AVAILABLE_SEATS_ON_THE_SELECTED_TRIP');
         }
         if (isSingleSeatLocked) {
-            seat.seatType = SEAT_TYPE.UNAVAILABLE;
+            seat.seatType = constants_1.SEAT_TYPE.UNAVAILABLE;
             await seat.save({ transaction: t });
         }
-        const row = await Booking.create({
+        const row = await Models_1.Booking.create({
             tripId: trip_id,
             passengerId,
             seatNumber: isSingleSeatLocked ? seat_number : null,
@@ -266,19 +278,19 @@ async function createBooking(passengerId, payload) {
             dropoffPlace: resolvedDropoffPlace,
             dropoffOrder: resolvedDropoffOrder,
             dropoffDeadline: dropoff_deadline ? new Date(dropoff_deadline) : null,
-            status: BOOKING_STATUS.CONFIRMED,
-            paymentStatus: PAYMENT_STATUS.PENDING,
+            status: constants_1.BOOKING_STATUS.CONFIRMED,
+            paymentStatus: constants_1.PAYMENT_STATUS.PENDING,
             referenceCode,
             cancelledBy: null,
         }, { transaction: t });
         freshTrip.availableSeats = remainingSeats;
-        if (remainingSeats === 0 && freshTrip.status === TRIP_STATUS.PUBLISHED) {
-            freshTrip.status = TRIP_STATUS.FULL;
+        if (remainingSeats === 0 && freshTrip.status === constants_1.TRIP_STATUS.PUBLISHED) {
+            freshTrip.status = constants_1.TRIP_STATUS.FULL;
         }
         await freshTrip.save({ transaction: t });
         return row;
     });
-    auditService.track({
+    auditService_1.default.track({
         action: 'booking.created',
         resourceType: 'booking',
         resourceId: booking.id,
@@ -288,29 +300,29 @@ async function createBooking(passengerId, payload) {
     });
     // Best-effort: passenger home cache should reflect the new booking/trip.
     try {
-        await deleteKey(REDIS_KEYS.PASSENGER_HOME(passengerId));
+        await (0, redis_1.deleteKey)(redisKeys_1.REDIS_KEYS.PASSENGER_HOME(passengerId));
     }
     catch (err) {
         console.warn('[bookingService] passenger home cache invalidation failed:', err.message);
     }
     // Best-effort: the driver's home shows the new booking (seats/capacity).
     try {
-        await deleteKey(REDIS_KEYS.DRIVER_HOME(trip.driverId));
+        await (0, redis_1.deleteKey)(redisKeys_1.REDIS_KEYS.DRIVER_HOME(trip.driverId));
     }
     catch (err) {
         console.warn('[bookingService] driver home cache invalidation failed:', err.message);
     }
     // Tell both homes over socket.io so open clients refresh immediately.
     try {
-        realtimeService.emitToUser(passengerId, 'home:invalidate', { trip_id });
-        realtimeService.emitToUser(trip.driverId, 'home:invalidate', { trip_id });
+        realtimeService_1.default.emitToUser(passengerId, 'home:invalidate', { trip_id });
+        realtimeService_1.default.emitToUser(trip.driverId, 'home:invalidate', { trip_id });
     }
     catch (_err) {
         // socket layer offline (e.g. tests) — ignore
     }
     const routeLabel = `${trip.originCity} - ${trip.destinationCity}`;
     await Promise.allSettled([
-        notificationService.sendToUser(user, 'BOOKING_CONFIRMED_PASSENGER', {
+        notificationService_1.default.sendToUser(user, 'BOOKING_CONFIRMED_PASSENGER', {
             channels: ['in_app', 'push'],
             vars: {
                 reference_code: booking.referenceCode,
@@ -325,11 +337,11 @@ async function createBooking(passengerId, payload) {
             route: routeLabel,
         }),
     ]);
-    const fullTrip = await Trip.findByPk(trip_id, {
+    const fullTrip = await Models_1.Trip.findByPk(trip_id, {
         include: [
-            { model: User, as: 'driver', attributes: ['id', 'fullName', 'phone', 'avgRating', 'avatarUrl'] },
-            { model: TripStop, as: 'stops' },
-            { model: Vehicle, as: 'vehicle', attributes: ['id', 'vehicleType', 'plateNumber', 'seats'] },
+            { model: Models_1.User, as: 'driver', attributes: ['id', 'fullName', 'phone', 'avgRating', 'avatarUrl'] },
+            { model: Models_1.TripStop, as: 'stops' },
+            { model: Models_1.Vehicle, as: 'vehicle', attributes: ['id', 'vehicleType', 'plateNumber', 'seats'] },
         ],
     });
     return serializePassengerDetail(booking, fullTrip, user);
@@ -365,7 +377,7 @@ function serializePassengerDetail(booking, trip, passenger) {
             ? {
                 id: trip.driver.id,
                 full_name: trip.driver.fullName,
-                phone_masked: maskPhone(trip.driver.phone),
+                phone_masked: (0, masking_1.maskPhone)(trip.driver.phone),
                 rating: Number(trip.driver.avgRating) || 0,
                 image: trip.driver.avatarUrl,
             }
@@ -386,26 +398,26 @@ function serializePassengerDetail(booking, trip, passenger) {
 }
 async function listForPassenger(passengerId, filters = {}) {
     const { status, trip_id } = filters;
-    const { page, limit, offset } = parsePagination(filters);
+    const { page, limit, offset } = (0, pagination_1.parsePagination)(filters);
     const where = { passengerId };
     if (status)
         where.status = status;
     if (trip_id)
         where.tripId = trip_id;
-    const { rows, count } = await Booking.findAndCountAll({
+    const { rows, count } = await Models_1.Booking.findAndCountAll({
         where,
         include: [
             {
-                model: Trip,
+                model: Models_1.Trip,
                 as: 'trip',
                 attributes: ['id', 'driverId', 'originCity', 'originArea', 'originLat', 'originLng', 'destinationCity', 'destinationArea', 'destinationLat', 'destinationLng', 'farePerSeat'],
                 include: [
-                    { model: User, as: 'driver', attributes: ['id', 'fullName', 'phone', 'avgRating', 'avatarUrl'] },
-                    { model: TripStop, as: 'stops' },
-                    { model: Vehicle, as: 'vehicle', attributes: ['id', 'vehicleType', 'plateNumber', 'seats'] },
+                    { model: Models_1.User, as: 'driver', attributes: ['id', 'fullName', 'phone', 'avgRating', 'avatarUrl'] },
+                    { model: Models_1.TripStop, as: 'stops' },
+                    { model: Models_1.Vehicle, as: 'vehicle', attributes: ['id', 'vehicleType', 'plateNumber', 'seats'] },
                 ],
             },
-            { model: Rating, as: 'ratings', attributes: ['stars'], where: { raterId: passengerId }, required: false },
+            { model: Models_1.Rating, as: 'ratings', attributes: ['stars'], where: { raterId: passengerId }, required: false },
         ],
         order: [['createdat', 'DESC']],
         offset,
@@ -413,87 +425,87 @@ async function listForPassenger(passengerId, filters = {}) {
     });
     return {
         data: rows.map((b) => serializePassengerDetail(b, b.trip, null)),
-        pagination: buildPagination(count, page, limit),
+        pagination: (0, pagination_1.buildPagination)(count, page, limit),
     };
 }
 async function getForPassenger(passengerId, bookingId) {
-    const booking = await Booking.findByPk(bookingId, {
+    const booking = await Models_1.Booking.findByPk(bookingId, {
         include: [
             {
-                model: Trip,
+                model: Models_1.Trip,
                 as: 'trip',
                 attributes: ['id', 'driverId', 'originCity', 'originArea', 'originLat', 'originLng', 'destinationCity', 'destinationArea', 'destinationLat', 'destinationLng', 'farePerSeat'],
                 include: [
-                    { model: User, as: 'driver', attributes: ['id', 'fullName', 'phone', 'avgRating', 'avatarUrl'] },
-                    { model: TripStop, as: 'stops' },
-                    { model: Vehicle, as: 'vehicle', attributes: ['id', 'vehicleType', 'plateNumber', 'seats'] },
+                    { model: Models_1.User, as: 'driver', attributes: ['id', 'fullName', 'phone', 'avgRating', 'avatarUrl'] },
+                    { model: Models_1.TripStop, as: 'stops' },
+                    { model: Models_1.Vehicle, as: 'vehicle', attributes: ['id', 'vehicleType', 'plateNumber', 'seats'] },
                 ],
             },
-            { model: User, as: 'passenger', attributes: ['id', 'fullName'] },
-            { model: Rating, as: 'ratings', attributes: ['stars'], where: { raterId: passengerId }, required: false },
+            { model: Models_1.User, as: 'passenger', attributes: ['id', 'fullName'] },
+            { model: Models_1.Rating, as: 'ratings', attributes: ['stars'], where: { raterId: passengerId }, required: false },
         ],
     });
     if (!booking)
-        throw ApiErrors.notFound('BOOKING_NOT_FOUND');
+        throw ApiError_1.ApiErrors.notFound('BOOKING_NOT_FOUND');
     if (booking.passengerId !== passengerId) {
-        throw ApiErrors.forbidden('YOU_CAN_ONLY_VIEW_YOUR_OWN_BOOKINGS');
+        throw ApiError_1.ApiErrors.forbidden('YOU_CAN_ONLY_VIEW_YOUR_OWN_BOOKINGS');
     }
     return { booking: serializePassengerDetail(booking, booking.trip, booking.passenger) };
 }
 async function cancelBooking(passengerId, bookingId) {
-    const user = await User.findByPk(passengerId);
+    const user = await Models_1.User.findByPk(passengerId);
     if (!user)
-        throw ApiErrors.notFound('USER_NOT_FOUND');
-    const booking = await Booking.findByPk(bookingId, {
+        throw ApiError_1.ApiErrors.notFound('USER_NOT_FOUND');
+    const booking = await Models_1.Booking.findByPk(bookingId, {
         include: [
             {
-                model: Trip,
+                model: Models_1.Trip,
                 as: 'trip',
                 attributes: ['id', 'driverId', 'originCity', 'destinationCity', 'departureTime', 'availableSeats', 'status'],
             },
         ],
     });
     if (!booking)
-        throw ApiErrors.notFound('BOOKING_NOT_FOUND');
+        throw ApiError_1.ApiErrors.notFound('BOOKING_NOT_FOUND');
     if (booking.passengerId !== passengerId) {
-        throw ApiErrors.forbidden('YOU_CAN_ONLY_CANCEL_YOUR_OWN_BOOKINGS');
+        throw ApiError_1.ApiErrors.forbidden('YOU_CAN_ONLY_CANCEL_YOUR_OWN_BOOKINGS');
     }
-    if ([BOOKING_STATUS.CANCELLED, BOOKING_STATUS.COMPLETED].includes(booking.status)) {
-        throw ApiErrors.conflict('BOOKING_IS_ALREADY_COMPLETED_OR_CANCELLED');
+    if ([constants_1.BOOKING_STATUS.CANCELLED, constants_1.BOOKING_STATUS.COMPLETED].includes(booking.status)) {
+        throw ApiError_1.ApiErrors.conflict('BOOKING_IS_ALREADY_COMPLETED_OR_CANCELLED');
     }
     const departureTime = new Date(booking.trip.departureTime).getTime();
     const hoursUntilDeparture = (departureTime - Date.now()) / (1000 * 60 * 60);
     if (hoursUntilDeparture < 1) {
-        throw ApiErrors.custom('CANCELLATIONS_ARE_ALLOWED_UP_TO_ONE_HOUR_BEFORE_DEPARTURE', 409, 'CANCELLATION_WINDOW_CLOSED');
+        throw ApiError_1.ApiErrors.custom('CANCELLATIONS_ARE_ALLOWED_UP_TO_ONE_HOUR_BEFORE_DEPARTURE', 409, 'CANCELLATION_WINDOW_CLOSED');
     }
-    await sequelize.transaction(async (t) => {
+    await Models_1.sequelize.transaction(async (t) => {
         await booking.update({
-            status: BOOKING_STATUS.CANCELLED,
+            status: constants_1.BOOKING_STATUS.CANCELLED,
             cancellationReason: 'cancelled_by_passenger',
             cancelledAt: new Date(),
             cancelledBy: passengerId,
         }, { transaction: t });
-        const freshTrip = await Trip.findByPk(booking.tripId, { transaction: t, lock: t.LOCK.UPDATE });
+        const freshTrip = await Models_1.Trip.findByPk(booking.tripId, { transaction: t, lock: t.LOCK.UPDATE });
         freshTrip.availableSeats += booking.seatsBooked;
-        if (freshTrip.status === TRIP_STATUS.FULL &&
+        if (freshTrip.status === constants_1.TRIP_STATUS.FULL &&
             freshTrip.availableSeats > 0 &&
             freshTrip.availableSeats <= freshTrip.totalSeats) {
-            freshTrip.status = TRIP_STATUS.PUBLISHED;
+            freshTrip.status = constants_1.TRIP_STATUS.PUBLISHED;
         }
         await freshTrip.save({ transaction: t });
-        const seat = await TripSeat.findOne({
+        const seat = await Models_1.TripSeat.findOne({
             where: { tripId: booking.tripId, seatNumber: booking.seatNumber },
             transaction: t,
         });
         if (seat) {
-            seat.seatType = SEAT_TYPE.AVAILABLE;
+            seat.seatType = constants_1.SEAT_TYPE.AVAILABLE;
             await seat.save({ transaction: t });
         }
     });
     if (booking.seatNumber !== null && booking.seatNumber !== undefined) {
-        await releaseSeatLock(booking.tripId, booking.seatNumber).catch(() => { });
+        await (0, seatLock_1.releaseSeatLock)(booking.tripId, booking.seatNumber).catch(() => { });
     }
-    auditService.track({
+    auditService_1.default.track({
         action: 'booking.cancelled',
         resourceType: 'booking',
         resourceId: booking.id,
@@ -506,7 +518,7 @@ async function cancelBooking(passengerId, bookingId) {
         seat_number: booking.seatNumber,
         route: `${booking.trip.originCity} - ${booking.trip.destinationCity}`,
     });
-    await homeService.invalidateHomeForTrip(booking.tripId, booking.trip.driverId);
+    await homeService_1.default.invalidateHomeForTrip(booking.tripId, booking.trip.driverId);
     return { booking: { id: booking.id, status: booking.status, cancelled_at: booking.cancelledAt } };
 }
 /**
@@ -515,38 +527,38 @@ async function cancelBooking(passengerId, bookingId) {
  * booking is `confirmed`. PII (national ID, exact age) is returned here only.
  */
 async function getDriverReveal(requesterId, requesterRole, bookingId) {
-    const booking = await Booking.findByPk(bookingId, {
+    const booking = await Models_1.Booking.findByPk(bookingId, {
         include: [
             {
-                model: Trip,
+                model: Models_1.Trip,
                 as: 'trip',
                 attributes: ['id', 'driverId', 'departureTime'],
                 include: [
                     {
-                        model: User,
+                        model: Models_1.User,
                         as: 'driver',
                         attributes: ['id', 'fullName', 'phone', 'age', 'gender', 'avatarUrl', 'avgRating'],
                     },
-                    { model: Vehicle, as: 'vehicle' },
+                    { model: Models_1.Vehicle, as: 'vehicle' },
                 ],
             },
         ],
     });
     if (!booking)
-        throw ApiErrors.notFound('BOOKING_NOT_FOUND');
+        throw ApiError_1.ApiErrors.notFound('BOOKING_NOT_FOUND');
     const isOwner = booking.passengerId === requesterId;
     const isDriver = booking.trip && booking.trip.driverId === requesterId;
     const isAdmin = requesterRole === 'admin';
     if (!isOwner && !isDriver && !isAdmin) {
-        throw ApiErrors.custom('YOU_DO_NOT_HAVE_ACCESS_TO_THIS_BOOKING_DRIVER_PROFILE', 403, 'YOU_DO_NOT_HAVE_ACCESS_TO_THIS_BOOKING_DRIVER_PROFILE');
+        throw ApiError_1.ApiErrors.custom('YOU_DO_NOT_HAVE_ACCESS_TO_THIS_BOOKING_DRIVER_PROFILE', 403, 'YOU_DO_NOT_HAVE_ACCESS_TO_THIS_BOOKING_DRIVER_PROFILE');
     }
-    if (booking.status !== BOOKING_STATUS.CONFIRMED) {
-        throw ApiErrors.custom('DRIVER_REVEAL_AVAILABLE_ONLY_AFTER_BOOKING_CONFIRMATION', 409, 'DRIVER_REVEAL_AVAILABLE_ONLY_AFTER_BOOKING_CONFIRMATION');
+    if (booking.status !== constants_1.BOOKING_STATUS.CONFIRMED) {
+        throw ApiError_1.ApiErrors.custom('DRIVER_REVEAL_AVAILABLE_ONLY_AFTER_BOOKING_CONFIRMATION', 409, 'DRIVER_REVEAL_AVAILABLE_ONLY_AFTER_BOOKING_CONFIRMATION');
     }
     const driver = booking.trip && booking.trip.driver;
     if (!driver)
-        throw ApiErrors.notFound('DRIVER_NOT_FOUND');
-    const profile = await DriverProfile.findOne({ where: { driverId: driver.id } });
+        throw ApiError_1.ApiErrors.notFound('DRIVER_NOT_FOUND');
+    const profile = await Models_1.DriverProfile.findOne({ where: { driverId: driver.id } });
     const vehicle = booking.trip.vehicle || null;
     const nameParts = (driver.fullName || '').split(/\s+/).filter(Boolean);
     const firstName = nameParts[0] || '';
@@ -579,4 +591,5 @@ async function getDriverReveal(requesterId, requesterRole, bookingId) {
     };
 }
 module.exports = { listForDriver, getForDriver, createBooking, listForPassenger, getForPassenger, cancelBooking, getDriverReveal };
+exports.default = module.exports;
 //# sourceMappingURL=bookingService.js.map

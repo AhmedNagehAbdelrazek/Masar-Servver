@@ -1,19 +1,30 @@
 "use strict";
-const http = require('http');
-const { io: ioc } = require('socket.io-client');
-const createApp = require('../../app');
-const { createSocketServer, getIO } = require('../../socketServer');
-let httpServer;
-let port;
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.startSocketServer = startSocketServer;
+exports.connectSocket = connectSocket;
+exports.waitFor = waitFor;
+exports.emitWithAck = emitWithAck;
+exports.connect = connect;
+exports.stopSocketServer = stopSocketServer;
+const http_1 = __importDefault(require("http"));
+const socket_io_client_1 = require("socket.io-client");
+const app_1 = __importDefault(require("../../app"));
+const socketServer_1 = require("../../socketServer");
+let httpServer = null;
+let port = null;
 /**
  * Boots an HTTP server with the realtime socket server attached on an
  * ephemeral port. Returns the port number.
  */
 async function startSocketServer() {
-    httpServer = http.createServer(createApp());
-    createSocketServer(httpServer);
+    httpServer = http_1.default.createServer((0, app_1.default)());
+    (0, socketServer_1.createSocketServer)(httpServer);
     await new Promise((resolve) => httpServer.listen(0, resolve));
-    port = httpServer.address().port;
+    const addr = httpServer.address();
+    port = addr.port;
     return port;
 }
 /**
@@ -22,7 +33,7 @@ async function startSocketServer() {
  */
 function connectSocket(token, opts = {}) {
     const { query = {}, auth = {} } = opts;
-    return ioc(`http://127.0.0.1:${port}`, {
+    return (0, socket_io_client_1.io)(`http://127.0.0.1:${port}`, {
         transports: ['websocket'],
         forceNew: true,
         reconnection: false,
@@ -81,7 +92,7 @@ function connect(socket, timeoutMs = 3000) {
     });
 }
 async function stopSocketServer() {
-    const io = getIO();
+    const io = (0, socketServer_1.getIO)();
     try {
         if (io)
             await io.close();
@@ -91,7 +102,7 @@ async function stopSocketServer() {
     }
     try {
         if (httpServer)
-            await new Promise((resolve) => httpServer.close(resolve));
+            await new Promise((resolve) => httpServer.close(() => resolve()));
     }
     catch (_err) {
         // ignore
@@ -99,6 +110,14 @@ async function stopSocketServer() {
     httpServer = null;
     port = null;
 }
+exports.default = {
+    startSocketServer,
+    stopSocketServer,
+    connectSocket,
+    connect,
+    waitFor,
+    emitWithAck,
+};
 module.exports = {
     startSocketServer,
     stopSocketServer,

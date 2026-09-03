@@ -1,10 +1,19 @@
 "use strict";
-const { Op } = require('sequelize');
-const { Complaint, User } = require('../Models');
-const { ApiErrors } = require('../utils/ApiError');
-const { COMPLAINT_STATUS } = require('../config/constants');
-const { parsePagination, buildPagination } = require('../utils/pagination');
-const auditService = require('./auditService');
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.create = create;
+exports.listForDriver = listForDriver;
+exports.listAdmin = listAdmin;
+exports.resolve = resolve;
+// @ts-nocheck
+const sequelize_1 = require("sequelize");
+const Models_1 = require("../Models");
+const ApiError_1 = require("../utils/ApiError");
+const constants_1 = require("../config/constants");
+const pagination_1 = require("../utils/pagination");
+const auditService_1 = __importDefault(require("./auditService"));
 function serializeCreate(complaint) {
     return {
         id: complaint.id,
@@ -46,31 +55,31 @@ function serializeDriver(complaint, direction) {
  * complaint already matches the same reporter/accused/booking/category.
  */
 async function create(reporterId, data) {
-    const accused = await User.findByPk(data.accused_id);
+    const accused = await Models_1.User.findByPk(data.accused_id);
     if (!accused)
-        throw ApiErrors.notFound('ACCUSED_USER_NOT_FOUND');
-    const existing = await Complaint.findOne({
+        throw ApiError_1.ApiErrors.notFound('ACCUSED_USER_NOT_FOUND');
+    const existing = await Models_1.Complaint.findOne({
         where: {
             reporterId,
             accusedId: data.accused_id,
             bookingId: data.booking_id || null,
             category: data.category,
-            status: COMPLAINT_STATUS.OPEN,
+            status: constants_1.COMPLAINT_STATUS.OPEN,
         },
     });
     if (existing) {
         return { complaint: serializeCreate(existing), already_filed: true };
     }
-    const complaint = await Complaint.create({
+    const complaint = await Models_1.Complaint.create({
         bookingId: data.booking_id || null,
         reporterId,
         accusedId: data.accused_id,
         category: data.category,
         description: data.description,
         evidenceUrls: data.evidence_urls || [],
-        status: COMPLAINT_STATUS.OPEN,
+        status: constants_1.COMPLAINT_STATUS.OPEN,
     });
-    auditService.track({
+    auditService_1.default.track({
         action: 'complaint.filed',
         resourceType: 'complaint',
         resourceId: complaint.id,
@@ -89,21 +98,21 @@ async function create(reporterId, data) {
  */
 async function listForDriver(userId, filters = {}) {
     const { direction, status } = filters;
-    const { page, limit, offset } = parsePagination(filters);
+    const { page, limit, offset } = (0, pagination_1.parsePagination)(filters);
     const where = {};
     if (direction === 'filed')
         where.reporterId = userId;
     else if (direction === 'against')
         where.accusedId = userId;
     else
-        where[Op.or] = [{ reporterId: userId }, { accusedId: userId }];
+        where[sequelize_1.Op.or] = [{ reporterId: userId }, { accusedId: userId }];
     if (status)
         where.status = status;
-    const { rows, count } = await Complaint.findAndCountAll({
+    const { rows, count } = await Models_1.Complaint.findAndCountAll({
         where,
         include: [
-            { model: User, as: 'reporter', attributes: ['id', 'fullName'] },
-            { model: User, as: 'accused', attributes: ['id', 'fullName'] },
+            { model: Models_1.User, as: 'reporter', attributes: ['id', 'fullName'] },
+            { model: Models_1.User, as: 'accused', attributes: ['id', 'fullName'] },
         ],
         order: [['createdat', 'DESC']],
         offset,
@@ -114,7 +123,7 @@ async function listForDriver(userId, filters = {}) {
             const dir = c.reporterId === userId ? 'filed' : 'against';
             return serializeDriver(c, dir);
         }),
-        pagination: buildPagination(count, page, limit),
+        pagination: (0, pagination_1.buildPagination)(count, page, limit),
     };
 }
 /**
@@ -122,17 +131,17 @@ async function listForDriver(userId, filters = {}) {
  */
 async function listAdmin(filters = {}) {
     const { status, category } = filters;
-    const { page, limit, offset } = parsePagination(filters);
+    const { page, limit, offset } = (0, pagination_1.parsePagination)(filters);
     const where = {};
     if (status)
         where.status = status;
     if (category)
         where.category = category;
-    const { rows, count } = await Complaint.findAndCountAll({
+    const { rows, count } = await Models_1.Complaint.findAndCountAll({
         where,
         include: [
-            { model: User, as: 'reporter', attributes: ['id', 'fullName'] },
-            { model: User, as: 'accused', attributes: ['id', 'fullName'] },
+            { model: Models_1.User, as: 'reporter', attributes: ['id', 'fullName'] },
+            { model: Models_1.User, as: 'accused', attributes: ['id', 'fullName'] },
         ],
         order: [['createdat', 'DESC']],
         offset,
@@ -140,23 +149,23 @@ async function listAdmin(filters = {}) {
     });
     return {
         data: rows.map(serializeAdmin),
-        pagination: buildPagination(count, page, limit),
+        pagination: (0, pagination_1.buildPagination)(count, page, limit),
     };
 }
 /**
  * Admin resolve/dismiss a complaint (contract A10).
  */
 async function resolve(adminId, complaintId, data) {
-    const complaint = await Complaint.findByPk(complaintId);
+    const complaint = await Models_1.Complaint.findByPk(complaintId);
     if (!complaint)
-        throw ApiErrors.notFound('COMPLAINT_NOT_FOUND');
+        throw ApiError_1.ApiErrors.notFound('COMPLAINT_NOT_FOUND');
     const fields = { status: data.status };
-    if (data.status === COMPLAINT_STATUS.RESOLVED) {
+    if (data.status === constants_1.COMPLAINT_STATUS.RESOLVED) {
         fields.resolution = data.resolution;
         fields.resolvedBy = adminId;
         fields.resolvedAt = new Date();
     }
-    if (data.status === COMPLAINT_STATUS.DISMISSED) {
+    if (data.status === constants_1.COMPLAINT_STATUS.DISMISSED) {
         fields.resolution = data.resolution || 'Complaint dismissed';
         fields.resolvedBy = adminId;
         fields.resolvedAt = new Date();
@@ -173,4 +182,5 @@ async function resolve(adminId, complaintId, data) {
     };
 }
 module.exports = { create, listForDriver, listAdmin, resolve };
+exports.default = module.exports;
 //# sourceMappingURL=complaintService.js.map

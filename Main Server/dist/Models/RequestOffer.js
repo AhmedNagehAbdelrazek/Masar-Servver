@@ -1,54 +1,62 @@
 "use strict";
-const { Model, DataTypes } = require('sequelize');
-const sequelize = require('../config/database');
-const { REQUEST_OFFER_STATUS } = require('../config/constants');
-class RequestOffer extends Model {
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.RequestOffer = void 0;
+const sequelize_1 = require("sequelize");
+const database_1 = __importDefault(require("../config/database"));
+const constants_1 = require("../config/constants");
+class RequestOffer extends sequelize_1.Model {
 }
+exports.RequestOffer = RequestOffer;
 RequestOffer.init({
     id: {
-        type: DataTypes.UUID,
-        defaultValue: DataTypes.UUIDV4,
+        type: sequelize_1.DataTypes.UUID,
+        defaultValue: sequelize_1.DataTypes.UUIDV4,
         primaryKey: true,
     },
     requestId: {
-        type: DataTypes.UUID,
+        type: sequelize_1.DataTypes.UUID,
         allowNull: false,
     },
     driverId: {
-        type: DataTypes.UUID,
+        type: sequelize_1.DataTypes.UUID,
         allowNull: false,
     },
     tripId: {
-        type: DataTypes.UUID,
+        type: sequelize_1.DataTypes.UUID,
         allowNull: true,
     },
     offeredFare: {
-        type: DataTypes.NUMERIC(10, 2),
+        type: sequelize_1.DataTypes.NUMERIC(10, 2),
         allowNull: true,
     },
     message: {
-        type: DataTypes.TEXT,
+        type: sequelize_1.DataTypes.TEXT,
         allowNull: true,
     },
     status: {
-        type: DataTypes.ENUM(Object.values(REQUEST_OFFER_STATUS)),
+        type: sequelize_1.DataTypes.ENUM(...Object.values(constants_1.REQUEST_OFFER_STATUS)),
         allowNull: false,
-        defaultValue: REQUEST_OFFER_STATUS.SENT,
+        defaultValue: constants_1.REQUEST_OFFER_STATUS.SENT,
     },
     agreedFare: {
-        type: DataTypes.NUMERIC(10, 2),
+        type: sequelize_1.DataTypes.NUMERIC(10, 2),
         allowNull: true,
     },
     bookingId: {
-        type: DataTypes.UUID,
+        type: sequelize_1.DataTypes.UUID,
         allowNull: true,
     },
 }, {
-    sequelize,
+    sequelize: database_1.default,
     modelName: 'RequestOffer',
     tableName: 'request_offers',
     underscored: true,
     timestamps: true,
 });
+exports.default = RequestOffer;
 module.exports = RequestOffer;
+Object.assign(module.exports, { default: RequestOffer });
 //# sourceMappingURL=RequestOffer.js.map

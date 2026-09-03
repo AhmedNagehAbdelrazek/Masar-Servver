@@ -1,24 +1,67 @@
 "use strict";
-const messageService = require('../Services/messageService');
-const { successResponse } = require('../utils/httpResponse');
-const catchAsync = require('../utils/catchAsync');
-const getBookingMessages = catchAsync(async (req, res) => {
-    const result = await messageService.listBookingMessages(req.user, {
-        bookingId: req.params.bookingId,
-        page: req.query.page,
-        limit: req.query.limit,
-        beforeId: req.query.before_id,
-    });
-    successResponse(res, result);
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
 });
-const getTicketMessages = catchAsync(async (req, res) => {
-    const result = await messageService.listSupportMessages(req.user, {
-        supportTicketId: req.params.ticketId,
-        page: req.query.page,
-        limit: req.query.limit,
-        beforeId: req.query.before_id,
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.getTicketMessages = exports.getBookingMessages = void 0;
+const catchAsync_1 = require("../utils/catchAsync");
+const httpResponse_1 = require("../utils/httpResponse");
+const messageService = __importStar(require("../Services/messageService"));
+const getBookingMessages = (0, catchAsync_1.catchAsync)(async (req, res) => {
+    const authReq = req;
+    const { bookingId } = req.params;
+    const { page, limit, before_id } = req.query;
+    const result = await messageService.listBookingMessages(authReq.user, {
+        bookingId,
+        page,
+        limit,
+        beforeId: before_id,
     });
-    successResponse(res, result);
+    (0, httpResponse_1.successResponse)(res, result);
 });
-module.exports = { getBookingMessages, getTicketMessages };
+exports.getBookingMessages = getBookingMessages;
+const getTicketMessages = (0, catchAsync_1.catchAsync)(async (req, res) => {
+    const authReq = req;
+    const { ticketId } = req.params;
+    const { page, limit, before_id } = req.query;
+    const result = await messageService.listSupportMessages(authReq.user, {
+        supportTicketId: ticketId,
+        page,
+        limit,
+        beforeId: before_id,
+    });
+    (0, httpResponse_1.successResponse)(res, result);
+});
+exports.getTicketMessages = getTicketMessages;
+exports.default = { getBookingMessages, getTicketMessages };
 //# sourceMappingURL=messageController.js.map

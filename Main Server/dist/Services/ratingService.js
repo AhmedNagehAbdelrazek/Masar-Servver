@@ -1,10 +1,18 @@
 "use strict";
-const sequelize = require('../config/database');
-const { Op } = require('sequelize');
-const { Rating, Booking, Trip, User } = require('../Models');
-const { ApiErrors } = require('../utils/ApiError');
-const { parsePagination, buildPagination } = require('../utils/pagination');
-const auditService = require('./auditService');
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.create = create;
+exports.listReceived = listReceived;
+exports.listWithDistribution = listWithDistribution;
+// @ts-nocheck
+const database_1 = __importDefault(require("../config/database"));
+const sequelize_1 = require("sequelize");
+const Models_1 = require("../Models");
+const ApiError_1 = require("../utils/ApiError");
+const pagination_1 = require("../utils/pagination");
+const auditService_1 = __importDefault(require("./auditService"));
 function serializeRating(rating) {
     return {
         id: rating.id,
@@ -34,7 +42,7 @@ function serializeReceived(rating) {
  * Recompute a user's average rating over their visible ratings (1 decimal).
  */
 async function updateDriverAvg(rateeId, transaction = null) {
-    const ratings = await Rating.findAll({
+    const ratings = await Models_1.Rating.findAll({
         where: { rateeId, isVisible: true },
         attributes: ['stars'],
         transaction,
@@ -42,7 +50,7 @@ async function updateDriverAvg(rateeId, transaction = null) {
     const avg = ratings.length === 0
         ? 0
         : Math.round((ratings.reduce((sum, r) => sum + r.stars, 0) / ratings.length) * 10) / 10;
-    await User.update({ avgRating: avg }, { where: { id: rateeId }, transaction });
+    await Models_1.User.update({ avgRating: avg }, { where: { id: rateeId }, transaction });
     return avg;
 }
 /**
@@ -52,25 +60,25 @@ async function updateDriverAvg(rateeId, transaction = null) {
  * passenger rates the trip's driver and vice versa.
  */
 async function create(raterId, data) {
-    const booking = await Booking.findByPk(data.booking_id, {
-        include: [{ model: Trip, as: 'trip', attributes: ['id', 'driverId'] }],
+    const booking = await Models_1.Booking.findByPk(data.booking_id, {
+        include: [{ model: Models_1.Trip, as: 'trip', attributes: ['id', 'driverId'] }],
     });
     if (!booking)
-        throw ApiErrors.notFound('BOOKING_NOT_FOUND');
+        throw ApiError_1.ApiErrors.notFound('BOOKING_NOT_FOUND');
     const isPassenger = booking.passengerId === raterId;
     const isDriver = booking.trip.driverId === raterId;
     if (!isPassenger && !isDriver) {
-        throw ApiErrors.forbidden('ONLY_THE_PASSENGER_OR_THE_DRIVER_OF_A_BOOKING_MAY');
+        throw ApiError_1.ApiErrors.forbidden('ONLY_THE_PASSENGER_OR_THE_DRIVER_OF_A_BOOKING_MAY');
     }
     const rateeId = isPassenger ? booking.trip.driverId : booking.passengerId;
-    const existing = await Rating.findOne({
+    const existing = await Models_1.Rating.findOne({
         where: { bookingId: booking.id, raterId },
     });
     if (existing) {
         return { rating: serializeRating(existing), already_rated: true };
     }
-    const rating = await sequelize.transaction(async (transaction) => {
-        const created = await Rating.create({
+    const rating = await database_1.default.transaction(async (transaction) => {
+        const created = await Models_1.Rating.create({
             bookingId: booking.id,
             raterId,
             rateeId,
@@ -83,7 +91,7 @@ async function create(raterId, data) {
         await updateDriverAvg(rateeId, transaction);
         return created;
     });
-    auditService.track({
+    auditService_1.default.track({
         action: 'rating.submitted',
         resourceType: 'rating',
         resourceId: rating.id,
@@ -102,17 +110,17 @@ async function create(raterId, data) {
  * Paginated list of ratings a driver has received (contract D6).
  */
 async function listReceived(rateeId, filters = {}) {
-    const { page, limit, offset } = parsePagination(filters);
-    const { rows, count } = await Rating.findAndCountAll({
+    const { page, limit, offset } = (0, pagination_1.parsePagination)(filters);
+    const { rows, count } = await Models_1.Rating.findAndCountAll({
         where: { rateeId },
-        include: [{ model: User, as: 'rater', attributes: ['id', 'fullName'] }],
+        include: [{ model: Models_1.User, as: 'rater', attributes: ['id', 'fullName'] }],
         order: [['createdat', 'DESC']],
         offset,
         limit,
     });
     return {
         data: rows.map(serializeReceived),
-        pagination: buildPagination(count, page, limit),
+        pagination: (0, pagination_1.buildPagination)(count, page, limit),
     };
 }
 /**
@@ -130,26 +138,26 @@ async function listWithDistribution(rateeId, filters = {}) {
     const limit = Math.min(50, Math.max(1, parseInt(filters.limit, 10) || 10));
     const offset = (page - 1) * limit;
     const sort = SORT_ORDERS[filters.sort] ? filters.sort : 'recent';
-    const visibleWhere = { rateeId, isVisible: { [Op.ne]: false } };
+    const visibleWhere = { rateeId, isVisible: { [sequelize_1.Op.ne]: false } };
     const [{ rows, count }, distributionRows, onTimeCount, user] = await Promise.all([
-        Rating.findAndCountAll({
+        Models_1.Rating.findAndCountAll({
             where: visibleWhere,
-            include: [{ model: User, as: 'rater', attributes: ['id', 'fullName'] }],
+            include: [{ model: Models_1.User, as: 'rater', attributes: ['id', 'fullName'] }],
             order: SORT_ORDERS[sort],
             offset,
             limit,
         }),
-        Rating.findAll({
+        Models_1.Rating.findAll({
             where: visibleWhere,
             attributes: [
                 'stars',
-                [sequelize.fn('COUNT', sequelize.col('Rating.id')), 'count'],
+                [database_1.default.fn('COUNT', database_1.default.col('Rating.id')), 'count'],
             ],
             group: ['stars'],
             raw: true,
         }),
-        Rating.count({ where: { ...visibleWhere, wasLate: false } }),
-        User.findByPk(rateeId, { attributes: ['id', 'avgRating'] }),
+        Models_1.Rating.count({ where: { ...visibleWhere, wasLate: false } }),
+        Models_1.User.findByPk(rateeId, { attributes: ['id', 'avgRating'] }),
     ]);
     const total = Number(count) || 0;
     const distMap = {};
@@ -169,8 +177,9 @@ async function listWithDistribution(rateeId, filters = {}) {
             distribution,
         },
         data: rows.map(serializeReceived),
-        pagination: buildPagination(total, page, limit),
+        pagination: (0, pagination_1.buildPagination)(total, page, limit),
     };
 }
 module.exports = { create, listReceived, listWithDistribution };
+exports.default = module.exports;
 //# sourceMappingURL=ratingService.js.map

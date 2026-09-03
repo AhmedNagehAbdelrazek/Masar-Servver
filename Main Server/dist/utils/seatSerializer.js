@@ -1,12 +1,22 @@
 "use strict";
-/**
- * Single source of the derived seat-numbers rule.
- * `bookings` stores a single `seat_number` plus a `seats_booked` count; there
- * is no `booking_seats` junction table. Returns `[seat_number]` when set,
- * otherwise `[]` (see specs/007-driver-home-api/research.md §2).
- */
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.seatNumbersFor = seatNumbersFor;
 function seatNumbersFor(booking) {
-    return booking && booking.seatNumber != null ? [booking.seatNumber] : [];
+    if (!booking)
+        return [];
+    const seat = booking.seatNumber ?? booking.seat_number;
+    return seat != null ? [seat] : [];
 }
-module.exports = { seatNumbersFor };
+const seatSerializer = { seatNumbersFor };
+exports.default = seatSerializer;
+// CommonJS interop
+// @ts-ignore
+if (typeof module !== 'undefined' && module.exports) {
+    // @ts-ignore
+    module.exports = { seatNumbersFor };
+    // @ts-ignore
+    module.exports.seatNumbersFor = seatNumbersFor;
+    // @ts-ignore
+    module.exports.default = seatSerializer;
+}
 //# sourceMappingURL=seatSerializer.js.map

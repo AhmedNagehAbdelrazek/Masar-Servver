@@ -1,47 +1,48 @@
 "use strict";
-const notificationService = require('../Services/notificationService');
-const realtimeMetrics = require('../Services/realtimeMetrics');
-const { ok, errorFromApiError } = require('../utils/socketAck');
-/**
- * Real-time notifications + unread badge (Requirement 5). On connect the
- * server pushes the current unread count so reconnecting devices sync
- * immediately; mark-read flows re-emit `notification:count`.
- */
-module.exports = (io, socket) => {
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const notificationService_1 = __importDefault(require("../Services/notificationService"));
+const realtimeMetrics_1 = __importDefault(require("../Services/realtimeMetrics"));
+const socketAck_1 = require("../utils/socketAck");
+const notificationSocket = (io, socket) => {
     const user = socket.data.user;
     if (!user)
         return;
     const pushCount = async () => {
-        const count = await notificationService.countUnread(user.id);
+        const count = await notificationService_1.default.countUnread(user.id);
         socket.emit('notification:count', { unread_count: count, timestamp: Date.now() });
         return count;
     };
-    pushCount().catch(() => { });
+    pushCount().catch(() => { return undefined; });
     socket.on('notification:read', async (payload, ack) => {
         try {
-            const result = await notificationService.markRead(user.id, payload && payload.notification_id);
+            const result = await notificationService_1.default.markRead(user.id, payload && payload.notification_id);
             await pushCount();
-            realtimeMetrics.recordEvent('notification:read');
+            realtimeMetrics_1.default.recordEvent('notification:read');
             if (ack)
-                ack(ok({ notification_id: result.id }));
+                ack((0, socketAck_1.ok)({ notification_id: result.id }));
         }
         catch (err) {
             if (ack)
-                ack(errorFromApiError(err));
+                ack((0, socketAck_1.errorFromApiError)(err));
         }
     });
-    socket.on('notification:read_all', async (payload, ack) => {
+    socket.on('notification:read_all', async (_payload, ack) => {
         try {
-            const result = await notificationService.markAllRead(user.id);
+            const result = await notificationService_1.default.markAllRead(user.id);
             await pushCount();
-            realtimeMetrics.recordEvent('notification:read_all');
+            realtimeMetrics_1.default.recordEvent('notification:read_all');
             if (ack)
-                ack(ok(result));
+                ack((0, socketAck_1.ok)(result));
         }
         catch (err) {
             if (ack)
-                ack(errorFromApiError(err));
+                ack((0, socketAck_1.errorFromApiError)(err));
         }
     });
 };
+exports.default = notificationSocket;
+module.exports = notificationSocket;
 //# sourceMappingURL=notificationSocket.js.map

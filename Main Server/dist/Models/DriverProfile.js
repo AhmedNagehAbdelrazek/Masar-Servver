@@ -1,22 +1,28 @@
 "use strict";
-const { Model, DataTypes } = require('sequelize');
-const sequelize = require('../config/database');
-const { SUBSCRIPTION_TIER } = require('../config/constants');
-class DriverProfile extends Model {
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.DriverProfile = void 0;
+const sequelize_1 = require("sequelize");
+const database_1 = __importDefault(require("../config/database"));
+const constants_1 = require("../config/constants");
+class DriverProfile extends sequelize_1.Model {
 }
+exports.DriverProfile = DriverProfile;
 DriverProfile.init({
     id: {
-        type: DataTypes.UUID,
-        defaultValue: DataTypes.UUIDV4,
+        type: sequelize_1.DataTypes.UUID,
+        defaultValue: sequelize_1.DataTypes.UUIDV4,
         primaryKey: true,
     },
     driverId: {
-        type: DataTypes.UUID,
+        type: sequelize_1.DataTypes.UUID,
         allowNull: false,
         unique: true,
     },
     userIdentificationFront: {
-        type: DataTypes.INTEGER,
+        type: sequelize_1.DataTypes.INTEGER,
         allowNull: true,
         references: {
             model: 'uploaded_images',
@@ -24,7 +30,7 @@ DriverProfile.init({
         },
     },
     userIdentificationBack: {
-        type: DataTypes.INTEGER,
+        type: sequelize_1.DataTypes.INTEGER,
         allowNull: true,
         references: {
             model: 'uploaded_images',
@@ -32,7 +38,7 @@ DriverProfile.init({
         },
     },
     linceseFront: {
-        type: DataTypes.INTEGER,
+        type: sequelize_1.DataTypes.INTEGER,
         allowNull: true,
         references: {
             model: 'uploaded_images',
@@ -40,7 +46,7 @@ DriverProfile.init({
         },
     },
     linceseBack: {
-        type: DataTypes.INTEGER,
+        type: sequelize_1.DataTypes.INTEGER,
         allowNull: true,
         references: {
             model: 'uploaded_images',
@@ -48,7 +54,7 @@ DriverProfile.init({
         },
     },
     personalImageWithId: {
-        type: DataTypes.INTEGER,
+        type: sequelize_1.DataTypes.INTEGER,
         allowNull: true,
         references: {
             model: 'uploaded_images',
@@ -56,66 +62,68 @@ DriverProfile.init({
         },
     },
     nationalID: {
-        type: DataTypes.STRING(30),
+        type: sequelize_1.DataTypes.STRING(30),
         allowNull: true,
     },
     idVerified: {
-        type: DataTypes.BOOLEAN,
+        type: sequelize_1.DataTypes.BOOLEAN,
         allowNull: true,
         defaultValue: false,
     },
     licenseNumber: {
-        type: DataTypes.STRING(50),
+        type: sequelize_1.DataTypes.STRING(50),
         allowNull: true,
     },
     licenseExpiry: {
-        type: DataTypes.DATEONLY,
+        type: sequelize_1.DataTypes.DATEONLY,
         allowNull: true,
     },
     subscriptionTier: {
-        type: DataTypes.ENUM(Object.values(SUBSCRIPTION_TIER)),
+        type: sequelize_1.DataTypes.ENUM(...Object.values(constants_1.SUBSCRIPTION_TIER)),
         allowNull: true,
-        defaultValue: SUBSCRIPTION_TIER.FREE,
+        defaultValue: constants_1.SUBSCRIPTION_TIER.FREE,
     },
     subscriptionExpiresAt: {
-        type: DataTypes.DATE,
+        type: sequelize_1.DataTypes.DATE,
         allowNull: true,
     },
     totalTrips: {
-        type: DataTypes.INTEGER,
+        type: sequelize_1.DataTypes.INTEGER,
         allowNull: true,
         defaultValue: 0,
     },
     totalEarnings: {
-        type: DataTypes.NUMERIC(12, 2),
+        type: sequelize_1.DataTypes.NUMERIC(12, 2),
         allowNull: true,
         defaultValue: 0,
     },
     responseRate: {
-        type: DataTypes.NUMERIC(5, 2),
+        type: sequelize_1.DataTypes.NUMERIC(5, 2),
         allowNull: true,
         defaultValue: 100,
     },
     punctualityRate: {
-        type: DataTypes.NUMERIC(5, 2),
+        type: sequelize_1.DataTypes.NUMERIC(5, 2),
         allowNull: true,
         defaultValue: null,
     },
     professionalDriver: {
-        type: DataTypes.BOOLEAN,
+        type: sequelize_1.DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: false,
     },
     bio: {
-        type: DataTypes.TEXT,
+        type: sequelize_1.DataTypes.TEXT,
         allowNull: true,
     },
 }, {
-    sequelize,
+    sequelize: database_1.default,
     modelName: 'DriverProfile',
     tableName: 'driver_profiles',
     underscored: true,
     timestamps: true,
 });
+exports.default = DriverProfile;
 module.exports = DriverProfile;
+Object.assign(module.exports, { default: DriverProfile });
 //# sourceMappingURL=DriverProfile.js.map

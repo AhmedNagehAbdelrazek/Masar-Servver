@@ -1,8 +1,14 @@
 "use strict";
-const { Op } = require('sequelize');
-const sequelize = require('../config/database');
-const { Booking, Trip } = require('../Models');
-const { BOOKING_STATUS } = require('../config/constants');
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.aggregate = aggregate;
+// @ts-nocheck
+const sequelize_1 = require("sequelize");
+const database_1 = __importDefault(require("../config/database"));
+const Models_1 = require("../Models");
+const constants_1 = require("../config/constants");
 const PERIOD_TRUNC = {
     day: 'day',
     week: 'week',
@@ -31,24 +37,24 @@ async function aggregate(driverId, { period = 'month', from, to } = {}) {
     if (!toDate)
         toDate = new Date(now);
     const fmt = truncated === 'month' ? 'YYYY-MM' : 'YYYY-MM-DD';
-    const bucketExpr = sequelize.fn('to_char', sequelize.fn('date_trunc', truncated, sequelize.col('Booking.createdat')), fmt);
-    const rows = await Booking.findAll({
+    const bucketExpr = database_1.default.fn('to_char', database_1.default.fn('date_trunc', truncated, database_1.default.col('Booking.createdat')), fmt);
+    const rows = await Models_1.Booking.findAll({
         attributes: [
             [bucketExpr, 'bucket'],
-            [sequelize.fn('SUM', sequelize.col('Booking.agreed_fare')), 'earnings'],
-            [sequelize.fn('COUNT', sequelize.fn('DISTINCT', sequelize.col('Booking.trip_id'))), 'trips'],
+            [database_1.default.fn('SUM', database_1.default.col('Booking.agreed_fare')), 'earnings'],
+            [database_1.default.fn('COUNT', database_1.default.fn('DISTINCT', database_1.default.col('Booking.trip_id'))), 'trips'],
         ],
         include: [
             {
-                model: Trip,
+                model: Models_1.Trip,
                 as: 'trip',
                 where: { driverId },
                 attributes: [],
             },
         ],
         where: {
-            status: BOOKING_STATUS.COMPLETED,
-            createdat: { [Op.gte]: fromDate, [Op.lte]: toDate },
+            status: constants_1.BOOKING_STATUS.COMPLETED,
+            createdat: { [sequelize_1.Op.gte]: fromDate, [sequelize_1.Op.lte]: toDate },
         },
         group: [bucketExpr],
         raw: true,
@@ -68,4 +74,5 @@ async function aggregate(driverId, { period = 'month', from, to } = {}) {
     };
 }
 module.exports = { aggregate };
+exports.default = module.exports;
 //# sourceMappingURL=earningsService.js.map

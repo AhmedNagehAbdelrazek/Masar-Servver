@@ -1,4 +1,7 @@
 "use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.send = send;
+// @ts-nocheck
 /**
  * Push channel (FCM).
  *
@@ -40,4 +43,5 @@ async function send(user, message, data = {}) {
     }
 }
 module.exports = { send };
+exports.default = module.exports;
 //# sourceMappingURL=push.js.map

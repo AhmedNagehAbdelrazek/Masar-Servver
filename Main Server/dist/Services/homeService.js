@@ -1,16 +1,27 @@
 "use strict";
-const { Op } = require('sequelize');
-const { User, DriverProfile, Trip, Booking, Vehicle, Rating } = require('../Models');
-const { TRIP_STATUS, BOOKING_STATUS } = require('../config/constants');
-const { ApiErrors } = require('../utils/ApiError');
-const balanceService = require('./balanceService');
-const subscriptionService = require('./subscriptionService');
-const recentSearchService = require('./recentSearchService');
-const realtimeService = require('./realtimeService');
-const { REDIS_KEYS, CACHE_TTL } = require('../utils/redisKeys');
-const { getKey, setKey, deleteKey } = require('../config/redis');
-const { seatNumbersFor } = require('../utils/seatSerializer');
-const { hasFreeTripsOffer, freeTripsLimit } = require('../utils/freeTrips');
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.getHome = getHome;
+exports.invalidateHomeCache = invalidateHomeCache;
+exports.getSubscription = getSubscription;
+exports.getPassengerHome = getPassengerHome;
+exports.invalidatePassengerHome = invalidatePassengerHome;
+exports.invalidateHomeForTrip = invalidateHomeForTrip;
+// @ts-nocheck
+const sequelize_1 = require("sequelize");
+const Models_1 = require("../Models");
+const constants_1 = require("../config/constants");
+const ApiError_1 = require("../utils/ApiError");
+const balanceService_1 = __importDefault(require("./balanceService"));
+const subscriptionService_1 = __importDefault(require("./subscriptionService"));
+const recentSearchService_1 = __importDefault(require("./recentSearchService"));
+const realtimeService_1 = __importDefault(require("./realtimeService"));
+const redisKeys_1 = require("../utils/redisKeys");
+const redis_1 = require("../config/redis");
+const seatSerializer_1 = require("../utils/seatSerializer");
+const freeTrips_1 = require("../utils/freeTrips");
 const HOUR_MS = 60 * 60 * 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
 function toDriverSection(user, profile) {
@@ -27,9 +38,9 @@ function toDriverSection(user, profile) {
  * the subscription has no free-trips offer (e.g. paid plans, credit offers).
  */
 function freeTripsFor(sub) {
-    if (!hasFreeTripsOffer(sub))
+    if (!(0, freeTrips_1.hasFreeTripsOffer)(sub))
         return null;
-    const limit = freeTripsLimit(sub);
+    const limit = (0, freeTrips_1.freeTripsLimit)(sub);
     const used = Number(sub.freeTripsUsed) || 0;
     return { max: limit, used, remaining: Math.max(0, limit - used) };
 }
@@ -38,7 +49,7 @@ function freeTripsFor(sub) {
  * the driver has no active non-expired plan.
  */
 async function toSubscriptionSection(driverId) {
-    const current = await balanceService.findCurrentSubscription(driverId);
+    const current = await balanceService_1.default.findCurrentSubscription(driverId);
     if (!current) {
         return { tier: 'free', price: 0, currency: 'JOD', expires_at: null, days_remaining: 0, free_trips: null };
     }
@@ -58,7 +69,7 @@ function toNextTrip(trip) {
         return null;
     const bookings = trip.bookings || [];
     const bookedSeatsCount = bookings.reduce((sum, b) => sum + Number(b.seatsBooked || 0), 0);
-    const canStart = [TRIP_STATUS.PUBLISHED, TRIP_STATUS.FULL].includes(trip.status) &&
+    const canStart = [constants_1.TRIP_STATUS.PUBLISHED, constants_1.TRIP_STATUS.FULL].includes(trip.status) &&
         new Date(trip.departureTime).getTime() - Date.now() <= HOUR_MS;
     const vehicle = trip.vehicle;
     return {
@@ -86,22 +97,22 @@ function toNextTrip(trip) {
             booking_id: b.id,
             passenger_name: b.passenger ? b.passenger.fullName : 'Unknown',
             seats_booked: b.seatsBooked,
-            seat_numbers: seatNumbersFor(b),
+            seat_numbers: (0, seatSerializer_1.seatNumbersFor)(b),
         })),
         can_start: canStart,
     };
 }
 async function toRecentBookings(driverId) {
-    const bookings = await Booking.findAll({
+    const bookings = await Models_1.Booking.findAll({
         include: [
             {
-                model: Trip,
+                model: Models_1.Trip,
                 as: 'trip',
                 where: { driverId },
                 attributes: ['id', 'originCity', 'destinationCity', 'departureTime'],
             },
             {
-                model: User,
+                model: Models_1.User,
                 as: 'passenger',
                 attributes: ['fullName'],
             },
@@ -119,43 +130,43 @@ async function toRecentBookings(driverId) {
         },
         passenger_name: b.passenger ? b.passenger.fullName : 'Unknown',
         seats_booked: b.seatsBooked,
-        seat_numbers: seatNumbersFor(b),
+        seat_numbers: (0, seatSerializer_1.seatNumbersFor)(b),
         agreed_fare: Number(b.agreedFare),
         status: b.status,
         created_at: b.createdat || b.createdAt,
     }));
 }
 async function buildHome(driverId) {
-    const user = await User.findByPk(driverId);
+    const user = await Models_1.User.findByPk(driverId);
     if (!user)
-        throw ApiErrors.notFound('USER_NOT_FOUND');
-    const profile = await DriverProfile.findOne({ where: { driverId } });
+        throw ApiError_1.ApiErrors.notFound('USER_NOT_FOUND');
+    const profile = await Models_1.DriverProfile.findOne({ where: { driverId } });
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
-    const todayWindow = { [Op.gte]: today, [Op.lt]: tomorrow };
+    const todayWindow = { [sequelize_1.Op.gte]: today, [sequelize_1.Op.lt]: tomorrow };
     const [subscription, nextTrip, completedToday, tripsToday, recentBookings] = await Promise.all([
         toSubscriptionSection(driverId),
-        Trip.findOne({
+        Models_1.Trip.findOne({
             where: {
                 driverId,
-                status: { [Op.in]: [TRIP_STATUS.PUBLISHED, TRIP_STATUS.FULL] },
+                status: { [sequelize_1.Op.in]: [constants_1.TRIP_STATUS.PUBLISHED, constants_1.TRIP_STATUS.FULL] },
             },
             include: [
-                { model: Vehicle, as: 'vehicle' },
+                { model: Models_1.Vehicle, as: 'vehicle' },
                 {
-                    model: Booking,
+                    model: Models_1.Booking,
                     as: 'bookings',
                     required: false,
-                    where: { status: BOOKING_STATUS.CONFIRMED },
-                    include: [{ model: User, as: 'passenger', attributes: ['id', 'fullName'] }],
+                    where: { status: constants_1.BOOKING_STATUS.CONFIRMED },
+                    include: [{ model: Models_1.User, as: 'passenger', attributes: ['id', 'fullName'] }],
                 },
             ],
             order: [['departure_time', 'ASC']],
         }),
-        Trip.count({ where: { driverId, status: TRIP_STATUS.COMPLETED, departureTime: todayWindow } }),
-        Trip.count({ where: { driverId, departureTime: todayWindow } }),
+        Models_1.Trip.count({ where: { driverId, status: constants_1.TRIP_STATUS.COMPLETED, departureTime: todayWindow } }),
+        Models_1.Trip.count({ where: { driverId, departureTime: todayWindow } }),
         toRecentBookings(driverId),
     ]);
     const nextTripPayload = toNextTrip(nextTrip);
@@ -175,23 +186,23 @@ async function buildHome(driverId) {
  * Combined driver home payload, cached in Redis for 30s.
  */
 async function getHome(driverId) {
-    const cacheKey = REDIS_KEYS.DRIVER_HOME(driverId);
-    const cached = await getKey(cacheKey);
+    const cacheKey = redisKeys_1.REDIS_KEYS.DRIVER_HOME(driverId);
+    const cached = await (0, redis_1.getKey)(cacheKey);
     if (cached)
         return JSON.parse(cached);
     const payload = await buildHome(driverId);
-    await setKey(cacheKey, JSON.stringify(payload), CACHE_TTL.HOME);
+    await (0, redis_1.setKey)(cacheKey, JSON.stringify(payload), redisKeys_1.CACHE_TTL.HOME);
     return payload;
 }
 async function invalidateHomeCache(driverId) {
-    await deleteKey(REDIS_KEYS.DRIVER_HOME(driverId));
+    await (0, redis_1.deleteKey)(redisKeys_1.REDIS_KEYS.DRIVER_HOME(driverId));
 }
 /**
  * Current plan + history for the dedicated subscription page (C4).
  */
 async function getSubscription(driverId) {
-    const current = await balanceService.findCurrentSubscription(driverId);
-    const history = await subscriptionService.getMySubscriptions(driverId);
+    const current = await balanceService_1.default.findCurrentSubscription(driverId);
+    const history = await subscriptionService_1.default.getMySubscriptions(driverId);
     return {
         subscription: current
             ? {
@@ -281,47 +292,47 @@ function toLastTripPayload(booking) {
     };
 }
 async function buildPassengerHome(passengerId) {
-    const user = await User.findByPk(passengerId);
+    const user = await Models_1.User.findByPk(passengerId);
     if (!user)
-        throw ApiErrors.notFound('USER_NOT_FOUND');
+        throw ApiError_1.ApiErrors.notFound('USER_NOT_FOUND');
     const now = new Date();
-    const nextBooking = await Booking.findOne({
-        where: { passengerId, status: { [Op.in]: [BOOKING_STATUS.PENDING, BOOKING_STATUS.CONFIRMED] } },
+    const nextBooking = await Models_1.Booking.findOne({
+        where: { passengerId, status: { [sequelize_1.Op.in]: [constants_1.BOOKING_STATUS.PENDING, constants_1.BOOKING_STATUS.CONFIRMED] } },
         include: [
             {
-                model: Trip,
+                model: Models_1.Trip,
                 as: 'trip',
-                where: { departureTime: { [Op.gte]: now } },
+                where: { departureTime: { [sequelize_1.Op.gte]: now } },
                 include: [
-                    { model: User, as: 'driver', attributes: TRIP_DRIVER_ATTRS },
-                    { model: Vehicle, as: 'vehicle', attributes: VEHICLE_ATTRS },
+                    { model: Models_1.User, as: 'driver', attributes: TRIP_DRIVER_ATTRS },
+                    { model: Models_1.Vehicle, as: 'vehicle', attributes: VEHICLE_ATTRS },
                 ],
             },
         ],
-        order: [[{ model: Trip, as: 'trip' }, 'departureTime', 'ASC']],
+        order: [[{ model: Models_1.Trip, as: 'trip' }, 'departureTime', 'ASC']],
         limit: 1,
     });
     const [lastSearched, recentBookings] = await Promise.all([
-        recentSearchService.getRecent(passengerId, 5),
-        Booking.findAll({
+        recentSearchService_1.default.getRecent(passengerId, 5),
+        Models_1.Booking.findAll({
             where: { passengerId },
             include: [
                 {
-                    model: Trip,
+                    model: Models_1.Trip,
                     as: 'trip',
                     include: [
-                        { model: User, as: 'driver', attributes: TRIP_DRIVER_ATTRS },
-                        { model: Vehicle, as: 'vehicle', attributes: VEHICLE_ATTRS },
+                        { model: Models_1.User, as: 'driver', attributes: TRIP_DRIVER_ATTRS },
+                        { model: Models_1.Vehicle, as: 'vehicle', attributes: VEHICLE_ATTRS },
                     ],
                 },
-                { model: Rating, as: 'ratings', attributes: ['stars'], where: { raterId: passengerId }, required: false },
+                { model: Models_1.Rating, as: 'ratings', attributes: ['stars'], where: { raterId: passengerId }, required: false },
             ],
-            order: [[{ model: Trip, as: 'trip' }, 'departureTime', 'DESC']],
+            order: [[{ model: Models_1.Trip, as: 'trip' }, 'departureTime', 'DESC']],
             limit: 10,
         }),
     ]);
     const lastTrips = recentBookings
-        .filter((b) => b.trip && (b.status === BOOKING_STATUS.COMPLETED || new Date(b.trip.departureTime) < now))
+        .filter((b) => b.trip && (b.status === constants_1.BOOKING_STATUS.COMPLETED || new Date(b.trip.departureTime) < now))
         .slice(0, 5)
         .map(toLastTripPayload)
         .filter(Boolean);
@@ -336,16 +347,16 @@ async function buildPassengerHome(passengerId) {
  * Combined passenger home payload, cached in Redis for 30s.
  */
 async function getPassengerHome(passengerId) {
-    const cacheKey = REDIS_KEYS.PASSENGER_HOME(passengerId);
-    const cached = await getKey(cacheKey);
+    const cacheKey = redisKeys_1.REDIS_KEYS.PASSENGER_HOME(passengerId);
+    const cached = await (0, redis_1.getKey)(cacheKey);
     if (cached)
         return JSON.parse(cached);
     const payload = await buildPassengerHome(passengerId);
-    await setKey(cacheKey, JSON.stringify(payload), CACHE_TTL.HOME);
+    await (0, redis_1.setKey)(cacheKey, JSON.stringify(payload), redisKeys_1.CACHE_TTL.HOME);
     return payload;
 }
 async function invalidatePassengerHome(passengerId) {
-    await deleteKey(REDIS_KEYS.PASSENGER_HOME(passengerId));
+    await (0, redis_1.deleteKey)(redisKeys_1.REDIS_KEYS.PASSENGER_HOME(passengerId));
 }
 /**
  * Invalidate the driver + passenger home caches for a trip after any mutation
@@ -356,7 +367,7 @@ async function invalidatePassengerHome(passengerId) {
  */
 async function invalidateHomeForTrip(tripId, driverId) {
     try {
-        const bookings = await Booking.findAll({
+        const bookings = await Models_1.Booking.findAll({
             where: { tripId },
             attributes: ['passengerId'],
         });
@@ -369,7 +380,7 @@ async function invalidateHomeForTrip(tripId, driverId) {
             else
                 await invalidatePassengerHome(userId);
             try {
-                realtimeService.emitToUser(userId, 'home:invalidate', { trip_id: tripId });
+                realtimeService_1.default.emitToUser(userId, 'home:invalidate', { trip_id: tripId });
             }
             catch (_err) {
                 // socket layer offline (e.g. tests) — ignore
@@ -381,4 +392,5 @@ async function invalidateHomeForTrip(tripId, driverId) {
     }
 }
 module.exports = { getHome, invalidateHomeCache, getSubscription, getPassengerHome, invalidatePassengerHome, invalidateHomeForTrip };
+exports.default = module.exports;
 //# sourceMappingURL=homeService.js.map

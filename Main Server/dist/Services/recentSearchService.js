@@ -1,7 +1,11 @@
 "use strict";
-const { RecentSearch } = require('../Models');
-const { REDIS_KEYS } = require('../utils/redisKeys');
-const { deleteKey } = require('../config/redis');
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.recordSearch = recordSearch;
+exports.getRecent = getRecent;
+// @ts-nocheck
+const Models_1 = require("../Models");
+const redisKeys_1 = require("../utils/redisKeys");
+const redis_1 = require("../config/redis");
 /**
  * Upsert the passenger's most recent search for a route. Because there is a
  * unique index on (passenger_id, origin_city, destination_city), the same
@@ -9,18 +13,18 @@ const { deleteKey } = require('../config/redis');
  */
 async function recordSearch(passengerId, originCity, destinationCity) {
     const searchedOn = new Date().toISOString().split('T')[0];
-    const existing = await RecentSearch.findOne({
+    const existing = await Models_1.RecentSearch.findOne({
         where: { passengerId, originCity, destinationCity },
     });
     if (existing) {
         await existing.update({ searchedOn });
     }
     else {
-        await RecentSearch.create({ passengerId, originCity, destinationCity, searchedOn });
+        await Models_1.RecentSearch.create({ passengerId, originCity, destinationCity, searchedOn });
     }
     // Best-effort: keep the passenger home cache fresh after a new search.
     try {
-        await deleteKey(REDIS_KEYS.PASSENGER_HOME(passengerId));
+        await (0, redis_1.deleteKey)(redisKeys_1.REDIS_KEYS.PASSENGER_HOME(passengerId));
     }
     catch (err) {
         console.warn('[recentSearchService] cache invalidation failed:', err.message);
@@ -32,7 +36,7 @@ async function recordSearch(passengerId, originCity, destinationCity) {
  * by most recently searched. Returns [] when nothing has been searched yet.
  */
 async function getRecent(passengerId, limit = 5) {
-    const rows = await RecentSearch.findAll({
+    const rows = await Models_1.RecentSearch.findAll({
         where: { passengerId },
         order: [['searched_on', 'DESC'], ['createdat', 'DESC']],
         limit,
@@ -45,4 +49,5 @@ async function getRecent(passengerId, limit = 5) {
     }));
 }
 module.exports = { recordSearch, getRecent };
+exports.default = module.exports;
 //# sourceMappingURL=recentSearchService.js.map

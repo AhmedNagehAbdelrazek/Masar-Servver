@@ -1,46 +1,52 @@
 "use strict";
-const { Model, DataTypes } = require('sequelize');
-const sequelize = require('../config/database');
-const { SUBSCRIPTION_STATUS } = require('../config/constants');
-class DriverSubscription extends Model {
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.DriverSubscription = void 0;
+const sequelize_1 = require("sequelize");
+const database_1 = __importDefault(require("../config/database"));
+const constants_1 = require("../config/constants");
+class DriverSubscription extends sequelize_1.Model {
 }
+exports.DriverSubscription = DriverSubscription;
 DriverSubscription.init({
     id: {
-        type: DataTypes.UUID,
-        defaultValue: DataTypes.UUIDV4,
+        type: sequelize_1.DataTypes.UUID,
+        defaultValue: sequelize_1.DataTypes.UUIDV4,
         primaryKey: true,
     },
     driverId: {
-        type: DataTypes.UUID,
+        type: sequelize_1.DataTypes.UUID,
         allowNull: false,
     },
     planId: {
-        type: DataTypes.UUID,
+        type: sequelize_1.DataTypes.UUID,
         allowNull: false,
     },
     planName: {
-        type: DataTypes.STRING(100),
+        type: sequelize_1.DataTypes.STRING(100),
         allowNull: false,
     },
     planPeriodDays: {
-        type: DataTypes.INTEGER,
+        type: sequelize_1.DataTypes.INTEGER,
         allowNull: false,
     },
     planPercentageCut: {
-        type: DataTypes.DECIMAL(5, 2),
+        type: sequelize_1.DataTypes.DECIMAL(5, 2),
         allowNull: false,
     },
     planCost: {
-        type: DataTypes.DECIMAL(10, 2),
+        type: sequelize_1.DataTypes.DECIMAL(10, 2),
         allowNull: false,
     },
     balance: {
-        type: DataTypes.DECIMAL(10, 2),
+        type: sequelize_1.DataTypes.DECIMAL(10, 2),
         allowNull: false,
         defaultValue: 0,
     },
     screenshotId: {
-        type: DataTypes.INTEGER,
+        type: sequelize_1.DataTypes.INTEGER,
         allowNull: true,
         references: {
             model: 'uploaded_images',
@@ -48,41 +54,41 @@ DriverSubscription.init({
         }
     },
     paymentMethod: {
-        type: DataTypes.JSONB,
+        type: sequelize_1.DataTypes.JSONB,
         allowNull: false,
     },
     adminNotes: {
-        type: DataTypes.TEXT,
+        type: sequelize_1.DataTypes.TEXT,
         allowNull: true,
     },
     status: {
-        type: DataTypes.ENUM(...Object.values(SUBSCRIPTION_STATUS)),
+        type: sequelize_1.DataTypes.ENUM(...Object.values(constants_1.SUBSCRIPTION_STATUS)),
         allowNull: false,
-        defaultValue: SUBSCRIPTION_STATUS.PENDING_APPROVAL,
+        defaultValue: constants_1.SUBSCRIPTION_STATUS.PENDING_APPROVAL,
     },
     approvedAt: {
-        type: DataTypes.DATE,
+        type: sequelize_1.DataTypes.DATE,
         allowNull: true,
     },
     activatedAt: {
-        type: DataTypes.DATE,
+        type: sequelize_1.DataTypes.DATE,
         allowNull: true,
     },
     expiresAt: {
-        type: DataTypes.DATE,
+        type: sequelize_1.DataTypes.DATE,
         allowNull: true,
     },
     freeTripsUsed: {
-        type: DataTypes.INTEGER,
+        type: sequelize_1.DataTypes.INTEGER,
         allowNull: false,
         defaultValue: 0,
     },
     freeOffer: {
-        type: DataTypes.JSONB,
+        type: sequelize_1.DataTypes.JSONB,
         allowNull: true,
     },
 }, {
-    sequelize,
+    sequelize: database_1.default,
     modelName: 'DriverSubscription',
     tableName: 'driver_subscriptions',
     underscored: true,
@@ -102,5 +108,7 @@ DriverSubscription.init({
         },
     ],
 });
+exports.default = DriverSubscription;
 module.exports = DriverSubscription;
+Object.assign(module.exports, { default: DriverSubscription });
 //# sourceMappingURL=DriverSubscription.js.map

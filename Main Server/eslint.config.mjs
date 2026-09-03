@@ -36,6 +36,8 @@ export default [
         varsIgnorePattern: '^_',
         caughtErrorsIgnorePattern: '^_',
       }],
+      '@typescript-eslint/no-explicit-any': 'error',
+      '@typescript-eslint/no-require-imports': 'off',
       'no-console': 'off',
       eqeqeq: ['warn', 'always', { null: 'ignore' }],
       'no-throw-literal': 'error',

@@ -1,10 +1,19 @@
 "use strict";
-const { DeletionRequest, User } = require('../Models');
-const ApiError = require('../utils/ApiError');
-const { ApiErrors } = ApiError;
-const { loadDriverUser, ensureOperational } = require('../utils/userAccess');
-const notificationService = require('./notificationService');
-const auditService = require('./auditService');
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.addBusinessDays = addBusinessDays;
+exports.hasPendingRequest = hasPendingRequest;
+exports.requestDeletion = requestDeletion;
+exports.cancelDeletionRequest = cancelDeletionRequest;
+// @ts-nocheck
+const Models_1 = require("../Models");
+const ApiError_1 = __importDefault(require("../utils/ApiError"));
+const userAccess_1 = require("../utils/userAccess");
+const notificationService_1 = __importDefault(require("./notificationService"));
+const auditService_1 = __importDefault(require("./auditService"));
+const { ApiErrors } = ApiError_1.default;
 /** 5-business-day review window, skipping Friday & Saturday (research D8). */
 function addBusinessDays(from, days) {
     const date = new Date(from.getTime());
@@ -18,16 +27,16 @@ function addBusinessDays(from, days) {
     return date;
 }
 async function hasPendingRequest(userId) {
-    const pending = await DeletionRequest.findOne({
+    const pending = await Models_1.DeletionRequest.findOne({
         where: { userId, status: 'pending' },
     });
     return pending != null;
 }
 async function alertAdminsOfNewDeletionRequest({ driverId, fullName, phone }) {
     try {
-        const admins = await User.findAll({ where: { role: 'admin', status: 'active' } });
+        const admins = await Models_1.User.findAll({ where: { role: 'admin', status: 'active' } });
         for (const admin of admins) {
-            await notificationService.sendToUser(admin, 'ADMIN_DELETION_NEW', {
+            await notificationService_1.default.sendToUser(admin, 'ADMIN_DELETION_NEW', {
                 channels: ['in_app'],
                 vars: { driver_name: fullName || 'A driver', phone: phone || '' },
                 data: { driver_id: driverId },
@@ -45,26 +54,26 @@ async function alertAdminsOfNewDeletionRequest({ driverId, fullName, phone }) {
  * Clears the FCM token so push delivery stops immediately.
  */
 async function requestDeletion(userId, { reason = null, confirmation = false } = {}) {
-    const user = await loadDriverUser(userId);
-    ensureOperational(user);
+    const user = await (0, userAccess_1.loadDriverUser)(userId);
+    (0, userAccess_1.ensureOperational)(user);
     if (confirmation !== true) {
         throw ApiErrors.validation('CONFIRMATION_IS_REQUIRED_TO_REQUEST_ACCOUNT_DELETION');
     }
-    const existing = await DeletionRequest.findOne({
+    const existing = await Models_1.DeletionRequest.findOne({
         where: { userId: user.id, status: 'pending' },
     });
     if (existing) {
         throw ApiErrors.custom('A_DELETION_REQUEST_IS_ALREADY_PENDING', 409, 'DELETION_ALREADY_REQUESTED');
     }
     const estimatedCompletion = addBusinessDays(new Date(), 5);
-    const request = await DeletionRequest.create({
+    const request = await Models_1.DeletionRequest.create({
         userId: user.id,
         reason,
         status: 'pending',
         estimatedCompletion,
     });
     await user.update({ fcmToken: null });
-    notificationService.sendToUser(user, 'DELETION_REQUESTED', {
+    notificationService_1.default.sendToUser(user, 'DELETION_REQUESTED', {
         channels: ['in_app'],
         vars: {},
         data: { request_id: request.id, estimated_completion: request.estimatedCompletion },
@@ -74,7 +83,7 @@ async function requestDeletion(userId, { reason = null, confirmation = false } =
         fullName: user.fullName,
         phone: user.phone,
     });
-    auditService.track({
+    auditService_1.default.track({
         eventType: 'domain.event',
         action: 'account.deletion_requested',
         resourceType: 'deletion_request',
@@ -92,21 +101,21 @@ async function requestDeletion(userId, { reason = null, confirmation = false } =
 }
 /** Self-service cancel of a pending deletion request (clarification Q3). */
 async function cancelDeletionRequest(userId) {
-    const user = await loadDriverUser(userId);
-    ensureOperational(user);
-    const pending = await DeletionRequest.findOne({
+    const user = await (0, userAccess_1.loadDriverUser)(userId);
+    (0, userAccess_1.ensureOperational)(user);
+    const pending = await Models_1.DeletionRequest.findOne({
         where: { userId: user.id, status: 'pending' },
     });
     if (!pending) {
         throw ApiErrors.custom('NO_PENDING_DELETION_REQUEST_FOUND', 404, 'NO_PENDING_DELETION_REQUEST');
     }
     await pending.update({ status: 'cancelled' });
-    notificationService.sendToUser(user, 'DELETION_REQUEST_CANCELLED', {
+    notificationService_1.default.sendToUser(user, 'DELETION_REQUEST_CANCELLED', {
         channels: ['in_app'],
         vars: {},
         data: { request_id: pending.id },
     }).catch((err) => console.warn('[deletion-request] cancel notify failed:', err.message));
-    auditService.track({
+    auditService_1.default.track({
         eventType: 'domain.event',
         action: 'account.deletion_cancelled',
         resourceType: 'deletion_request',
@@ -127,4 +136,5 @@ module.exports = {
     requestDeletion,
     cancelDeletionRequest,
 };
+exports.default = module.exports;
 //# sourceMappingURL=deletionRequestService.js.map

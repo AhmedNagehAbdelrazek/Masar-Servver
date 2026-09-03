@@ -1,8 +1,27 @@
 "use strict";
-const sms = require('./channels/sms');
-const push = require('./channels/push');
-const inApp = require('./channels/inApp');
-const auditService = require('../auditService');
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.sendToUser = sendToUser;
+exports.notifyBookedPassengers = notifyBookedPassengers;
+exports.notifyConfirmedPassengers = notifyConfirmedPassengers;
+exports.listForUser = listForUser;
+exports.markRead = markRead;
+exports.markAllRead = markAllRead;
+exports.countUnread = countUnread;
+// @ts-nocheck
+const sms_1 = __importDefault(require("./channels/sms"));
+const push_1 = __importDefault(require("./channels/push"));
+const inApp_1 = __importDefault(require("./channels/inApp"));
+const auditService_1 = __importDefault(require("../auditService"));
+const Models_1 = require("../../Models");
+const Models_2 = require("../../Models");
+const sequelize_1 = require("sequelize");
+const constants_1 = require("../../config/constants");
+const Models_3 = require("../../Models");
+const ApiError_1 = require("../../utils/ApiError");
+const realtimeService_1 = __importDefault(require("../realtimeService"));
 /**
  * Notification templates keyed by type then locale.
  * Placeholders use {var} and are interpolated at send time.
@@ -366,8 +385,7 @@ async function sendToUser(user, type, { channels = ['in_app'], vars = {}, data =
     // Check user's notification settings to filter channels
     let allowedChannels = [...channels];
     try {
-        const { NotificationSetting } = require('../../Models');
-        const setting = await NotificationSetting.findOne({
+        const setting = await Models_1.NotificationSetting.findOne({
             where: { userId: user.id, notificationType: type },
         });
         if (setting) {
@@ -384,7 +402,7 @@ async function sendToUser(user, type, { channels = ['in_app'], vars = {}, data =
     const results = {};
     if (allowedChannels.includes('sms')) {
         try {
-            await sms.send(user, message);
+            await sms_1.default.send(user, message);
             results.sms = true;
         }
         catch (err) {
@@ -394,7 +412,7 @@ async function sendToUser(user, type, { channels = ['in_app'], vars = {}, data =
     }
     if (allowedChannels.includes('push')) {
         try {
-            await push.send(user, message, data);
+            await push_1.default.send(user, message, data);
             results.push = true;
         }
         catch (err) {
@@ -404,7 +422,7 @@ async function sendToUser(user, type, { channels = ['in_app'], vars = {}, data =
     }
     if (allowedChannels.includes('in_app')) {
         try {
-            results.in_app = await inApp.send(user, message, data);
+            results.in_app = await inApp_1.default.send(user, message, data);
         }
         catch (err) {
             results.in_app = null;
@@ -420,17 +438,14 @@ async function notifyBookedPassengers(tripIds, type, { vars = {}, data = {}, cha
     if (!tripIds || tripIds.length === 0)
         return;
     try {
-        const { Booking, Trip, User } = require('../../Models');
-        const { Op } = require('sequelize');
-        const { BOOKING_STATUS } = require('../../config/constants');
-        const bookings = await Booking.findAll({
+        const bookings = await Models_2.Booking.findAll({
             where: {
-                tripId: { [Op.in]: tripIds },
-                status: { [Op.in]: [BOOKING_STATUS.CONFIRMED, BOOKING_STATUS.PENDING] },
+                tripId: { [sequelize_1.Op.in]: tripIds },
+                status: { [sequelize_1.Op.in]: [constants_1.BOOKING_STATUS.CONFIRMED, constants_1.BOOKING_STATUS.PENDING] },
             },
             include: [
-                { model: Trip, as: 'trip', attributes: ['id', 'originCity', 'destinationCity'] },
-                { model: User, as: 'passenger', attributes: ['id', 'phone', 'fcmToken', 'locale'] },
+                { model: Models_2.Trip, as: 'trip', attributes: ['id', 'originCity', 'destinationCity'] },
+                { model: Models_2.User, as: 'passenger', attributes: ['id', 'phone', 'fcmToken', 'locale'] },
             ],
         });
         const seen = new Set();
@@ -462,17 +477,14 @@ async function notifyConfirmedPassengers(tripIds, type, { vars = {}, data = {}, 
     if (!tripIds || tripIds.length === 0)
         return 0;
     try {
-        const { Booking, Trip, User } = require('../../Models');
-        const { Op } = require('sequelize');
-        const { BOOKING_STATUS } = require('../../config/constants');
-        const bookings = await Booking.findAll({
+        const bookings = await Models_2.Booking.findAll({
             where: {
-                tripId: { [Op.in]: Array.isArray(tripIds) ? tripIds : [tripIds] },
-                status: BOOKING_STATUS.CONFIRMED,
+                tripId: { [sequelize_1.Op.in]: Array.isArray(tripIds) ? tripIds : [tripIds] },
+                status: constants_1.BOOKING_STATUS.CONFIRMED,
             },
             include: [
-                { model: Trip, as: 'trip', attributes: ['id', 'originCity', 'destinationCity'] },
-                { model: User, as: 'passenger', attributes: ['id', 'phone', 'fcmToken', 'locale'] },
+                { model: Models_2.Trip, as: 'trip', attributes: ['id', 'originCity', 'destinationCity'] },
+                { model: Models_2.User, as: 'passenger', attributes: ['id', 'phone', 'fcmToken', 'locale'] },
             ],
         });
         let count = 0;
@@ -502,13 +514,12 @@ async function notifyConfirmedPassengers(tripIds, type, { vars = {}, data = {}, 
  * Paginated list of a user's own notifications.
  */
 async function listForUser(userId, { unread = null, page = 1, limit = 20 } = {}) {
-    const { Notification } = require('../../Models');
     const where = { userId };
     if (unread === true)
         where.isRead = false;
     else if (unread === false)
         where.isRead = true;
-    const { rows, count } = await Notification.findAndCountAll({
+    const { rows, count } = await Models_3.Notification.findAndCountAll({
         where,
         order: [['createdat', 'DESC']],
         offset: (page - 1) * limit,
@@ -521,16 +532,14 @@ async function listForUser(userId, { unread = null, page = 1, limit = 20 } = {})
  * notification does not exist and FORBIDDEN when it belongs to someone else.
  */
 async function markRead(userId, notificationId) {
-    const { Notification } = require('../../Models');
-    const { ApiErrors } = require('../../utils/ApiError');
-    const notification = await Notification.findByPk(notificationId);
+    const notification = await Models_3.Notification.findByPk(notificationId);
     if (!notification)
-        throw ApiErrors.notFound('NOTIFICATION_NOT_FOUND');
+        throw ApiError_1.ApiErrors.notFound('NOTIFICATION_NOT_FOUND');
     if (notification.userId !== userId)
-        throw ApiErrors.forbidden('YOU_CAN_ONLY_MARK_YOUR_OWN_NOTIFICATIONS_AS_READ');
+        throw ApiError_1.ApiErrors.forbidden('YOU_CAN_ONLY_MARK_YOUR_OWN_NOTIFICATIONS_AS_READ');
     if (!notification.isRead) {
         await notification.update({ isRead: true });
-        auditService.track({
+        auditService_1.default.track({
             action: 'notification.mark_read',
             resourceType: 'notification',
             resourceId: notification.id,
@@ -545,8 +554,7 @@ async function markRead(userId, notificationId) {
  * Mark all of a user's notifications as read and re-emit the unread badge.
  */
 async function markAllRead(userId) {
-    const { Notification } = require('../../Models');
-    const [affected] = await Notification.update({ isRead: true }, { where: { userId, isRead: false } });
+    const [affected] = await Models_3.Notification.update({ isRead: true }, { where: { userId, isRead: false } });
     emitCount(userId);
     return { marked: affected };
 }
@@ -554,15 +562,13 @@ async function markAllRead(userId) {
  * Count a user's unread notifications (for the realtime badge).
  */
 async function countUnread(userId) {
-    const { Notification } = require('../../Models');
-    return Notification.count({ where: { userId, isRead: false } });
+    return Models_3.Notification.count({ where: { userId, isRead: false } });
 }
 function emitCount(userId) {
     try {
-        const realtimeService = require('../realtimeService');
         countUnread(userId)
             .then((unreadCount) => {
-            realtimeService.emitToUser(userId, 'notification:count', {
+            realtimeService_1.default.emitToUser(userId, 'notification:count', {
                 unread_count: unreadCount,
                 timestamp: Date.now(),
             });
@@ -582,4 +588,5 @@ module.exports = {
     markAllRead,
     countUnread,
 };
+exports.default = module.exports;
 //# sourceMappingURL=index.js.map

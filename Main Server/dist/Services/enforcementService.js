@@ -1,9 +1,17 @@
 "use strict";
-const realtimeService = require('./realtimeService');
-const realtimeMetrics = require('./realtimeMetrics');
-const { disconnectUserSockets } = require('../socketServer');
-const auditService = require('./auditService');
-const { USER_STATUS, PENALTY_TYPES } = require('../config/constants');
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.revoke = revoke;
+exports.revokeIfBlocked = revokeIfBlocked;
+exports.revocationForPenalty = revocationForPenalty;
+// @ts-nocheck
+const realtimeService_1 = __importDefault(require("./realtimeService"));
+const realtimeMetrics_1 = __importDefault(require("./realtimeMetrics"));
+const socketServer_1 = require("../socketServer");
+const auditService_1 = __importDefault(require("./auditService"));
+const constants_1 = require("../config/constants");
 /**
  * Immediate session revocation for suspensions/bans (Requirement 8):
  *   1. audit-log the revocation;
@@ -15,7 +23,7 @@ const { USER_STATUS, PENALTY_TYPES } = require('../config/constants');
 function revoke(userId, { action = 'suspend', reason = 'Account action applied', actorId = null, duration = null } = {}) {
     if (!userId)
         return false;
-    auditService.track({
+    auditService_1.default.track({
         action: `enforcement.revoke_${action}`,
         resourceType: 'user',
         resourceId: userId,
@@ -23,15 +31,15 @@ function revoke(userId, { action = 'suspend', reason = 'Account action applied',
         actorId,
         payload: { reason, duration },
     });
-    realtimeService.emitToUser(userId, 'enforcement:revoke', {
+    realtimeService_1.default.emitToUser(userId, 'enforcement:revoke', {
         reason,
         action,
         duration,
         effective_at: new Date().toISOString(),
     });
-    realtimeMetrics.recordEvent('enforcement:revoke');
+    realtimeMetrics_1.default.recordEvent('enforcement:revoke');
     try {
-        disconnectUserSockets(userId);
+        (0, socketServer_1.disconnectUserSockets)(userId);
     }
     catch (err) {
         console.warn('[enforcement] disconnect failed:', err.message);
@@ -45,10 +53,10 @@ function revoke(userId, { action = 'suspend', reason = 'Account action applied',
 function revokeIfBlocked(user, { actorId = null, reason = null } = {}) {
     if (!user)
         return false;
-    if (user.status === USER_STATUS.SUSPENDED) {
+    if (user.status === constants_1.USER_STATUS.SUSPENDED) {
         return revoke(user.id, { action: 'suspend', reason: reason || 'Account suspended', actorId });
     }
-    if (user.status === USER_STATUS.BANNED) {
+    if (user.status === constants_1.USER_STATUS.BANNED) {
         return revoke(user.id, { action: 'ban', reason: reason || 'Account banned', actorId });
     }
     return false;
@@ -59,13 +67,14 @@ function revokeIfBlocked(user, { actorId = null, reason = null } = {}) {
  * caller still provides the target userId via `revoke`.
  */
 function revocationForPenalty(penaltyType) {
-    if (penaltyType === PENALTY_TYPES.SUSPENSION) {
+    if (penaltyType === constants_1.PENALTY_TYPES.SUSPENSION) {
         return { action: 'suspend', applies: true };
     }
-    if (penaltyType === PENALTY_TYPES.BAN) {
+    if (penaltyType === constants_1.PENALTY_TYPES.BAN) {
         return { action: 'ban', applies: true };
     }
     return { action: null, applies: false };
 }
 module.exports = { revoke, revokeIfBlocked, revocationForPenalty };
+exports.default = module.exports;
 //# sourceMappingURL=enforcementService.js.map

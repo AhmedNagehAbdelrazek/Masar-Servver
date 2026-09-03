@@ -7,7 +7,9 @@
  *     Language header overrides supported)
  * {placeholders} are filled from ApiError params.
  */
-const APP_MESSAGES = {
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.APP_MESSAGES = void 0;
+exports.APP_MESSAGES = {
     // ===== Generic =====
     BAD_REQUEST: { en: 'Bad request', ar: 'طلب غير صالح' },
     CONFLICT: { en: 'Conflict', ar: 'تعارض في الطلب' },
@@ -260,5 +262,15 @@ const APP_MESSAGES = {
     ALERT_UNRESOLVED_COMPLAINTS: { en: 'Unresolved complaints', ar: 'شكاوى غير محلولة' },
     // ===== Successes =====
 };
-module.exports = { APP_MESSAGES };
+exports.default = exports.APP_MESSAGES;
+// CommonJS interop
+// @ts-ignore
+if (typeof module !== 'undefined' && module.exports) {
+    // @ts-ignore
+    module.exports = { APP_MESSAGES: exports.APP_MESSAGES };
+    // @ts-ignore
+    module.exports.APP_MESSAGES = exports.APP_MESSAGES;
+    // @ts-ignore
+    module.exports.default = exports.APP_MESSAGES;
+}
 //# sourceMappingURL=app.js.map

@@ -1,93 +1,101 @@
 "use strict";
-const { Model, DataTypes } = require('sequelize');
-const sequelize = require('../config/database');
-const { RIDE_REQUEST_STATUS } = require('../config/constants');
-class RideRequest extends Model {
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.RideRequest = void 0;
+const sequelize_1 = require("sequelize");
+const database_1 = __importDefault(require("../config/database"));
+const constants_1 = require("../config/constants");
+class RideRequest extends sequelize_1.Model {
 }
+exports.RideRequest = RideRequest;
 RideRequest.init({
     id: {
-        type: DataTypes.UUID,
-        defaultValue: DataTypes.UUIDV4,
+        type: sequelize_1.DataTypes.UUID,
+        defaultValue: sequelize_1.DataTypes.UUIDV4,
         primaryKey: true,
     },
     passengerId: {
-        type: DataTypes.UUID,
+        type: sequelize_1.DataTypes.UUID,
         allowNull: false,
     },
     originPlace: {
-        type: DataTypes.STRING(120),
+        type: sequelize_1.DataTypes.STRING(120),
         allowNull: false,
     },
     originCity: {
-        type: DataTypes.STRING(80),
+        type: sequelize_1.DataTypes.STRING(80),
         allowNull: false,
     },
     originLat: {
-        type: DataTypes.NUMERIC(10, 8),
+        type: sequelize_1.DataTypes.NUMERIC(10, 8),
         allowNull: true,
     },
     originLng: {
-        type: DataTypes.NUMERIC(11, 8),
+        type: sequelize_1.DataTypes.NUMERIC(11, 8),
         allowNull: true,
     },
     originTime: {
-        type: DataTypes.DATE,
+        type: sequelize_1.DataTypes.DATE,
         allowNull: true,
     },
     destinationPlace: {
-        type: DataTypes.STRING(120),
+        type: sequelize_1.DataTypes.STRING(120),
         allowNull: false,
     },
     destinationCity: {
-        type: DataTypes.STRING(80),
+        type: sequelize_1.DataTypes.STRING(80),
         allowNull: false,
     },
     destinationLat: {
-        type: DataTypes.NUMERIC(10, 8),
+        type: sequelize_1.DataTypes.NUMERIC(10, 8),
         allowNull: true,
     },
     destinationLng: {
-        type: DataTypes.NUMERIC(11, 8),
+        type: sequelize_1.DataTypes.NUMERIC(11, 8),
         allowNull: true,
     },
     arrivalDeadline: {
-        type: DataTypes.DATE,
+        type: sequelize_1.DataTypes.DATE,
         allowNull: true,
     },
     seatsNeeded: {
-        type: DataTypes.SMALLINT,
+        type: sequelize_1.DataTypes.SMALLINT,
         allowNull: false,
         defaultValue: 1,
     },
     maxBudget: {
-        type: DataTypes.NUMERIC(10, 2),
+        type: sequelize_1.DataTypes.NUMERIC(10, 2),
         allowNull: true,
     },
     currency: {
-        type: DataTypes.STRING(3),
+        type: sequelize_1.DataTypes.STRING(3),
         allowNull: true,
         defaultValue: 'JOD',
     },
     attributesPreferred: {
-        type: DataTypes.JSONB,
+        type: sequelize_1.DataTypes.JSONB,
         allowNull: true,
         defaultValue: {},
     },
     status: {
-        type: DataTypes.ENUM(Object.values(RIDE_REQUEST_STATUS)),
+        type: sequelize_1.DataTypes.ENUM(...Object.values(constants_1.RIDE_REQUEST_STATUS)),
         allowNull: false,
-        defaultValue: RIDE_REQUEST_STATUS.OPEN,
+        defaultValue: constants_1.RIDE_REQUEST_STATUS.OPEN,
     },
     expiresAt: {
-        type: DataTypes.DATE,
+        type: sequelize_1.DataTypes.DATE,
         allowNull: false,
     },
 }, {
-    sequelize,
+    sequelize: database_1.default,
     modelName: 'RideRequest',
     tableName: 'ride_requests',
     underscored: true,
     timestamps: true,
 });
+exports.default = RideRequest;
 module.exports = RideRequest;
+Object.assign(module.exports, { default: RideRequest });
 //# sourceMappingURL=RideRequest.js.map

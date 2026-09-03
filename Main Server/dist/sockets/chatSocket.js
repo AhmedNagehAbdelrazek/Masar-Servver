@@ -1,30 +1,26 @@
 "use strict";
-const messageService = require('../Services/messageService');
-const realtimeService = require('../Services/realtimeService');
-const realtimeMetrics = require('../Services/realtimeMetrics');
-const presenceService = require('../Services/presenceService');
-const { checkRateLimit } = require('../Services/socketRateLimiter');
-const { ApiErrors } = require('../utils/ApiError');
-const { ok, errorFromApiError, rateLimited } = require('../utils/socketAck');
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const messageService_1 = __importDefault(require("../Services/messageService"));
+const realtimeService_1 = __importDefault(require("../Services/realtimeService"));
+const realtimeMetrics_1 = __importDefault(require("../Services/realtimeMetrics"));
+const presenceService_1 = __importDefault(require("../Services/presenceService"));
+const socketRateLimiter_1 = require("../Services/socketRateLimiter");
+const ApiError_1 = require("../utils/ApiError");
+const socketAck_1 = require("../utils/socketAck");
 const TYPING_THROTTLE_MS = 1500;
-/**
- * Booking chat (driver <-> passenger) + support ticket chat
- * (user <-> support team). Rooms: `booking:{bookingId}` and
- * `support:{supportTicketId}`. Booking chats are only joinable while the
- * booking is CONFIRMED and its trip is not completed/cancelled; membership
- * is validated on join and on every send (defense-in-depth).
- */
-module.exports = (io, socket) => {
+const chatSocket = (io, socket) => {
     const user = socket.data.user;
     const typingLast = new Map();
     socket.on('chat:join', async (payload, ack) => {
         try {
             const { booking_id, support_ticket_id } = payload || {};
             if (booking_id) {
-                await messageService.assertBookingChatOpen(user, booking_id);
+                await messageService_1.default.assertBookingChatOpen(user, booking_id);
                 socket.join(`booking:${booking_id}`);
-                presenceService
-                    .getStatus(user.id)
+                presenceService_1.default.getStatus(user.id)
                     .then((status) => {
                     socket.to(`booking:${booking_id}`).emit('presence:status', {
                         user_id: user.id,
@@ -33,21 +29,25 @@ module.exports = (io, socket) => {
                         timestamp: Date.now(),
                     });
                 })
-                    .catch(() => { });
-                return ack ? ack(ok({ room: `booking:${booking_id}` })) : undefined;
+                    .catch(() => { return undefined; });
+                if (ack)
+                    ack((0, socketAck_1.ok)({ room: `booking:${booking_id}` }));
+                return;
             }
             if (support_ticket_id) {
-                const member = await realtimeService.isTicketMember(user, support_ticket_id);
+                const member = await realtimeService_1.default.isTicketMember(user, support_ticket_id);
                 if (!member)
-                    throw ApiErrors.forbidden('YOU_ARE_NOT_A_MEMBER_OF_THIS_SUPPORT_TICKET');
+                    throw ApiError_1.ApiErrors.forbidden('YOU_ARE_NOT_A_MEMBER_OF_THIS_SUPPORT_TICKET');
                 socket.join(`support:${support_ticket_id}`);
-                return ack ? ack(ok({ room: `support:${support_ticket_id}` })) : undefined;
+                if (ack)
+                    ack((0, socketAck_1.ok)({ room: `support:${support_ticket_id}` }));
+                return;
             }
-            throw ApiErrors.validation('PROVIDE_BOOKING_ID_OR_SUPPORT_TICKET_ID');
+            throw ApiError_1.ApiErrors.validation('PROVIDE_BOOKING_ID_OR_SUPPORT_TICKET_ID');
         }
         catch (err) {
             if (ack)
-                ack(errorFromApiError(err));
+                ack((0, socketAck_1.errorFromApiError)(err));
         }
     });
     socket.on('chat:leave', (payload, ack) => {
@@ -57,35 +57,41 @@ module.exports = (io, socket) => {
         if (support_ticket_id)
             socket.leave(`support:${support_ticket_id}`);
         if (ack)
-            ack(ok({ left: true }));
+            ack((0, socketAck_1.ok)({ left: true }));
     });
     socket.on('chat:send', async (payload, ack) => {
         try {
-            const rl = await checkRateLimit('chat', 'chat', user.id);
+            const rl = await (0, socketRateLimiter_1.checkRateLimit)('chat', 'chat', user.id);
             if (!rl.allowed) {
-                realtimeMetrics.recordRateLimited();
-                return ack ? ack(rateLimited()) : undefined;
+                realtimeMetrics_1.default.recordRateLimited();
+                if (ack)
+                    ack((0, socketAck_1.rateLimited)());
+                return;
             }
             const { booking_id, support_ticket_id, message, message_type } = payload || {};
-            const result = booking_id
-                ? await messageService.sendBookingMessage(user, {
+            let result;
+            if (booking_id) {
+                result = await messageService_1.default.sendBookingMessage(user, {
                     bookingId: booking_id,
                     message,
                     messageType: message_type,
-                })
-                : support_ticket_id
-                    ? await messageService.sendSupportMessage(user, {
-                        supportTicketId: support_ticket_id,
-                        message,
-                    })
-                    : (() => {
-                        throw ApiErrors.validation('PROVIDE_BOOKING_ID_OR_SUPPORT_TICKET_ID');
-                    })();
-            return ack ? ack(ok(result)) : undefined;
+                });
+            }
+            else if (support_ticket_id) {
+                result = await messageService_1.default.sendSupportMessage(user, {
+                    supportTicketId: support_ticket_id,
+                    message,
+                });
+            }
+            else {
+                throw ApiError_1.ApiErrors.validation('PROVIDE_BOOKING_ID_OR_SUPPORT_TICKET_ID');
+            }
+            if (ack)
+                ack((0, socketAck_1.ok)(result));
         }
         catch (err) {
             if (ack)
-                ack(errorFromApiError(err));
+                ack((0, socketAck_1.errorFromApiError)(err));
         }
     });
     socket.on('chat:typing', async (payload, ack) => {
@@ -93,22 +99,22 @@ module.exports = (io, socket) => {
         let room = null;
         try {
             if (booking_id) {
-                await messageService.assertBookingChatOpen(user, booking_id);
+                await messageService_1.default.assertBookingChatOpen(user, booking_id);
                 room = `booking:${booking_id}`;
             }
             else if (support_ticket_id) {
-                const member = await realtimeService.isTicketMember(user, support_ticket_id);
+                const member = await realtimeService_1.default.isTicketMember(user, support_ticket_id);
                 if (!member)
-                    throw ApiErrors.forbidden('YOU_ARE_NOT_A_MEMBER_OF_THIS_SUPPORT_TICKET');
+                    throw ApiError_1.ApiErrors.forbidden('YOU_ARE_NOT_A_MEMBER_OF_THIS_SUPPORT_TICKET');
                 room = `support:${support_ticket_id}`;
             }
             else {
-                throw ApiErrors.validation('PROVIDE_BOOKING_ID_OR_SUPPORT_TICKET_ID');
+                throw ApiError_1.ApiErrors.validation('PROVIDE_BOOKING_ID_OR_SUPPORT_TICKET_ID');
             }
         }
         catch (err) {
             if (ack)
-                ack(errorFromApiError(err));
+                ack((0, socketAck_1.errorFromApiError)(err));
             return;
         }
         const now = Date.now();
@@ -116,36 +122,41 @@ module.exports = (io, socket) => {
         typingLast.set(user.id, now);
         if (now - last < TYPING_THROTTLE_MS) {
             if (ack)
-                ack(ok({ throttled: true }));
+                ack((0, socketAck_1.ok)({ throttled: true }));
             return;
         }
         socket.to(room).emit('chat:typing', {
             sender_id: user.id,
-            is_typing: !!is_typing,
+            is_typing: Boolean(is_typing),
             timestamp: now,
         });
-        realtimeMetrics.recordEvent('chat:typing');
+        realtimeMetrics_1.default.recordEvent('chat:typing');
         if (ack)
-            ack(ok({ throttled: false }));
+            ack((0, socketAck_1.ok)({ throttled: false }));
     });
     socket.on('chat:read', async (payload, ack) => {
         try {
-            const rl = await checkRateLimit('chat', 'read', user.id);
+            const rl = await (0, socketRateLimiter_1.checkRateLimit)('chat', 'read', user.id);
             if (!rl.allowed) {
-                realtimeMetrics.recordRateLimited();
-                return ack ? ack(rateLimited()) : undefined;
+                realtimeMetrics_1.default.recordRateLimited();
+                if (ack)
+                    ack((0, socketAck_1.rateLimited)());
+                return;
             }
-            const result = await messageService.markRead(user, {
+            const result = await messageService_1.default.markRead(user, {
                 messageId: payload ? payload.message_id : undefined,
                 bookingId: payload ? payload.booking_id : undefined,
                 supportTicketId: payload ? payload.support_ticket_id : undefined,
             });
-            return ack ? ack(ok(result)) : undefined;
+            if (ack)
+                ack((0, socketAck_1.ok)(result));
         }
         catch (err) {
             if (ack)
-                ack(errorFromApiError(err));
+                ack((0, socketAck_1.errorFromApiError)(err));
         }
     });
 };
+exports.default = chatSocket;
+module.exports = chatSocket;
 //# sourceMappingURL=chatSocket.js.map

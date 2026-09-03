@@ -1,4 +1,17 @@
 "use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.ALERT_THRESHOLD = exports.SLOW_DELIVERY_MS = exports.WINDOW_MS = void 0;
+exports.recordConnection = recordConnection;
+exports.recordDisconnection = recordDisconnection;
+exports.recordConnectionFailure = recordConnectionFailure;
+exports.recordReconnect = recordReconnect;
+exports.recordDelivery = recordDelivery;
+exports.recordFailure = recordFailure;
+exports.recordRateLimited = recordRateLimited;
+exports.recordEvent = recordEvent;
+exports.getSnapshot = getSnapshot;
+exports.reset = reset;
+// @ts-nocheck
 /**
  * Per-process observability for the realtime service. Snapshot shape follows
  * contracts/metrics-contracts.md (`GET /api/health/realtime`).
@@ -14,9 +27,12 @@
  * recovers.
  */
 const WINDOW_MS = 60 * 1000;
+exports.WINDOW_MS = WINDOW_MS;
 const SLOW_DELIVERY_MS = 1000;
+exports.SLOW_DELIVERY_MS = SLOW_DELIVERY_MS;
 const MAX_SAMPLES = 1000;
 const ALERT_THRESHOLD = 0.05;
+exports.ALERT_THRESHOLD = ALERT_THRESHOLD;
 const state = {
     startedAt: Date.now(),
     connections: { current: 0, peak: 0, total: 0 },
@@ -175,4 +191,5 @@ module.exports = {
     SLOW_DELIVERY_MS,
     ALERT_THRESHOLD,
 };
+exports.default = module.exports;
 //# sourceMappingURL=realtimeMetrics.js.map

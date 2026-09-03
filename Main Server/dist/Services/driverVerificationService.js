@@ -1,11 +1,22 @@
 "use strict";
-const { Op } = require('sequelize');
-const sequelize = require('../config/database');
-const { User, DriverProfile, Vehicle, UploadedImage } = require('../Models');
-const { ApiErrors } = require('../utils/ApiError');
-const { VERIFICATION_STATUS } = require('../config/constants');
-const { recordStatusChange, alertAdminsOfNewSubmission } = require('./verificationService');
-const auditService = require('./auditService');
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.canEdit = canEdit;
+exports.guardSubmission = guardSubmission;
+exports.computeStatus = computeStatus;
+exports.getStatus = getStatus;
+exports.getSubmission = getSubmission;
+exports.submitOrResubmit = submitOrResubmit;
+// @ts-nocheck
+const sequelize_1 = require("sequelize");
+const database_1 = __importDefault(require("../config/database"));
+const Models_1 = require("../Models");
+const ApiError_1 = require("../utils/ApiError");
+const constants_1 = require("../config/constants");
+const verificationService_1 = require("./verificationService");
+const auditService_1 = __importDefault(require("./auditService"));
 const DRIVER_DOC_FIELDS = [
     'userIdentificationFront',
     'userIdentificationBack',
@@ -38,35 +49,35 @@ function uniqueViolationMessage(err) {
  * transitions and can_edit rules without a database.
  */
 function canEdit(status) {
-    return status === VERIFICATION_STATUS.UNVERIFIED || status === VERIFICATION_STATUS.REJECTED;
+    return status === constants_1.VERIFICATION_STATUS.UNVERIFIED || status === constants_1.VERIFICATION_STATUS.REJECTED;
 }
 function guardSubmission(status) {
-    if (status === VERIFICATION_STATUS.PENDING) {
-        throw ApiErrors.conflict('YOUR_VERIFICATION_APPLICATION_IS_ALREADY_UNDER_REVIEW');
+    if (status === constants_1.VERIFICATION_STATUS.PENDING) {
+        throw ApiError_1.ApiErrors.conflict('YOUR_VERIFICATION_APPLICATION_IS_ALREADY_UNDER_REVIEW');
     }
-    if (status === VERIFICATION_STATUS.APPROVED) {
-        throw ApiErrors.forbidden('YOUR_VERIFICATION_IS_APPROVED_AND_LOCKED_CONTACT_SUPPORT_IF_YOU');
+    if (status === constants_1.VERIFICATION_STATUS.APPROVED) {
+        throw ApiError_1.ApiErrors.forbidden('YOUR_VERIFICATION_IS_APPROVED_AND_LOCKED_CONTACT_SUPPORT_IF_YOU');
     }
 }
 function computeStatus(user, profile, vehicle) {
     if (user.verificationRejectedAt || (vehicle && vehicle.verificationRejectedAt)) {
-        return VERIFICATION_STATUS.REJECTED;
+        return constants_1.VERIFICATION_STATUS.REJECTED;
     }
     const profileVerified = Boolean(profile && profile.idVerified);
     const vehicleVerified = Boolean(vehicle && vehicle.isVerified);
     if (profileVerified && vehicleVerified) {
-        return VERIFICATION_STATUS.APPROVED;
+        return constants_1.VERIFICATION_STATUS.APPROVED;
     }
-    if (user.verificationStatus === VERIFICATION_STATUS.PENDING) {
-        return VERIFICATION_STATUS.PENDING;
+    if (user.verificationStatus === constants_1.VERIFICATION_STATUS.PENDING) {
+        return constants_1.VERIFICATION_STATUS.PENDING;
     }
-    if (user.verificationStatus === VERIFICATION_STATUS.APPROVED) {
-        return VERIFICATION_STATUS.APPROVED;
+    if (user.verificationStatus === constants_1.VERIFICATION_STATUS.APPROVED) {
+        return constants_1.VERIFICATION_STATUS.APPROVED;
     }
     if (profile || vehicle) {
-        return VERIFICATION_STATUS.PENDING;
+        return constants_1.VERIFICATION_STATUS.PENDING;
     }
-    return VERIFICATION_STATUS.UNVERIFIED;
+    return constants_1.VERIFICATION_STATUS.UNVERIFIED;
 }
 function buildDriverPayload(user, profile) {
     return {
@@ -116,11 +127,11 @@ function buildVehiclePayload(vehicle) {
     };
 }
 async function loadDriverData(driverId) {
-    const user = await User.findByPk(driverId);
+    const user = await Models_1.User.findByPk(driverId);
     if (!user)
-        throw ApiErrors.notFound('DRIVER_NOT_FOUND');
-    const profile = await DriverProfile.findOne({ where: { driverId } });
-    const vehicle = await Vehicle.findOne({ where: { driverId } });
+        throw ApiError_1.ApiErrors.notFound('DRIVER_NOT_FOUND');
+    const profile = await Models_1.DriverProfile.findOne({ where: { driverId } });
+    const vehicle = await Models_1.Vehicle.findOne({ where: { driverId } });
     return { user, profile, vehicle };
 }
 async function getStatus(driverId) {
@@ -157,9 +168,9 @@ async function verifyDocumentIds(body) {
     if (docIds.length === 0)
         return;
     const uniqueIds = [...new Set(docIds)];
-    const found = await UploadedImage.findAll({ where: { id: { [Op.in]: uniqueIds } } });
+    const found = await Models_1.UploadedImage.findAll({ where: { id: { [sequelize_1.Op.in]: uniqueIds } } });
     if (found.length !== uniqueIds.length) {
-        throw ApiErrors.validation('ONE_OR_MORE_UPLOADED_DOCUMENT_IDS_DO_NOT_EXIST');
+        throw ApiError_1.ApiErrors.validation('ONE_OR_MORE_UPLOADED_DOCUMENT_IDS_DO_NOT_EXIST');
     }
 }
 async function submitOrResubmit(driverId, body) {
@@ -168,7 +179,7 @@ async function submitOrResubmit(driverId, body) {
     guardSubmission(currentStatus);
     await verifyDocumentIds(body);
     const submittedAt = new Date();
-    const transaction = await sequelize.transaction();
+    const transaction = await database_1.default.transaction();
     try {
         const profileData = {
             driverId,
@@ -185,7 +196,7 @@ async function submitOrResubmit(driverId, body) {
             await profile.update(profileData, { transaction });
         }
         else {
-            await DriverProfile.create(profileData, { transaction });
+            await Models_1.DriverProfile.create(profileData, { transaction });
         }
         const v = body.vehicle || {};
         const vehicleData = {
@@ -213,40 +224,40 @@ async function submitOrResubmit(driverId, body) {
             await vehicle.update(vehicleData, { transaction });
         }
         else {
-            await Vehicle.create(vehicleData, { transaction });
+            await Models_1.Vehicle.create(vehicleData, { transaction });
         }
         if (body.full_name !== undefined) {
             await user.update({ fullName: body.full_name }, { transaction });
         }
         await user.update({
-            verificationStatus: VERIFICATION_STATUS.PENDING,
+            verificationStatus: constants_1.VERIFICATION_STATUS.PENDING,
             verificationSubmittedAt: submittedAt,
             isVerified: false,
             verificationRejectedAt: null,
             verificationRejectionReason: null,
             verificationRejectionFields: [],
         }, { transaction });
-        await recordStatusChange(driverId, currentStatus, VERIFICATION_STATUS.PENDING, { transaction });
+        await (0, verificationService_1.recordStatusChange)(driverId, currentStatus, constants_1.VERIFICATION_STATUS.PENDING, { transaction });
         await transaction.commit();
     }
     catch (err) {
         await transaction.rollback();
         if (isUniqueViolation(err)) {
-            throw ApiErrors.validation(uniqueViolationMessage(err));
+            throw ApiError_1.ApiErrors.validation(uniqueViolationMessage(err));
         }
         throw err;
     }
-    await alertAdminsOfNewSubmission({ driverId, fullName: user.fullName });
-    auditService.track({
+    await (0, verificationService_1.alertAdminsOfNewSubmission)({ driverId, fullName: user.fullName });
+    auditService_1.default.track({
         action: 'verification.submitted',
         resourceType: 'user',
         resourceId: driverId,
         resourceLabel: user.fullName,
         actorId: driverId,
         actorType: 'driver',
-        payload: { from_status: currentStatus, to_status: VERIFICATION_STATUS.PENDING },
+        payload: { from_status: currentStatus, to_status: constants_1.VERIFICATION_STATUS.PENDING },
     });
-    return { status: VERIFICATION_STATUS.PENDING, submitted_at: submittedAt };
+    return { status: constants_1.VERIFICATION_STATUS.PENDING, submitted_at: submittedAt };
 }
 module.exports = {
     canEdit,
@@ -256,4 +267,5 @@ module.exports = {
     getSubmission,
     submitOrResubmit,
 };
+exports.default = module.exports;
 //# sourceMappingURL=driverVerificationService.js.map

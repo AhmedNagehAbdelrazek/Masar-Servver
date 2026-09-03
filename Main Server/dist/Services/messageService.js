@@ -1,12 +1,24 @@
 "use strict";
-const { Op } = require('sequelize');
-const { Message, User } = require('../Models');
-const { ApiErrors } = require('../utils/ApiError');
-const { parsePagination, buildPagination } = require('../utils/pagination');
-const { sanitizeMessage } = require('../utils/sanitize');
-const { BOOKING_STATUS, TRIP_STATUS } = require('../config/constants');
-const realtimeService = require('./realtimeService');
-const realtimeMetrics = require('./realtimeMetrics');
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.sendBookingMessage = sendBookingMessage;
+exports.sendSupportMessage = sendSupportMessage;
+exports.markRead = markRead;
+exports.listBookingMessages = listBookingMessages;
+exports.listSupportMessages = listSupportMessages;
+exports.assertBookingChatOpen = assertBookingChatOpen;
+exports.serialize = serialize;
+// @ts-nocheck
+const sequelize_1 = require("sequelize");
+const Models_1 = require("../Models");
+const ApiError_1 = require("../utils/ApiError");
+const pagination_1 = require("../utils/pagination");
+const sanitize_1 = require("../utils/sanitize");
+const constants_1 = require("../config/constants");
+const realtimeService_1 = __importDefault(require("./realtimeService"));
+const realtimeMetrics_1 = __importDefault(require("./realtimeMetrics"));
 /**
  * Booking chat (driver <-> passenger) + support ticket chat persistence and
  * realtime broadcast. Messages are persisted BEFORE broadcast so nothing is
@@ -35,8 +47,8 @@ function serialize(row) {
     };
 }
 async function findMessageWithSender(id) {
-    return Message.findByPk(id, {
-        include: [{ model: User, as: 'sender', attributes: ['id', 'fullName'] }],
+    return Models_1.Message.findByPk(id, {
+        include: [{ model: Models_1.User, as: 'sender', attributes: ['id', 'fullName'] }],
     });
 }
 /**
@@ -45,16 +57,16 @@ async function findMessageWithSender(id) {
  * cancelled. Returns { booking, trip }; throws ApiErrors otherwise.
  */
 async function assertBookingChatOpen(user, bookingId) {
-    const { member, booking, trip } = await realtimeService.getBookingChatContext(user, bookingId);
+    const { member, booking, trip } = await realtimeService_1.default.getBookingChatContext(user, bookingId);
     if (!booking)
-        throw ApiErrors.notFound('BOOKING_NOT_FOUND');
+        throw ApiError_1.ApiErrors.notFound('BOOKING_NOT_FOUND');
     if (!member)
-        throw ApiErrors.forbidden('YOU_ARE_NOT_A_MEMBER_OF_THIS_BOOKING_CHAT');
-    if (booking.status !== BOOKING_STATUS.CONFIRMED) {
-        throw ApiErrors.forbidden('BOOKING_CHAT_REQUIRES_A_CONFIRMED_BOOKING');
+        throw ApiError_1.ApiErrors.forbidden('YOU_ARE_NOT_A_MEMBER_OF_THIS_BOOKING_CHAT');
+    if (booking.status !== constants_1.BOOKING_STATUS.CONFIRMED) {
+        throw ApiError_1.ApiErrors.forbidden('BOOKING_CHAT_REQUIRES_A_CONFIRMED_BOOKING');
     }
-    if (!trip || [TRIP_STATUS.COMPLETED, TRIP_STATUS.CANCELLED].includes(trip.status)) {
-        throw ApiErrors.forbidden('BOOKING_CHAT_IS_CLOSED_BECAUSE_THE_TRIP_IS_COMPLETED_OR');
+    if (!trip || [constants_1.TRIP_STATUS.COMPLETED, constants_1.TRIP_STATUS.CANCELLED].includes(trip.status)) {
+        throw ApiError_1.ApiErrors.forbidden('BOOKING_CHAT_IS_CLOSED_BECAUSE_THE_TRIP_IS_COMPLETED_OR');
     }
     return { booking, trip };
 }
@@ -65,14 +77,14 @@ async function assertBookingChatOpen(user, bookingId) {
 async function sendBookingMessage(user, payload) {
     const { bookingId, message } = payload || {};
     if (!bookingId)
-        throw ApiErrors.validation('BOOKING_ID_IS_REQUIRED_FOR_BOOKING_CHAT');
+        throw ApiError_1.ApiErrors.validation('BOOKING_ID_IS_REQUIRED_FOR_BOOKING_CHAT');
     if (!message || !String(message).trim())
-        throw ApiErrors.validation('MESSAGE_IS_REQUIRED');
+        throw ApiError_1.ApiErrors.validation('MESSAGE_IS_REQUIRED');
     await assertBookingChatOpen(user, bookingId);
-    const clean = sanitizeMessage(message);
+    const clean = (0, sanitize_1.sanitizeMessage)(message);
     if (!clean)
-        throw ApiErrors.validation('MESSAGE_IS_EMPTY_AFTER_SANITIZATION');
-    const created = await Message.create({
+        throw ApiError_1.ApiErrors.validation('MESSAGE_IS_EMPTY_AFTER_SANITIZATION');
+    const created = await Models_1.Message.create({
         senderId: user.id,
         bookingId,
         message: clean,
@@ -90,9 +102,9 @@ async function sendBookingMessage(user, payload) {
         created_at: row.createdat ? row.createdat.toISOString() : null,
         timestamp: Date.now(),
     };
-    realtimeService.emitToRoom(`booking:${bookingId}`, 'chat:receive', out);
-    realtimeMetrics.recordEvent('chat:receive');
-    realtimeMetrics.recordDelivery();
+    realtimeService_1.default.emitToRoom(`booking:${bookingId}`, 'chat:receive', out);
+    realtimeMetrics_1.default.recordEvent('chat:receive');
+    realtimeMetrics_1.default.recordDelivery();
     return { id: row.id, created_at: out.created_at };
 }
 /**
@@ -103,16 +115,16 @@ async function sendBookingMessage(user, payload) {
 async function sendSupportMessage(user, payload) {
     const { supportTicketId, message } = payload || {};
     if (!supportTicketId)
-        throw ApiErrors.validation('SUPPORT_TICKET_ID_IS_REQUIRED_FOR_SUPPORT_CHAT');
+        throw ApiError_1.ApiErrors.validation('SUPPORT_TICKET_ID_IS_REQUIRED_FOR_SUPPORT_CHAT');
     if (!message || !String(message).trim())
-        throw ApiErrors.validation('MESSAGE_IS_REQUIRED');
-    const member = await realtimeService.isTicketMember(user, supportTicketId);
+        throw ApiError_1.ApiErrors.validation('MESSAGE_IS_REQUIRED');
+    const member = await realtimeService_1.default.isTicketMember(user, supportTicketId);
     if (!member)
-        throw ApiErrors.forbidden('YOU_ARE_NOT_A_MEMBER_OF_THIS_SUPPORT_TICKET');
-    const clean = sanitizeMessage(message);
+        throw ApiError_1.ApiErrors.forbidden('YOU_ARE_NOT_A_MEMBER_OF_THIS_SUPPORT_TICKET');
+    const clean = (0, sanitize_1.sanitizeMessage)(message);
     if (!clean)
-        throw ApiErrors.validation('MESSAGE_IS_EMPTY_AFTER_SANITIZATION');
-    const created = await Message.create({
+        throw ApiError_1.ApiErrors.validation('MESSAGE_IS_EMPTY_AFTER_SANITIZATION');
+    const created = await Models_1.Message.create({
         senderId: user.id,
         supportTicketId,
         message: clean,
@@ -130,9 +142,9 @@ async function sendSupportMessage(user, payload) {
         created_at: row.createdat ? row.createdat.toISOString() : null,
         timestamp: Date.now(),
     };
-    realtimeService.emitToRoom(`support:${supportTicketId}`, 'chat:receive', out);
-    realtimeMetrics.recordEvent('chat:receive');
-    realtimeMetrics.recordDelivery();
+    realtimeService_1.default.emitToRoom(`support:${supportTicketId}`, 'chat:receive', out);
+    realtimeMetrics_1.default.recordEvent('chat:receive');
+    realtimeMetrics_1.default.recordDelivery();
     return { id: row.id, created_at: out.created_at };
 }
 /**
@@ -144,11 +156,11 @@ async function markRead(user, payload) {
     const { messageId, bookingId, supportTicketId } = payload || {};
     const readAt = new Date();
     if (messageId) {
-        const message = await Message.findByPk(messageId);
+        const message = await Models_1.Message.findByPk(messageId);
         if (!message)
-            throw ApiErrors.notFound('MESSAGE_NOT_FOUND');
+            throw ApiError_1.ApiErrors.notFound('MESSAGE_NOT_FOUND');
         if (message.senderId === user.id) {
-            throw ApiErrors.forbidden('YOU_CANNOT_MARK_YOUR_OWN_MESSAGE_AS_READ');
+            throw ApiError_1.ApiErrors.forbidden('YOU_CANNOT_MARK_YOUR_OWN_MESSAGE_AS_READ');
         }
         let room;
         if (message.bookingId) {
@@ -156,16 +168,16 @@ async function markRead(user, payload) {
             room = `booking:${message.bookingId}`;
         }
         else if (message.supportTicketId) {
-            const member = await realtimeService.isTicketMember(user, message.supportTicketId);
+            const member = await realtimeService_1.default.isTicketMember(user, message.supportTicketId);
             if (!member)
-                throw ApiErrors.forbidden('YOU_ARE_NOT_A_MEMBER_OF_THIS_CONVERSATION');
+                throw ApiError_1.ApiErrors.forbidden('YOU_ARE_NOT_A_MEMBER_OF_THIS_CONVERSATION');
             room = `support:${message.supportTicketId}`;
         }
         else {
-            throw ApiErrors.notFound('MESSAGE_NOT_FOUND');
+            throw ApiError_1.ApiErrors.notFound('MESSAGE_NOT_FOUND');
         }
         await message.update({ isRead: true, readAt });
-        realtimeService.emitToRoom(room, 'chat:read_ack', {
+        realtimeService_1.default.emitToRoom(room, 'chat:read_ack', {
             message_id: message.id,
             booking_id: message.bookingId,
             support_ticket_id: message.supportTicketId,
@@ -173,13 +185,13 @@ async function markRead(user, payload) {
             read_at: readAt.toISOString(),
             timestamp: Date.now(),
         });
-        realtimeMetrics.recordEvent('chat:read_ack');
+        realtimeMetrics_1.default.recordEvent('chat:read_ack');
         return { message_id: message.id };
     }
     if (bookingId) {
         await assertBookingChatOpen(user, bookingId);
-        await Message.update({ isRead: true, readAt }, { where: { bookingId, senderId: { [Op.ne]: user.id }, isRead: false } });
-        realtimeService.emitToRoom(`booking:${bookingId}`, 'chat:read_ack', {
+        await Models_1.Message.update({ isRead: true, readAt }, { where: { bookingId, senderId: { [sequelize_1.Op.ne]: user.id }, isRead: false } });
+        realtimeService_1.default.emitToRoom(`booking:${bookingId}`, 'chat:read_ack', {
             message_id: null,
             booking_id: bookingId,
             support_ticket_id: null,
@@ -187,15 +199,15 @@ async function markRead(user, payload) {
             read_at: readAt.toISOString(),
             timestamp: Date.now(),
         });
-        realtimeMetrics.recordEvent('chat:read_ack');
+        realtimeMetrics_1.default.recordEvent('chat:read_ack');
         return { booking_id: bookingId };
     }
     if (supportTicketId) {
-        const member = await realtimeService.isTicketMember(user, supportTicketId);
+        const member = await realtimeService_1.default.isTicketMember(user, supportTicketId);
         if (!member)
-            throw ApiErrors.forbidden('YOU_ARE_NOT_A_MEMBER_OF_THIS_SUPPORT_TICKET');
-        await Message.update({ isRead: true, readAt }, { where: { supportTicketId, senderId: { [Op.ne]: user.id }, isRead: false } });
-        realtimeService.emitToRoom(`support:${supportTicketId}`, 'chat:read_ack', {
+            throw ApiError_1.ApiErrors.forbidden('YOU_ARE_NOT_A_MEMBER_OF_THIS_SUPPORT_TICKET');
+        await Models_1.Message.update({ isRead: true, readAt }, { where: { supportTicketId, senderId: { [sequelize_1.Op.ne]: user.id }, isRead: false } });
+        realtimeService_1.default.emitToRoom(`support:${supportTicketId}`, 'chat:read_ack', {
             message_id: null,
             booking_id: null,
             support_ticket_id: supportTicketId,
@@ -203,10 +215,10 @@ async function markRead(user, payload) {
             read_at: readAt.toISOString(),
             timestamp: Date.now(),
         });
-        realtimeMetrics.recordEvent('chat:read_ack');
+        realtimeMetrics_1.default.recordEvent('chat:read_ack');
         return { support_ticket_id: supportTicketId };
     }
-    throw ApiErrors.validation('PROVIDE_MESSAGE_ID_BOOKING_ID_OR_SUPPORT_TICKET_ID');
+    throw ApiError_1.ApiErrors.validation('PROVIDE_MESSAGE_ID_BOOKING_ID_OR_SUPPORT_TICKET_ID');
 }
 /**
  * Paginated booking chat history (REST + offline retrieval). Cursor via
@@ -215,57 +227,57 @@ async function markRead(user, payload) {
  */
 async function listBookingMessages(user, { bookingId, page, limit, beforeId } = {}) {
     if (!bookingId)
-        throw ApiErrors.validation('BOOKING_ID_IS_REQUIRED');
-    const { member, booking } = await realtimeService.getBookingChatContext(user, bookingId);
+        throw ApiError_1.ApiErrors.validation('BOOKING_ID_IS_REQUIRED');
+    const { member, booking } = await realtimeService_1.default.getBookingChatContext(user, bookingId);
     if (!booking)
-        throw ApiErrors.notFound('BOOKING_NOT_FOUND');
+        throw ApiError_1.ApiErrors.notFound('BOOKING_NOT_FOUND');
     if (!member)
-        throw ApiErrors.forbidden('YOU_ARE_NOT_A_MEMBER_OF_THIS_BOOKING_CHAT');
-    const { page: p, limit: l, offset } = parsePagination({ page, limit });
+        throw ApiError_1.ApiErrors.forbidden('YOU_ARE_NOT_A_MEMBER_OF_THIS_BOOKING_CHAT');
+    const { page: p, limit: l, offset } = (0, pagination_1.parsePagination)({ page, limit });
     const where = { bookingId };
     if (beforeId) {
-        const before = await Message.findByPk(beforeId, { attributes: ['id', 'bookingId', 'createdat'] });
+        const before = await Models_1.Message.findByPk(beforeId, { attributes: ['id', 'bookingId', 'createdat'] });
         if (!before || before.bookingId !== bookingId)
-            throw ApiErrors.badRequest('INVALID_BEFORE_ID');
-        where.createdat = { [Op.lt]: before.createdat };
+            throw ApiError_1.ApiErrors.badRequest('INVALID_BEFORE_ID');
+        where.createdat = { [sequelize_1.Op.lt]: before.createdat };
     }
-    const { rows, count } = await Message.findAndCountAll({
+    const { rows, count } = await Models_1.Message.findAndCountAll({
         where,
-        include: [{ model: User, as: 'sender', attributes: ['id', 'fullName'] }],
+        include: [{ model: Models_1.User, as: 'sender', attributes: ['id', 'fullName'] }],
         order: [['createdat', 'DESC']],
         offset,
         limit: l,
     });
-    return { data: rows.map(serialize), pagination: buildPagination(count, p, l) };
+    return { data: rows.map(serialize), pagination: (0, pagination_1.buildPagination)(count, p, l) };
 }
 /**
  * Paginated support ticket chat history.
  */
 async function listSupportMessages(user, { supportTicketId, page, limit, beforeId } = {}) {
     if (!supportTicketId)
-        throw ApiErrors.validation('SUPPORT_TICKET_ID_IS_REQUIRED');
-    const member = await realtimeService.isTicketMember(user, supportTicketId);
+        throw ApiError_1.ApiErrors.validation('SUPPORT_TICKET_ID_IS_REQUIRED');
+    const member = await realtimeService_1.default.isTicketMember(user, supportTicketId);
     if (!member)
-        throw ApiErrors.forbidden('YOU_ARE_NOT_A_MEMBER_OF_THIS_SUPPORT_TICKET');
-    const { page: p, limit: l, offset } = parsePagination({ page, limit });
+        throw ApiError_1.ApiErrors.forbidden('YOU_ARE_NOT_A_MEMBER_OF_THIS_SUPPORT_TICKET');
+    const { page: p, limit: l, offset } = (0, pagination_1.parsePagination)({ page, limit });
     const where = { supportTicketId };
     if (beforeId) {
-        const before = await Message.findByPk(beforeId, {
+        const before = await Models_1.Message.findByPk(beforeId, {
             attributes: ['id', 'supportTicketId', 'createdat'],
         });
         if (!before || before.supportTicketId !== supportTicketId) {
-            throw ApiErrors.badRequest('INVALID_BEFORE_ID');
+            throw ApiError_1.ApiErrors.badRequest('INVALID_BEFORE_ID');
         }
-        where.createdat = { [Op.lt]: before.createdat };
+        where.createdat = { [sequelize_1.Op.lt]: before.createdat };
     }
-    const { rows, count } = await Message.findAndCountAll({
+    const { rows, count } = await Models_1.Message.findAndCountAll({
         where,
-        include: [{ model: User, as: 'sender', attributes: ['id', 'fullName'] }],
+        include: [{ model: Models_1.User, as: 'sender', attributes: ['id', 'fullName'] }],
         order: [['createdat', 'DESC']],
         offset,
         limit: l,
     });
-    return { data: rows.map(serialize), pagination: buildPagination(count, p, l) };
+    return { data: rows.map(serialize), pagination: (0, pagination_1.buildPagination)(count, p, l) };
 }
 module.exports = {
     sendBookingMessage,
@@ -276,4 +288,5 @@ module.exports = {
     assertBookingChatOpen,
     serialize,
 };
+exports.default = module.exports;
 //# sourceMappingURL=messageService.js.map

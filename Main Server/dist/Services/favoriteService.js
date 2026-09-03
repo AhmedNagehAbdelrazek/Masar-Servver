@@ -1,8 +1,19 @@
 "use strict";
-const { FavoriteDriver, FavoriteRoute, User } = require('../Models');
-const { ApiErrors } = require('../utils/ApiError');
-const { parsePagination, buildPagination } = require('../utils/pagination');
-const auditService = require('./auditService');
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.addFavoriteDriver = addFavoriteDriver;
+exports.removeFavoriteDriver = removeFavoriteDriver;
+exports.listFavoriteDrivers = listFavoriteDrivers;
+exports.addFavoriteRoute = addFavoriteRoute;
+exports.removeFavoriteRoute = removeFavoriteRoute;
+exports.listFavoriteRoutes = listFavoriteRoutes;
+// @ts-nocheck
+const Models_1 = require("../Models");
+const ApiError_1 = require("../utils/ApiError");
+const pagination_1 = require("../utils/pagination");
+const auditService_1 = __importDefault(require("./auditService"));
 function serializeFavoriteDriver(favorite) {
     return {
         id: favorite.id,
@@ -23,26 +34,26 @@ function serializeFavoriteRoute(route) {
     };
 }
 async function assertDriverExists(driverId) {
-    const driver = await User.findByPk(driverId);
+    const driver = await Models_1.User.findByPk(driverId);
     if (!driver || driver.role !== 'driver') {
-        throw ApiErrors.notFound('DRIVER_NOT_FOUND');
+        throw ApiError_1.ApiErrors.notFound('DRIVER_NOT_FOUND');
     }
     return driver;
 }
 async function addFavoriteDriver(passengerId, driverId) {
     if (driverId === passengerId) {
-        throw ApiErrors.validation('YOU_CANNOT_ADD_YOURSELF_AS_A_FAVORITE_DRIVER');
+        throw ApiError_1.ApiErrors.validation('YOU_CANNOT_ADD_YOURSELF_AS_A_FAVORITE_DRIVER');
     }
     await assertDriverExists(driverId);
-    const [favorite, created] = await FavoriteDriver.findOrCreate({
+    const [favorite, created] = await Models_1.FavoriteDriver.findOrCreate({
         where: { passengerId, driverId },
         defaults: { passengerId, driverId },
     });
-    const row = await FavoriteDriver.findByPk(favorite.id, {
-        include: [{ model: User, as: 'driver', attributes: ['id', 'fullName'] }],
+    const row = await Models_1.FavoriteDriver.findByPk(favorite.id, {
+        include: [{ model: Models_1.User, as: 'driver', attributes: ['id', 'fullName'] }],
     });
     if (created) {
-        auditService.track({
+        auditService_1.default.track({
             action: 'favorite_driver.added',
             resourceType: 'favorite_driver',
             resourceId: favorite.id,
@@ -54,12 +65,12 @@ async function addFavoriteDriver(passengerId, driverId) {
     return { favorite_driver: serializeFavoriteDriver(row), created };
 }
 async function removeFavoriteDriver(passengerId, driverId) {
-    const deleted = await FavoriteDriver.destroy({
+    const deleted = await Models_1.FavoriteDriver.destroy({
         where: { passengerId, driverId },
     });
     if (!deleted)
-        throw ApiErrors.notFound('FAVORITE_DRIVER_NOT_FOUND');
-    auditService.track({
+        throw ApiError_1.ApiErrors.notFound('FAVORITE_DRIVER_NOT_FOUND');
+    auditService_1.default.track({
         action: 'favorite_driver.removed',
         resourceType: 'favorite_driver',
         resourceId: driverId,
@@ -69,21 +80,21 @@ async function removeFavoriteDriver(passengerId, driverId) {
     return { message: 'FAVORITE_DRIVER_REMOVED' };
 }
 async function listFavoriteDrivers(passengerId, filters = {}) {
-    const { page, limit, offset } = parsePagination(filters);
-    const { rows, count } = await FavoriteDriver.findAndCountAll({
+    const { page, limit, offset } = (0, pagination_1.parsePagination)(filters);
+    const { rows, count } = await Models_1.FavoriteDriver.findAndCountAll({
         where: { passengerId },
-        include: [{ model: User, as: 'driver', attributes: ['id', 'fullName'] }],
+        include: [{ model: Models_1.User, as: 'driver', attributes: ['id', 'fullName'] }],
         order: [['createdat', 'DESC']],
         offset,
         limit,
     });
     return {
         data: rows.map(serializeFavoriteDriver),
-        pagination: buildPagination(count, page, limit),
+        pagination: (0, pagination_1.buildPagination)(count, page, limit),
     };
 }
 async function addFavoriteRoute(passengerId, payload) {
-    const [route, created] = await FavoriteRoute.findOrCreate({
+    const [route, created] = await Models_1.FavoriteRoute.findOrCreate({
         where: {
             passengerId,
             originCity: payload.origin_city,
@@ -101,7 +112,7 @@ async function addFavoriteRoute(passengerId, payload) {
         await route.save();
     }
     if (created) {
-        auditService.track({
+        auditService_1.default.track({
             action: 'favorite_route.added',
             resourceType: 'favorite_route',
             resourceId: route.id,
@@ -116,7 +127,7 @@ async function addFavoriteRoute(passengerId, payload) {
     return serializeFavoriteRoute(route);
 }
 async function removeFavoriteRoute(passengerId, originCity, destinationCity) {
-    const deleted = await FavoriteRoute.destroy({
+    const deleted = await Models_1.FavoriteRoute.destroy({
         where: {
             passengerId,
             originCity,
@@ -124,8 +135,8 @@ async function removeFavoriteRoute(passengerId, originCity, destinationCity) {
         },
     });
     if (!deleted)
-        throw ApiErrors.notFound('FAVORITE_ROUTE_NOT_FOUND');
-    auditService.track({
+        throw ApiError_1.ApiErrors.notFound('FAVORITE_ROUTE_NOT_FOUND');
+    auditService_1.default.track({
         action: 'favorite_route.removed',
         resourceType: 'favorite_route',
         resourceId: `${originCity}->${destinationCity}`,
@@ -135,7 +146,7 @@ async function removeFavoriteRoute(passengerId, originCity, destinationCity) {
     return { message: 'FAVORITE_ROUTE_REMOVED' };
 }
 async function listFavoriteRoutes(passengerId) {
-    const routes = await FavoriteRoute.findAll({
+    const routes = await Models_1.FavoriteRoute.findAll({
         where: { passengerId },
         order: [['createdat', 'DESC']],
     });
@@ -149,4 +160,5 @@ module.exports = {
     removeFavoriteRoute,
     listFavoriteRoutes,
 };
+exports.default = module.exports;
 //# sourceMappingURL=favoriteService.js.map

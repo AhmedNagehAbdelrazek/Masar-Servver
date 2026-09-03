@@ -68,7 +68,6 @@ async function initDatabase({ runMigrations: doRun = true } = {}) {
         return sequelize;
     }
     if (doRun) {
-        // eslint-disable-next-line @typescript-eslint/no-require-imports
         const { runMigrations } = require('../migrations');
         await runMigrations({ redo: true });
     }
@@ -77,7 +76,6 @@ async function initDatabase({ runMigrations: doRun = true } = {}) {
 }
 exports.default = sequelize;
 // CommonJS compatibility: `require('./config/database')` should return the Sequelize instance with initDatabase attached
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 sequelize.initDatabase = initDatabase;
 // @ts-ignore - CommonJS interop
 if (typeof module !== 'undefined' && module.exports) {

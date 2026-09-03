@@ -1,34 +1,40 @@
 "use strict";
-const { Model, DataTypes } = require('sequelize');
-const sequelize = require('../config/database');
-class NotificationSetting extends Model {
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.NotificationSetting = void 0;
+const sequelize_1 = require("sequelize");
+const database_1 = __importDefault(require("../config/database"));
+class NotificationSetting extends sequelize_1.Model {
 }
+exports.NotificationSetting = NotificationSetting;
 NotificationSetting.init({
     id: {
-        type: DataTypes.UUID,
-        defaultValue: DataTypes.UUIDV4,
+        type: sequelize_1.DataTypes.UUID,
+        defaultValue: sequelize_1.DataTypes.UUIDV4,
         primaryKey: true,
     },
     userId: {
-        type: DataTypes.UUID,
+        type: sequelize_1.DataTypes.UUID,
         allowNull: false,
     },
     notificationType: {
-        type: DataTypes.STRING(30),
+        type: sequelize_1.DataTypes.STRING(30),
         allowNull: false,
     },
     enabledInApp: {
-        type: DataTypes.BOOLEAN,
+        type: sequelize_1.DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: true,
     },
     enabledPush: {
-        type: DataTypes.BOOLEAN,
+        type: sequelize_1.DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: true,
     },
 }, {
-    sequelize,
+    sequelize: database_1.default,
     modelName: 'NotificationSetting',
     tableName: 'notification_settings',
     underscored: true,
@@ -46,5 +52,7 @@ NotificationSetting.init({
         },
     ],
 });
+exports.default = NotificationSetting;
 module.exports = NotificationSetting;
+Object.assign(module.exports, { default: NotificationSetting });
 //# sourceMappingURL=NotificationSetting.js.map

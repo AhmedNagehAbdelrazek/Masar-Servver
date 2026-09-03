@@ -4,7 +4,9 @@
  * Each entry maps to its own key name so validator call sites can use
  * V.SOME_KEY instead of raw strings. Regenerate when adding entries.
  */
-module.exports = {
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.VALIDATION_KEYS = void 0;
+exports.VALIDATION_KEYS = {
     ACCOUNT_NUMBER_IS_REQUIRED: 'ACCOUNT_NUMBER_IS_REQUIRED',
     ACCOUNT_NUMBER_IS_REQUIRED_2: 'ACCOUNT_NUMBER_IS_REQUIRED_2',
     ACCOUNT_NUMBER_MUST_BE_AT_MOST_50_CHARACTERS: 'ACCOUNT_NUMBER_MUST_BE_AT_MOST_50_CHARACTERS',
@@ -330,4 +332,15 @@ module.exports = {
     WAYPOINTS_MUST_BE_AN_ARRAY: 'WAYPOINTS_MUST_BE_AN_ARRAY',
     YOU_CANNOT_FILE_A_COMPLAINT_AGAINST_YOURSELF: 'YOU_CANNOT_FILE_A_COMPLAINT_AGAINST_YOURSELF',
 };
+exports.default = exports.VALIDATION_KEYS;
+// CommonJS interop
+// @ts-ignore
+if (typeof module !== 'undefined' && module.exports) {
+    // @ts-ignore
+    module.exports = exports.VALIDATION_KEYS;
+    // @ts-ignore
+    Object.assign(module.exports, exports.VALIDATION_KEYS);
+    // @ts-ignore
+    module.exports.default = exports.VALIDATION_KEYS;
+}
 //# sourceMappingURL=validation-keys.js.map

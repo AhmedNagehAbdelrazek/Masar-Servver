@@ -1,13 +1,21 @@
 "use strict";
-const { NotificationSetting } = require('../Models');
-const { NOTIFICATION_TYPE, NOTIFICATION_TYPE_LABELS } = require('../config/constants');
-const ALL_TYPES = Object.values(NOTIFICATION_TYPE);
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.getSettings = getSettings;
+exports.updateSettings = updateSettings;
+exports.initializeDefaults = initializeDefaults;
+exports.getGroupedSettings = getGroupedSettings;
+exports.updateGroupedSettings = updateGroupedSettings;
+// @ts-nocheck
+const Models_1 = require("../Models");
+const constants_1 = require("../config/constants");
+const constants_2 = require("../config/constants");
+const ALL_TYPES = Object.values(constants_1.NOTIFICATION_TYPE);
 /**
  * Get notification settings for a user.
  * Falls back to defaults (all enabled) if no records exist.
  */
 async function getSettings(userId) {
-    const rows = await NotificationSetting.findAll({
+    const rows = await Models_1.NotificationSetting.findAll({
         where: { userId },
         attributes: ['notificationType', 'enabledInApp', 'enabledPush'],
     });
@@ -38,7 +46,7 @@ async function getSettings(userId) {
 async function updateSettings(userId, settings) {
     let count = 0;
     for (const s of settings) {
-        const existing = await NotificationSetting.findOne({
+        const existing = await Models_1.NotificationSetting.findOne({
             where: { userId, notificationType: s.type },
         });
         if (existing) {
@@ -50,7 +58,7 @@ async function updateSettings(userId, settings) {
             await existing.update(update);
         }
         else {
-            await NotificationSetting.create({
+            await Models_1.NotificationSetting.create({
                 userId,
                 notificationType: s.type,
                 enabledInApp: s.enabled_in_app ?? true,
@@ -72,12 +80,11 @@ async function initializeDefaults(userId) {
         enabledInApp: true,
         enabledPush: true,
     }));
-    await NotificationSetting.bulkCreate(records, { ignoreDuplicates: true });
+    await Models_1.NotificationSetting.bulkCreate(records, { ignoreDuplicates: true });
 }
 // ===== Grouped settings screen (spec 010, contracts §4) =====
-const { NOTIFICATION_CATEGORIES, NOTIFICATION_GROUP_LABELS } = require('../config/constants');
 async function buildStoredMap(userId) {
-    const rows = await NotificationSetting.findAll({
+    const rows = await Models_1.NotificationSetting.findAll({
         where: { userId },
         attributes: ['notificationType', 'enabledInApp', 'enabledPush'],
     });
@@ -92,7 +99,7 @@ async function buildStoredMap(userId) {
 }
 function buildGroupedView(map) {
     let allEnabled = true;
-    const categories = Object.entries(NOTIFICATION_CATEGORIES).map(([key, category]) => ({
+    const categories = Object.entries(constants_2.NOTIFICATION_CATEGORIES).map(([key, category]) => ({
         key,
         label: category.label,
         types: category.types.map((type) => {
@@ -102,8 +109,8 @@ function buildGroupedView(map) {
             return {
                 type,
                 label: {
-                    ar: NOTIFICATION_GROUP_LABELS.ar[type] || NOTIFICATION_TYPE_LABELS.ar[type] || type,
-                    en: NOTIFICATION_GROUP_LABELS.en[type] || NOTIFICATION_TYPE_LABELS.en[type] || type,
+                    ar: constants_2.NOTIFICATION_GROUP_LABELS.ar[type] || constants_1.NOTIFICATION_TYPE_LABELS.ar[type] || type,
+                    en: constants_2.NOTIFICATION_GROUP_LABELS.en[type] || constants_1.NOTIFICATION_TYPE_LABELS.en[type] || type,
                 },
                 enabled_in_app: entry.enabled_in_app,
                 enabled_push: entry.enabled_push,
@@ -118,7 +125,7 @@ async function getGroupedSettings(userId) {
     return buildGroupedView(map);
 }
 async function upsertType(userId, type, { inApp, push } = {}) {
-    const existing = await NotificationSetting.findOne({
+    const existing = await Models_1.NotificationSetting.findOne({
         where: { userId, notificationType: type },
     });
     if (existing) {
@@ -131,7 +138,7 @@ async function upsertType(userId, type, { inApp, push } = {}) {
             await existing.update(update);
     }
     else {
-        await NotificationSetting.create({
+        await Models_1.NotificationSetting.create({
             userId,
             notificationType: type,
             enabledInApp: inApp ?? true,
@@ -168,4 +175,5 @@ async function updateGroupedSettings(userId, payload = {}) {
     return getGroupedSettings(userId);
 }
 module.exports = { getSettings, updateSettings, initializeDefaults, getGroupedSettings, updateGroupedSettings };
+exports.default = module.exports;
 //# sourceMappingURL=notificationSettingService.js.map

@@ -1,61 +1,67 @@
 "use strict";
-const { Model, DataTypes } = require('sequelize');
-const sequelize = require('../config/database');
-const { STOP_TYPE } = require('../config/constants');
-class TripStop extends Model {
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.TripStop = void 0;
+const sequelize_1 = require("sequelize");
+const database_1 = __importDefault(require("../config/database"));
+const constants_1 = require("../config/constants");
+class TripStop extends sequelize_1.Model {
 }
+exports.TripStop = TripStop;
 TripStop.init({
     id: {
-        type: DataTypes.UUID,
-        defaultValue: DataTypes.UUIDV4,
+        type: sequelize_1.DataTypes.UUID,
+        defaultValue: sequelize_1.DataTypes.UUIDV4,
         primaryKey: true,
     },
     tripId: {
-        type: DataTypes.UUID,
+        type: sequelize_1.DataTypes.UUID,
         allowNull: false,
     },
     stopOrder: {
-        type: DataTypes.SMALLINT,
+        type: sequelize_1.DataTypes.SMALLINT,
         allowNull: false,
     },
     stopName: {
-        type: DataTypes.STRING(120),
+        type: sequelize_1.DataTypes.STRING(120),
         allowNull: true,
     },
     city: {
-        type: DataTypes.STRING(80),
+        type: sequelize_1.DataTypes.STRING(80),
         allowNull: true,
     },
     address: {
-        type: DataTypes.STRING(255),
+        type: sequelize_1.DataTypes.STRING(255),
         allowNull: true,
     },
     lat: {
-        type: DataTypes.NUMERIC(10, 8),
+        type: sequelize_1.DataTypes.NUMERIC(10, 8),
         allowNull: true,
     },
     lng: {
-        type: DataTypes.NUMERIC(11, 8),
+        type: sequelize_1.DataTypes.NUMERIC(11, 8),
         allowNull: true,
     },
     stopLat: {
-        type: DataTypes.NUMERIC(10, 8),
+        type: sequelize_1.DataTypes.NUMERIC(10, 8),
         allowNull: true,
     },
     stopLng: {
-        type: DataTypes.NUMERIC(11, 8),
+        type: sequelize_1.DataTypes.NUMERIC(11, 8),
         allowNull: true,
     },
     stopType: {
-        type: DataTypes.ENUM(Object.values(STOP_TYPE)),
+        type: sequelize_1.DataTypes.ENUM(...Object.values(constants_1.STOP_TYPE)),
         allowNull: true,
     },
     estimatedArrival: {
-        type: DataTypes.DATE,
+        type: sequelize_1.DataTypes.DATE,
         allowNull: true,
     },
 }, {
-    sequelize,
+    sequelize: database_1.default,
     modelName: 'TripStop',
     tableName: 'trip_stops',
     underscored: true,
@@ -73,5 +79,7 @@ TripStop.init({
         },
     ],
 });
+exports.default = TripStop;
 module.exports = TripStop;
+Object.assign(module.exports, { default: TripStop });
 //# sourceMappingURL=TripStop.js.map

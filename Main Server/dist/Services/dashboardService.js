@@ -1,60 +1,67 @@
 "use strict";
-const { Op } = require('sequelize');
-const sequelize = require('../config/database');
-const { Trip, TripSeat, Booking, Rating, User } = require('../Models');
-const { TRIP_STATUS } = require('../config/constants');
-const { REDIS_KEYS, CACHE_TTL } = require('../utils/redisKeys');
-const { getKey, setKey } = require('../config/redis');
-const { ApiErrors } = require('../utils/ApiError');
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.invalidateDashboardCache = exports.getDashboard = void 0;
+// @ts-nocheck
+const sequelize_1 = require("sequelize");
+const database_1 = __importDefault(require("../config/database"));
+const Models_1 = require("../Models");
+const constants_1 = require("../config/constants");
+const redisKeys_1 = require("../utils/redisKeys");
+const redis_1 = require("../config/redis");
+const ApiError_1 = require("../utils/ApiError");
+const redis_2 = require("../config/redis");
 /**
  * Get driver dashboard data with caching
  */
 const getDashboard = async (driverId) => {
     // Check cache first
-    const cacheKey = REDIS_KEYS.DRIVER_DASHBOARD(driverId);
-    const cached = await getKey(cacheKey);
+    const cacheKey = redisKeys_1.REDIS_KEYS.DRIVER_DASHBOARD(driverId);
+    const cached = await (0, redis_1.getKey)(cacheKey);
     if (cached) {
         return JSON.parse(cached);
     }
     // Fetch fresh data
-    const driver = await User.findByPk(driverId);
+    const driver = await Models_1.User.findByPk(driverId);
     if (!driver)
-        throw ApiErrors.notFound('USER_NOT_FOUND');
+        throw ApiError_1.ApiErrors.notFound('USER_NOT_FOUND');
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
     // Today's trips
-    const todayTrips = await Trip.findAll({
+    const todayTrips = await Models_1.Trip.findAll({
         where: {
             driverId,
-            departureTime: { [Op.and]: [{ [Op.gte]: today }, { [Op.lt]: tomorrow }] },
-            status: { [Op.in]: [TRIP_STATUS.PUBLISHED, TRIP_STATUS.IN_PROGRESS] },
+            departureTime: { [sequelize_1.Op.and]: [{ [sequelize_1.Op.gte]: today }, { [sequelize_1.Op.lt]: tomorrow }] },
+            status: { [sequelize_1.Op.in]: [constants_1.TRIP_STATUS.PUBLISHED, constants_1.TRIP_STATUS.IN_PROGRESS] },
         },
-        include: [{ model: TripSeat, as: 'seats' }],
+        include: [{ model: Models_1.TripSeat, as: 'seats' }],
         order: [['departure_time', 'ASC']],
     });
     // Upcoming trips (after today)
-    const upcomingTrips = await Trip.findAll({
+    const upcomingTrips = await Models_1.Trip.findAll({
         where: {
             driverId,
-            departureTime: { [Op.gte]: tomorrow },
-            status: TRIP_STATUS.PUBLISHED,
+            departureTime: { [sequelize_1.Op.gte]: tomorrow },
+            status: constants_1.TRIP_STATUS.PUBLISHED,
         },
-        include: [{ model: TripSeat, as: 'seats' }],
+        include: [{ model: Models_1.TripSeat, as: 'seats' }],
         order: [['departure_time', 'ASC']],
         limit: 10,
     });
     // Total completed trips
-    const totalCompleted = await Trip.count({
-        where: { driverId, status: TRIP_STATUS.COMPLETED },
+    const totalCompleted = await Models_1.Trip.count({
+        where: { driverId, status: constants_1.TRIP_STATUS.COMPLETED },
     });
     // Monthly earnings
     const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
-    const monthlyEarnings = await Booking.sum('agreedFare', {
+    const monthlyEarnings = await Models_1.Booking.sum('agreedFare', {
         include: [
             {
-                model: Trip,
+                model: Models_1.Trip,
                 as: 'trip',
                 where: { driverId },
                 attributes: [],
@@ -62,26 +69,26 @@ const getDashboard = async (driverId) => {
         ],
         where: {
             status: 'confirmed',
-            createdat: { [Op.gte]: monthStart },
+            createdat: { [sequelize_1.Op.gte]: monthStart },
         },
     });
     // Average rating
-    const ratingResult = await Rating.findOne({
-        attributes: [[sequelize.fn('AVG', sequelize.col('stars')), 'avgRating']],
+    const ratingResult = await Models_1.Rating.findOne({
+        attributes: [[database_1.default.fn('AVG', database_1.default.col('stars')), 'avgRating']],
         where: { rateeId: driverId },
     });
     const avgRating = ratingResult?.get('avgRating') ? parseFloat(ratingResult.get('avgRating')) : null;
     // Recent reservation history
-    const recentBookings = await Booking.findAll({
+    const recentBookings = await Models_1.Booking.findAll({
         include: [
             {
-                model: Trip,
+                model: Models_1.Trip,
                 as: 'trip',
                 where: { driverId },
                 attributes: ['id', 'originCity', 'destinationCity', 'departureTime'],
             },
             {
-                model: User,
+                model: Models_1.User,
                 as: 'passenger',
                 attributes: ['fullName'],
             },
@@ -149,18 +156,20 @@ const getDashboard = async (driverId) => {
         },
     };
     // Cache for 30 seconds
-    await setKey(cacheKey, JSON.stringify(dashboard), CACHE_TTL.DASHBOARD);
+    await (0, redis_1.setKey)(cacheKey, JSON.stringify(dashboard), redisKeys_1.CACHE_TTL.DASHBOARD);
     return dashboard;
 };
+exports.getDashboard = getDashboard;
 /**
  * Invalidate dashboard cache (call after trip/booking mutations)
  */
 const invalidateDashboardCache = async (driverId) => {
-    const { deleteKey } = require('../config/redis');
-    await deleteKey(REDIS_KEYS.DRIVER_DASHBOARD(driverId));
+    await (0, redis_2.deleteKey)(redisKeys_1.REDIS_KEYS.DRIVER_DASHBOARD(driverId));
 };
+exports.invalidateDashboardCache = invalidateDashboardCache;
 module.exports = {
     getDashboard,
     invalidateDashboardCache,
 };
+exports.default = module.exports;
 //# sourceMappingURL=dashboardService.js.map

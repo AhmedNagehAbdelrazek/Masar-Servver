@@ -1,6 +1,12 @@
 "use strict";
-const path = require('path');
-const crypto = require('crypto');
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+// @ts-nocheck
+const path_1 = __importDefault(require("path"));
+const crypto_1 = __importDefault(require("crypto"));
+const client_s3_1 = require("@aws-sdk/client-s3");
 class S3Uploader {
     constructor() {
         this.bucket = process.env.S3_BUCKET;
@@ -16,16 +22,15 @@ class S3Uploader {
         if (this._client)
             return this._client;
         try {
-            const { S3Client, PutObjectCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3');
-            this._client = new S3Client({
+            this._client = new client_s3_1.S3Client({
                 region: this.region,
                 credentials: {
                     accessKeyId: this.accessKeyId,
                     secretAccessKey: this.secretAccessKey,
                 },
             });
-            this._PutObjectCommand = PutObjectCommand;
-            this._DeleteObjectCommand = DeleteObjectCommand;
+            this._PutObjectCommand = client_s3_1.PutObjectCommand;
+            this._DeleteObjectCommand = client_s3_1.DeleteObjectCommand;
         }
         catch {
             throw new Error('Install @aws-sdk/client-s3 to use the S3 uploader: npm install @aws-sdk/client-s3');
@@ -33,8 +38,8 @@ class S3Uploader {
         return this._client;
     }
     async upload(buffer, { mimetype, originalname } = {}) {
-        const ext = path.extname(originalname || '') || '';
-        const key = `uploads/${Date.now()}-${crypto.randomBytes(8).toString('hex')}${ext}`;
+        const ext = path_1.default.extname(originalname || '') || '';
+        const key = `uploads/${Date.now()}-${crypto_1.default.randomBytes(8).toString('hex')}${ext}`;
         const client = await this._getClient();
         await client.send(new this._PutObjectCommand({
             Bucket: this.bucket,
@@ -56,4 +61,5 @@ class S3Uploader {
     }
 }
 module.exports = S3Uploader;
+exports.default = S3Uploader;
 //# sourceMappingURL=s3.js.map

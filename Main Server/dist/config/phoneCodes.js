@@ -1,5 +1,7 @@
 "use strict";
-const codes = [
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.codes = void 0;
+exports.codes = [
     {
         "name": "Andorra",
         "region": "Europe",
@@ -4618,5 +4620,13 @@ const codes = [
         "phoneLength": 9
     }
 ];
-module.exports = codes;
+exports.default = exports.codes;
+// CommonJS interop
+// @ts-ignore
+if (typeof module !== 'undefined' && module.exports) {
+    // @ts-ignore
+    module.exports = exports.codes;
+    // @ts-ignore
+    module.exports.default = exports.codes;
+}
 //# sourceMappingURL=phoneCodes.js.map

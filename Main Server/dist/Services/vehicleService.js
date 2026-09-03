@@ -1,9 +1,15 @@
 "use strict";
-const { Vehicle } = require('../Models');
-const { ApiErrors } = require('../utils/ApiError');
-const auditService = require('./auditService');
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.update = exports.listByDriver = void 0;
+// @ts-nocheck
+const Models_1 = require("../Models");
+const ApiError_1 = require("../utils/ApiError");
+const auditService_1 = __importDefault(require("./auditService"));
 const listByDriver = async (driverId) => {
-    const vehicles = await Vehicle.findAll({
+    const vehicles = await Models_1.Vehicle.findAll({
         where: { driver_id: driverId },
         order: [['createdat', 'DESC']],
     });
@@ -21,12 +27,13 @@ const listByDriver = async (driverId) => {
     }));
     return { vehicles: result };
 };
+exports.listByDriver = listByDriver;
 const update = async (driverId, vehicleId, payload) => {
-    const vehicle = await Vehicle.findByPk(vehicleId);
+    const vehicle = await Models_1.Vehicle.findByPk(vehicleId);
     if (!vehicle)
-        throw ApiErrors.notFound('VEHICLE_NOT_FOUND');
+        throw ApiError_1.ApiErrors.notFound('VEHICLE_NOT_FOUND');
     if (vehicle.driverId !== driverId)
-        throw ApiErrors.forbidden('YOU_CAN_ONLY_UPDATE_YOUR_OWN_VEHICLES');
+        throw ApiError_1.ApiErrors.forbidden('YOU_CAN_ONLY_UPDATE_YOUR_OWN_VEHICLES');
     const updates = {};
     if (payload.manufacturer !== undefined)
         updates.manufacturer = payload.manufacturer;
@@ -45,12 +52,12 @@ const update = async (driverId, vehicleId, payload) => {
     if (payload.seats !== undefined)
         updates.seats = payload.seats;
     if (updates.plateNumber !== undefined && updates.plateNumber !== vehicle.plateNumber) {
-        const existing = await Vehicle.findOne({ where: { plate_number: updates.plateNumber } });
+        const existing = await Models_1.Vehicle.findOne({ where: { plate_number: updates.plateNumber } });
         if (existing && existing.id !== vehicle.id)
-            throw ApiErrors.conflict('PLATE_NUMBER_ALREADY_IN_USE');
+            throw ApiError_1.ApiErrors.conflict('PLATE_NUMBER_ALREADY_IN_USE');
     }
     await vehicle.update(updates);
-    auditService.track({
+    auditService_1.default.track({
         action: 'vehicle.updated',
         resourceType: 'vehicle',
         resourceId: vehicle.id,
@@ -74,5 +81,7 @@ const update = async (driverId, vehicleId, payload) => {
         },
     };
 };
+exports.update = update;
 module.exports = { listByDriver, update };
+exports.default = module.exports;
 //# sourceMappingURL=vehicleService.js.map

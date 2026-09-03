@@ -1,10 +1,27 @@
 "use strict";
-const { Op } = require('sequelize');
-const sequelize = require('../config/database');
-const { DriverSubscription, SubscriptionPlan, User, Trip } = require('../Models');
-const { SUBSCRIPTION_STATUS, TRIP_STATUS } = require('../config/constants');
-const auditService = require('./auditService');
-const notificationService = require('./notificationService');
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.ACTIVE_SUBSCRIPTION_ORDER = void 0;
+exports.round = round;
+exports.creditOnApproval = creditOnApproval;
+exports.deductCommission = deductCommission;
+exports.expireSubscription = expireSubscription;
+exports.syncTripBlocking = syncTripBlocking;
+exports.blockDriverTrips = blockDriverTrips;
+exports.unblockDriverTrips = unblockDriverTrips;
+exports.getBalanceOverview = getBalanceOverview;
+exports.findCurrentSubscription = findCurrentSubscription;
+exports.getActiveSubscriptions = getActiveSubscriptions;
+exports.recomputeCachedBalance = recomputeCachedBalance;
+// @ts-nocheck
+const sequelize_1 = require("sequelize");
+const database_1 = __importDefault(require("../config/database"));
+const Models_1 = require("../Models");
+const constants_1 = require("../config/constants");
+const auditService_1 = __importDefault(require("./auditService"));
+const notificationService_1 = __importDefault(require("./notificationService"));
 /**
  * Plan queue activation ordering (T045):
  * 1. Free plan first (isFree DESC) — one-time plan activates before paid plans
@@ -13,10 +30,11 @@ const notificationService = require('./notificationService');
  * Used consistently for the "current active plan" lookup and FIFO deduction.
  */
 const ACTIVE_SUBSCRIPTION_ORDER = [
-    [{ model: SubscriptionPlan, as: 'plan' }, 'isFree', 'DESC'],
+    [{ model: Models_1.SubscriptionPlan, as: 'plan' }, 'isFree', 'DESC'],
     ['planPeriodDays', 'ASC'],
     ['createdat', 'ASC'],
 ];
+exports.ACTIVE_SUBSCRIPTION_ORDER = ACTIVE_SUBSCRIPTION_ORDER;
 /**
  * Single gateway for EVERY balance mutation (credit on approval, FIFO
  * commission deduction, expiry, debt). All mutations run inside a
@@ -31,7 +49,7 @@ function round(n) {
     return Math.round((Number(n) + Number.EPSILON) * 100) / 100;
 }
 function logMutation({ action, resourceType, resourceId, resourceLabel, actorId, actorType, payload }) {
-    auditService.track({
+    auditService_1.default.track({
         action,
         resourceType,
         resourceId,
@@ -42,7 +60,7 @@ function logMutation({ action, resourceType, resourceId, resourceLabel, actorId,
     });
 }
 async function getUserForUpdate(driverId, transaction) {
-    return User.findByPk(driverId, { transaction, lock: transaction.LOCK.UPDATE });
+    return Models_1.User.findByPk(driverId, { transaction, lock: transaction.LOCK.UPDATE });
 }
 /**
  * Current active plan (queue ordering). Returns null when the driver has no
@@ -51,13 +69,13 @@ async function getUserForUpdate(driverId, transaction) {
  */
 async function findCurrentSubscription(driverId, { transaction } = {}) {
     const now = new Date();
-    return DriverSubscription.findOne({
+    return Models_1.DriverSubscription.findOne({
         where: {
             driverId,
-            status: SUBSCRIPTION_STATUS.ACTIVE,
-            expiresAt: { [Op.gt]: now },
+            status: constants_1.SUBSCRIPTION_STATUS.ACTIVE,
+            expiresAt: { [sequelize_1.Op.gt]: now },
         },
-        include: [{ model: SubscriptionPlan, as: 'plan', attributes: ['isFree', 'freeOffer'] }],
+        include: [{ model: Models_1.SubscriptionPlan, as: 'plan', attributes: ['isFree', 'freeOffer'] }],
         order: ACTIVE_SUBSCRIPTION_ORDER,
         transaction,
     });
@@ -67,13 +85,13 @@ async function findCurrentSubscription(driverId, { transaction } = {}) {
  */
 async function getActiveSubscriptions(driverId, { transaction } = {}) {
     const now = new Date();
-    return DriverSubscription.findAll({
+    return Models_1.DriverSubscription.findAll({
         where: {
             driverId,
-            status: SUBSCRIPTION_STATUS.ACTIVE,
-            expiresAt: { [Op.gt]: now },
+            status: constants_1.SUBSCRIPTION_STATUS.ACTIVE,
+            expiresAt: { [sequelize_1.Op.gt]: now },
         },
-        include: [{ model: SubscriptionPlan, as: 'plan', attributes: ['isFree'] }],
+        include: [{ model: Models_1.SubscriptionPlan, as: 'plan', attributes: ['isFree'] }],
         order: ACTIVE_SUBSCRIPTION_ORDER,
         transaction,
     });
@@ -90,11 +108,11 @@ async function getActiveSubscriptions(driverId, { transaction } = {}) {
 async function recomputeCachedBalance(driverId, { transaction } = {}) {
     const user = await getUserForUpdate(driverId, transaction);
     const now = new Date();
-    const subs = await DriverSubscription.findAll({
+    const subs = await Models_1.DriverSubscription.findAll({
         where: {
             driverId,
-            status: SUBSCRIPTION_STATUS.ACTIVE,
-            expiresAt: { [Op.gt]: now },
+            status: constants_1.SUBSCRIPTION_STATUS.ACTIVE,
+            expiresAt: { [sequelize_1.Op.gt]: now },
         },
         transaction,
     });
@@ -147,13 +165,13 @@ async function creditOnApproval(subscription, { transaction, actorId = null, ext
  * `users.total_balance` and all driver trips are blocked.
  */
 async function deductCommission({ driverId, amount, actorId = null }) {
-    return sequelize.transaction(async (t) => {
+    return database_1.default.transaction(async (t) => {
         const now = new Date();
-        const activeSubs = await DriverSubscription.findAll({
+        const activeSubs = await Models_1.DriverSubscription.findAll({
             where: {
                 driverId,
-                status: SUBSCRIPTION_STATUS.ACTIVE,
-                expiresAt: { [Op.gt]: now },
+                status: constants_1.SUBSCRIPTION_STATUS.ACTIVE,
+                expiresAt: { [sequelize_1.Op.gt]: now },
             },
             order: [['planPeriodDays', 'ASC'], ['createdat', 'ASC']],
             transaction: t,
@@ -161,8 +179,8 @@ async function deductCommission({ driverId, amount, actorId = null }) {
         });
         if (activeSubs.length > 1) {
             const planIds = [...new Set(activeSubs.map((s) => s.planId))];
-            const plans = await SubscriptionPlan.findAll({
-                where: { id: { [Op.in]: planIds } },
+            const plans = await Models_1.SubscriptionPlan.findAll({
+                where: { id: { [sequelize_1.Op.in]: planIds } },
                 attributes: ['id', 'isFree'],
                 transaction: t,
             });
@@ -228,7 +246,7 @@ async function deductCommission({ driverId, amount, actorId = null }) {
  */
 async function expireSubscription(subscription, { transaction }) {
     const balance = Number(subscription.balance);
-    await subscription.update({ status: SUBSCRIPTION_STATUS.EXPIRED }, { transaction });
+    await subscription.update({ status: constants_1.SUBSCRIPTION_STATUS.EXPIRED }, { transaction });
     const user = await getUserForUpdate(subscription.driverId, transaction);
     const newTotal = round(Number(user.totalBalance) - balance);
     const isInDebt = newTotal < 0;
@@ -250,18 +268,18 @@ async function expireSubscription(subscription, { transaction }) {
  */
 async function syncTripBlocking(driverId, { transaction }) {
     const now = new Date();
-    const activeCount = await DriverSubscription.count({
+    const activeCount = await Models_1.DriverSubscription.count({
         where: {
             driverId,
-            status: SUBSCRIPTION_STATUS.ACTIVE,
-            expiresAt: { [Op.gt]: now },
+            status: constants_1.SUBSCRIPTION_STATUS.ACTIVE,
+            expiresAt: { [sequelize_1.Op.gt]: now },
         },
         transaction,
     });
     const user = await getUserForUpdate(driverId, transaction);
     const blocked = user.isInDebt || activeCount === 0;
-    const trips = await Trip.findAll({
-        where: { driverId, status: { [Op.in]: [TRIP_STATUS.PUBLISHED, TRIP_STATUS.FULL, TRIP_STATUS.IN_PROGRESS, TRIP_STATUS.ONGOING] } },
+    const trips = await Models_1.Trip.findAll({
+        where: { driverId, status: { [sequelize_1.Op.in]: [constants_1.TRIP_STATUS.PUBLISHED, constants_1.TRIP_STATUS.FULL, constants_1.TRIP_STATUS.IN_PROGRESS, constants_1.TRIP_STATUS.ONGOING] } },
         transaction,
     });
     let changed = false;
@@ -274,7 +292,7 @@ async function syncTripBlocking(driverId, { transaction }) {
     if (changed) {
         const bookingNotifications = async (type, vars) => {
             const tripIds = trips.map((tr) => tr.id);
-            await notificationService.notifyBookedPassengers(tripIds, type, {
+            await notificationService_1.default.notifyBookedPassengers(tripIds, type, {
                 vars,
                 data: { driver_id: driverId },
             });
@@ -298,7 +316,7 @@ async function unblockDriverTrips(driverId, { transaction }) {
  * Read-only balance overview for a driver.
  */
 async function getBalanceOverview(driverId) {
-    const user = await User.findByPk(driverId);
+    const user = await Models_1.User.findByPk(driverId);
     if (!user)
         return null;
     const currentPlan = await findCurrentSubscription(driverId);
@@ -330,4 +348,5 @@ module.exports = {
     getActiveSubscriptions,
     recomputeCachedBalance,
 };
+exports.default = module.exports;
 //# sourceMappingURL=balanceService.js.map

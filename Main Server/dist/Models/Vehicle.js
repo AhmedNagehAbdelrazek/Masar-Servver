@@ -1,55 +1,61 @@
 "use strict";
-const { Model, DataTypes } = require('sequelize');
-const sequelize = require('../config/database');
-const { VEHICLE_TYPES } = require('../config/constants');
-class Vehicle extends Model {
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.Vehicle = void 0;
+const sequelize_1 = require("sequelize");
+const database_1 = __importDefault(require("../config/database"));
+const constants_1 = require("../config/constants");
+class Vehicle extends sequelize_1.Model {
 }
+exports.Vehicle = Vehicle;
 Vehicle.init({
     id: {
-        type: DataTypes.UUID,
-        defaultValue: DataTypes.UUIDV4,
+        type: sequelize_1.DataTypes.UUID,
+        defaultValue: sequelize_1.DataTypes.UUIDV4,
         primaryKey: true,
     },
     driverId: {
-        type: DataTypes.UUID,
+        type: sequelize_1.DataTypes.UUID,
         allowNull: false,
         unique: true,
     },
     manufacturer: {
-        type: DataTypes.STRING(80),
+        type: sequelize_1.DataTypes.STRING(80),
         allowNull: false,
     },
     model: {
-        type: DataTypes.STRING(80),
+        type: sequelize_1.DataTypes.STRING(80),
         allowNull: false,
     },
     vehicleType: {
-        type: DataTypes.ENUM(Object.values(VEHICLE_TYPES)),
+        type: sequelize_1.DataTypes.ENUM(...Object.values(constants_1.VEHICLE_TYPES)),
         allowNull: false,
     },
     modelYear: {
-        type: DataTypes.SMALLINT,
+        type: sequelize_1.DataTypes.SMALLINT,
         allowNull: true,
     },
     plateNumber: {
-        type: DataTypes.STRING(20),
+        type: sequelize_1.DataTypes.STRING(20),
         allowNull: false,
         unique: true,
     },
     codeNumber: {
-        type: DataTypes.STRING(20),
+        type: sequelize_1.DataTypes.STRING(20),
         allowNull: true,
     },
     color: {
-        type: DataTypes.STRING(30),
+        type: sequelize_1.DataTypes.STRING(30),
         allowNull: true,
     },
     seats: {
-        type: DataTypes.SMALLINT,
+        type: sequelize_1.DataTypes.SMALLINT,
         allowNull: false,
     },
     registrationDocFront: {
-        type: DataTypes.INTEGER,
+        type: sequelize_1.DataTypes.INTEGER,
         allowNull: true,
         references: {
             model: 'uploaded_images',
@@ -57,7 +63,7 @@ Vehicle.init({
         },
     },
     registrationDocBack: {
-        type: DataTypes.INTEGER,
+        type: sequelize_1.DataTypes.INTEGER,
         allowNull: true,
         references: {
             model: 'uploaded_images',
@@ -65,7 +71,7 @@ Vehicle.init({
         },
     },
     vehiclePhotoFront: {
-        type: DataTypes.INTEGER,
+        type: sequelize_1.DataTypes.INTEGER,
         allowNull: true,
         references: {
             model: 'uploaded_images',
@@ -73,7 +79,7 @@ Vehicle.init({
         },
     },
     vehiclePhotoBack: {
-        type: DataTypes.INTEGER,
+        type: sequelize_1.DataTypes.INTEGER,
         allowNull: true,
         references: {
             model: 'uploaded_images',
@@ -81,36 +87,38 @@ Vehicle.init({
         },
     },
     isVerified: {
-        type: DataTypes.BOOLEAN,
+        type: sequelize_1.DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: false,
     },
     verificationNotes: {
-        type: DataTypes.TEXT,
+        type: sequelize_1.DataTypes.TEXT,
         allowNull: true,
     },
     verificationRejectionReason: {
-        type: DataTypes.TEXT,
+        type: sequelize_1.DataTypes.TEXT,
         allowNull: true,
     },
     verificationRejectedAt: {
-        type: DataTypes.DATE,
+        type: sequelize_1.DataTypes.DATE,
         allowNull: true,
     },
     verifiedBy: {
-        type: DataTypes.UUID,
+        type: sequelize_1.DataTypes.UUID,
         allowNull: true,
     },
     verifiedAt: {
-        type: DataTypes.DATE,
+        type: sequelize_1.DataTypes.DATE,
         allowNull: true,
     },
 }, {
-    sequelize,
+    sequelize: database_1.default,
     modelName: 'Vehicle',
     tableName: 'vehicles',
     underscored: true,
     timestamps: true,
 });
+exports.default = Vehicle;
 module.exports = Vehicle;
+Object.assign(module.exports, { default: Vehicle });
 //# sourceMappingURL=Vehicle.js.map

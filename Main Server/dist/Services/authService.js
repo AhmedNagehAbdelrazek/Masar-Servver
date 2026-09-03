@@ -792,6 +792,5 @@ const authService = {
     normalizePhone,
 };
 exports.default = authService;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 module.exports = authService;
 //# sourceMappingURL=authService.js.map

@@ -60,7 +60,6 @@ async function socketAuth(socket: Socket, next: (err?: ExtendedError) => void): 
     }
 
     // Lazy require to avoid circular deps; Models is still JS
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { User } = require('../Models') as {
       User: {
         findByPk: (

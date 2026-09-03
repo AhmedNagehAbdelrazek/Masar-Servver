@@ -1,26 +1,41 @@
 "use strict";
-const { param, query } = require('express-validator');
-const V = require('../../config/messages/validation-keys');
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.ticketMessagesValidation = exports.bookingMessagesValidation = void 0;
+const express_validator_1 = require("express-validator");
+const validation_keys_1 = require("../../config/messages/validation-keys");
 const paginationQuery = [
-    query('page')
+    (0, express_validator_1.query)('page')
         .optional()
-        .isInt({ min: 1 }).withMessage(V.PAGE_MUST_BE_A_POSITIVE_INTEGER),
-    query('limit')
+        .isInt({ min: 1 }).withMessage(validation_keys_1.VALIDATION_KEYS.PAGE_MUST_BE_A_POSITIVE_INTEGER),
+    (0, express_validator_1.query)('limit')
         .optional()
-        .isInt({ min: 1, max: 100 }).withMessage(V.LIMIT_MUST_BE_AN_INTEGER_BETWEEN_1_AND_100),
-    query('before_id')
+        .isInt({ min: 1, max: 100 }).withMessage(validation_keys_1.VALIDATION_KEYS.LIMIT_MUST_BE_AN_INTEGER_BETWEEN_1_AND_100),
+    (0, express_validator_1.query)('before_id')
         .optional()
-        .isUUID().withMessage(V.BEFORE_ID_MUST_BE_A_VALID_UUID),
+        .isUUID().withMessage(validation_keys_1.VALIDATION_KEYS.BEFORE_ID_MUST_BE_A_VALID_UUID),
 ];
-const bookingMessagesValidation = [
-    param('bookingId')
-        .isUUID().withMessage(V.BOOKING_ID_MUST_BE_A_VALID_UUID),
+exports.bookingMessagesValidation = [
+    (0, express_validator_1.param)('bookingId')
+        .isUUID().withMessage(validation_keys_1.VALIDATION_KEYS.BOOKING_ID_MUST_BE_A_VALID_UUID),
     ...paginationQuery,
 ];
-const ticketMessagesValidation = [
-    param('ticketId')
-        .isUUID().withMessage(V.TICKET_ID_MUST_BE_A_VALID_UUID),
+exports.ticketMessagesValidation = [
+    (0, express_validator_1.param)('ticketId')
+        .isUUID().withMessage(validation_keys_1.VALIDATION_KEYS.TICKET_ID_MUST_BE_A_VALID_UUID),
     ...paginationQuery,
 ];
-module.exports = { bookingMessagesValidation, ticketMessagesValidation };
+const _exported = { bookingMessagesValidation: exports.bookingMessagesValidation, ticketMessagesValidation: exports.ticketMessagesValidation };
+exports.default = _exported;
+// CommonJS interop
+// @ts-ignore
+if (typeof module !== 'undefined' && module.exports) {
+    // @ts-ignore
+    module.exports = { bookingMessagesValidation: exports.bookingMessagesValidation, ticketMessagesValidation: exports.ticketMessagesValidation };
+    // @ts-ignore
+    module.exports.bookingMessagesValidation = exports.bookingMessagesValidation;
+    // @ts-ignore
+    module.exports.ticketMessagesValidation = exports.ticketMessagesValidation;
+    // @ts-ignore
+    module.exports.default = _exported;
+}
 //# sourceMappingURL=messageValidator.js.map

@@ -1,32 +1,38 @@
 "use strict";
-const { Model, DataTypes } = require('sequelize');
-const sequelize = require('../config/database');
-class RecentSearch extends Model {
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.RecentSearch = void 0;
+const sequelize_1 = require("sequelize");
+const database_1 = __importDefault(require("../config/database"));
+class RecentSearch extends sequelize_1.Model {
 }
+exports.RecentSearch = RecentSearch;
 RecentSearch.init({
     id: {
-        type: DataTypes.UUID,
-        defaultValue: DataTypes.UUIDV4,
+        type: sequelize_1.DataTypes.UUID,
+        defaultValue: sequelize_1.DataTypes.UUIDV4,
         primaryKey: true,
     },
     passengerId: {
-        type: DataTypes.UUID,
+        type: sequelize_1.DataTypes.UUID,
         allowNull: false,
     },
     originCity: {
-        type: DataTypes.STRING(100),
+        type: sequelize_1.DataTypes.STRING(100),
         allowNull: false,
     },
     destinationCity: {
-        type: DataTypes.STRING(100),
+        type: sequelize_1.DataTypes.STRING(100),
         allowNull: false,
     },
     searchedOn: {
-        type: DataTypes.DATEONLY,
+        type: sequelize_1.DataTypes.DATEONLY,
         allowNull: false,
     },
 }, {
-    sequelize,
+    sequelize: database_1.default,
     modelName: 'RecentSearch',
     tableName: 'recent_search',
     underscored: true,
@@ -42,5 +48,7 @@ RecentSearch.init({
         },
     ],
 });
+exports.default = RecentSearch;
 module.exports = RecentSearch;
+Object.assign(module.exports, { default: RecentSearch });
 //# sourceMappingURL=RecentSearch.js.map

@@ -1,40 +1,46 @@
 "use strict";
-const { Model, DataTypes } = require('sequelize');
-const sequelize = require('../config/database');
-class TripLocation extends Model {
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.TripLocation = void 0;
+const sequelize_1 = require("sequelize");
+const database_1 = __importDefault(require("../config/database"));
+class TripLocation extends sequelize_1.Model {
 }
+exports.TripLocation = TripLocation;
 TripLocation.init({
     id: {
-        type: DataTypes.UUID,
-        defaultValue: DataTypes.UUIDV4,
+        type: sequelize_1.DataTypes.UUID,
+        defaultValue: sequelize_1.DataTypes.UUIDV4,
         primaryKey: true,
     },
     tripId: {
-        type: DataTypes.UUID,
+        type: sequelize_1.DataTypes.UUID,
         allowNull: false,
     },
     driverId: {
-        type: DataTypes.UUID,
+        type: sequelize_1.DataTypes.UUID,
         allowNull: false,
     },
     lat: {
-        type: DataTypes.NUMERIC(10, 8),
+        type: sequelize_1.DataTypes.NUMERIC(10, 8),
         allowNull: false,
     },
     lng: {
-        type: DataTypes.NUMERIC(11, 8),
+        type: sequelize_1.DataTypes.NUMERIC(11, 8),
         allowNull: false,
     },
     speed: {
-        type: DataTypes.NUMERIC(10, 2),
+        type: sequelize_1.DataTypes.NUMERIC(10, 2),
         allowNull: true,
     },
     heading: {
-        type: DataTypes.NUMERIC(10, 2),
+        type: sequelize_1.DataTypes.NUMERIC(10, 2),
         allowNull: true,
     },
 }, {
-    sequelize,
+    sequelize: database_1.default,
     modelName: 'TripLocation',
     tableName: 'trip_locations',
     underscored: true,
@@ -47,5 +53,7 @@ TripLocation.init({
         },
     ],
 });
+exports.default = TripLocation;
 module.exports = TripLocation;
+Object.assign(module.exports, { default: TripLocation });
 //# sourceMappingURL=TripLocation.js.map

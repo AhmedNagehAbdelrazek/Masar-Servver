@@ -1,4 +1,19 @@
 "use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.setIO = setIO;
+exports.getIO = getIO;
+exports.isReady = isReady;
+exports.emitToUser = emitToUser;
+exports.emitToRole = emitToRole;
+exports.emitToRoom = emitToRoom;
+exports.isTripMember = isTripMember;
+exports.getBookingChatContext = getBookingChatContext;
+exports.isTicketMember = isTicketMember;
+// @ts-nocheck
+const Models_1 = require("../Models");
+const constants_1 = require("../config/constants");
+const Models_2 = require("../Models");
+const constants_2 = require("../config/constants");
 /**
  * Central hub for realtime (Socket.IO) emission. All code that needs to
  * broadcast events goes through this module so rooms stay consistent across
@@ -40,18 +55,16 @@ function emitToRoom(room, event, data) {
 async function isTripMember(user, tripId) {
     if (!user || !user.id || !tripId)
         return false;
-    const { Trip, Booking } = require('../Models');
-    const { BOOKING_STATUS } = require('../config/constants');
-    const trip = await Trip.findByPk(tripId, { attributes: ['id', 'driverId'] });
+    const trip = await Models_1.Trip.findByPk(tripId, { attributes: ['id', 'driverId'] });
     if (!trip)
         return false;
     if (trip.driverId === user.id)
         return true;
-    const booking = await Booking.findOne({
+    const booking = await Models_1.Booking.findOne({
         where: {
             tripId,
             passengerId: user.id,
-            status: BOOKING_STATUS.CONFIRMED,
+            status: constants_1.BOOKING_STATUS.CONFIRMED,
         },
         attributes: ['id'],
     });
@@ -65,9 +78,8 @@ async function isTripMember(user, tripId) {
 async function getBookingChatContext(user, bookingId) {
     if (!user || !user.id || !bookingId)
         return { member: false, booking: null, trip: null };
-    const { Booking, Trip } = require('../Models');
-    const booking = await Booking.findByPk(bookingId, {
-        include: [{ model: Trip, as: 'trip' }],
+    const booking = await Models_1.Booking.findByPk(bookingId, {
+        include: [{ model: Models_1.Trip, as: 'trip' }],
     });
     if (!booking || !booking.trip)
         return { member: false, booking, trip: null };
@@ -82,12 +94,10 @@ async function getBookingChatContext(user, bookingId) {
 async function isTicketMember(user, ticketId) {
     if (!user || !user.id || !ticketId)
         return false;
-    const { SupportTicket } = require('../Models');
-    const { ROLES } = require('../config/constants');
-    if ([ROLES.ADMIN, ROLES.SUPPORT, ROLES.MODERATOR].includes(user.role)) {
+    if ([constants_2.ROLES.ADMIN, constants_2.ROLES.SUPPORT, constants_2.ROLES.MODERATOR].includes(user.role)) {
         return true;
     }
-    const ticket = await SupportTicket.findByPk(ticketId, {
+    const ticket = await Models_2.SupportTicket.findByPk(ticketId, {
         attributes: ['id', 'userId'],
     });
     return !!ticket && ticket.userId === user.id;
@@ -103,4 +113,5 @@ module.exports = {
     getBookingChatContext,
     isTicketMember,
 };
+exports.default = module.exports;
 //# sourceMappingURL=realtimeService.js.map

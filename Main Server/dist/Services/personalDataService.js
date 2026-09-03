@@ -1,14 +1,23 @@
 "use strict";
-const { Op } = require('sequelize');
-const { User, DriverProfile, Vehicle } = require('../Models');
-const ApiError = require('../utils/ApiError');
-const { ApiErrors } = ApiError;
-const { VERIFICATION_STATUS } = require('../config/constants');
-const { loadDriverUser, ensureReadable, ensureOperational } = require('../utils/userAccess');
-const { canEdit } = require('./driverVerificationService');
-const auditService = require('./auditService');
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.LOCKED_WHEN_VERIFIED = exports.EDITABLE_ANYTIME = void 0;
+exports.buildPersonalDataView = buildPersonalDataView;
+exports.updatePersonalData = updatePersonalData;
+// @ts-nocheck
+const sequelize_1 = require("sequelize");
+const Models_1 = require("../Models");
+const ApiError_1 = __importDefault(require("../utils/ApiError"));
+const constants_1 = require("../config/constants");
+const userAccess_1 = require("../utils/userAccess");
+const driverVerificationService_1 = require("./driverVerificationService");
+const auditService_1 = __importDefault(require("./auditService"));
+const { ApiErrors } = ApiError_1.default;
 // Fields editable regardless of verification state (research D7)
 const EDITABLE_ANYTIME = ['display_name', 'phone', 'age', 'avatar_url'];
+exports.EDITABLE_ANYTIME = EDITABLE_ANYTIME;
 // Identity + vehicle fields that freeze once verification is in review/approved
 const LOCKED_WHEN_VERIFIED = [
     'full_name',
@@ -21,6 +30,7 @@ const LOCKED_WHEN_VERIFIED = [
     'vehicle.plate_number',
     'vehicle.total_seats',
 ];
+exports.LOCKED_WHEN_VERIFIED = LOCKED_WHEN_VERIFIED;
 function genderLabel(gender) {
     if (gender === 'male')
         return 'ذكر';
@@ -57,20 +67,20 @@ function serializeVehicle(vehicle) {
     };
 }
 async function buildPersonalDataView(userId) {
-    const user = await loadDriverUser(userId);
-    ensureReadable(user);
+    const user = await (0, userAccess_1.loadDriverUser)(userId);
+    (0, userAccess_1.ensureReadable)(user);
     const [driverProfile, vehicle] = await Promise.all([
-        DriverProfile.findOne({ where: { driverId: userId } }),
-        Vehicle.findOne({ where: { driverId: userId } }),
+        Models_1.DriverProfile.findOne({ where: { driverId: userId } }),
+        Models_1.Vehicle.findOne({ where: { driverId: userId } }),
     ]);
     user.driverProfile = driverProfile;
     let lockedFields = [];
     let rejectedFields = [];
-    if (user.verificationStatus === VERIFICATION_STATUS.PENDING
-        || user.verificationStatus === VERIFICATION_STATUS.APPROVED) {
+    if (user.verificationStatus === constants_1.VERIFICATION_STATUS.PENDING
+        || user.verificationStatus === constants_1.VERIFICATION_STATUS.APPROVED) {
         lockedFields = LOCKED_WHEN_VERIFIED;
     }
-    else if (user.verificationStatus === VERIFICATION_STATUS.REJECTED) {
+    else if (user.verificationStatus === constants_1.VERIFICATION_STATUS.REJECTED) {
         rejectedFields = Array.isArray(user.verificationRejectionFields)
             ? user.verificationRejectionFields
             : [];
@@ -102,24 +112,24 @@ function extractLockedAttempts(payload) {
 }
 async function assertUniqueness(userId, payload) {
     if (payload.email) {
-        const clash = await User.findOne({
-            where: { email: payload.email, id: { [Op.ne]: userId } },
+        const clash = await Models_1.User.findOne({
+            where: { email: payload.email, id: { [sequelize_1.Op.ne]: userId } },
         });
         if (clash) {
             throw ApiErrors.custom('EMAIL_ALREADY_IN_USE', 409, 'EMAIL_ALREADY_IN_USE');
         }
     }
     if (payload.phone) {
-        const clash = await User.findOne({
-            where: { phone: payload.phone, id: { [Op.ne]: userId } },
+        const clash = await Models_1.User.findOne({
+            where: { phone: payload.phone, id: { [sequelize_1.Op.ne]: userId } },
         });
         if (clash) {
             throw ApiErrors.custom('PHONE_ALREADY_IN_USE', 409, 'PHONE_ALREADY_IN_USE');
         }
     }
     if (payload.vehicle && payload.vehicle.plate_number) {
-        const clash = await Vehicle.findOne({
-            where: { plateNumber: payload.vehicle.plate_number, driverId: { [Op.ne]: userId } },
+        const clash = await Models_1.Vehicle.findOne({
+            where: { plateNumber: payload.vehicle.plate_number, driverId: { [sequelize_1.Op.ne]: userId } },
         });
         if (clash) {
             throw ApiErrors.custom('PLATE_NUMBER_ALREADY_IN_USE', 409, 'PLATE_ALREADY_IN_USE');
@@ -133,9 +143,9 @@ async function assertUniqueness(userId, payload) {
  */
 async function updatePersonalData(userId, payload) {
     await assertUniqueness(userId, payload);
-    const user = await loadDriverUser(userId);
-    ensureOperational(user);
-    const canEditIdentity = canEdit(user.verificationStatus);
+    const user = await (0, userAccess_1.loadDriverUser)(userId);
+    (0, userAccess_1.ensureOperational)(user);
+    const canEditIdentity = (0, driverVerificationService_1.canEdit)(user.verificationStatus);
     if (!canEditIdentity) {
         const attempts = extractLockedAttempts(payload);
         if (attempts.length > 0) {
@@ -162,12 +172,12 @@ async function updatePersonalData(userId, payload) {
         await user.update(userAttrs);
     }
     if (payload.national_id !== undefined) {
-        const profile = await DriverProfile.findOne({ where: { driverId: userId } });
+        const profile = await Models_1.DriverProfile.findOne({ where: { driverId: userId } });
         if (profile) {
             await profile.update({ nationalID: payload.national_id });
         }
         else {
-            await DriverProfile.create({ driverId: userId, nationalID: payload.national_id });
+            await Models_1.DriverProfile.create({ driverId: userId, nationalID: payload.national_id });
         }
     }
     if (payload.vehicle && typeof payload.vehicle === 'object') {
@@ -186,12 +196,12 @@ async function updatePersonalData(userId, payload) {
         if (v.total_seats !== undefined)
             vehicleAttrs.seats = v.total_seats;
         if (Object.keys(vehicleAttrs).length > 0) {
-            const vehicle = await Vehicle.findOne({ where: { driverId: userId } });
+            const vehicle = await Models_1.Vehicle.findOne({ where: { driverId: userId } });
             if (vehicle) {
                 await vehicle.update(vehicleAttrs);
             }
             else {
-                await Vehicle.create({ ...vehicleAttrs, driverId: userId });
+                await Models_1.Vehicle.create({ ...vehicleAttrs, driverId: userId });
             }
         }
     }
@@ -199,12 +209,12 @@ async function updatePersonalData(userId, payload) {
     let requiresVerification = false;
     if (identityChanged && canEditIdentity) {
         await user.update({
-            verificationStatus: VERIFICATION_STATUS.PENDING,
+            verificationStatus: constants_1.VERIFICATION_STATUS.PENDING,
             verificationSubmittedAt: new Date(),
         });
         requiresVerification = true;
     }
-    auditService.track({
+    auditService_1.default.track({
         eventType: 'domain.event',
         action: 'account.personal_data_updated',
         resourceType: 'user',
@@ -233,4 +243,5 @@ module.exports = {
     buildPersonalDataView,
     updatePersonalData,
 };
+exports.default = module.exports;
 //# sourceMappingURL=personalDataService.js.map

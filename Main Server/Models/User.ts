@@ -109,7 +109,6 @@ User.init(
       allowNull: false,
     },
     age: {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       type: (DataTypes as unknown as { DECIMAL: (a?: number, b?: number) => unknown; NUMERIC: (a?: number, b?: number) => unknown }).DECIMAL(3) as unknown as import('sequelize').DataType,
       allowNull: true,
     },
@@ -145,7 +144,6 @@ User.init(
       defaultValue: [],
     },
     avgRating: {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       type: (DataTypes as unknown as { DECIMAL: (a?: number, b?: number) => unknown }).DECIMAL(2, 1) as unknown as import('sequelize').DataType,
       defaultValue: 0,
     },
@@ -193,7 +191,5 @@ User.init(
 );
 
 export default User;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-(module.exports as any) = User;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-(module.exports as any).default = User;
+module.exports = User;
+Object.assign(module.exports, { default: User });

@@ -1,16 +1,20 @@
 "use strict";
-const phoneCodes = require('../config/phoneCodes');
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.findByCountryCode = findByCountryCode;
+exports.findByDialCode = findByDialCode;
+exports.validatePhone = validatePhone;
+const phoneCodes_1 = require("../config/phoneCodes");
 function findByCountryCode(countryCode) {
     if (!countryCode)
         return null;
     const code = countryCode.toUpperCase();
-    return phoneCodes.find((c) => c.iso && c.iso['alpha-2'] === code) || null;
+    return phoneCodes_1.codes.find((c) => c.iso && c.iso['alpha-2'] === code) || null;
 }
 function findByDialCode(dialCode) {
     if (!dialCode)
         return null;
     const normalized = dialCode.startsWith('+') ? dialCode : `+${dialCode}`;
-    return phoneCodes.find((c) => c.phone.includes(normalized)) || null;
+    return phoneCodes_1.codes.find((c) => c.phone.includes(normalized)) || null;
 }
 function validatePhone(countryCode, phone) {
     const country = findByCountryCode(countryCode);
@@ -37,7 +41,7 @@ function validatePhone(countryCode, phone) {
             error: `Phone number must be ${phoneLengths.join(' or ')} digits for ${country.name}`,
         };
     }
-    // Return full phone with dial code (no + prefix, stored clean)
+    // Return full phone with dial code (no + prefix stored clean? keep as is)
     const fullPhone = `${dialCode}${localNumber}`;
     return {
         valid: true,
@@ -48,5 +52,20 @@ function validatePhone(countryCode, phone) {
         countryName: country.name,
     };
 }
-module.exports = { findByCountryCode, findByDialCode, validatePhone };
+const phoneValidator = { findByCountryCode, findByDialCode, validatePhone };
+exports.default = phoneValidator;
+// CommonJS interop
+// @ts-ignore
+if (typeof module !== 'undefined' && module.exports) {
+    // @ts-ignore
+    module.exports = { findByCountryCode, findByDialCode, validatePhone };
+    // @ts-ignore
+    module.exports.findByCountryCode = findByCountryCode;
+    // @ts-ignore
+    module.exports.findByDialCode = findByDialCode;
+    // @ts-ignore
+    module.exports.validatePhone = validatePhone;
+    // @ts-ignore
+    module.exports.default = phoneValidator;
+}
 //# sourceMappingURL=phoneValidator.js.map

@@ -1,86 +1,94 @@
 "use strict";
-const { Model, DataTypes } = require('sequelize');
-const sequelize = require('../config/database');
-const { PENALTY_TYPES } = require('../config/constants');
-class Penalty extends Model {
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.Penalty = void 0;
+const sequelize_1 = require("sequelize");
+const database_1 = __importDefault(require("../config/database"));
+const constants_1 = require("../config/constants");
+class Penalty extends sequelize_1.Model {
 }
+exports.Penalty = Penalty;
 Penalty.init({
     id: {
-        type: DataTypes.UUID,
-        defaultValue: DataTypes.UUIDV4,
+        type: sequelize_1.DataTypes.UUID,
+        defaultValue: sequelize_1.DataTypes.UUIDV4,
         primaryKey: true,
     },
     userId: {
-        type: DataTypes.UUID,
+        type: sequelize_1.DataTypes.UUID,
         allowNull: false,
     },
     complaintId: {
-        type: DataTypes.UUID,
+        type: sequelize_1.DataTypes.UUID,
         allowNull: true,
     },
     tripId: {
-        type: DataTypes.UUID,
+        type: sequelize_1.DataTypes.UUID,
         allowNull: true,
     },
     type: {
-        type: DataTypes.ENUM(Object.values(PENALTY_TYPES)),
+        type: sequelize_1.DataTypes.ENUM(...Object.values(constants_1.PENALTY_TYPES)),
         allowNull: false,
     },
     penaltyType: {
-        type: DataTypes.STRING(30),
+        type: sequelize_1.DataTypes.STRING(30),
         allowNull: false,
         defaultValue: 'general',
     },
     severity: {
-        type: DataTypes.STRING(15),
+        type: sequelize_1.DataTypes.STRING(15),
         allowNull: false,
         defaultValue: 'minor',
     },
     reason: {
-        type: DataTypes.TEXT,
+        type: sequelize_1.DataTypes.TEXT,
         allowNull: false,
     },
     details: {
-        type: DataTypes.TEXT,
+        type: sequelize_1.DataTypes.TEXT,
         allowNull: true,
     },
     startsAt: {
-        type: DataTypes.DATE,
+        type: sequelize_1.DataTypes.DATE,
         allowNull: false,
-        defaultValue: DataTypes.NOW,
+        defaultValue: sequelize_1.DataTypes.NOW,
     },
     endsAt: {
-        type: DataTypes.DATE,
+        type: sequelize_1.DataTypes.DATE,
         allowNull: true,
     },
     issuedBy: {
-        type: DataTypes.UUID,
+        type: sequelize_1.DataTypes.UUID,
         allowNull: true,
     },
     isAppealed: {
-        type: DataTypes.BOOLEAN,
+        type: sequelize_1.DataTypes.BOOLEAN,
         allowNull: true,
         defaultValue: false,
     },
     appealReason: {
-        type: DataTypes.TEXT,
+        type: sequelize_1.DataTypes.TEXT,
         allowNull: true,
     },
     appealResolvedAt: {
-        type: DataTypes.DATE,
+        type: sequelize_1.DataTypes.DATE,
         allowNull: true,
     },
     createdat: {
-        type: DataTypes.DATE,
+        type: sequelize_1.DataTypes.DATE,
         allowNull: false,
-        defaultValue: DataTypes.NOW,
+        defaultValue: sequelize_1.DataTypes.NOW,
     },
 }, {
-    sequelize,
+    sequelize: database_1.default,
     modelName: 'Penalty',
     tableName: 'penalties',
     underscored: true,
     timestamps: false,
 });
+exports.default = Penalty;
 module.exports = Penalty;
+Object.assign(module.exports, { default: Penalty });
 //# sourceMappingURL=Penalty.js.map

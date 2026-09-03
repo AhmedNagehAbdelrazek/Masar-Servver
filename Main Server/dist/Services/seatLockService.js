@@ -1,38 +1,44 @@
 "use strict";
-const { Trip, TripSeat } = require('../Models');
-const { ApiErrors } = require('../utils/ApiError');
-const { acquireSeatLock, checkSeatLock, releaseSeatLock } = require('../utils/seatLock');
-const { TRIP_STATUS, SEAT_TYPE } = require('../config/constants');
-const auditService = require('./auditService');
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.releaseSeat = exports.lockSeat = void 0;
+// @ts-nocheck
+const Models_1 = require("../Models");
+const ApiError_1 = require("../utils/ApiError");
+const seatLock_1 = require("../utils/seatLock");
+const constants_1 = require("../config/constants");
+const auditService_1 = __importDefault(require("./auditService"));
 /**
  * Lock a seat for a passenger during booking
  */
 const lockSeat = async (tripId, seatNumber, passengerId) => {
     // Verify trip exists and is published
-    const trip = await Trip.findByPk(tripId);
+    const trip = await Models_1.Trip.findByPk(tripId);
     if (!trip)
-        throw ApiErrors.notFound('TRIP_NOT_FOUND');
-    if (trip.status !== TRIP_STATUS.PUBLISHED) {
-        throw ApiErrors.validation('TRIP_IS_NOT_AVAILABLE_FOR_BOOKING');
+        throw ApiError_1.ApiErrors.notFound('TRIP_NOT_FOUND');
+    if (trip.status !== constants_1.TRIP_STATUS.PUBLISHED) {
+        throw ApiError_1.ApiErrors.validation('TRIP_IS_NOT_AVAILABLE_FOR_BOOKING');
     }
     // Verify seat exists and is available
-    const seat = await TripSeat.findOne({
+    const seat = await Models_1.TripSeat.findOne({
         where: { tripId, seatNumber },
     });
     if (!seat)
-        throw ApiErrors.notFound('SEAT_NOT_FOUND');
-    if (seat.seatType !== SEAT_TYPE.AVAILABLE) {
-        throw ApiErrors.validation('SEAT_IS_NOT_AVAILABLE_FOR_BOOKING');
+        throw ApiError_1.ApiErrors.notFound('SEAT_NOT_FOUND');
+    if (seat.seatType !== constants_1.SEAT_TYPE.AVAILABLE) {
+        throw ApiError_1.ApiErrors.validation('SEAT_IS_NOT_AVAILABLE_FOR_BOOKING');
     }
     // Check if already locked by someone else
-    const existingLock = await checkSeatLock(tripId, seatNumber);
+    const existingLock = await (0, seatLock_1.checkSeatLock)(tripId, seatNumber);
     if (existingLock.locked && existingLock.passengerId !== passengerId) {
-        throw ApiErrors.conflict('SEAT_ALREADY_LOCKED_BY_ANOTHER_PASSENGER');
+        throw ApiError_1.ApiErrors.conflict('SEAT_ALREADY_LOCKED_BY_ANOTHER_PASSENGER');
     }
     // Try to acquire lock
-    const result = await acquireSeatLock(tripId, seatNumber, passengerId);
+    const result = await (0, seatLock_1.acquireSeatLock)(tripId, seatNumber, passengerId);
     if (!result.locked) {
-        throw ApiErrors.conflict('COULD_NOT_ACQUIRE_SEAT_LOCK');
+        throw ApiError_1.ApiErrors.conflict('COULD_NOT_ACQUIRE_SEAT_LOCK');
     }
     trackSeatMutation({
         action: 'trip.seat.locked',
@@ -47,11 +53,12 @@ const lockSeat = async (tripId, seatNumber, passengerId) => {
         message: 'SEAT_LOCKED_FIVE_MINUTES',
     };
 };
+exports.lockSeat = lockSeat;
 /**
  * Audit a seat-lock mutation with the trip as the resource.
  */
 function trackSeatMutation({ action, passengerId, tripId, seatNumber, payload = {} }) {
-    auditService.track({
+    auditService_1.default.track({
         action,
         resourceType: 'trip',
         resourceId: tripId,
@@ -65,16 +72,16 @@ function trackSeatMutation({ action, passengerId, tripId, seatNumber, payload = 
  * Release a seat lock
  */
 const releaseSeat = async (tripId, seatNumber, passengerId) => {
-    const existingLock = await checkSeatLock(tripId, seatNumber);
+    const existingLock = await (0, seatLock_1.checkSeatLock)(tripId, seatNumber);
     if (!existingLock.locked) {
-        throw ApiErrors.notFound('SEAT_LOCK_EXPIRED_OR_DOES_NOT_EXIST');
+        throw ApiError_1.ApiErrors.notFound('SEAT_LOCK_EXPIRED_OR_DOES_NOT_EXIST');
     }
     if (existingLock.passengerId !== passengerId) {
-        throw ApiErrors.forbidden('CANNOT_RELEASE_LOCK_HELD_BY_ANOTHER_PASSENGER');
+        throw ApiError_1.ApiErrors.forbidden('CANNOT_RELEASE_LOCK_HELD_BY_ANOTHER_PASSENGER');
     }
-    const released = await releaseSeatLock(tripId, seatNumber);
+    const released = await (0, seatLock_1.releaseSeatLock)(tripId, seatNumber);
     if (!released) {
-        throw ApiErrors.notFound('SEAT_LOCK_EXPIRED_OR_DOES_NOT_EXIST');
+        throw ApiError_1.ApiErrors.notFound('SEAT_LOCK_EXPIRED_OR_DOES_NOT_EXIST');
     }
     trackSeatMutation({
         action: 'trip.seat.released',
@@ -84,8 +91,10 @@ const releaseSeat = async (tripId, seatNumber, passengerId) => {
     });
     return { message: 'SEAT_LOCK_RELEASED' };
 };
+exports.releaseSeat = releaseSeat;
 module.exports = {
     lockSeat,
     releaseSeat,
 };
+exports.default = module.exports;
 //# sourceMappingURL=seatLockService.js.map

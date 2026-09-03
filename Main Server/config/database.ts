@@ -67,7 +67,6 @@ export async function initDatabase({ runMigrations: doRun = true }: { runMigrati
   }
 
   if (doRun) {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { runMigrations } = require('../migrations') as { runMigrations: (opts?: { redo?: boolean }) => Promise<void> };
     await runMigrations({ redo: true });
   }
@@ -80,13 +79,11 @@ export async function initDatabase({ runMigrations: doRun = true }: { runMigrati
 export default sequelize;
 
 // CommonJS compatibility: `require('./config/database')` should return the Sequelize instance with initDatabase attached
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 (sequelize as unknown as Record<string, unknown> & { initDatabase: typeof initDatabase }).initDatabase = initDatabase;
 
 // Ensure `module.exports` is the sequelize instance itself for existing JS consumers
 // This assignment preserves runtime behavior where `const sequelize = require('./config/database')` gets the instance
 declare global {
-  // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace NodeJS {
     // no augmentation needed
   }

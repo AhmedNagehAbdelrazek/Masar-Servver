@@ -1,74 +1,80 @@
 "use strict";
-const trackingService = require('../Services/trackingService');
-const realtimeService = require('../Services/realtimeService');
-const realtimeMetrics = require('../Services/realtimeMetrics');
-const { checkRateLimit } = require('../Services/socketRateLimiter');
-const { ApiErrors } = require('../utils/ApiError');
-const { ok, errorFromApiError, rateLimited } = require('../utils/socketAck');
-/**
- * Live trip tracking (Requirement 4). Driver shares location to the
- * `trip:{tripId}` room; passengers join the same room via `tracking:join`.
- * Location pings are rate-limited (1 / 2s) and persisted before broadcast.
- */
-module.exports = (io, socket) => {
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const trackingService_1 = __importDefault(require("../Services/trackingService"));
+const realtimeService_1 = __importDefault(require("../Services/realtimeService"));
+const realtimeMetrics_1 = __importDefault(require("../Services/realtimeMetrics"));
+const socketRateLimiter_1 = require("../Services/socketRateLimiter");
+const ApiError_1 = require("../utils/ApiError");
+const socketAck_1 = require("../utils/socketAck");
+const trackingSocket = (io, socket) => {
     const user = socket.data.user;
     if (!user)
         return;
     socket.on('tracking:join', async (payload, ack) => {
         try {
             const tripId = payload ? payload.trip_id : undefined;
-            const member = await realtimeService.isTripMember(user, tripId);
+            const member = await realtimeService_1.default.isTripMember(user, tripId);
             if (!member)
-                throw ApiErrors.forbidden('YOU_ARE_NOT_A_MEMBER_OF_THIS_TRIP');
+                throw ApiError_1.ApiErrors.forbidden('YOU_ARE_NOT_A_MEMBER_OF_THIS_TRIP');
             socket.join(`trip:${tripId}`);
-            return ack ? ack(ok({ room: `trip:${tripId}` })) : undefined;
+            if (ack)
+                ack((0, socketAck_1.ok)({ room: `trip:${tripId}` }));
         }
         catch (err) {
             if (ack)
-                ack(errorFromApiError(err));
+                ack((0, socketAck_1.errorFromApiError)(err));
         }
     });
     socket.on('tracking:start', async (payload, ack) => {
         try {
-            const result = await trackingService.startTracking(user, payload ? payload.trip_id : undefined);
-            return ack ? ack(ok(result)) : undefined;
+            const result = await trackingService_1.default.startTracking(user, payload ? payload.trip_id : undefined);
+            if (ack)
+                ack((0, socketAck_1.ok)(result));
         }
         catch (err) {
             if (ack)
-                ack(errorFromApiError(err));
+                ack((0, socketAck_1.errorFromApiError)(err));
         }
     });
     socket.on('tracking:location', async (payload, ack) => {
-        // TODO: use cache to track the latest location
         try {
-            const rl = await checkRateLimit('tracking', 'location', user.id);
+            const rl = await (0, socketRateLimiter_1.checkRateLimit)('tracking', 'location', user.id);
             if (!rl.allowed) {
-                realtimeMetrics.recordRateLimited();
-                return ack ? ack(rateLimited()) : undefined;
+                realtimeMetrics_1.default.recordRateLimited();
+                if (ack)
+                    ack((0, socketAck_1.rateLimited)());
+                return;
             }
-            const result = await trackingService.updateLocation(user, {
+            const result = await trackingService_1.default.updateLocation(user, {
                 tripId: payload ? payload.trip_id : undefined,
                 lat: payload ? payload.lat : undefined,
                 lng: payload ? payload.lng : undefined,
                 speed: payload ? payload.speed : undefined,
                 heading: payload ? payload.heading : undefined,
             });
-            return ack ? ack(ok(result)) : undefined;
+            if (ack)
+                ack((0, socketAck_1.ok)(result));
         }
         catch (err) {
             if (ack)
-                ack(errorFromApiError(err));
+                ack((0, socketAck_1.errorFromApiError)(err));
         }
     });
     socket.on('tracking:stop', async (payload, ack) => {
         try {
-            const result = await trackingService.stopTracking(user, payload ? payload.trip_id : undefined);
-            return ack ? ack(ok(result)) : undefined;
+            const result = await trackingService_1.default.stopTracking(user, payload ? payload.trip_id : undefined);
+            if (ack)
+                ack((0, socketAck_1.ok)(result));
         }
         catch (err) {
             if (ack)
-                ack(errorFromApiError(err));
+                ack((0, socketAck_1.errorFromApiError)(err));
         }
     });
 };
+exports.default = trackingSocket;
+module.exports = trackingSocket;
 //# sourceMappingURL=trackingSocket.js.map

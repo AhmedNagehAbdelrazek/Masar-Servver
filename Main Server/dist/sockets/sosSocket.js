@@ -1,39 +1,46 @@
 "use strict";
-const sosService = require('../Services/sosService');
-const realtimeMetrics = require('../Services/realtimeMetrics');
-const { checkRateLimit } = require('../Services/socketRateLimiter');
-const { ok, errorFromApiError, rateLimited } = require('../utils/socketAck');
-/**
- * SOS emergency alerts (Requirement 6). Repeat triggers during an active
- * event reuse the existing event (dedupe) without consuming the rate limit.
- */
-module.exports = (io, socket) => {
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const sosService_1 = __importDefault(require("../Services/sosService"));
+const realtimeMetrics_1 = __importDefault(require("../Services/realtimeMetrics"));
+const socketRateLimiter_1 = require("../Services/socketRateLimiter");
+const socketAck_1 = require("../utils/socketAck");
+const sosSocket = (io, socket) => {
     const user = socket.data.user;
     if (!user)
         return;
     socket.on('sos:trigger', async (payload, ack) => {
         try {
-            const active = await sosService.findActiveForUser(user.id);
+            const active = await sosService_1.default.findActiveForUser(user.id);
             if (active) {
-                return ack ? ack(ok({ sos_event_id: active.id, reused: true })) : undefined;
+                if (ack)
+                    ack((0, socketAck_1.ok)({ sos_event_id: active.id, reused: true }));
+                return;
             }
-            const rl = await checkRateLimit('sos', 'sos', user.id);
+            const rl = await (0, socketRateLimiter_1.checkRateLimit)('sos', 'sos', user.id);
             if (!rl.allowed) {
-                realtimeMetrics.recordRateLimited();
-                return ack ? ack(rateLimited()) : undefined;
+                realtimeMetrics_1.default.recordRateLimited();
+                if (ack)
+                    ack((0, socketAck_1.rateLimited)());
+                return;
             }
-            const result = await sosService.trigger(user, {
+            const result = await sosService_1.default.trigger(user, {
                 tripId: payload ? payload.trip_id : undefined,
                 lat: payload ? payload.lat : undefined,
                 lng: payload ? payload.lng : undefined,
                 urgency: payload ? payload.urgency : undefined,
             });
-            return ack ? ack(ok(result)) : undefined;
+            if (ack)
+                ack((0, socketAck_1.ok)(result));
         }
         catch (err) {
             if (ack)
-                ack(errorFromApiError(err));
+                ack((0, socketAck_1.errorFromApiError)(err));
         }
     });
 };
+exports.default = sosSocket;
+module.exports = sosSocket;
 //# sourceMappingURL=sosSocket.js.map

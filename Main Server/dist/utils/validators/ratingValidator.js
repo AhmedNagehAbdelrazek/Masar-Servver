@@ -1,45 +1,57 @@
 "use strict";
-const { body, query } = require('express-validator');
-const V = require('../../config/messages/validation-keys');
-const ratingValidation = [
-    body('booking_id')
-        .isUUID().withMessage(V.BOOKING_ID_MUST_BE_A_VALID_UUID),
-    body('stars')
-        .notEmpty().withMessage(V.STARS_ARE_REQUIRED)
-        .isInt({ min: 1, max: 5 }).withMessage(V.STARS_MUST_BE_AN_INTEGER_BETWEEN_1_AND_5),
-    body('was_late')
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.ratingListValidation = exports.ratingValidation = void 0;
+const express_validator_1 = require("express-validator");
+const validation_keys_1 = require("../../config/messages/validation-keys");
+exports.ratingValidation = [
+    (0, express_validator_1.body)('booking_id')
+        .isUUID().withMessage(validation_keys_1.VALIDATION_KEYS.BOOKING_ID_MUST_BE_A_VALID_UUID),
+    (0, express_validator_1.body)('stars')
+        .notEmpty().withMessage(validation_keys_1.VALIDATION_KEYS.STARS_ARE_REQUIRED)
+        .isInt({ min: 1, max: 5 }).withMessage(validation_keys_1.VALIDATION_KEYS.STARS_MUST_BE_AN_INTEGER_BETWEEN_1_AND_5),
+    (0, express_validator_1.body)('was_late')
         .optional()
-        .isBoolean().withMessage(V.WAS_LATE_MUST_BE_A_BOOLEAN),
-    body('late_minutes')
+        .isBoolean().withMessage(validation_keys_1.VALIDATION_KEYS.WAS_LATE_MUST_BE_A_BOOLEAN),
+    (0, express_validator_1.body)('late_minutes')
         .optional()
-        .isInt({ min: 0 }).withMessage(V.LATE_MINUTES_MUST_BE_A_NON_NEGATIVE_INTEGER),
-    body('review')
+        .isInt({ min: 0 }).withMessage(validation_keys_1.VALIDATION_KEYS.LATE_MINUTES_MUST_BE_A_NON_NEGATIVE_INTEGER),
+    (0, express_validator_1.body)('review')
         .optional()
         .trim()
-        .isLength({ max: 500 }).withMessage(V.REVIEW_MUST_BE_AT_MOST_500_CHARACTERS),
-    body('tags')
+        .isLength({ max: 500 }).withMessage(validation_keys_1.VALIDATION_KEYS.REVIEW_MUST_BE_AT_MOST_500_CHARACTERS),
+    (0, express_validator_1.body)('tags')
         .optional()
-        .isArray().withMessage(V.TAGS_MUST_BE_AN_ARRAY)
+        .isArray().withMessage(validation_keys_1.VALIDATION_KEYS.TAGS_MUST_BE_AN_ARRAY)
         .custom((arr) => {
-        if (!arr.every((item) => typeof item === 'string' && item.trim().length > 0)) {
-            throw new Error(V.EACH_TAG_MUST_BE_A_NON_EMPTY_STRING);
+        if (!Array.isArray(arr) || !arr.every((item) => typeof item === 'string' && item.trim().length > 0)) {
+            throw new Error(validation_keys_1.VALIDATION_KEYS.EACH_TAG_MUST_BE_A_NON_EMPTY_STRING);
         }
         return true;
     }),
 ];
-const ratingListValidation = [
-    query('page')
+exports.ratingListValidation = [
+    (0, express_validator_1.query)('page')
         .optional()
-        .isInt({ min: 1 }).withMessage(V.PAGE_MUST_BE_A_POSITIVE_INTEGER),
-    query('limit')
+        .isInt({ min: 1 }).withMessage(validation_keys_1.VALIDATION_KEYS.PAGE_MUST_BE_A_POSITIVE_INTEGER),
+    (0, express_validator_1.query)('limit')
         .optional()
-        .isInt({ min: 1, max: 100 }).withMessage(V.LIMIT_MUST_BE_AN_INTEGER_BETWEEN_1_AND_100),
-    query('sort')
+        .isInt({ min: 1, max: 100 }).withMessage(validation_keys_1.VALIDATION_KEYS.LIMIT_MUST_BE_AN_INTEGER_BETWEEN_1_AND_100),
+    (0, express_validator_1.query)('sort')
         .optional()
-        .isIn(['recent', 'highest', 'lowest']).withMessage(V.SORT_MUST_BE_RECENT_HIGHEST_OR_LOWEST),
+        .isIn(['recent', 'highest', 'lowest']).withMessage(validation_keys_1.VALIDATION_KEYS.SORT_MUST_BE_RECENT_HIGHEST_OR_LOWEST),
 ];
-module.exports = {
-    ratingValidation,
-    ratingListValidation,
-};
+const _exported = { ratingValidation: exports.ratingValidation, ratingListValidation: exports.ratingListValidation };
+exports.default = _exported;
+// CommonJS interop
+// @ts-ignore
+if (typeof module !== 'undefined' && module.exports) {
+    // @ts-ignore
+    module.exports = { ratingValidation: exports.ratingValidation, ratingListValidation: exports.ratingListValidation };
+    // @ts-ignore
+    module.exports.ratingValidation = exports.ratingValidation;
+    // @ts-ignore
+    module.exports.ratingListValidation = exports.ratingListValidation;
+    // @ts-ignore
+    module.exports.default = _exported;
+}
 //# sourceMappingURL=ratingValidator.js.map

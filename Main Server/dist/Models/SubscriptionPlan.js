@@ -1,57 +1,63 @@
 "use strict";
-const { Model, DataTypes } = require('sequelize');
-const sequelize = require('../config/database');
-class SubscriptionPlan extends Model {
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.SubscriptionPlan = void 0;
+const sequelize_1 = require("sequelize");
+const database_1 = __importDefault(require("../config/database"));
+class SubscriptionPlan extends sequelize_1.Model {
 }
+exports.SubscriptionPlan = SubscriptionPlan;
 SubscriptionPlan.init({
     id: {
-        type: DataTypes.UUID,
-        defaultValue: DataTypes.UUIDV4,
+        type: sequelize_1.DataTypes.UUID,
+        defaultValue: sequelize_1.DataTypes.UUIDV4,
         primaryKey: true,
     },
     name: {
-        type: DataTypes.STRING(100),
+        type: sequelize_1.DataTypes.STRING(100),
         allowNull: false,
     },
     periodDays: {
-        type: DataTypes.INTEGER,
+        type: sequelize_1.DataTypes.INTEGER,
         allowNull: false,
     },
     percentageCut: {
-        type: DataTypes.DECIMAL(5, 2),
+        type: sequelize_1.DataTypes.DECIMAL(5, 2),
         allowNull: false,
         defaultValue: 0,
     },
     cost: {
-        type: DataTypes.DECIMAL(10, 2),
+        type: sequelize_1.DataTypes.DECIMAL(10, 2),
         allowNull: false,
         defaultValue: 0,
     },
     status: {
-        type: DataTypes.STRING(30),
+        type: sequelize_1.DataTypes.STRING(30),
         allowNull: true,
     },
     features: {
-        type: DataTypes.JSONB,
+        type: sequelize_1.DataTypes.JSONB,
         allowNull: false,
         defaultValue: [],
     },
     isFree: {
-        type: DataTypes.BOOLEAN,
+        type: sequelize_1.DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: false,
     },
     freeOffer: {
-        type: DataTypes.JSONB,
+        type: sequelize_1.DataTypes.JSONB,
         allowNull: true,
     },
     isActive: {
-        type: DataTypes.BOOLEAN,
+        type: sequelize_1.DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: true,
     },
 }, {
-    sequelize,
+    sequelize: database_1.default,
     modelName: 'SubscriptionPlan',
     tableName: 'subscription_plans',
     underscored: true,
@@ -63,5 +69,7 @@ SubscriptionPlan.init({
         },
     ],
 });
+exports.default = SubscriptionPlan;
 module.exports = SubscriptionPlan;
+Object.assign(module.exports, { default: SubscriptionPlan });
 //# sourceMappingURL=SubscriptionPlan.js.map

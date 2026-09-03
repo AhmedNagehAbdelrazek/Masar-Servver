@@ -1,13 +1,28 @@
 "use strict";
-const { Op } = require('sequelize');
-const sequelize = require('../config/database');
-const { User, SubscriptionPlan, PaymentMethod, DriverSubscription, UploadedImage, DriverProfile } = require('../Models');
-const { SUBSCRIPTION_STATUS, FREE_OFFER_TYPE } = require('../config/constants');
-const { ApiErrors } = require('../utils/ApiError');
-const balanceService = require('./balanceService');
-const notificationService = require('./notificationService');
-const auditService = require('./auditService');
-const { hasFreeTripsOffer, freeTripsLimit } = require('../utils/freeTrips');
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.round = round;
+exports.maskNationalID = maskNationalID;
+exports.createSubscription = createSubscription;
+exports.getMySubscriptions = getMySubscriptions;
+exports.getCurrentSubscription = getCurrentSubscription;
+exports.listPending = listPending;
+exports.approve = approve;
+exports.reject = reject;
+exports.getCurrentActivePlan = getCurrentActivePlan;
+// @ts-nocheck
+const sequelize_1 = require("sequelize");
+const database_1 = __importDefault(require("../config/database"));
+const Models_1 = require("../Models");
+const constants_1 = require("../config/constants");
+const ApiError_1 = require("../utils/ApiError");
+const balanceService_1 = __importDefault(require("./balanceService"));
+const notificationService_1 = __importDefault(require("./notificationService"));
+const auditService_1 = __importDefault(require("./auditService"));
+const freeTrips_1 = require("../utils/freeTrips");
+const homeService_1 = __importDefault(require("./homeService"));
 const DAY_MS = 24 * 60 * 60 * 1000;
 function round(n) {
     return Math.round((Number(n) + Number.EPSILON) * 100) / 100;
@@ -21,7 +36,7 @@ function maskNationalID(nationalID) {
     return `****${s.slice(-4)}`;
 }
 function logMutation({ action, actorId, resourceType, resourceId, payload }) {
-    auditService.track({
+    auditService_1.default.track({
         eventType: 'admin.action',
         action,
         actorId,
@@ -45,8 +60,8 @@ function toSubscriptionDTO(sub) {
         expires_at: sub.expiresAt || null,
     };
     // Show free trips info from the snapshot on the subscription.
-    if (hasFreeTripsOffer(sub)) {
-        const limit = freeTripsLimit(sub);
+    if ((0, freeTrips_1.hasFreeTripsOffer)(sub)) {
+        const limit = (0, freeTrips_1.freeTripsLimit)(sub);
         const used = Number(sub.freeTripsUsed) || 0;
         dto.free_trips = {
             max: limit,
@@ -73,8 +88,8 @@ function toCurrentDTO(sub, user) {
         is_in_debt: user.isInDebt,
     };
     // Show free trips info from the snapshot on the subscription.
-    if (hasFreeTripsOffer(sub)) {
-        const limit = freeTripsLimit(sub);
+    if ((0, freeTrips_1.hasFreeTripsOffer)(sub)) {
+        const limit = (0, freeTrips_1.freeTripsLimit)(sub);
         const used = Number(sub.freeTripsUsed) || 0;
         result.subscription.free_trips = {
             max: limit,
@@ -92,38 +107,38 @@ function toCurrentDTO(sub, user) {
  * - Free plans cannot be subscribed to manually; they are auto-assigned on signup.
  */
 async function createSubscription(driverId, data) {
-    const plan = await SubscriptionPlan.findByPk(data.plan_id);
+    const plan = await Models_1.SubscriptionPlan.findByPk(data.plan_id);
     if (!plan || !plan.isActive) {
-        throw ApiErrors.custom('THE_SELECTED_PLAN_IS_NO_LONGER_ACTIVE', 422, 'PLAN_INACTIVE');
+        throw ApiError_1.ApiErrors.custom('THE_SELECTED_PLAN_IS_NO_LONGER_ACTIVE', 422, 'PLAN_INACTIVE');
     }
     if (plan.isFree) {
-        throw ApiErrors.custom('FREE_PLANS_ARE_AUTOMATICALLY_ASSIGNED_AT_SIGNUP_AND_CANNOT_BE', 422, 'FREE_PLAN_NOT_SUBSCRIBABLE');
+        throw ApiError_1.ApiErrors.custom('FREE_PLANS_ARE_AUTOMATICALLY_ASSIGNED_AT_SIGNUP_AND_CANNOT_BE', 422, 'FREE_PLAN_NOT_SUBSCRIBABLE');
     }
-    const method = await PaymentMethod.findByPk(data.payment_method_id);
+    const method = await Models_1.PaymentMethod.findByPk(data.payment_method_id);
     if (!method || !method.isActive) {
-        throw ApiErrors.validation('THE_SELECTED_PAYMENT_METHOD_IS_UNAVAILABLE');
+        throw ApiError_1.ApiErrors.validation('THE_SELECTED_PAYMENT_METHOD_IS_UNAVAILABLE');
     }
-    const screenshot = await UploadedImage.findByPk(data.screenshot_id);
+    const screenshot = await Models_1.UploadedImage.findByPk(data.screenshot_id);
     if (!screenshot) {
-        throw ApiErrors.validation('THE_SCREENSHOT_IMAGE_ID_IS_INVALID');
+        throw ApiError_1.ApiErrors.validation('THE_SCREENSHOT_IMAGE_ID_IS_INVALID');
     }
-    return sequelize.transaction(async (t) => {
-        const existing = await DriverSubscription.findAll({
+    return database_1.default.transaction(async (t) => {
+        const existing = await Models_1.DriverSubscription.findAll({
             where: {
                 driverId,
                 planId: plan.id,
-                status: SUBSCRIPTION_STATUS.PENDING_APPROVAL,
+                status: constants_1.SUBSCRIPTION_STATUS.PENDING_APPROVAL,
             },
             transaction: t,
             lock: t.LOCK.UPDATE,
         });
         if (existing.length > 0 && data.resubmit !== true) {
-            throw ApiErrors.custom('YOU_ALREADY_HAVE_A_PENDING_REQUEST_FOR_THIS_PLAN', 409, 'DUPLICATE_SUBSCRIPTION_REQUEST');
+            throw ApiError_1.ApiErrors.custom('YOU_ALREADY_HAVE_A_PENDING_REQUEST_FOR_THIS_PLAN', 409, 'DUPLICATE_SUBSCRIPTION_REQUEST');
         }
         if (existing.length > 0) {
-            await Promise.all(existing.map((row) => row.update({ status: SUBSCRIPTION_STATUS.CANCELLED }, { transaction: t })));
+            await Promise.all(existing.map((row) => row.update({ status: constants_1.SUBSCRIPTION_STATUS.CANCELLED }, { transaction: t })));
         }
-        const sub = await DriverSubscription.create({
+        const sub = await Models_1.DriverSubscription.create({
             driverId,
             planId: plan.id,
             planName: plan.name,
@@ -137,13 +152,13 @@ async function createSubscription(driverId, data) {
                 account_number: method.accountNumber,
                 type: method.type,
             },
-            status: SUBSCRIPTION_STATUS.PENDING_APPROVAL,
+            status: constants_1.SUBSCRIPTION_STATUS.PENDING_APPROVAL,
         }, { transaction: t });
         return sub;
     }).then(async (sub) => {
-        const user = await User.findByPk(driverId);
+        const user = await Models_1.User.findByPk(driverId);
         if (user) {
-            await notificationService.sendToUser(user, 'SUBSCRIPTION_SUBMITTED', {
+            await notificationService_1.default.sendToUser(user, 'SUBSCRIPTION_SUBMITTED', {
                 channels: ['in_app'],
                 data: { subscription_id: sub.id, plan_id: plan.id },
             });
@@ -152,17 +167,17 @@ async function createSubscription(driverId, data) {
     });
 }
 async function getMySubscriptions(driverId) {
-    const subs = await DriverSubscription.findAll({
+    const subs = await Models_1.DriverSubscription.findAll({
         where: { driverId },
         order: [['createdat', 'DESC']],
     });
     return subs.map(toSubscriptionDTO);
 }
 async function getCurrentSubscription(driverId) {
-    const user = await User.findByPk(driverId);
+    const user = await Models_1.User.findByPk(driverId);
     if (!user)
-        throw ApiErrors.notFound('USER_NOT_FOUND');
-    const current = await balanceService.findCurrentSubscription(driverId);
+        throw ApiError_1.ApiErrors.notFound('USER_NOT_FOUND');
+    const current = await balanceService_1.default.findCurrentSubscription(driverId);
     return toCurrentDTO(current, user);
 }
 /**
@@ -170,27 +185,27 @@ async function getCurrentSubscription(driverId) {
  * The raw national ID is selected on the server but never returned — it is
  * masked before it leaves this service.
  */
-async function listPending({ status = SUBSCRIPTION_STATUS.PENDING_APPROVAL, sort = 'newest' } = {}) {
-    const validStatuses = Object.values(SUBSCRIPTION_STATUS);
+async function listPending({ status = constants_1.SUBSCRIPTION_STATUS.PENDING_APPROVAL, sort = 'newest' } = {}) {
+    const validStatuses = Object.values(constants_1.SUBSCRIPTION_STATUS);
     if (!validStatuses.includes(status)) {
-        throw ApiErrors.validation('INVALID_SUBSCRIPTION_STATUS_FILTER');
+        throw ApiError_1.ApiErrors.validation('INVALID_SUBSCRIPTION_STATUS_FILTER');
     }
     const order = sort === 'oldest'
         ? [['createdat', 'ASC']]
         : [['createdat', 'DESC']];
-    const rows = await DriverSubscription.findAll({
+    const rows = await Models_1.DriverSubscription.findAll({
         where: { status },
         include: [
             {
-                model: User,
+                model: Models_1.User,
                 as: 'driver',
                 attributes: ['id', 'fullName', 'phone'],
                 include: [
-                    { model: DriverProfile, as: 'driverProfile', attributes: ['nationalID'] },
+                    { model: Models_1.DriverProfile, as: 'driverProfile', attributes: ['nationalID'] },
                 ],
             },
-            { model: SubscriptionPlan, as: 'plan', attributes: ['name', 'cost', 'isActive'] },
-            { model: UploadedImage, as: 'screenshot', attributes: ['id', 'url'] },
+            { model: Models_1.SubscriptionPlan, as: 'plan', attributes: ['name', 'cost', 'isActive'] },
+            { model: Models_1.UploadedImage, as: 'screenshot', attributes: ['id', 'url'] },
         ],
         order,
     });
@@ -226,19 +241,19 @@ async function listPending({ status = SUBSCRIPTION_STATUS.PENDING_APPROVAL, sort
  * and notifies the driver.
  */
 async function approve(subscriptionId, actorId) {
-    const result = await sequelize.transaction(async (t) => {
-        const sub = await DriverSubscription.findByPk(subscriptionId, {
+    const result = await database_1.default.transaction(async (t) => {
+        const sub = await Models_1.DriverSubscription.findByPk(subscriptionId, {
             transaction: t,
             lock: t.LOCK.UPDATE,
         });
         if (!sub)
-            throw ApiErrors.notFound('SUBSCRIPTION_NOT_FOUND');
-        if (sub.status !== SUBSCRIPTION_STATUS.PENDING_APPROVAL) {
-            throw ApiErrors.custom('REQUEST_ALREADY_PROCESSED', 409, 'REQUEST_ALREADY_PROCESSED');
+            throw ApiError_1.ApiErrors.notFound('SUBSCRIPTION_NOT_FOUND');
+        if (sub.status !== constants_1.SUBSCRIPTION_STATUS.PENDING_APPROVAL) {
+            throw ApiError_1.ApiErrors.custom('REQUEST_ALREADY_PROCESSED', 409, 'REQUEST_ALREADY_PROCESSED');
         }
-        const plan = await SubscriptionPlan.findByPk(sub.planId);
+        const plan = await Models_1.SubscriptionPlan.findByPk(sub.planId);
         if (!plan || !plan.isActive) {
-            throw ApiErrors.custom('THE_SELECTED_PLAN_IS_NO_LONGER_ACTIVE', 409, 'APPROVAL_BLOCKED');
+            throw ApiError_1.ApiErrors.custom('THE_SELECTED_PLAN_IS_NO_LONGER_ACTIVE', 409, 'APPROVAL_BLOCKED');
         }
         const now = new Date();
         const expiresAt = new Date(now.getTime() + Number(sub.planPeriodDays) * DAY_MS);
@@ -246,16 +261,16 @@ async function approve(subscriptionId, actorId) {
         let merged = null;
         let mergedBalance = 0;
         // Free credit-offer plans credit the offer value (plan cost is 0).
-        if (plan.isFree && plan.freeOffer && plan.freeOffer.type === FREE_OFFER_TYPE.CREDIT) {
+        if (plan.isFree && plan.freeOffer && plan.freeOffer.type === constants_1.FREE_OFFER_TYPE.CREDIT) {
             extraBalance += Number(plan.freeOffer.value) || 0;
         }
         // Renewal: merge an existing active same-plan subscription (T046).
-        const existing = await DriverSubscription.findOne({
+        const existing = await Models_1.DriverSubscription.findOne({
             where: {
                 driverId: sub.driverId,
                 planId: sub.planId,
-                id: { [Op.ne]: sub.id },
-                status: SUBSCRIPTION_STATUS.ACTIVE,
+                id: { [sequelize_1.Op.ne]: sub.id },
+                status: constants_1.SUBSCRIPTION_STATUS.ACTIVE,
             },
             transaction: t,
             lock: t.LOCK.UPDATE,
@@ -264,16 +279,16 @@ async function approve(subscriptionId, actorId) {
             const remaining = Number(existing.balance) || 0;
             extraBalance += remaining;
             mergedBalance = remaining;
-            await existing.update({ status: SUBSCRIPTION_STATUS.EXPIRED, balance: 0 }, { transaction: t });
+            await existing.update({ status: constants_1.SUBSCRIPTION_STATUS.EXPIRED, balance: 0 }, { transaction: t });
             merged = { id: existing.id, balance: remaining };
         }
         await sub.update({
-            status: SUBSCRIPTION_STATUS.ACTIVE,
+            status: constants_1.SUBSCRIPTION_STATUS.ACTIVE,
             approvedAt: now,
             activatedAt: now,
             expiresAt,
         }, { transaction: t });
-        const credit = await balanceService.creditOnApproval(sub, {
+        const credit = await balanceService_1.default.creditOnApproval(sub, {
             transaction: t,
             actorId,
             extraBalance,
@@ -303,9 +318,9 @@ async function approve(subscriptionId, actorId) {
     });
     // Notify outside the transaction (best-effort, never throws).
     try {
-        const user = await User.findByPk(result.driverId);
+        const user = await Models_1.User.findByPk(result.driverId);
         if (user) {
-            await notificationService.sendToUser(user, 'SUBSCRIPTION_APPROVED', {
+            await notificationService_1.default.sendToUser(user, 'SUBSCRIPTION_APPROVED', {
                 channels: ['sms', 'in_app'],
                 vars: {
                     plan: result.planName,
@@ -322,8 +337,7 @@ async function approve(subscriptionId, actorId) {
     // section and free-trips gating. Lazy require avoids a require cycle
     // (homeService already requires this module).
     try {
-        const homeService = require('./homeService');
-        await homeService.invalidateHomeCache(result.driverId);
+        await homeService_1.default.invalidateHomeCache(result.driverId);
     }
     catch (err) {
         console.warn('[subscriptionService] driver home cache invalidation failed:', err.message);
@@ -338,17 +352,17 @@ async function approve(subscriptionId, actorId) {
  * Reject a pending request with a reason. First-action-wins.
  */
 async function reject(subscriptionId, reason, actorId) {
-    const result = await sequelize.transaction(async (t) => {
-        const sub = await DriverSubscription.findByPk(subscriptionId, {
+    const result = await database_1.default.transaction(async (t) => {
+        const sub = await Models_1.DriverSubscription.findByPk(subscriptionId, {
             transaction: t,
             lock: t.LOCK.UPDATE,
         });
         if (!sub)
-            throw ApiErrors.notFound('SUBSCRIPTION_NOT_FOUND');
-        if (sub.status !== SUBSCRIPTION_STATUS.PENDING_APPROVAL) {
-            throw ApiErrors.custom('REQUEST_ALREADY_PROCESSED', 409, 'REQUEST_ALREADY_PROCESSED');
+            throw ApiError_1.ApiErrors.notFound('SUBSCRIPTION_NOT_FOUND');
+        if (sub.status !== constants_1.SUBSCRIPTION_STATUS.PENDING_APPROVAL) {
+            throw ApiError_1.ApiErrors.custom('REQUEST_ALREADY_PROCESSED', 409, 'REQUEST_ALREADY_PROCESSED');
         }
-        await sub.update({ status: SUBSCRIPTION_STATUS.REJECTED, adminNotes: reason }, { transaction: t });
+        await sub.update({ status: constants_1.SUBSCRIPTION_STATUS.REJECTED, adminNotes: reason }, { transaction: t });
         logMutation({
             action: 'subscription.reject',
             actorId,
@@ -359,9 +373,9 @@ async function reject(subscriptionId, reason, actorId) {
         return { subscriptionId: sub.id, planName: sub.planName, driverId: sub.driverId };
     });
     try {
-        const user = await User.findByPk(result.driverId);
+        const user = await Models_1.User.findByPk(result.driverId);
         if (user) {
-            await notificationService.sendToUser(user, 'SUBSCRIPTION_REJECTED', {
+            await notificationService_1.default.sendToUser(user, 'SUBSCRIPTION_REJECTED', {
                 channels: ['sms', 'in_app'],
                 vars: { reason },
                 data: { subscription_id: result.subscriptionId },
@@ -374,7 +388,7 @@ async function reject(subscriptionId, reason, actorId) {
     return { message: 'SUBSCRIPTION_REJECTED', subscription_id: result.subscriptionId };
 }
 async function getCurrentActivePlan(driverId) {
-    return balanceService.findCurrentSubscription(driverId);
+    return balanceService_1.default.findCurrentSubscription(driverId);
 }
 module.exports = {
     round,
@@ -387,4 +401,5 @@ module.exports = {
     reject,
     getCurrentActivePlan,
 };
+exports.default = module.exports;
 //# sourceMappingURL=subscriptionService.js.map

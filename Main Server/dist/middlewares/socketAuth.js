@@ -34,7 +34,6 @@ async function socketAuth(socket, next) {
             return next((0, socketAck_1.authError)('TOKEN_REVOKED', 'Access token has been revoked.'));
         }
         // Lazy require to avoid circular deps; Models is still JS
-        // eslint-disable-next-line @typescript-eslint/no-require-imports
         const { User } = require('../Models');
         const user = await User.findByPk(decoded.id, {
             attributes: ['id', 'role', 'status'],

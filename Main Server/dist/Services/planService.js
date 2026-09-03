@@ -1,10 +1,27 @@
 "use strict";
-const { SubscriptionPlan, PaymentMethod } = require('../Models');
-const { Op } = require('sequelize');
-const { ApiErrors } = require('../utils/ApiError');
-const { REDIS_KEYS, CACHE_TTL } = require('../utils/redisKeys');
-const { getKey, setKey, deleteKey } = require('../config/redis');
-const auditService = require('./auditService');
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.toPlanDTO = toPlanDTO;
+exports.toMethodDTO = toMethodDTO;
+exports.getActivePlans = getActivePlans;
+exports.getActivePaymentMethods = getActivePaymentMethods;
+exports.listPlans = listPlans;
+exports.createPlan = createPlan;
+exports.updatePlan = updatePlan;
+exports.deactivatePlan = deactivatePlan;
+exports.listPaymentMethods = listPaymentMethods;
+exports.createPaymentMethod = createPaymentMethod;
+exports.updatePaymentMethod = updatePaymentMethod;
+exports.deactivatePaymentMethod = deactivatePaymentMethod;
+// @ts-nocheck
+const Models_1 = require("../Models");
+const sequelize_1 = require("sequelize");
+const ApiError_1 = require("../utils/ApiError");
+const redisKeys_1 = require("../utils/redisKeys");
+const redis_1 = require("../config/redis");
+const auditService_1 = __importDefault(require("./auditService"));
 function toPlanDTO(plan) {
     const dto = {
         id: plan.id,
@@ -34,7 +51,7 @@ function toMethodDTO(method) {
     return dto;
 }
 function auditMutation({ action, actorId, resourceType, resourceId, payload }) {
-    auditService.track({
+    auditService_1.default.track({
         eventType: 'admin.action',
         action,
         actorId,
@@ -45,7 +62,7 @@ function auditMutation({ action, actorId, resourceType, resourceId, payload }) {
 }
 async function invalidatePlansCache() {
     try {
-        await deleteKey(REDIS_KEYS.PLANS_ACTIVE);
+        await (0, redis_1.deleteKey)(redisKeys_1.REDIS_KEYS.PLANS_ACTIVE);
     }
     catch (err) {
         console.warn('[planService] cache invalidation failed:', err.message);
@@ -57,7 +74,7 @@ async function invalidatePlansCache() {
  */
 async function getActivePlans() {
     try {
-        const cached = await getKey(REDIS_KEYS.PLANS_ACTIVE);
+        const cached = await (0, redis_1.getKey)(redisKeys_1.REDIS_KEYS.PLANS_ACTIVE);
         if (cached) {
             return JSON.parse(cached);
         }
@@ -65,13 +82,13 @@ async function getActivePlans() {
     catch (err) {
         console.warn('[planService] cache read failed:', err.message);
     }
-    const plans = await SubscriptionPlan.findAll({
+    const plans = await Models_1.SubscriptionPlan.findAll({
         where: { isActive: true, isFree: false },
         order: [['createdat', 'ASC']],
     });
     const dto = plans.map(toPlanDTO);
     try {
-        await setKey(REDIS_KEYS.PLANS_ACTIVE, JSON.stringify(dto), CACHE_TTL.PLANS);
+        await (0, redis_1.setKey)(redisKeys_1.REDIS_KEYS.PLANS_ACTIVE, JSON.stringify(dto), redisKeys_1.CACHE_TTL.PLANS);
     }
     catch (err) {
         console.warn('[planService] cache write failed:', err.message);
@@ -79,7 +96,7 @@ async function getActivePlans() {
     return dto;
 }
 async function getActivePaymentMethods() {
-    const methods = await PaymentMethod.findAll({
+    const methods = await Models_1.PaymentMethod.findAll({
         where: { isActive: true },
         order: [['createdat', 'ASC']],
     });
@@ -89,7 +106,7 @@ async function getActivePaymentMethods() {
  * Admin: list all plans including inactive.
  */
 async function listPlans() {
-    const plans = await SubscriptionPlan.findAll({ order: [['createdat', 'ASC']] });
+    const plans = await Models_1.SubscriptionPlan.findAll({ order: [['createdat', 'ASC']] });
     return plans.map(toPlanDTO);
 }
 async function ensureSingleFreePlan({ isFree, excludeId = null }) {
@@ -97,16 +114,16 @@ async function ensureSingleFreePlan({ isFree, excludeId = null }) {
         return;
     const where = { isFree: true, isActive: true };
     if (excludeId)
-        where.id = { [Op.ne]: excludeId };
-    const existing = await SubscriptionPlan.findOne({ where });
+        where.id = { [sequelize_1.Op.ne]: excludeId };
+    const existing = await Models_1.SubscriptionPlan.findOne({ where });
     if (existing) {
-        throw ApiErrors.custom('A_FREE_PLAN_ALREADY_EXISTS_ONLY_ONE_FREE_PLAN_CAN', 409, 'FREE_PLAN_EXISTS');
+        throw ApiError_1.ApiErrors.custom('A_FREE_PLAN_ALREADY_EXISTS_ONLY_ONE_FREE_PLAN_CAN', 409, 'FREE_PLAN_EXISTS');
     }
 }
 async function createPlan(data, actorId) {
     const isFree = Boolean(data.is_free);
     await ensureSingleFreePlan({ isFree });
-    const plan = await SubscriptionPlan.create({
+    const plan = await Models_1.SubscriptionPlan.create({
         name: data.name,
         periodDays: data.period_days,
         percentageCut: data.percentage_cut ?? 0,
@@ -128,9 +145,9 @@ async function createPlan(data, actorId) {
     return toPlanDTO(plan);
 }
 async function updatePlan(planId, data, actorId) {
-    const plan = await SubscriptionPlan.findByPk(planId);
+    const plan = await Models_1.SubscriptionPlan.findByPk(planId);
     if (!plan)
-        throw ApiErrors.notFound('PLAN_NOT_FOUND');
+        throw ApiError_1.ApiErrors.notFound('PLAN_NOT_FOUND');
     const isFree = data.is_free !== undefined ? Boolean(data.is_free) : plan.isFree;
     await ensureSingleFreePlan({ isFree, excludeId: planId });
     if (data.name !== undefined)
@@ -161,9 +178,9 @@ async function updatePlan(planId, data, actorId) {
     return toPlanDTO(plan);
 }
 async function deactivatePlan(planId, actorId) {
-    const plan = await SubscriptionPlan.findByPk(planId);
+    const plan = await Models_1.SubscriptionPlan.findByPk(planId);
     if (!plan)
-        throw ApiErrors.notFound('PLAN_NOT_FOUND');
+        throw ApiError_1.ApiErrors.notFound('PLAN_NOT_FOUND');
     plan.isActive = false;
     await plan.save();
     auditMutation({
@@ -177,11 +194,11 @@ async function deactivatePlan(planId, actorId) {
     return { message: 'PLAN_DEACTIVATED' };
 }
 async function listPaymentMethods() {
-    const methods = await PaymentMethod.findAll({ order: [['createdat', 'ASC']] });
+    const methods = await Models_1.PaymentMethod.findAll({ order: [['createdat', 'ASC']] });
     return methods.map(toMethodDTO);
 }
 async function createPaymentMethod(data, actorId) {
-    const method = await PaymentMethod.create({
+    const method = await Models_1.PaymentMethod.create({
         name: data.name,
         accountNumber: data.account_number,
         type: data.type,
@@ -198,9 +215,9 @@ async function createPaymentMethod(data, actorId) {
     return toMethodDTO(method);
 }
 async function updatePaymentMethod(methodId, data, actorId) {
-    const method = await PaymentMethod.findByPk(methodId);
+    const method = await Models_1.PaymentMethod.findByPk(methodId);
     if (!method)
-        throw ApiErrors.notFound('PAYMENT_METHOD_NOT_FOUND');
+        throw ApiError_1.ApiErrors.notFound('PAYMENT_METHOD_NOT_FOUND');
     if (data.name !== undefined)
         method.name = data.name;
     if (data.account_number !== undefined)
@@ -220,9 +237,9 @@ async function updatePaymentMethod(methodId, data, actorId) {
     return toMethodDTO(method);
 }
 async function deactivatePaymentMethod(methodId, actorId) {
-    const method = await PaymentMethod.findByPk(methodId);
+    const method = await Models_1.PaymentMethod.findByPk(methodId);
     if (!method)
-        throw ApiErrors.notFound('PAYMENT_METHOD_NOT_FOUND');
+        throw ApiError_1.ApiErrors.notFound('PAYMENT_METHOD_NOT_FOUND');
     method.isActive = false;
     await method.save();
     auditMutation({
@@ -248,4 +265,5 @@ module.exports = {
     updatePaymentMethod,
     deactivatePaymentMethod,
 };
+exports.default = module.exports;
 //# sourceMappingURL=planService.js.map

@@ -1,29 +1,46 @@
 "use strict";
-const { param, query, body } = require('express-validator');
-const { SOS_STATUS } = require('../../config/constants');
-const V = require('../../config/messages/validation-keys');
-const sosListValidation = [
-    query('status')
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.resolveSosValidation = exports.sosIdParamValidation = exports.sosListValidation = void 0;
+const express_validator_1 = require("express-validator");
+const constants_1 = require("../../config/constants");
+const validation_keys_1 = require("../../config/messages/validation-keys");
+exports.sosListValidation = [
+    (0, express_validator_1.query)('status')
         .optional()
-        .isIn(Object.values(SOS_STATUS)).withMessage(V.STATUS_MUST_BE_ONE_OF_PENDING_ACKNOWLEDGED_RESOLVED_CANCELLED),
-    query('page')
+        .isIn(Object.values(constants_1.SOS_STATUS)).withMessage(validation_keys_1.VALIDATION_KEYS.STATUS_MUST_BE_ONE_OF_PENDING_ACKNOWLEDGED_RESOLVED_CANCELLED),
+    (0, express_validator_1.query)('page')
         .optional()
-        .isInt({ min: 1 }).withMessage(V.PAGE_MUST_BE_A_POSITIVE_INTEGER),
-    query('limit')
+        .isInt({ min: 1 }).withMessage(validation_keys_1.VALIDATION_KEYS.PAGE_MUST_BE_A_POSITIVE_INTEGER),
+    (0, express_validator_1.query)('limit')
         .optional()
-        .isInt({ min: 1, max: 100 }).withMessage(V.LIMIT_MUST_BE_AN_INTEGER_BETWEEN_1_AND_100),
+        .isInt({ min: 1, max: 100 }).withMessage(validation_keys_1.VALIDATION_KEYS.LIMIT_MUST_BE_AN_INTEGER_BETWEEN_1_AND_100),
 ];
-const sosIdParamValidation = [
-    param('id')
-        .isUUID().withMessage(V.SOS_EVENT_ID_MUST_BE_A_VALID_UUID),
+exports.sosIdParamValidation = [
+    (0, express_validator_1.param)('id')
+        .isUUID().withMessage(validation_keys_1.VALIDATION_KEYS.SOS_EVENT_ID_MUST_BE_A_VALID_UUID),
 ];
-const resolveSosValidation = [
-    param('id')
-        .isUUID().withMessage(V.SOS_EVENT_ID_MUST_BE_A_VALID_UUID),
-    body('resolution_note')
+exports.resolveSosValidation = [
+    (0, express_validator_1.param)('id')
+        .isUUID().withMessage(validation_keys_1.VALIDATION_KEYS.SOS_EVENT_ID_MUST_BE_A_VALID_UUID),
+    (0, express_validator_1.body)('resolution_note')
         .optional()
         .isString()
-        .isLength({ max: 500 }).withMessage(V.RESOLUTION_NOTE_MUST_BE_AT_MOST_500_CHARACTERS),
+        .isLength({ max: 500 }).withMessage(validation_keys_1.VALIDATION_KEYS.RESOLUTION_NOTE_MUST_BE_AT_MOST_500_CHARACTERS),
 ];
-module.exports = { sosListValidation, sosIdParamValidation, resolveSosValidation };
+const _exported = { sosListValidation: exports.sosListValidation, sosIdParamValidation: exports.sosIdParamValidation, resolveSosValidation: exports.resolveSosValidation };
+exports.default = _exported;
+// CommonJS interop
+// @ts-ignore
+if (typeof module !== 'undefined' && module.exports) {
+    // @ts-ignore
+    module.exports = { sosListValidation: exports.sosListValidation, sosIdParamValidation: exports.sosIdParamValidation, resolveSosValidation: exports.resolveSosValidation };
+    // @ts-ignore
+    module.exports.sosListValidation = exports.sosListValidation;
+    // @ts-ignore
+    module.exports.sosIdParamValidation = exports.sosIdParamValidation;
+    // @ts-ignore
+    module.exports.resolveSosValidation = exports.resolveSosValidation;
+    // @ts-ignore
+    module.exports.default = _exported;
+}
 //# sourceMappingURL=sosValidator.js.map

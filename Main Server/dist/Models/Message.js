@@ -1,51 +1,57 @@
 "use strict";
-const { Model, DataTypes } = require('sequelize');
-const sequelize = require('../config/database');
-const { MESSAGE_TYPE } = require('../config/constants');
-class Message extends Model {
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.Message = void 0;
+const sequelize_1 = require("sequelize");
+const database_1 = __importDefault(require("../config/database"));
+const constants_1 = require("../config/constants");
+class Message extends sequelize_1.Model {
 }
+exports.Message = Message;
 Message.init({
     id: {
-        type: DataTypes.UUID,
-        defaultValue: DataTypes.UUIDV4,
+        type: sequelize_1.DataTypes.UUID,
+        defaultValue: sequelize_1.DataTypes.UUIDV4,
         primaryKey: true,
     },
     senderId: {
-        type: DataTypes.UUID,
+        type: sequelize_1.DataTypes.UUID,
         allowNull: false,
     },
     receiverId: {
-        type: DataTypes.UUID,
+        type: sequelize_1.DataTypes.UUID,
         allowNull: true,
     },
     bookingId: {
-        type: DataTypes.UUID,
+        type: sequelize_1.DataTypes.UUID,
         allowNull: true,
     },
     supportTicketId: {
-        type: DataTypes.UUID,
+        type: sequelize_1.DataTypes.UUID,
         allowNull: true,
     },
     message: {
-        type: DataTypes.TEXT,
+        type: sequelize_1.DataTypes.TEXT,
         allowNull: false,
     },
     messageType: {
-        type: DataTypes.STRING(20),
+        type: sequelize_1.DataTypes.STRING(20),
         allowNull: false,
-        defaultValue: MESSAGE_TYPE.TEXT,
+        defaultValue: constants_1.MESSAGE_TYPE.TEXT,
     },
     isRead: {
-        type: DataTypes.BOOLEAN,
+        type: sequelize_1.DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: false,
     },
     readAt: {
-        type: DataTypes.DATE,
+        type: sequelize_1.DataTypes.DATE,
         allowNull: true,
     },
 }, {
-    sequelize,
+    sequelize: database_1.default,
     modelName: 'Message',
     tableName: 'messages',
     underscored: true,
@@ -62,5 +68,7 @@ Message.init({
         },
     ],
 });
+exports.default = Message;
 module.exports = Message;
+Object.assign(module.exports, { default: Message });
 //# sourceMappingURL=Message.js.map
