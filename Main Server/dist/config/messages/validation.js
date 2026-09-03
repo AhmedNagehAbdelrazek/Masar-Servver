@@ -62,6 +62,7 @@ exports.VALIDATION_MESSAGES = {
     CURRENT_PASSWORD_IS_REQUIRED: { en: "Current password is required", ar: "كلمة المرور الحالية مطلوبة" },
     DATE_FROM_MUST_BE_A_VALID_ISO_8601_DATE: { en: "date_from must be a valid ISO-8601 date", ar: "يجب أن يكون تاريخ البدء تاريخاً صالحاً بصيغة ISO-8601" },
     DATE_MUST_BE_A_VALID_DATE_YYYY_MM_DD: { en: "Date must be a valid date (YYYY-MM-DD)", ar: "يجب أن يكون التاريخ تاريخاً صالحاً (YYYY-MM-DD)" },
+    DATE_CANNOT_BE_IN_THE_PAST: { en: "Date cannot be in the past", ar: "لا يمكن أن يكون التاريخ في الماضي" },
     DATE_TO_MUST_BE_A_VALID_ISO_8601_DATE: { en: "date_to must be a valid ISO-8601 date", ar: "يجب أن يكون تاريخ الانتهاء تاريخاً صالحاً بصيغة ISO-8601" },
     DELAY_MINUTES_IS_REQUIRED: { en: "delay_minutes is required", ar: "دقائق التأخير مطلوبة" },
     DELAY_MINUTES_MUST_BE_AN_INTEGER_BETWEEN_1_AND_720: { en: "delay_minutes must be an integer between 1 and 720", ar: "يجب أن تكون دقائق التأخير رقماً صحيحاً بين 1 و 720" },

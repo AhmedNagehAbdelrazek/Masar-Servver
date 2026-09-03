@@ -33,18 +33,18 @@ RecentSearch.init({
     },
 }, {
     sequelize: database_1.default,
-    modelName: 'RecentSearch',
-    tableName: 'recent_search',
+    modelName: "RecentSearch",
+    tableName: "recent_search",
     underscored: true,
     timestamps: true,
     updatedAt: false,
     indexes: [
         {
             unique: true,
-            fields: ['passenger_id', 'origin_city', 'destination_city'],
+            fields: ["passenger_id", "origin_city", "destination_city"],
         },
         {
-            fields: ['passenger_id', 'searched_on'],
+            fields: ["passenger_id", "searched_on"],
         },
     ],
 });

@@ -1,41 +1,44 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.updateMethodValidation = exports.createMethodValidation = exports.methodParamValidation = void 0;
 const express_validator_1 = require("express-validator");
 const constants_1 = require("../../config/constants");
-const validation_keys_1 = require("../../config/messages/validation-keys");
+const validation_keys_1 = __importDefault(require("../../config/messages/validation-keys"));
 exports.methodParamValidation = [
     (0, express_validator_1.param)('method_id')
-        .isUUID().withMessage(validation_keys_1.VALIDATION_KEYS.METHOD_ID_MUST_BE_A_VALID_UUID),
+        .isUUID().withMessage(validation_keys_1.default.METHOD_ID_MUST_BE_A_VALID_UUID),
 ];
 exports.createMethodValidation = [
     (0, express_validator_1.body)('name')
-        .notEmpty().withMessage(validation_keys_1.VALIDATION_KEYS.NAME_IS_REQUIRED)
-        .isString().trim().isLength({ max: 100 }).withMessage(validation_keys_1.VALIDATION_KEYS.NAME_MUST_BE_AT_MOST_100_CHARACTERS),
+        .notEmpty().withMessage(validation_keys_1.default.NAME_IS_REQUIRED)
+        .isString().trim().isLength({ max: 100 }).withMessage(validation_keys_1.default.NAME_MUST_BE_AT_MOST_100_CHARACTERS),
     (0, express_validator_1.body)('account_number')
-        .notEmpty().withMessage(validation_keys_1.VALIDATION_KEYS.ACCOUNT_NUMBER_IS_REQUIRED)
-        .isString().trim().isLength({ max: 50 }).withMessage(validation_keys_1.VALIDATION_KEYS.ACCOUNT_NUMBER_MUST_BE_AT_MOST_50_CHARACTERS),
+        .notEmpty().withMessage(validation_keys_1.default.ACCOUNT_NUMBER_IS_REQUIRED)
+        .isString().trim().isLength({ max: 50 }).withMessage(validation_keys_1.default.ACCOUNT_NUMBER_MUST_BE_AT_MOST_50_CHARACTERS),
     (0, express_validator_1.body)('type')
-        .notEmpty().withMessage(validation_keys_1.VALIDATION_KEYS.TYPE_IS_REQUIRED)
-        .isIn(Object.values(constants_1.PAYMENT_METHOD_TYPE)).withMessage(validation_keys_1.VALIDATION_KEYS.TYPE_MUST_BE_ONE_OF_BANK_ACCOUNT_E_WALLET_MOBILE_MONEY),
+        .notEmpty().withMessage(validation_keys_1.default.TYPE_IS_REQUIRED)
+        .isIn(Object.values(constants_1.PAYMENT_METHOD_TYPE)).withMessage(validation_keys_1.default.TYPE_MUST_BE_ONE_OF_BANK_ACCOUNT_E_WALLET_MOBILE_MONEY),
     (0, express_validator_1.body)('email')
         .optional()
-        .isEmail().withMessage(validation_keys_1.VALIDATION_KEYS.EMAIL_MUST_BE_A_VALID_EMAIL_ADDRESS),
+        .isEmail().withMessage(validation_keys_1.default.EMAIL_MUST_BE_A_VALID_EMAIL_ADDRESS),
 ];
 exports.updateMethodValidation = [
     ...exports.methodParamValidation,
     (0, express_validator_1.body)('name')
         .optional()
-        .isString().trim().isLength({ max: 100 }).withMessage(validation_keys_1.VALIDATION_KEYS.NAME_MUST_BE_AT_MOST_100_CHARACTERS),
+        .isString().trim().isLength({ max: 100 }).withMessage(validation_keys_1.default.NAME_MUST_BE_AT_MOST_100_CHARACTERS),
     (0, express_validator_1.body)('account_number')
         .optional()
-        .isString().trim().isLength({ max: 50 }).withMessage(validation_keys_1.VALIDATION_KEYS.ACCOUNT_NUMBER_MUST_BE_AT_MOST_50_CHARACTERS),
+        .isString().trim().isLength({ max: 50 }).withMessage(validation_keys_1.default.ACCOUNT_NUMBER_MUST_BE_AT_MOST_50_CHARACTERS),
     (0, express_validator_1.body)('type')
         .optional()
-        .isIn(Object.values(constants_1.PAYMENT_METHOD_TYPE)).withMessage(validation_keys_1.VALIDATION_KEYS.TYPE_MUST_BE_ONE_OF_BANK_ACCOUNT_E_WALLET_MOBILE_MONEY),
+        .isIn(Object.values(constants_1.PAYMENT_METHOD_TYPE)).withMessage(validation_keys_1.default.TYPE_MUST_BE_ONE_OF_BANK_ACCOUNT_E_WALLET_MOBILE_MONEY),
     (0, express_validator_1.body)('email')
         .optional()
-        .isEmail().withMessage(validation_keys_1.VALIDATION_KEYS.EMAIL_MUST_BE_A_VALID_EMAIL_ADDRESS),
+        .isEmail().withMessage(validation_keys_1.default.EMAIL_MUST_BE_A_VALID_EMAIL_ADDRESS),
 ];
 const _exported = { methodParamValidation: exports.methodParamValidation, createMethodValidation: exports.createMethodValidation, updateMethodValidation: exports.updateMethodValidation };
 exports.default = _exported;

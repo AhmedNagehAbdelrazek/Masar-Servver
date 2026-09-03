@@ -1,22 +1,25 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.reservationsQueryValidation = exports.driverTripsQueryValidation = exports.driversListValidation = exports.recentTripsQueryValidation = exports.paginationQueryValidation = exports.rejectReasonBodyValidation = exports.accountActionBodyValidation = exports.statusBodyValidation = exports.documentKeyParamValidation = exports.driverIdParamValidation = void 0;
 const express_validator_1 = require("express-validator");
-const validation_keys_1 = require("../../config/messages/validation-keys");
+const validation_keys_1 = __importDefault(require("../../config/messages/validation-keys"));
 exports.driverIdParamValidation = [
-    (0, express_validator_1.param)('driver_id').isUUID().withMessage(validation_keys_1.VALIDATION_KEYS.DRIVER_ID_MUST_BE_A_VALID_UUID),
+    (0, express_validator_1.param)('driver_id').isUUID().withMessage(validation_keys_1.default.DRIVER_ID_MUST_BE_A_VALID_UUID),
 ];
 exports.documentKeyParamValidation = [
     (0, express_validator_1.param)('document_key')
         .isString()
         .trim()
         .isLength({ min: 2, max: 40 })
-        .withMessage(validation_keys_1.VALIDATION_KEYS['DOCUMENT_KEY_MUST_BE_VALID'] || 'DOCUMENT_KEY_NOT_RECOGNIZED'),
+        .withMessage(validation_keys_1.default['DOCUMENT_KEY_MUST_BE_VALID'] || 'DOCUMENT_KEY_NOT_RECOGNIZED'),
 ];
 exports.statusBodyValidation = [
     (0, express_validator_1.body)('status')
         .isIn(['active', 'suspended', 'pending', 'blocked'])
-        .withMessage(validation_keys_1.VALIDATION_KEYS['STATUS_MUST_BE_ONE_OF_PENDING_APPROVED_REJECTED_UNVERIFIED'] || 'INVALID_DRIVER_STATUS_VALUE'),
+        .withMessage(validation_keys_1.default['STATUS_MUST_BE_ONE_OF_PENDING_APPROVED_REJECTED_UNVERIFIED'] || 'INVALID_DRIVER_STATUS_VALUE'),
 ];
 exports.accountActionBodyValidation = [
     (0, express_validator_1.body)('action')
@@ -35,11 +38,11 @@ exports.rejectReasonBodyValidation = [
         .isString()
         .trim()
         .isLength({ max: 2000 })
-        .withMessage(validation_keys_1.VALIDATION_KEYS.REASON_MUST_BE_AT_MOST_2000_CHARACTERS || 'REASON_MUST_BE_AT_MOST_2000_CHARACTERS'),
+        .withMessage(validation_keys_1.default.REASON_MUST_BE_AT_MOST_2000_CHARACTERS || 'REASON_MUST_BE_AT_MOST_2000_CHARACTERS'),
 ];
 exports.paginationQueryValidation = [
-    (0, express_validator_1.query)('page').optional().isInt({ min: 1 }).withMessage(validation_keys_1.VALIDATION_KEYS.PAGE_MUST_BE_A_POSITIVE_INTEGER),
-    (0, express_validator_1.query)('limit').optional().isInt({ min: 1, max: 100 }).withMessage(validation_keys_1.VALIDATION_KEYS.LIMIT_MUST_BE_AN_INTEGER_BETWEEN_1_AND_100),
+    (0, express_validator_1.query)('page').optional().isInt({ min: 1 }).withMessage(validation_keys_1.default.PAGE_MUST_BE_A_POSITIVE_INTEGER),
+    (0, express_validator_1.query)('limit').optional().isInt({ min: 1, max: 100 }).withMessage(validation_keys_1.default.LIMIT_MUST_BE_AN_INTEGER_BETWEEN_1_AND_100),
 ];
 exports.recentTripsQueryValidation = [
     ...exports.paginationQueryValidation,
@@ -53,7 +56,7 @@ exports.driversListValidation = [
     (0, express_validator_1.query)('search')
         .optional()
         .isString().trim()
-        .isLength({ max: 120 }).withMessage(validation_keys_1.VALIDATION_KEYS.SEARCH_MUST_BE_AT_MOST_100_CHARACTERS),
+        .isLength({ max: 120 }).withMessage(validation_keys_1.default.SEARCH_MUST_BE_AT_MOST_100_CHARACTERS),
     (0, express_validator_1.query)('status')
         .optional()
         .isIn(['active', 'suspended', 'pending', 'blocked'])

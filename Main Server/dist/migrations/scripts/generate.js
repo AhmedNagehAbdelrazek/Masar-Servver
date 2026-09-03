@@ -9,7 +9,14 @@ const path_1 = __importDefault(require("path"));
 const args = process.argv.slice(2);
 const modelsPath = 'Models';
 const migrationsPath = path_1.default.join('migrations', 'versions');
-const cmd = `npx makemigration --models-path "${modelsPath}" --migrations-path "${migrationsPath}" ${args.join(' ')}`;
+// Use tsx to allow requiring TypeScript Models (Models/*.ts) via sequelize-auto-migrations.
+// Direct `npx makemigration` fails with "Cannot find module '.../Models'" because it tries
+// to require a TS directory without a transpiler.
+const isWin = process.platform === 'win32';
+const makemigrationBin = path_1.default.join('node_modules', 'sequelize-auto-migrations', 'bin', 'makemigration.js');
+// Quote the bin path for Windows (contains spaces like "Masar Servver")
+const binArg = isWin ? `"${makemigrationBin}"` : makemigrationBin;
+const cmd = `npx tsx ${binArg} --models-path "${modelsPath}" --migrations-path "${migrationsPath}" ${args.join(' ')}`;
 try {
     (0, child_process_1.execSync)(cmd, { stdio: 'inherit', cwd: process.cwd() });
 }

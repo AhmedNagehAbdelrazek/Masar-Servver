@@ -260,6 +260,8 @@ exports.APP_MESSAGES = {
     ALERT_PENDING_VERIFICATION_DOCUMENTS: { en: 'Verification documents awaiting review', ar: 'مستندات توثيق بانتظار المراجعة' },
     ALERT_PENDING_REVIEW_DRIVERS: { en: 'Drivers awaiting review', ar: 'سائقون بانتظار المراجعة' },
     ALERT_UNRESOLVED_COMPLAINTS: { en: 'Unresolved complaints', ar: 'شكاوى غير محلولة' },
+    // ===== Date / search =====
+    DATE_CANNOT_BE_IN_THE_PAST: { en: 'Date cannot be in the past', ar: 'لا يمكن أن يكون التاريخ في الماضي' },
     // ===== Successes =====
 };
 exports.default = exports.APP_MESSAGES;
