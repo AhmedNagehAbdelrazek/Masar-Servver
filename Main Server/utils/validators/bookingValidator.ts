@@ -34,15 +34,123 @@ export const createBookingValidation: ValidationChain[] = [
   body('seats')
     .optional()
     .isInt({ min: 1 }).withMessage(V.SEATS_MUST_BE_POSITIVE_INTEGER),
+  // pickup_point: allow UUID referencing TripStop OR object with name+lat/lng created at booking time
   body('pickup_point')
     .optional()
-    .isUUID().withMessage(V.TRIP_ID_MUST_BE_A_VALID_UUID),
+    .custom((value: unknown) => {
+      if (value == null) return true;
+      if (typeof value === 'string') {
+        if (!/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(String(value))) throw new Error(V.TRIP_ID_MUST_BE_A_VALID_UUID);
+        return true;
+      }
+      if (typeof value === 'object') {
+        const obj = value as Record<string, unknown>;
+        const name = obj.name ?? obj.stop_name;
+        if (name != null && String(name).trim().length > 120) throw new Error(V.STOP_NAME_MUST_BE_AT_MOST_120_CHARACTERS);
+        const lat = obj.lat ?? obj.stop_lat;
+        if (lat != null && isNaN(parseFloat(String(lat)))) throw new Error(V.STOP_LATITUDE_MUST_BE_A_DECIMAL);
+        const lng = obj.lng ?? obj.stop_lng;
+        if (lng != null && isNaN(parseFloat(String(lng)))) throw new Error(V.STOP_LONGITUDE_MUST_BE_A_DECIMAL);
+        if (lat != null) {
+          const n = parseFloat(String(lat));
+          if (n < -90 || n > 90) throw new Error(V.ORIGIN_LATITUDE_MUST_BE_BETWEEN_90_AND_90);
+        }
+        if (lng != null) {
+          const n = parseFloat(String(lng));
+          if (n < -180 || n > 180) throw new Error(V.ORIGIN_LONGITUDE_MUST_BE_BETWEEN_180_AND_180);
+        }
+        return true;
+      }
+      throw new Error(V.TRIP_ID_MUST_BE_A_VALID_UUID);
+    }),
+  body('pickup_point.name')
+    .optional()
+    .trim()
+    .isLength({ max: 120 }).withMessage(V.STOP_NAME_MUST_BE_AT_MOST_120_CHARACTERS),
+  body('pickup_point.lat')
+    .optional()
+    .isFloat({ min: -90, max: 90 }).withMessage(V.ORIGIN_LATITUDE_MUST_BE_BETWEEN_90_AND_90),
+  body('pickup_point.lng')
+    .optional()
+    .isFloat({ min: -180, max: 180 }).withMessage(V.ORIGIN_LONGITUDE_MUST_BE_BETWEEN_180_AND_180),
   body('pick_up_point')
     .optional()
-    .isUUID().withMessage(V.TRIP_ID_MUST_BE_A_VALID_UUID),
+    .custom((value: unknown) => {
+      if (value == null) return true;
+      if (typeof value === 'string') {
+        if (!/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(String(value))) throw new Error(V.TRIP_ID_MUST_BE_A_VALID_UUID);
+        return true;
+      }
+      if (typeof value === 'object') return true;
+      throw new Error(V.TRIP_ID_MUST_BE_A_VALID_UUID);
+    }),
+  // drop_off_point: allow UUID or object with name+lat/lng
   body('drop_off_point')
     .optional()
-    .isUUID().withMessage(V.TRIP_ID_MUST_BE_A_VALID_UUID),
+    .custom((value: unknown) => {
+      if (value == null) return true;
+      if (typeof value === 'string') {
+        if (!/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(String(value))) throw new Error(V.TRIP_ID_MUST_BE_A_VALID_UUID);
+        return true;
+      }
+      if (typeof value === 'object') {
+        const obj = value as Record<string, unknown>;
+        const lat = obj.lat ?? obj.stop_lat;
+        const lng = obj.lng ?? obj.stop_lng;
+        if (lat != null && isNaN(parseFloat(String(lat)))) throw new Error(V.STOP_LATITUDE_MUST_BE_A_DECIMAL);
+        if (lng != null && isNaN(parseFloat(String(lng)))) throw new Error(V.STOP_LONGITUDE_MUST_BE_A_DECIMAL);
+        return true;
+      }
+      throw new Error(V.TRIP_ID_MUST_BE_A_VALID_UUID);
+    }),
+  body('drop_off_point.name')
+    .optional()
+    .trim()
+    .isLength({ max: 120 }).withMessage(V.STOP_NAME_MUST_BE_AT_MOST_120_CHARACTERS),
+  body('drop_off_point.lat')
+    .optional()
+    .isFloat({ min: -90, max: 90 }).withMessage(V.ORIGIN_LATITUDE_MUST_BE_BETWEEN_90_AND_90),
+  body('drop_off_point.lng')
+    .optional()
+    .isFloat({ min: -180, max: 180 }).withMessage(V.ORIGIN_LONGITUDE_MUST_BE_BETWEEN_180_AND_180),
+  // alternative explicit objects: pickup {name, lat, lng} and dropoff/dropOff
+  body('pickup')
+    .optional()
+    .isObject().withMessage(V.STOPS_MUST_BE_AN_ARRAY),
+  body('pickup.name')
+    .optional()
+    .trim()
+    .isLength({ max: 120 }).withMessage(V.STOP_NAME_MUST_BE_AT_MOST_120_CHARACTERS),
+  body('pickup.lat')
+    .optional()
+    .isFloat({ min: -90, max: 90 }).withMessage(V.ORIGIN_LATITUDE_MUST_BE_BETWEEN_90_AND_90),
+  body('pickup.lng')
+    .optional()
+    .isFloat({ min: -180, max: 180 }).withMessage(V.ORIGIN_LONGITUDE_MUST_BE_BETWEEN_180_AND_180),
+  body('dropoff')
+    .optional()
+    .isObject().withMessage(V.STOPS_MUST_BE_AN_ARRAY),
+  body('dropoff.name')
+    .optional()
+    .trim()
+    .isLength({ max: 120 }).withMessage(V.STOP_NAME_MUST_BE_AT_MOST_120_CHARACTERS),
+  body('dropoff.lat')
+    .optional()
+    .isFloat({ min: -90, max: 90 }).withMessage(V.ORIGIN_LATITUDE_MUST_BE_BETWEEN_90_AND_90),
+  body('dropoff.lng')
+    .optional()
+    .isFloat({ min: -180, max: 180 }).withMessage(V.ORIGIN_LONGITUDE_MUST_BE_BETWEEN_180_AND_180),
+  body('dropoff_point')
+    .optional()
+    .custom((value: unknown) => {
+      if (value == null) return true;
+      if (typeof value === 'string') {
+        if (!/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(String(value))) throw new Error(V.TRIP_ID_MUST_BE_A_VALID_UUID);
+        return true;
+      }
+      if (typeof value === 'object') return true;
+      throw new Error(V.TRIP_ID_MUST_BE_A_VALID_UUID);
+    }),
   body('agreed_fare')
     .notEmpty().withMessage(V.AGREED_FARE_IS_REQUIRED)
     .isFloat({ min: 0 }).withMessage(V.AGREED_FARE_MUST_BE_A_NON_NEGATIVE_NUMBER),

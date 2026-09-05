@@ -1,23 +1,20 @@
 'use strict';
-
 var Sequelize = require('sequelize');
-
 var info = {
-    "revision": 25,
-    "name": "booking-pickup-and-request-note",
+    "revision": 26,
+    "name": "booking-pickup-dropoff-coords",
     "created": "2026-09-06T00:00:00.000Z",
-    "comment": "add pickup_place/pickup_order to bookings and note to ride_requests"
+    "comment": "add pickup_lat/lng and dropoff_lat/lng to bookings for passenger booking with name+lat/lng"
 };
-
 var migrationCommands = [
     {
         fn: "addColumn",
         params: [
             "bookings",
-            "pickup_place",
+            "pickup_lat",
             {
-                "type": Sequelize.STRING(120),
-                "field": "pickup_place",
+                "type": Sequelize.NUMERIC(10, 8),
+                "field": "pickup_lat",
                 "allowNull": true
             }
         ]
@@ -26,10 +23,10 @@ var migrationCommands = [
         fn: "addColumn",
         params: [
             "bookings",
-            "pickup_order",
+            "pickup_lng",
             {
-                "type": Sequelize.SMALLINT,
-                "field": "pickup_order",
+                "type": Sequelize.NUMERIC(11, 8),
+                "field": "pickup_lng",
                 "allowNull": true
             }
         ]
@@ -37,17 +34,28 @@ var migrationCommands = [
     {
         fn: "addColumn",
         params: [
-            "ride_requests",
-            "note",
+            "bookings",
+            "dropoff_lat",
             {
-                "type": Sequelize.TEXT,
-                "field": "note",
+                "type": Sequelize.NUMERIC(10, 8),
+                "field": "dropoff_lat",
+                "allowNull": true
+            }
+        ]
+    },
+    {
+        fn: "addColumn",
+        params: [
+            "bookings",
+            "dropoff_lng",
+            {
+                "type": Sequelize.NUMERIC(11, 8),
+                "field": "dropoff_lng",
                 "allowNull": true
             }
         ]
     }
 ];
-
 module.exports = {
     pos: 0,
     migrationCommands,
@@ -68,9 +76,11 @@ module.exports = {
         });
     },
     down: function (queryInterface) {
-        return queryInterface.removeColumn("ride_requests", "note")
-            .then(() => queryInterface.removeColumn("bookings", "pickup_order"))
-            .then(() => queryInterface.removeColumn("bookings", "pickup_place"));
+        return queryInterface.removeColumn("bookings", "dropoff_lng")
+            .then(() => queryInterface.removeColumn("bookings", "dropoff_lat"))
+            .then(() => queryInterface.removeColumn("bookings", "pickup_lng"))
+            .then(() => queryInterface.removeColumn("bookings", "pickup_lat"));
     },
     info: info
 };
+//# sourceMappingURL=026-booking-pickup-dropoff-coords.js.map

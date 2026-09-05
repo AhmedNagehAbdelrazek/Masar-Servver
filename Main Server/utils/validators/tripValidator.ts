@@ -66,12 +66,118 @@ export const createTripValidation: ValidationChain[] = [
     .optional()
     .trim()
     .isLength({ max: 120 }).withMessage(V.STOP_NAME_MUST_BE_AT_MOST_120_CHARACTERS),
+  body('waypoints.*.name')
+    .optional()
+    .trim()
+    .isLength({ max: 120 }).withMessage(V.STOP_NAME_MUST_BE_AT_MOST_120_CHARACTERS),
   body('waypoints.*.stop_lat')
+    .optional()
+    .isDecimal().withMessage(V.STOP_LATITUDE_MUST_BE_A_DECIMAL),
+  body('waypoints.*.lat')
     .optional()
     .isDecimal().withMessage(V.STOP_LATITUDE_MUST_BE_A_DECIMAL),
   body('waypoints.*.stop_lng')
     .optional()
     .isDecimal().withMessage(V.STOP_LONGITUDE_MUST_BE_A_DECIMAL),
+  body('waypoints.*.lng')
+    .optional()
+    .isDecimal().withMessage(V.STOP_LONGITUDE_MUST_BE_A_DECIMAL),
+
+  // Pickup / Drop-off points created with the trip (TripStop rows with name + lat/lng)
+  body('pickup_point')
+    .optional()
+    .isObject().withMessage(V.STOPS_MUST_BE_AN_ARRAY),
+  body('pickup_point.name')
+    .optional()
+    .trim()
+    .isLength({ max: 120 }).withMessage(V.STOP_NAME_MUST_BE_AT_MOST_120_CHARACTERS),
+  body('pickup_point.stop_name')
+    .optional()
+    .trim()
+    .isLength({ max: 120 }).withMessage(V.STOP_NAME_MUST_BE_AT_MOST_120_CHARACTERS),
+  body('pickup_point.lat')
+    .optional()
+    .isDecimal().withMessage(V.STOP_LATITUDE_MUST_BE_A_DECIMAL),
+  body('pickup_point.stop_lat')
+    .optional()
+    .isDecimal().withMessage(V.STOP_LATITUDE_MUST_BE_A_DECIMAL),
+  body('pickup_point.lng')
+    .optional()
+    .isDecimal().withMessage(V.STOP_LONGITUDE_MUST_BE_A_DECIMAL),
+  body('pickup_point.stop_lng')
+    .optional()
+    .isDecimal().withMessage(V.STOP_LONGITUDE_MUST_BE_A_DECIMAL),
+  body('pickup_point.city')
+    .optional()
+    .trim()
+    .isLength({ max: 100 }).withMessage(V.STOP_CITY_MUST_BE_AT_MOST_100_CHARACTERS),
+
+  body('dropoff_point')
+    .optional()
+    .isObject().withMessage(V.STOPS_MUST_BE_AN_ARRAY),
+  body('dropoff_point.name')
+    .optional()
+    .trim()
+    .isLength({ max: 120 }).withMessage(V.STOP_NAME_MUST_BE_AT_MOST_120_CHARACTERS),
+  body('dropoff_point.stop_name')
+    .optional()
+    .trim()
+    .isLength({ max: 120 }).withMessage(V.STOP_NAME_MUST_BE_AT_MOST_120_CHARACTERS),
+  body('dropoff_point.lat')
+    .optional()
+    .isDecimal().withMessage(V.STOP_LATITUDE_MUST_BE_A_DECIMAL),
+  body('dropoff_point.stop_lat')
+    .optional()
+    .isDecimal().withMessage(V.STOP_LATITUDE_MUST_BE_A_DECIMAL),
+  body('dropoff_point.lng')
+    .optional()
+    .isDecimal().withMessage(V.STOP_LONGITUDE_MUST_BE_A_DECIMAL),
+  body('dropoff_point.stop_lng')
+    .optional()
+    .isDecimal().withMessage(V.STOP_LONGITUDE_MUST_BE_A_DECIMAL),
+  body('dropoff_point.city')
+    .optional()
+    .trim()
+    .isLength({ max: 100 }).withMessage(V.STOP_CITY_MUST_BE_AT_MOST_100_CHARACTERS),
+
+  // Full stops array (alternative to waypoints + pickup/dropoff) — same shape as updateTrip
+  body('stops')
+    .optional()
+    .isArray().withMessage(V.STOPS_MUST_BE_AN_ARRAY),
+  body('stops.*.name')
+    .optional()
+    .trim()
+    .isLength({ max: 120 }).withMessage(V.STOP_NAME_MUST_BE_AT_MOST_120_CHARACTERS),
+  body('stops.*.stop_name')
+    .optional()
+    .trim()
+    .isLength({ max: 120 }).withMessage(V.STOP_NAME_MUST_BE_AT_MOST_120_CHARACTERS),
+  body('stops.*.city')
+    .optional()
+    .trim()
+    .isLength({ max: 100 }).withMessage(V.STOP_CITY_MUST_BE_AT_MOST_100_CHARACTERS),
+  body('stops.*.address')
+    .optional()
+    .trim()
+    .isLength({ max: 255 }).withMessage(V.STOP_ADDRESS_MUST_BE_AT_MOST_255_CHARACTERS),
+  body('stops.*.lat')
+    .optional()
+    .isDecimal().withMessage(V.STOP_LATITUDE_MUST_BE_A_DECIMAL),
+  body('stops.*.lng')
+    .optional()
+    .isDecimal().withMessage(V.STOP_LONGITUDE_MUST_BE_A_DECIMAL),
+  body('stops.*.stop_lat')
+    .optional()
+    .isDecimal().withMessage(V.STOP_LATITUDE_MUST_BE_A_DECIMAL),
+  body('stops.*.stop_lng')
+    .optional()
+    .isDecimal().withMessage(V.STOP_LONGITUDE_MUST_BE_A_DECIMAL),
+  body('stops.*.stop_type')
+    .optional()
+    .isIn(['pickup', 'dropoff', 'both']).withMessage(V.STOP_TYPE_MUST_BE_PICKUP_DROPOFF_OR_BOTH),
+  body('stops.*.stop_order')
+    .optional()
+    .isInt({ min: 1 }).withMessage(V.STOP_ORDER_MUST_BE_A_POSITIVE_INTEGER),
 
   body('departure_date')
     .notEmpty().withMessage(V.DEPARTURE_DATE_IS_REQUIRED)

@@ -11,8 +11,12 @@ export interface BookingAttributes {
   agreedFare: number;
   currency?: string | null;
   pickupPlace?: string | null;
+  pickupLat?: number | null;
+  pickupLng?: number | null;
   pickupOrder?: number | null;
   dropoffPlace?: string | null;
+  dropoffLat?: number | null;
+  dropoffLng?: number | null;
   dropoffDeadline?: Date | null;
   dropoffOrder?: number | null;
   status: string;
@@ -26,7 +30,7 @@ export interface BookingAttributes {
   updatedAt?: Date;
 }
 
-export interface BookingCreationAttributes extends Optional<BookingAttributes, 'id' | 'seatNumber' | 'seatsBooked' | 'currency' | 'pickupPlace' | 'pickupOrder' | 'dropoffPlace' | 'dropoffDeadline' | 'dropoffOrder' | 'status' | 'cancellationReason' | 'cancelledBy' | 'cancelledAt' | 'paymentStatus' | 'completedAt' | 'createdAt' | 'updatedAt'> {}
+export interface BookingCreationAttributes extends Optional<BookingAttributes, 'id' | 'seatNumber' | 'seatsBooked' | 'currency' | 'pickupPlace' | 'pickupLat' | 'pickupLng' | 'pickupOrder' | 'dropoffPlace' | 'dropoffLat' | 'dropoffLng' | 'dropoffDeadline' | 'dropoffOrder' | 'status' | 'cancellationReason' | 'cancelledBy' | 'cancelledAt' | 'paymentStatus' | 'completedAt' | 'createdAt' | 'updatedAt'> {}
 
 export class Booking extends Model<BookingAttributes, BookingCreationAttributes> implements BookingAttributes {
   declare id: string;
@@ -37,8 +41,12 @@ export class Booking extends Model<BookingAttributes, BookingCreationAttributes>
   declare agreedFare: number;
   declare currency?: string | null;
   declare pickupPlace?: string | null;
+  declare pickupLat?: number | null;
+  declare pickupLng?: number | null;
   declare pickupOrder?: number | null;
   declare dropoffPlace?: string | null;
+  declare dropoffLat?: number | null;
+  declare dropoffLng?: number | null;
   declare dropoffDeadline?: Date | null;
   declare dropoffOrder?: number | null;
   declare status: string;
@@ -90,6 +98,16 @@ Booking.init(
             field: 'pickup_place',
             allowNull: true,
         },
+    pickupLat: {
+            type: (DataTypes as unknown as { DECIMAL: (a?: number, b?: number) => unknown; NUMERIC: (a?: number, b?: number) => unknown }).NUMERIC(10, 8) as unknown as import('sequelize').DataType,
+            field: 'pickup_lat',
+            allowNull: true,
+        },
+    pickupLng: {
+            type: (DataTypes as unknown as { DECIMAL: (a?: number, b?: number) => unknown; NUMERIC: (a?: number, b?: number) => unknown }).NUMERIC(11, 8) as unknown as import('sequelize').DataType,
+            field: 'pickup_lng',
+            allowNull: true,
+        },
     pickupOrder: {
             type: DataTypes.SMALLINT,
             field: 'pickup_order',
@@ -97,6 +115,16 @@ Booking.init(
         },
     dropoffPlace: {
             type: DataTypes.STRING(120),
+            allowNull: true,
+        },
+    dropoffLat: {
+            type: (DataTypes as unknown as { DECIMAL: (a?: number, b?: number) => unknown; NUMERIC: (a?: number, b?: number) => unknown }).NUMERIC(10, 8) as unknown as import('sequelize').DataType,
+            field: 'dropoff_lat',
+            allowNull: true,
+        },
+    dropoffLng: {
+            type: (DataTypes as unknown as { DECIMAL: (a?: number, b?: number) => unknown; NUMERIC: (a?: number, b?: number) => unknown }).NUMERIC(11, 8) as unknown as import('sequelize').DataType,
+            field: 'dropoff_lng',
             allowNull: true,
         },
     dropoffDeadline: {

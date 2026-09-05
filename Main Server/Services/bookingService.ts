@@ -98,8 +98,12 @@ function serializeListRow(booking) {
         }
       : null,
     pickup_place: booking.pickupPlace || null,
+    pickup_lat: booking.pickupLat != null ? Number(booking.pickupLat) : null,
+    pickup_lng: booking.pickupLng != null ? Number(booking.pickupLng) : null,
     pickup_order: booking.pickupOrder != null ? Number(booking.pickupOrder) : null,
     dropoff_place: booking.dropoffPlace,
+    dropoff_lat: booking.dropoffLat != null ? Number(booking.dropoffLat) : null,
+    dropoff_lng: booking.dropoffLng != null ? Number(booking.dropoffLng) : null,
     dropoff_order: booking.dropoffOrder != null ? Number(booking.dropoffOrder) : null,
   };
 }
@@ -120,8 +124,12 @@ function serializeDetail(booking) {
     cancellation_reason: booking.cancellationReason,
     cancelled_at: booking.cancelledAt,
     pickup_place: booking.pickupPlace || null,
+    pickup_lat: booking.pickupLat != null ? Number(booking.pickupLat) : null,
+    pickup_lng: booking.pickupLng != null ? Number(booking.pickupLng) : null,
     pickup_order: booking.pickupOrder != null ? Number(booking.pickupOrder) : null,
     dropoff_place: booking.dropoffPlace,
+    dropoff_lat: booking.dropoffLat != null ? Number(booking.dropoffLat) : null,
+    dropoff_lng: booking.dropoffLng != null ? Number(booking.dropoffLng) : null,
     dropoff_order: booking.dropoffOrder != null ? Number(booking.dropoffOrder) : null,
     trip: booking.trip
       ? {
@@ -212,10 +220,15 @@ async function createBooking(passengerId, payload) {
     dropoff_place,
     dropoff_deadline,
     drop_off_point,
+    dropoff_point,
     pickup_point,
     pick_up_point,
+    pickup,
+    dropoff,
   } = payload;
-  const pickupPointId = pickup_point || pick_up_point || payload.pickupPoint || payload.pick_up_point || null;
+  // Raw pickup/dropoff inputs — may be UUID string or object {name, lat, lng}
+  const rawPickupInput = pickup_point ?? pick_up_point ?? pickup ?? payload.pickup ?? payload.pickup_point ?? null;
+  const rawDropoffInput = drop_off_point ?? dropoff_point ?? dropoff ?? payload.dropoff ?? payload.dropoff_point ?? payload.dropOffPoint ?? null;
 
   const user = await User.findByPk(passengerId);
   if (!user) throw ApiErrors.notFound('USER_NOT_FOUND');
@@ -240,24 +253,74 @@ async function createBooking(passengerId, payload) {
     throw ApiErrors.validation('AGREED_FARE_DOES_NOT_MATCH_THE_CURRENT_TRIP_FARE');
   }
 
-  // Resolve the chosen drop-off and pickup points (must belong to this trip's route).
+  // Resolve the chosen drop-off and pickup points.
+  // Passenger may provide:
+  //  - UUID referencing an existing TripStop (pickup_point/drop_off_point as string)
+  //  - Object with name+lat+lng created at booking time {name, lat, lng, city}
   const stops = (trip.stops || []).slice().sort((a, b) => a.stopOrder - b.stopOrder);
+
+  const isUuid = (v) => typeof v === 'string' && /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(v);
+  const extractNameLatLng = (input) => {
+    if (!input || typeof input !== 'object') return null;
+    const name = input.name ?? input.stop_name ?? input.city ?? null;
+    const latRaw = input.lat ?? input.stop_lat ?? input.latitude ?? null;
+    const lngRaw = input.lng ?? input.stop_lng ?? input.longitude ?? null;
+    if (name == null && latRaw == null && lngRaw == null) return null;
+    return {
+      name: name ? String(name).trim() : null,
+      lat: latRaw != null ? String(latRaw) : null,
+      lng: lngRaw != null ? String(lngRaw) : null,
+    };
+  };
+
   let resolvedDropoffPlace = dropoff_place || null;
+  let resolvedDropoffLat = null;
+  let resolvedDropoffLng = null;
   let resolvedDropoffOrder = null;
-  if (drop_off_point) {
-    const stop = stops.find((s) => s.id === drop_off_point);
-    if (!stop) throw ApiErrors.custom('DROP_OFF_POINT_NOT_ON_TRIP', 409, 'DROP_OFF_POINT_NOT_ON_TRIP');
-    resolvedDropoffPlace = stop.stopName || stop.city || dropoff_place || null;
-    resolvedDropoffOrder = stop.stopOrder;
+  if (rawDropoffInput != null) {
+    if (isUuid(rawDropoffInput)) {
+      const stop = stops.find((s) => s.id === rawDropoffInput);
+      if (!stop) throw ApiErrors.custom('DROP_OFF_POINT_NOT_ON_TRIP', 409, 'DROP_OFF_POINT_NOT_ON_TRIP');
+      resolvedDropoffPlace = stop.stopName || stop.city || dropoff_place || null;
+      resolvedDropoffLat = stop.lat ?? stop.stopLat ?? null;
+      if (resolvedDropoffLat != null) resolvedDropoffLat = String(resolvedDropoffLat);
+      resolvedDropoffLng = stop.lng ?? stop.stopLng ?? null;
+      if (resolvedDropoffLng != null) resolvedDropoffLng = String(resolvedDropoffLng);
+      resolvedDropoffOrder = stop.stopOrder;
+    } else if (typeof rawDropoffInput === 'object') {
+      const ex = extractNameLatLng(rawDropoffInput);
+      if (ex) {
+        resolvedDropoffPlace = ex.name || dropoff_place || null;
+        resolvedDropoffLat = ex.lat;
+        resolvedDropoffLng = ex.lng;
+        resolvedDropoffOrder = null;
+      }
+    }
   }
 
   let resolvedPickupPlace = null;
+  let resolvedPickupLat = null;
+  let resolvedPickupLng = null;
   let resolvedPickupOrder = null;
-  if (pickupPointId) {
-    const stop = stops.find((s) => s.id === pickupPointId);
-    if (!stop) throw ApiErrors.custom('PICKUP_POINT_NOT_ON_TRIP', 409, 'PICKUP_POINT_NOT_ON_TRIP');
-    resolvedPickupPlace = stop.stopName || stop.city || null;
-    resolvedPickupOrder = stop.stopOrder;
+  if (rawPickupInput != null) {
+    if (isUuid(rawPickupInput)) {
+      const stop = stops.find((s) => s.id === rawPickupInput);
+      if (!stop) throw ApiErrors.custom('PICKUP_POINT_NOT_ON_TRIP', 409, 'PICKUP_POINT_NOT_ON_TRIP');
+      resolvedPickupPlace = stop.stopName || stop.city || null;
+      resolvedPickupLat = stop.lat ?? stop.stopLat ?? null;
+      if (resolvedPickupLat != null) resolvedPickupLat = String(resolvedPickupLat);
+      resolvedPickupLng = stop.lng ?? stop.stopLng ?? null;
+      if (resolvedPickupLng != null) resolvedPickupLng = String(resolvedPickupLng);
+      resolvedPickupOrder = stop.stopOrder;
+    } else if (typeof rawPickupInput === 'object') {
+      const ex = extractNameLatLng(rawPickupInput);
+      if (ex) {
+        resolvedPickupPlace = ex.name || null;
+        resolvedPickupLat = ex.lat;
+        resolvedPickupLng = ex.lng;
+        resolvedPickupOrder = null;
+      }
+    }
   }
 
   // Could the booking be satisfied right now? (re-checked atomically below)
@@ -311,8 +374,12 @@ async function createBooking(passengerId, payload) {
         agreedFare: agreed_fare,
         currency: 'JOD',
         pickupPlace: resolvedPickupPlace,
+        pickupLat: resolvedPickupLat,
+        pickupLng: resolvedPickupLng,
         pickupOrder: resolvedPickupOrder,
         dropoffPlace: resolvedDropoffPlace,
+        dropoffLat: resolvedDropoffLat,
+        dropoffLng: resolvedDropoffLng,
         dropoffOrder: resolvedDropoffOrder,
         dropoffDeadline: dropoff_deadline ? new Date(dropoff_deadline) : null,
         status: BOOKING_STATUS.CONFIRMED,
@@ -404,8 +471,12 @@ function serializePassengerDetail(booking, trip, passenger) {
     agreed_fare: Number(booking.agreedFare),
     currency: booking.currency,
     pickup_place: booking.pickupPlace || null,
+    pickup_lat: booking.pickupLat != null ? Number(booking.pickupLat) : null,
+    pickup_lng: booking.pickupLng != null ? Number(booking.pickupLng) : null,
     pickup_order: booking.pickupOrder != null ? Number(booking.pickupOrder) : null,
     dropoff_place: booking.dropoffPlace,
+    dropoff_lat: booking.dropoffLat != null ? Number(booking.dropoffLat) : null,
+    dropoff_lng: booking.dropoffLng != null ? Number(booking.dropoffLng) : null,
     dropoff_order: booking.dropoffOrder != null ? Number(booking.dropoffOrder) : null,
     dropoff_deadline: booking.dropoffDeadline,
     cancellation_reason: booking.cancellationReason,

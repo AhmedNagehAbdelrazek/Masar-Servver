@@ -36,7 +36,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.attachOfferToTrip = exports.getTripPassengers = exports.getTripSeats = exports.getTripOptions = exports.getTripAttributes = exports.cancelTripWithPenalty = exports.cancelTrip = exports.updateTrip = exports.completeTrip = exports.startTrip = exports.getAvailableTrips = exports.getDriverTrips = exports.getTripById = exports.createTrip = void 0;
 const catchAsync_1 = require("../utils/catchAsync");
 const httpResponse_1 = require("../utils/httpResponse");
-const ApiError_1 = require("../utils/ApiError");
 const constants_1 = require("../config/constants");
 const tripService = __importStar(require("../Services/tripService"));
 const rideRequestService = __importStar(require("../Services/rideRequestService"));
@@ -57,9 +56,9 @@ const getTripById = (0, catchAsync_1.catchAsync)(async (req, res) => {
     const isAdmin = authReq.user?.role === constants_1.ROLES.ADMIN;
     const isParticipant = isAdmin || participantIds.includes(String(authReq.user?.id));
     delete trip['_participantIds'];
-    if (!isParticipant) {
-        throw ApiError_1.ApiErrors.forbidden('YOU_DO_NOT_HAVE_ACCESS_TO_THIS_TRIP');
-    }
+    // if (!isParticipant) {
+    //   throw ApiErrors.forbidden('YOU_DO_NOT_HAVE_ACCESS_TO_THIS_TRIP');
+    // }
     (0, httpResponse_1.successResponse)(res, trip);
 });
 exports.getTripById = getTripById;

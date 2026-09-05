@@ -47,6 +47,16 @@ Booking.init({
         field: 'pickup_place',
         allowNull: true,
     },
+    pickupLat: {
+        type: sequelize_1.DataTypes.NUMERIC(10, 8),
+        field: 'pickup_lat',
+        allowNull: true,
+    },
+    pickupLng: {
+        type: sequelize_1.DataTypes.NUMERIC(11, 8),
+        field: 'pickup_lng',
+        allowNull: true,
+    },
     pickupOrder: {
         type: sequelize_1.DataTypes.SMALLINT,
         field: 'pickup_order',
@@ -54,6 +64,16 @@ Booking.init({
     },
     dropoffPlace: {
         type: sequelize_1.DataTypes.STRING(120),
+        allowNull: true,
+    },
+    dropoffLat: {
+        type: sequelize_1.DataTypes.NUMERIC(10, 8),
+        field: 'dropoff_lat',
+        allowNull: true,
+    },
+    dropoffLng: {
+        type: sequelize_1.DataTypes.NUMERIC(11, 8),
+        field: 'dropoff_lng',
         allowNull: true,
     },
     dropoffDeadline: {

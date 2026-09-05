@@ -4656,7 +4656,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"origin_city\": \"Amman\", // string\n  \"origin_area\": \"Abdoun\", // string\n  \"origin_lat\": \"31.9500\", // decimal degrees\n  \"origin_lng\": \"35.9100\", // decimal degrees\n  \"destination_city\": \"Irbid\", // string\n  \"destination_area\": \"Downtown\", // string\n  \"destination_lat\": \"32.5500\", // decimal degrees\n  \"destination_lng\": \"35.8500\", // decimal degrees\n  \"departure_date\": \"2026-08-15\", // ISO date\n  \"departure_time\": \"14:00\", // HH:MM 24h\n  \"type_of_trip\": \"once\", // \"once\" | \"repeated\"\n  \"fare_per_seat\": \"15.50\", // number â‰¥ 0 (JOD)\n  \"allowed_type\":\"all\", // \"all\" | \"women_only\" | \"men_only\"\n  \"seats\": [\n    { \"seat_number\": 1, \"type\": \"driver\" }, // \"driver\" | \"available\" | \"unavailable\"\n    { \"seat_number\": 2, \"type\": \"available\" },\n    { \"seat_number\": 3, \"type\": \"available\" },\n    { \"seat_number\": 4, \"type\": \"unavailable\" }\n  ],\n  \"instructions\": [\"No smoking please\"], // optional string[]\n  \"additional_instructions\": \"Bring water\", // optional string\n  \"waypoints\": [\n    { \"stop_name\": \"Khalda\", \"stop_lat\": \"31.9600\", \"stop_lng\": \"35.9000\" } // optional stops\n  ]\n}"
+                  "raw": "{\n  \"origin_city\": \"Amman\",\n  \"destination_city\": \"Irbid\",\n  \"departure_date\": \"2026-09-15\",\n  \"departure_time\": \"14:00\",\n  \"type_of_trip\": \"once\",\n  \"fare_per_seat\": \"15.50\",\n  \"allowed_type\": \"all\",\n  \"seats\": [\n    { \"seat_number\": 1, \"type\": \"driver\" },\n    { \"seat_number\": 2, \"type\": \"available\" },\n    { \"seat_number\": 3, \"type\": \"available\" },\n    { \"seat_number\": 4, \"type\": \"unavailable\" }\n  ],\n  \"instructions\": [\"No smoking please\"],\n  \"additional_instructions\": \"Bring water\",\n  \"stops\": [\n    { \"name\": \"Jerash\", \"city\": \"Jerash\", \"lat\": \"32.2800\", \"lng\": \"35.8900\", \"stop_type\": \"both\", \"stop_order\": 1 }\n  ]\n}"
                 },
                 "url": {
                   "raw": "{{base_url}}/trips",
@@ -4667,7 +4667,7 @@
                     "trips"
                   ]
                 },
-                "description": "Publish a new trip. Requires role `driver` with an **active subscription plan and sufficient balance** (else `422 NO_ACTIVE_PLAN` / `INSUFFICIENT_BALANCE`). On success, `trip_id` is saved to a collection variable automatically.\n\n**Body fields**\n- `origin_city` *(string, required)* â€” max 100 chars.\n- `origin_area` *(string, optional)* â€” max 120 chars.\n- `origin_lat` / `origin_lng` *(string, optional)* â€” decimal; lat âˆ’90..90, lng âˆ’180..180.\n- `destination_city` *(string, required)* â€” max 100 chars.\n- `destination_area` *(string, optional)* â€” max 120 chars.\n- `destination_lat` / `destination_lng` *(string, optional)* â€” decimal; lat âˆ’90..90, lng âˆ’180..180.\n- `departure_date` *(string, required)* â€” `YYYY-MM-DD`, today or in the future.\n- `departure_time` *(string, required)* â€” 24h `HH:MM`.\n- `type_of_trip` *(string, required)* â€” Options: `once` | `repeated`.\n- `repeated_days` *(array, required when type is `repeated`)* â€” weekdays as integers. Options: `0` (Sunday) â€¦ `6` (Saturday).\n- `repeated_end_date` *(string, required when type is `repeated`)* â€” `YYYY-MM-DD`, after `departure_date`.\n- `fare_per_seat` *(string, required)* â€” decimal with up to 2 decimal places, â‰¥ 0.\n- `seats` *(array, required)* â€” each item: `{ \"seat_number\": number, \"type\": \"driver\" | \"available\" | \"unavailable\" }`.\n- `instructions` *(array, optional)* â€” non-empty strings, max 1000 chars each.\n- `additional_instructions` *(string, optional)* â€” max 1000 chars.\n- `waypoints` *(array, optional)* â€” each item: `{ \"stop_name\", \"stop_lat\", \"stop_lng\" }`.\n- `allowed_type` *(string, optional)* â€” Options: `all` | `women_only` | `men_only`."
+                "description": "Publish a new trip. Requires role `driver` with an **active subscription plan and sufficient balance** (else `422 NO_ACTIVE_PLAN` / `INSUFFICIENT_BALANCE`). On success, `trip_id` is saved to a collection variable automatically.\n\n**Body fields**\n- `origin_city` *(string, required)* — max 100 chars.\n- `origin_area` *(string, optional)* — max 120 chars.\n- `origin_lat` / `origin_lng` *(string, optional)* — decimal; lat -90..90, lng -180..180.\n- `destination_city` *(string, required)* — max 100 chars.\n- `destination_area` *(string, optional)* — max 120 chars.\n- `destination_lat` / `destination_lng` *(string, optional)* — decimal; lat -90..90, lng -180..180.\n- `departure_date` *(string, required)* — `YYYY-MM-DD`, today or in the future (example uses future date `2026-09-15`).\n- `departure_time` *(string, required)* — 24h `HH:MM`.\n- `type_of_trip` *(string, required)* — `once` | `repeated`.\n- `fare_per_seat` *(string, required)* — decimal with up to 2 decimal places, ≥ 0.\n- `seats` *(array, required)* — each `{ \"seat_number\": number, \"type\": \"driver\" | \"available\" | \"unavailable\" }`.\n- `instructions` *(array, optional)* — non-empty strings, max 1000 chars each.\n- `additional_instructions` *(string, optional)* — max 1000 chars.\n- `allowed_type` *(string, optional)* — `all` | `women_only` | `men_only`.\n- `stops` *(array, optional)* — intermediate `TripStop`s, each `{ name|stop_name, city, address, lat|stop_lat, lng|stop_lng, stop_type: pickup|dropoff|both, stop_order }`.\n\nPickup/dropoff points with `name`+`lat`+`lng` are **created at booking time** (`POST /bookings` with `pickup`/`dropoff` objects), not at trip creation. Trip `stops` are the driver's fixed route intermediaries."
               },
               "response": [
                 {
@@ -4773,7 +4773,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"origin_city\": \"Amman\", // string\n  \"origin_area\": \"Abdoun\", // string\n  \"origin_lat\": \"31.9500\", // decimal degrees\n  \"origin_lng\": \"35.9100\", // decimal degrees\n  \"destination_city\": \"Irbid\", // string\n  \"destination_area\": \"Downtown\", // string\n  \"destination_lat\": \"32.5500\", // decimal degrees\n  \"destination_lng\": \"35.8500\", // decimal degrees\n  \"departure_date\": \"2026-08-15\", // ISO date\n  \"departure_time\": \"14:00\", // HH:MM 24h\n  \"type_of_trip\": \"repeated\", // \"once\" | \"repeated\"\n  \"repeated_days\": [1, 3, 5], // days of week (0=Sun ... 6=Sat)\n  \"repeated_end_date\": \"2026-09-30\", // ISO date â€” last occurrence\n  \"fare_per_seat\": \"15.50\", // number â‰¥ 0 (JOD)\n  \"allowed_type\":\"all\", // \"all\" | \"women_only\" | \"men_only\"\n  \"seats\": [\n    { \"seat_number\": 1, \"type\": \"driver\" }, // \"driver\" | \"available\" | \"unavailable\"\n    { \"seat_number\": 2, \"type\": \"available\" },\n    { \"seat_number\": 3, \"type\": \"available\" },\n    { \"seat_number\": 4, \"type\": \"unavailable\" }\n  ],\n  \"instructions\": [\"No smoking please\"], // optional string[]\n  \"waypoints\": [\n    { \"stop_name\": \"Khalda\", \"stop_lat\": \"31.9600\", \"stop_lng\": \"35.9000\" } // optional stops\n  ]\n}"
+                  "raw": "{\n  \"origin_city\": \"Amman\",\n  \"destination_city\": \"Irbid\",\n  \"departure_date\": \"2026-09-15\",\n  \"departure_time\": \"14:00\",\n  \"type_of_trip\": \"repeated\",\n  \"repeated_days\": [1, 3, 5],\n  \"repeated_end_date\": \"2026-10-15\",\n  \"fare_per_seat\": \"15.50\",\n  \"allowed_type\": \"all\",\n  \"seats\": [\n    { \"seat_number\": 1, \"type\": \"driver\" },\n    { \"seat_number\": 2, \"type\": \"available\" },\n    { \"seat_number\": 3, \"type\": \"available\" },\n    { \"seat_number\": 4, \"type\": \"unavailable\" }\n  ],\n  \"instructions\": [\"No smoking please\"],\n  \"stops\": [\n    { \"name\": \"Jerash\", \"city\": \"Jerash\", \"lat\": \"32.2800\", \"lng\": \"35.8900\", \"stop_type\": \"both\", \"stop_order\": 1 }\n  ]\n}"
                 },
                 "url": {
                   "raw": "{{base_url}}/trips",
@@ -4784,7 +4784,7 @@
                     "trips"
                   ]
                 },
-                "description": "Publish a recurring (repeated) trip â€” same fields as `Create Trip`, with `type_of_trip: \"repeated\"` plus the recurring fields below.\n\n**Body fields (recurring-specific)**\n- `type_of_trip` *(string)* â€” must be `repeated`.\n- `repeated_days` *(array, required)* â€” weekday integers. Options: `0` (Sunday) â€¦ `6` (Saturday).\n- `repeated_end_date` *(string, required)* â€” `YYYY-MM-DD`, must be after `departure_date`.\n\nAll other fields match `Create Trip (Driver)`."
+                "description": "Publish a recurring trip. Same as `Create Trip` but with `type_of_trip: repeated`.\n\n- `repeated_days` *(array, required when repeated)* — weekdays `0` (Sun) … `6` (Sat).\n- `repeated_end_date` *(string, required when repeated)* — `YYYY-MM-DD`, after `departure_date`.\nSee `Create Trip (Driver)` for other fields. Stops are the driver's fixed route; passenger pickup/dropoff with `name`+`lat`+`lng` are provided at `POST /bookings`."
               },
               "response": [
                 {
@@ -5427,7 +5427,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"fare_per_seat\": 6, // number â‰¥ 0 (JOD)\n  \"departure_time\": \"2026-09-02T08:00:00.000Z\" // ISO-8601 (future) â€” change notifies passengers\n}",
+                  "raw": "{\n  \"fare_per_seat\": \"6\",\n  \"departure_time\": \"2026-09-15T08:00:00.000Z\",\n  \"stops\": [\n    { \"name\": \"Jerash\", \"city\": \"Jerash\", \"lat\": \"32.2800\", \"lng\": \"35.8900\", \"stop_type\": \"both\", \"stop_order\": 1 }\n  ]\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -9696,7 +9696,18 @@
                       "});",
                       "pm.test('Returns a JSON body', function () {",
                       "    pm.expect(pm.response.json()).to.be.an('object');",
-                      "});"
+                      "});",
+                      "if (pm.response.code === 200) {",
+                      "    const j = pm.response.json();",
+                      "    // Save pickup/dropoff stop ids for booking",
+                      "    const data = j.data || j; // support both wrapped and unwrapped",
+                      "    const pickup = (data.pickup_points && data.pickup_points[0]) || (data.points && data.points.find(p=>p.stop_type==='pickup' || p.stop_type==='both'));",
+                      "    const dropoff = (data.drop_off_points && data.drop_off_points[0]) || (data.points && data.points.find(p=>p.stop_type==='dropoff' || p.stop_type==='both'));",
+                      "    if (pickup && pickup.stop_id) pm.collectionVariables.set('pickup_stop_id', pickup.stop_id);",
+                      "    if (dropoff && dropoff.stop_id) pm.collectionVariables.set('dropoff_stop_id', dropoff.stop_id);",
+                      "    if (pickup) console.log('Saved pickup_stop_id:', pickup.stop_id);",
+                      "    if (dropoff) console.log('Saved dropoff_stop_id:', dropoff.stop_id);",
+                      "}"
                     ],
                     "type": "text/javascript",
                     "packages": {},
@@ -9729,7 +9740,7 @@
                     "options"
                   ]
                 },
-                "description": "Get the bookable options for a trip (spec 012): the number of open seats and the ordered drop-off points.\n\n**Path parameter**\n- `trip_id` *(UUID, required)*.\n\n**200** `{ trip_id, available_seats, drop_off_points: [{ stop_id, stop_order, stop_name, city, lat, lng, stop_type }] }`.\n\nErrors: `404 TRIP_NOT_FOUND`; `409` if the trip is no longer bookable (started/ended)."
+                "description": "Get booking options for a trip — open seats and ordered stop points. Any authenticated user, but trip must be `published` or `full` else `409 TRIP_NOT_BOOKABLE`.\n\n**Response** `{ trip_id, available_seats, pickup_points: TripStop[], drop_off_points: TripStop[], points: TripStop[], stops: TripStop[] }`\n- Each `TripStop` has `stop_id`, `stop_order`, `stop_name`, `city`, `address`, `lat`, `lng`, `stop_type` (`pickup`|`dropoff`|`both`).\n- `pickup_points` — stops where `stop_type` is `pickup` or `both`.\n- `drop_off_points` — stops where `stop_type` is `dropoff` or `both`.\n- `points`/`stops` — all stops sorted by `stop_order` (backward compat). Created from `pickup_point`/`dropoff_point`/`waypoints`/`stops` on trip creation.\n- `available_seats` — `Trip.availableSeats` counter."
               },
               "response": []
             },
@@ -9756,7 +9767,15 @@
                       "});",
                       "pm.test('Returns a JSON body', function () {",
                       "    pm.expect(pm.response.json()).to.be.an('object');",
-                      "});"
+                      "});",
+                      "if (pm.response.code === 200) {",
+                      "    const j = pm.response.json();",
+                      "    const data = j.data || j;",
+                      "    const empty = (data.empty_seats && data.empty_seats[0]) || (data.seats && data.seats.find(s=>s.is_available));",
+                      "    if (empty && empty.seat_number) pm.collectionVariables.set('seat_number', String(empty.seat_number));",
+                      "    if (empty) console.log('Saved seat_number:', empty.seat_number);",
+                      "    // Also save pickup/dropoff if returned via options-style (some trips may include stops in seats payload? not needed)",
+                      "}"
                     ],
                     "type": "text/javascript",
                     "packages": {},
@@ -9779,7 +9798,7 @@
                   ],
                   "query": []
                 },
-                "description": "Get seats for a trip (any authenticated user).\n\n**Path** `GET /trips/:trip_id/seats`\n- Returns all `TripSeat` rows ordered by `seat_number` enriched with Redis lock state (`is_locked`, `locked_by`, `locked_expires_at`).\n- `seats` — all seats with `seat_number`, `seat_type` (`driver`|`available`|`unavailable`), `is_available` (available && not locked), `is_locked`.\n- `empty_seats` — subset where `seat_type === 'available'` and `!is_locked` (truly bookable now).\n- `available_seats_detail` — all DB-available seats regardless of lock.\n- Also returns `total_seats`, `available_seats` (Trip.availableSeats counter), `seats_count`, `empty_seats_count`."
+                "description": "Get seats for a trip (any authenticated user).\n\n**Path** `GET /trips/:trip_id/seats`\n- Returns all `TripSeat` rows ordered by `seat_number` enriched with Redis lock state (`is_locked`, `locked_by`, `locked_expires_at`).\n- `seats` — all seats with `seat_number`, `seat_type` (`driver`|`available`|`unavailable`), `is_available` (available && not locked), `is_locked`.\n- `empty_seats` — subset where `seat_type === 'available'` and `!is_locked` (truly bookable now).\n- `available_seats_detail` — all DB-available seats regardless of lock.\n- Also returns `total_seats`, `available_seats` (Trip.availableSeats counter), `seats_count`, `empty_seats_count`.\n\nTrip stops created via `pickup_point`/`dropoff_point` (name+lat/lng) are visible via `GET /trips/:trip_id/options` and usable as `pickup_point`/`drop_off_point` UUIDs in `POST /bookings`."
               },
               "response": [
                 {
@@ -9867,7 +9886,14 @@
                       "});",
                       "pm.test('Returns a JSON body', function () {",
                       "    pm.expect(pm.response.json()).to.be.an('object');",
-                      "});"
+                      "});",
+                      "if (pm.response.code === 200) {",
+                      "    const j = pm.response.json();",
+                      "    const data = j.data || j;",
+                      "    const empty = (data.empty_seats && data.empty_seats[0]) || (data.seats && data.seats.find(s=>s.is_available));",
+                      "    if (empty && empty.seat_number) pm.collectionVariables.set('seat_number', String(empty.seat_number));",
+                      "    if (empty) console.log('Saved seat_number (empty):', empty.seat_number);",
+                      "}"
                     ],
                     "type": "text/javascript",
                     "packages": {},
@@ -9890,7 +9916,7 @@
                   ],
                   "query": []
                 },
-                "description": "Alias for `GET /trips/:trip_id/seats` — returns the same payload but emphasizes empty seats. Useful for passenger UI to show only bookable seats.\n\n**Path** `GET /trips/:trip_id/empty-seats` — identical to `/seats`."
+                "description": "Alias for `GET /trips/:trip_id/seats` — returns the same payload but emphasizes empty seats. Useful for passenger UI to show only bookable seats.\n\n**Path** `GET /trips/:trip_id/empty-seats` — identical to `/seats`.\n\nTrip stops created via `pickup_point`/`dropoff_point` (name+lat/lng) are visible via `GET /trips/:trip_id/options` and usable as `pickup_point`/`drop_off_point` UUIDs in `POST /bookings`."
               },
               "response": [
                 {
@@ -10259,7 +10285,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"trip_id\": \"{{trip_id}}\",            // UUID (required)\n  \"seats\": 2,                            // int 1..available open seats (optional, default 1)\n  \"pickup_point\": \"{{pickup_stop_id}}\", // UUID of a TripStop (pickup/both) belonging to the trip (optional)\n  \"drop_off_point\": \"{{dropoff_stop_id}}\", // UUID of a TripStop (dropoff/both) belonging to the trip (optional)\n  \"seat_number\": \"{{seat_number}}\",      // legacy single-seat path (optional; requires seats == 1 and seat lock)\n  \"agreed_fare\": 5,                      // number > 0 (JOD), must match trip fare unless agreed via offer\n  \"dropoff_place\": \"\",                   // optional string fallback when not using drop_off_point\n  \"dropoff_deadline\": \"\"                 // optional ISO datetime\n}",
+                  "raw": "{\n  \"trip_id\": \"{{trip_id}}\",\n  \"seats\": 1,\n  \"pickup\": {\n    \"name\": \"Abdoun Circle\",\n    \"lat\": \"31.9450\",\n    \"lng\": \"35.8750\"\n  },\n  \"dropoff\": {\n    \"name\": \"Irbid Downtown\",\n    \"lat\": \"32.5550\",\n    \"lng\": \"35.8500\"\n  },\n  \"agreed_fare\": 5\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -10275,7 +10301,7 @@
                     "bookings"
                   ]
                 },
-                "description": "Reserve seats on a trip (passenger only). Supports multi-seat booking and validated pickup/drop-off points.\n\n- `trip_id` *(UUID, required)*\n- `seats` *(int 1..available, optional, default 1)*\n- `pickup_point` *(optional UUID)* — must belong to the trip and be a pickup/both stop, else `409 PICKUP_POINT_NOT_ON_TRIP`\n- `drop_off_point` *(optional UUID)* — must belong to the trip, else `409 DROP_OFF_POINT_NOT_ON_TRIP`\n- `seat_number` *(optional int)* — legacy single-seat path; only valid when `seats` == 1 and requires a prior seat lock (`POST /trips/:trip_id/seats/lock`)\n- `agreed_fare` *(number, required)* — must equal trip fare unless price was agreed via an offer\n- `dropoff_place` / `dropoff_deadline` *(optional)* — free-form fallback\n\nOn success invalidates passenger + driver home cache (`PASSENGER_HOME`/`DRIVER_HOME`) and emits `home:invalidate` via socket.\nResponse includes `pickup_place`, `pickup_order`, `dropoff_place`, `dropoff_order`."
+                "description": "Reserve seats (passenger only). **Pickup and dropoff points are created at booking time with name+lat+lng** (not just referencing trip stops).\n\n- `trip_id` *(UUID, required)*\n- `seats` *(int 1..available, optional, default 1)*\n- `pickup` *(object, preferred)* — `{ name: string max120, lat: decimal -90..90, lng: decimal -180..180 }` — stored as `pickup_place`/`pickup_lat`/`pickup_lng` on the booking and added to the trip context\n- `dropoff` *(object, preferred)* — `{ name, lat, lng }` — stored as `dropoff_place`/`dropoff_lat`/`dropoff_lng`\n- `pickup_point` *(alternative, UUID or object)* — UUID of a `TripStop` (`pickup`/`both`) OR object `{name, lat, lng}` — for referencing an existing trip stop\n- `drop_off_point` / `dropoff_point` *(alternative, UUID or object)* — same for dropoff\n- `seat_number` *(optional int)* — legacy single-seat lock path, requires prior `POST /trips/:trip_id/seats/lock` and `seats==1`\n- `agreed_fare` *(number, required)* — must equal trip fare unless agreed via offer\n\nExamples:\n1) Ad-hoc points (preferred): `{\"pickup\": {\"name\":\"Abdoun Circle\",\"lat\":\"31.9450\",\"lng\":\"35.8750\"}, \"dropoff\": {\"name\":\"Irbid Downtown\",\"lat\":\"32.5550\",\"lng\":\"35.8500\"}}`\n2) Reference existing stops: `{\"pickup_point\": \"<uuid>\", \"drop_off_point\": \"<uuid>\"}` where UUIDs come from `GET /trips/:trip_id/options` or `GET /trips/:trip_id/seats`\n3) Object via pickup_point: `{\"pickup_point\": {\"name\":\"My House\",\"lat\":\"31.95\",\"lng\":\"35.91\"}}`\n\nOn success invalidates `PASSENGER_HOME`/`DRIVER_HOME` and emits `home:invalidate`. Response includes `pickup_place`, `pickup_lat`, `pickup_lng`, `dropoff_place`, `dropoff_lat`, `dropoff_lng`."
               },
               "response": [
                 {

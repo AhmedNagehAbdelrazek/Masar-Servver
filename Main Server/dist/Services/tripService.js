@@ -208,15 +208,59 @@ const createTrip = async (driverId, data) => {
         seatType: s.type,
     }));
     await Models_1.TripSeat.bulkCreate(seatRecords);
-    // Create waypoints
-    if (data.waypoints && data.waypoints.length > 0) {
-        const stopRecords = data.waypoints.map((w, index) => ({
+    // Create stops / waypoints including dedicated pickup and dropoff points (each with name + lat/lng)
+    const buildStopRecord = (src, fallbackOrder, fallbackType) => {
+        const name = src.stop_name || src.name || src.city || null;
+        const city = src.city || src.stop_name || src.name || null;
+        const address = src.address || null;
+        const latRaw = src.lat ?? src.stop_lat ?? src.latitude ?? null;
+        const lngRaw = src.lng ?? src.stop_lng ?? src.longitude ?? null;
+        const stopOrder = src.stop_order != null ? Number(src.stop_order) : fallbackOrder;
+        const stopType = src.stop_type || fallbackType || 'both';
+        return {
             tripId: trip.id,
-            stopOrder: index + 1,
-            stopName: w.stop_name || null,
-            stopLat: w.stop_lat || null,
-            stopLng: w.stop_lng || null,
-        }));
+            stopOrder,
+            stopName: name ? String(name).trim() : null,
+            city: city ? String(city).trim() : null,
+            address: address ? String(address).trim() : null,
+            // legacy lat/lng columns (used by bookingService fallback)
+            lat: latRaw != null ? String(latRaw) : null,
+            lng: lngRaw != null ? String(lngRaw) : null,
+            stopLat: latRaw != null ? String(latRaw) : null,
+            stopLng: lngRaw != null ? String(lngRaw) : null,
+            stopType,
+        };
+    };
+    let stopRecords = [];
+    // Prefer explicit stops array if provided (full control)
+    if (data.stops && Array.isArray(data.stops) && data.stops.length > 0) {
+        stopRecords = data.stops.map((s, idx) => buildStopRecord(s, idx + 1, s.stop_type || 'both'));
+    }
+    else {
+        let order = 1;
+        const pickupSrc = data.pickup_point || data.pickup || data.pickup_location || null;
+        if (pickupSrc && typeof pickupSrc === 'object') {
+            stopRecords.push(buildStopRecord(pickupSrc, order++, 'pickup'));
+        }
+        if (data.waypoints && Array.isArray(data.waypoints) && data.waypoints.length > 0) {
+            for (const w of data.waypoints) {
+                const hasAny = w.stop_name || w.name || w.stop_lat || w.lat || w.stop_lng || w.lng || w.city;
+                if (!hasAny)
+                    continue;
+                stopRecords.push(buildStopRecord(w, order++, w.stop_type || 'both'));
+            }
+        }
+        const dropoffSrc = data.dropoff_point || data.dropoff || data.dropoff_location || data.drop_off_point || null;
+        if (dropoffSrc && typeof dropoffSrc === 'object') {
+            stopRecords.push(buildStopRecord(dropoffSrc, order++, 'dropoff'));
+        }
+    }
+    if (stopRecords.length > 0) {
+        // Ensure stopOrder is sequential and unique
+        stopRecords.forEach((r, idx) => { if (!r.stopOrder)
+            r.stopOrder = idx + 1; });
+        stopRecords.sort((a, b) => a.stopOrder - b.stopOrder);
+        stopRecords.forEach((r, idx) => { r.stopOrder = idx + 1; });
         await Models_1.TripStop.bulkCreate(stopRecords);
     }
     trackTripMutation({
@@ -422,7 +466,7 @@ const getTripOptions = async (tripId) => {
     if (![constants_1.TRIP_STATUS.PUBLISHED, constants_1.TRIP_STATUS.FULL].includes(trip.status)) {
         throw ApiError_1.ApiErrors.conflict('TRIP_NOT_BOOKABLE');
     }
-    const dropOffPoints = (trip.stops || [])
+    const allPoints = (trip.stops || [])
         .slice()
         .sort((a, b) => a.stopOrder - b.stopOrder)
         .map((s) => ({
@@ -430,14 +474,21 @@ const getTripOptions = async (tripId) => {
         stop_order: s.stopOrder,
         stop_name: s.stopName,
         city: s.city,
+        address: s.address || null,
         lat: s.lat != null ? Number(s.lat) : s.stopLat != null ? Number(s.stopLat) : null,
         lng: s.lng != null ? Number(s.lng) : s.stopLng != null ? Number(s.stopLng) : null,
-        stop_type: s.stopType,
+        stop_type: s.stopType || 'both',
     }));
+    const pickupPoints = allPoints.filter((p) => p.stop_type === 'pickup' || p.stop_type === 'both');
+    const dropOffPoints = allPoints.filter((p) => p.stop_type === 'dropoff' || p.stop_type === 'both');
     return {
         trip_id: trip.id,
         available_seats: trip.availableSeats,
+        // backward compat: drop_off_points historically contained all stops; now filtered to dropoff/both but keep alias `points` for all
         drop_off_points: dropOffPoints,
+        pickup_points: pickupPoints,
+        points: allPoints,
+        stops: allPoints,
     };
 };
 exports.getTripOptions = getTripOptions;

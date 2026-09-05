@@ -67,12 +67,115 @@ exports.createTripValidation = [
         .optional()
         .trim()
         .isLength({ max: 120 }).withMessage(validation_keys_1.default.STOP_NAME_MUST_BE_AT_MOST_120_CHARACTERS),
+    (0, express_validator_1.body)('waypoints.*.name')
+        .optional()
+        .trim()
+        .isLength({ max: 120 }).withMessage(validation_keys_1.default.STOP_NAME_MUST_BE_AT_MOST_120_CHARACTERS),
     (0, express_validator_1.body)('waypoints.*.stop_lat')
+        .optional()
+        .isDecimal().withMessage(validation_keys_1.default.STOP_LATITUDE_MUST_BE_A_DECIMAL),
+    (0, express_validator_1.body)('waypoints.*.lat')
         .optional()
         .isDecimal().withMessage(validation_keys_1.default.STOP_LATITUDE_MUST_BE_A_DECIMAL),
     (0, express_validator_1.body)('waypoints.*.stop_lng')
         .optional()
         .isDecimal().withMessage(validation_keys_1.default.STOP_LONGITUDE_MUST_BE_A_DECIMAL),
+    (0, express_validator_1.body)('waypoints.*.lng')
+        .optional()
+        .isDecimal().withMessage(validation_keys_1.default.STOP_LONGITUDE_MUST_BE_A_DECIMAL),
+    // Pickup / Drop-off points created with the trip (TripStop rows with name + lat/lng)
+    (0, express_validator_1.body)('pickup_point')
+        .optional()
+        .isObject().withMessage(validation_keys_1.default.STOPS_MUST_BE_AN_ARRAY),
+    (0, express_validator_1.body)('pickup_point.name')
+        .optional()
+        .trim()
+        .isLength({ max: 120 }).withMessage(validation_keys_1.default.STOP_NAME_MUST_BE_AT_MOST_120_CHARACTERS),
+    (0, express_validator_1.body)('pickup_point.stop_name')
+        .optional()
+        .trim()
+        .isLength({ max: 120 }).withMessage(validation_keys_1.default.STOP_NAME_MUST_BE_AT_MOST_120_CHARACTERS),
+    (0, express_validator_1.body)('pickup_point.lat')
+        .optional()
+        .isDecimal().withMessage(validation_keys_1.default.STOP_LATITUDE_MUST_BE_A_DECIMAL),
+    (0, express_validator_1.body)('pickup_point.stop_lat')
+        .optional()
+        .isDecimal().withMessage(validation_keys_1.default.STOP_LATITUDE_MUST_BE_A_DECIMAL),
+    (0, express_validator_1.body)('pickup_point.lng')
+        .optional()
+        .isDecimal().withMessage(validation_keys_1.default.STOP_LONGITUDE_MUST_BE_A_DECIMAL),
+    (0, express_validator_1.body)('pickup_point.stop_lng')
+        .optional()
+        .isDecimal().withMessage(validation_keys_1.default.STOP_LONGITUDE_MUST_BE_A_DECIMAL),
+    (0, express_validator_1.body)('pickup_point.city')
+        .optional()
+        .trim()
+        .isLength({ max: 100 }).withMessage(validation_keys_1.default.STOP_CITY_MUST_BE_AT_MOST_100_CHARACTERS),
+    (0, express_validator_1.body)('dropoff_point')
+        .optional()
+        .isObject().withMessage(validation_keys_1.default.STOPS_MUST_BE_AN_ARRAY),
+    (0, express_validator_1.body)('dropoff_point.name')
+        .optional()
+        .trim()
+        .isLength({ max: 120 }).withMessage(validation_keys_1.default.STOP_NAME_MUST_BE_AT_MOST_120_CHARACTERS),
+    (0, express_validator_1.body)('dropoff_point.stop_name')
+        .optional()
+        .trim()
+        .isLength({ max: 120 }).withMessage(validation_keys_1.default.STOP_NAME_MUST_BE_AT_MOST_120_CHARACTERS),
+    (0, express_validator_1.body)('dropoff_point.lat')
+        .optional()
+        .isDecimal().withMessage(validation_keys_1.default.STOP_LATITUDE_MUST_BE_A_DECIMAL),
+    (0, express_validator_1.body)('dropoff_point.stop_lat')
+        .optional()
+        .isDecimal().withMessage(validation_keys_1.default.STOP_LATITUDE_MUST_BE_A_DECIMAL),
+    (0, express_validator_1.body)('dropoff_point.lng')
+        .optional()
+        .isDecimal().withMessage(validation_keys_1.default.STOP_LONGITUDE_MUST_BE_A_DECIMAL),
+    (0, express_validator_1.body)('dropoff_point.stop_lng')
+        .optional()
+        .isDecimal().withMessage(validation_keys_1.default.STOP_LONGITUDE_MUST_BE_A_DECIMAL),
+    (0, express_validator_1.body)('dropoff_point.city')
+        .optional()
+        .trim()
+        .isLength({ max: 100 }).withMessage(validation_keys_1.default.STOP_CITY_MUST_BE_AT_MOST_100_CHARACTERS),
+    // Full stops array (alternative to waypoints + pickup/dropoff) — same shape as updateTrip
+    (0, express_validator_1.body)('stops')
+        .optional()
+        .isArray().withMessage(validation_keys_1.default.STOPS_MUST_BE_AN_ARRAY),
+    (0, express_validator_1.body)('stops.*.name')
+        .optional()
+        .trim()
+        .isLength({ max: 120 }).withMessage(validation_keys_1.default.STOP_NAME_MUST_BE_AT_MOST_120_CHARACTERS),
+    (0, express_validator_1.body)('stops.*.stop_name')
+        .optional()
+        .trim()
+        .isLength({ max: 120 }).withMessage(validation_keys_1.default.STOP_NAME_MUST_BE_AT_MOST_120_CHARACTERS),
+    (0, express_validator_1.body)('stops.*.city')
+        .optional()
+        .trim()
+        .isLength({ max: 100 }).withMessage(validation_keys_1.default.STOP_CITY_MUST_BE_AT_MOST_100_CHARACTERS),
+    (0, express_validator_1.body)('stops.*.address')
+        .optional()
+        .trim()
+        .isLength({ max: 255 }).withMessage(validation_keys_1.default.STOP_ADDRESS_MUST_BE_AT_MOST_255_CHARACTERS),
+    (0, express_validator_1.body)('stops.*.lat')
+        .optional()
+        .isDecimal().withMessage(validation_keys_1.default.STOP_LATITUDE_MUST_BE_A_DECIMAL),
+    (0, express_validator_1.body)('stops.*.lng')
+        .optional()
+        .isDecimal().withMessage(validation_keys_1.default.STOP_LONGITUDE_MUST_BE_A_DECIMAL),
+    (0, express_validator_1.body)('stops.*.stop_lat')
+        .optional()
+        .isDecimal().withMessage(validation_keys_1.default.STOP_LATITUDE_MUST_BE_A_DECIMAL),
+    (0, express_validator_1.body)('stops.*.stop_lng')
+        .optional()
+        .isDecimal().withMessage(validation_keys_1.default.STOP_LONGITUDE_MUST_BE_A_DECIMAL),
+    (0, express_validator_1.body)('stops.*.stop_type')
+        .optional()
+        .isIn(['pickup', 'dropoff', 'both']).withMessage(validation_keys_1.default.STOP_TYPE_MUST_BE_PICKUP_DROPOFF_OR_BOTH),
+    (0, express_validator_1.body)('stops.*.stop_order')
+        .optional()
+        .isInt({ min: 1 }).withMessage(validation_keys_1.default.STOP_ORDER_MUST_BE_A_POSITIVE_INTEGER),
     (0, express_validator_1.body)('departure_date')
         .notEmpty().withMessage(validation_keys_1.default.DEPARTURE_DATE_IS_REQUIRED)
         .isDate().withMessage(validation_keys_1.default.DEPARTURE_DATE_MUST_BE_A_VALID_DATE_YYYY_MM_DD)
