@@ -79,6 +79,11 @@ RideRequest.init({
         allowNull: true,
         defaultValue: {},
     },
+    note: {
+        type: sequelize_1.DataTypes.TEXT,
+        field: 'note',
+        allowNull: true,
+    },
     status: {
         type: sequelize_1.DataTypes.ENUM(...Object.values(constants_1.RIDE_REQUEST_STATUS)),
         allowNull: false,

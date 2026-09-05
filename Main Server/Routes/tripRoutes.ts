@@ -22,6 +22,10 @@ router.get('/:trip_id', protect, ...tripParamValidation, validate, c.getTripById
 // Booking options for a trip: open seats + drop-off points (any authenticated user)
 router.get('/:trip_id/options', protect, ...tripParamValidation, validate, c.getTripOptions);
 
+// Seats for a trip: all seats + empty (available) seats (any authenticated user)
+router.get('/:trip_id/seats', protect, ...tripParamValidation, validate, c.getTripSeats);
+router.get('/:trip_id/empty-seats', protect, ...tripParamValidation, validate, c.getTripSeats);
+
 // Start a trip (driver only)
 router.post('/:trip_id/start', protect, roleGuard(['driver']), c.startTrip);
 

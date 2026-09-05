@@ -25,9 +25,9 @@ const getTripById = catchAsync(async (req: Request, res: Response): Promise<void
   const isAdmin: boolean = authReq.user?.role === ROLES.ADMIN;
   const isParticipant: boolean = isAdmin || participantIds.includes(String(authReq.user?.id));
   delete (trip as Record<string, unknown>)['_participantIds'];
-  if (!isParticipant) {
-    throw ApiErrors.forbidden('YOU_DO_NOT_HAVE_ACCESS_TO_THIS_TRIP');
-  }
+  // if (!isParticipant) {
+  //   throw ApiErrors.forbidden('YOU_DO_NOT_HAVE_ACCESS_TO_THIS_TRIP');
+  // }
   successResponse(res, trip);
 });
 
@@ -159,6 +159,12 @@ const getTripOptions = catchAsync(async (req: Request, res: Response): Promise<v
   successResponse(res, result);
 });
 
+const getTripSeats = catchAsync(async (req: Request, res: Response): Promise<void> => {
+  const { trip_id } = req.params as { trip_id: string };
+  const result = await (tripService as unknown as { getTripSeats: (id: string) => Promise<unknown> }).getTripSeats(trip_id);
+  successResponse(res, result);
+});
+
 const getTripPassengers = catchAsync(async (req: Request, res: Response): Promise<void> => {
   const authReq = req as AuthRequest;
   const { trip_id } = req.params as { trip_id: string };
@@ -195,6 +201,7 @@ export {
   cancelTripWithPenalty,
   getTripAttributes,
   getTripOptions,
+  getTripSeats,
   getTripPassengers,
   attachOfferToTrip,
 };
@@ -210,6 +217,7 @@ export default {
   cancelTripWithPenalty,
   getTripAttributes,
   getTripOptions,
+  getTripSeats,
   getTripPassengers,
   attachOfferToTrip,
 };

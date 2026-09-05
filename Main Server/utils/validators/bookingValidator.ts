@@ -34,6 +34,12 @@ export const createBookingValidation: ValidationChain[] = [
   body('seats')
     .optional()
     .isInt({ min: 1 }).withMessage(V.SEATS_MUST_BE_POSITIVE_INTEGER),
+  body('pickup_point')
+    .optional()
+    .isUUID().withMessage(V.TRIP_ID_MUST_BE_A_VALID_UUID),
+  body('pick_up_point')
+    .optional()
+    .isUUID().withMessage(V.TRIP_ID_MUST_BE_A_VALID_UUID),
   body('drop_off_point')
     .optional()
     .isUUID().withMessage(V.TRIP_ID_MUST_BE_A_VALID_UUID),

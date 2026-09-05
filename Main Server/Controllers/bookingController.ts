@@ -9,7 +9,7 @@ type AuthRequest = Request & { user?: { id: string; role: string } };
 
 const createBooking = catchAsync(async (req: Request, res: Response): Promise<void> => {
   const authReq = req as AuthRequest;
-  const booking = await (bookingService as unknown as { createBooking: (userId: string, body: unknown) => Promise<{ id: string; reference_code: string }> }).createBooking(String(authReq.user?.id), req.body);
+  const booking = await bookingService.createBooking(String(authReq.user?.id), req.body);
   (auditService as unknown as { markResource: (res: Response, r: unknown) => void }).markResource(res, { type: 'booking', id: booking.id, label: `booking ${booking.reference_code}` });
   successResponse(res, { booking }, 201);
 });

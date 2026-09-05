@@ -54,6 +54,9 @@ router.get('/search/available', protect_1.default, ...tripValidator_1.searchAvai
 router.get('/:trip_id', protect_1.default, ...tripValidator_1.tripParamValidation, validatorMiddleware_1.default, c.getTripById);
 // Booking options for a trip: open seats + drop-off points (any authenticated user)
 router.get('/:trip_id/options', protect_1.default, ...tripValidator_1.tripParamValidation, validatorMiddleware_1.default, c.getTripOptions);
+// Seats for a trip: all seats + empty (available) seats (any authenticated user)
+router.get('/:trip_id/seats', protect_1.default, ...tripValidator_1.tripParamValidation, validatorMiddleware_1.default, c.getTripSeats);
+router.get('/:trip_id/empty-seats', protect_1.default, ...tripValidator_1.tripParamValidation, validatorMiddleware_1.default, c.getTripSeats);
 // Start a trip (driver only)
 router.post('/:trip_id/start', protect_1.default, (0, roleGuard_1.roleGuard)(['driver']), c.startTrip);
 // Complete a trip (driver only)

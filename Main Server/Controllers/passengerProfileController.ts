@@ -29,7 +29,7 @@ const updateMyProfile = catchAsync(async (req: Request, res: Response): Promise<
 
 const getPassengerHome = catchAsync(async (req: Request, res: Response): Promise<void> => {
   const authReq = req as AuthRequest;
-  const result = await (homeService as unknown as { getPassengerHome: (id: string) => Promise<unknown> }).getPassengerHome(String(authReq.user?.id));
+  const result = await homeService.getPassengerHome(String(authReq.user?.id));
   successResponse(res, result);
 });
 

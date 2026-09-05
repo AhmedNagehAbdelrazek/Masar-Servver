@@ -19,13 +19,14 @@ export interface RideRequestAttributes {
   maxBudget?: number | null;
   currency?: string | null;
   attributesPreferred?: unknown | null;
+  note?: string | null;
   status: string;
   expiresAt: Date;
   createdAt?: Date;
   updatedAt?: Date;
 }
 
-export interface RideRequestCreationAttributes extends Optional<RideRequestAttributes, 'id' | 'originLat' | 'originLng' | 'originTime' | 'destinationLat' | 'destinationLng' | 'arrivalDeadline' | 'seatsNeeded' | 'maxBudget' | 'currency' | 'attributesPreferred' | 'status' | 'createdAt' | 'updatedAt'> {}
+export interface RideRequestCreationAttributes extends Optional<RideRequestAttributes, 'id' | 'originLat' | 'originLng' | 'originTime' | 'destinationLat' | 'destinationLng' | 'arrivalDeadline' | 'seatsNeeded' | 'maxBudget' | 'currency' | 'attributesPreferred' | 'note' | 'status' | 'createdAt' | 'updatedAt'> {}
 
 export class RideRequest extends Model<RideRequestAttributes, RideRequestCreationAttributes> implements RideRequestAttributes {
   declare id: string;
@@ -44,6 +45,7 @@ export class RideRequest extends Model<RideRequestAttributes, RideRequestCreatio
   declare maxBudget?: number | null;
   declare currency?: string | null;
   declare attributesPreferred?: unknown | null;
+  declare note?: string | null;
   declare status: string;
   declare expiresAt: Date;
   declare readonly createdAt?: Date;
@@ -119,6 +121,11 @@ RideRequest.init(
             type: DataTypes.JSONB,
             allowNull: true,
             defaultValue: {},
+        },
+    note: {
+            type: DataTypes.TEXT,
+            field: 'note',
+            allowNull: true,
         },
     status: {
             type: DataTypes.ENUM(...Object.values(RIDE_REQUEST_STATUS)),

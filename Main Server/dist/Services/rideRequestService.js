@@ -25,6 +25,10 @@ const notificationService_1 = __importDefault(require("./notificationService"));
 const referenceCode_1 = require("../utils/referenceCode");
 const Models_1 = require("../Models");
 const constants_1 = require("../config/constants");
+const redisKeys_1 = require("../utils/redisKeys");
+const redis_1 = require("../config/redis");
+const homeService_1 = __importDefault(require("./homeService"));
+const realtimeService_1 = __importDefault(require("./realtimeService"));
 const MATCH_WINDOW_BEFORE_MS = 24 * 60 * 60 * 1000;
 const MATCH_WINDOW_AFTER_MS = 2 * 24 * 60 * 60 * 1000;
 const MATCH_LIMIT = 10; // support at least 10 candidates
@@ -129,6 +133,7 @@ function serializeRideRequest(request, options = {}) {
         max_budget: request.maxBudget !== null && request.maxBudget !== undefined ? Number(request.maxBudget) : null,
         currency: request.currency,
         attributes_preferred: request.attributesPreferred,
+        note: request.note || null,
         status: request.status,
         expires_at: request.expiresAt,
         created_at: request.createdat || request.createdAt,
@@ -203,6 +208,7 @@ async function createRideRequest(userId, payload) {
         maxBudget: payload.max_budget !== undefined ? payload.max_budget : null,
         currency: 'JOD',
         attributesPreferred: payload.attributes_preferred || {},
+        note: payload.note ? String(payload.note).trim() : null,
         status: constants_1.RIDE_REQUEST_STATUS.OPEN,
         expiresAt: computeExpiresAt(payload.arrival_deadline, payload.origin_time),
     });
@@ -305,6 +311,8 @@ async function updateRideRequest(userId, requestId, payload) {
         updatable.maxBudget = payload.max_budget;
     if (payload.attributes_preferred !== undefined)
         updatable.attributesPreferred = payload.attributes_preferred;
+    if (payload.note !== undefined)
+        updatable.note = payload.note ? String(payload.note).trim() : null;
     await request.update(updatable);
     if (updatable.arrivalDeadline !== undefined) {
         request.expiresAt = computeExpiresAt(request.arrivalDeadline, request.originTime);
@@ -630,7 +638,30 @@ async function attachOfferToTrip(driverId, tripId, offerId, payload = {}) {
             reference_code: booking.referenceCode,
         },
     });
-    const passenger = await Models_1.User.findByPk(offer.rideRequest.passengerId);
+    // Invalidate passenger + driver home caches and emit socket event
+    const passengerId = offer.rideRequest.passengerId;
+    try {
+        await (0, redis_1.deleteKey)(redisKeys_1.REDIS_KEYS.PASSENGER_HOME(passengerId));
+    }
+    catch (err) {
+        console.warn('[rideRequestService] passenger home cache invalidation failed:', err.message);
+    }
+    try {
+        await (0, redis_1.deleteKey)(redisKeys_1.REDIS_KEYS.DRIVER_HOME(driverId));
+    }
+    catch (err) {
+        console.warn('[rideRequestService] driver home cache invalidation failed:', err.message);
+    }
+    try {
+        await homeService_1.default.invalidateHomeForTrip(tripId, driverId);
+    }
+    catch (_err) { }
+    try {
+        realtimeService_1.default.emitToUser(passengerId, 'home:invalidate', { trip_id: tripId });
+        realtimeService_1.default.emitToUser(driverId, 'home:invalidate', { trip_id: tripId });
+    }
+    catch (_err) { }
+    const passenger = await Models_1.User.findByPk(passengerId);
     if (passenger) {
         await notificationService_1.default.sendToUser(passenger, 'BOOKING_CREATED_FROM_OFFER', {
             channels: ['in_app', 'push'],

@@ -46,6 +46,9 @@ export const createRideRequestValidation: ValidationChain[] = [
   body('attributes_preferred')
     .optional()
     .isObject().withMessage(V.ATTRIBUTES_PREFERRED_MUST_BE_AN_OBJECT),
+  body('note')
+    .optional()
+    .isString().trim().isLength({ max: 1000 }).withMessage(V.REASON_MUST_BE_AT_MOST_1000_CHARACTERS),
 ];
 
 export const listRideRequestsValidation: ValidationChain[] = [
@@ -83,6 +86,9 @@ export const updateRideRequestValidation: ValidationChain[] = [
   body('max_budget')
     .optional()
     .isFloat({ min: 0 }).withMessage(V.MAX_BUDGET_MUST_BE_A_NON_NEGATIVE_NUMBER),
+  body('note')
+    .optional()
+    .isString().trim().isLength({ max: 1000 }).withMessage(V.REASON_MUST_BE_AT_MOST_1000_CHARACTERS),
 ];
 
 export const createOfferValidation: ValidationChain[] = [

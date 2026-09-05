@@ -37,6 +37,12 @@ exports.createBookingValidation = [
     (0, express_validator_1.body)('seats')
         .optional()
         .isInt({ min: 1 }).withMessage(validation_keys_1.default.SEATS_MUST_BE_POSITIVE_INTEGER),
+    (0, express_validator_1.body)('pickup_point')
+        .optional()
+        .isUUID().withMessage(validation_keys_1.default.TRIP_ID_MUST_BE_A_VALID_UUID),
+    (0, express_validator_1.body)('pick_up_point')
+        .optional()
+        .isUUID().withMessage(validation_keys_1.default.TRIP_ID_MUST_BE_A_VALID_UUID),
     (0, express_validator_1.body)('drop_off_point')
         .optional()
         .isUUID().withMessage(validation_keys_1.default.TRIP_ID_MUST_BE_A_VALID_UUID),

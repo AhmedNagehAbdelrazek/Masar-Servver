@@ -33,7 +33,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.attachOfferToTrip = exports.getTripPassengers = exports.getTripOptions = exports.getTripAttributes = exports.cancelTripWithPenalty = exports.cancelTrip = exports.updateTrip = exports.completeTrip = exports.startTrip = exports.getAvailableTrips = exports.getDriverTrips = exports.getTripById = exports.createTrip = void 0;
+exports.attachOfferToTrip = exports.getTripPassengers = exports.getTripSeats = exports.getTripOptions = exports.getTripAttributes = exports.cancelTripWithPenalty = exports.cancelTrip = exports.updateTrip = exports.completeTrip = exports.startTrip = exports.getAvailableTrips = exports.getDriverTrips = exports.getTripById = exports.createTrip = void 0;
 const catchAsync_1 = require("../utils/catchAsync");
 const httpResponse_1 = require("../utils/httpResponse");
 const ApiError_1 = require("../utils/ApiError");
@@ -178,6 +178,12 @@ const getTripOptions = (0, catchAsync_1.catchAsync)(async (req, res) => {
     (0, httpResponse_1.successResponse)(res, result);
 });
 exports.getTripOptions = getTripOptions;
+const getTripSeats = (0, catchAsync_1.catchAsync)(async (req, res) => {
+    const { trip_id } = req.params;
+    const result = await tripService.getTripSeats(trip_id);
+    (0, httpResponse_1.successResponse)(res, result);
+});
+exports.getTripSeats = getTripSeats;
 const getTripPassengers = (0, catchAsync_1.catchAsync)(async (req, res) => {
     const authReq = req;
     const { trip_id } = req.params;
@@ -214,6 +220,7 @@ exports.default = {
     cancelTripWithPenalty,
     getTripAttributes,
     getTripOptions,
+    getTripSeats,
     getTripPassengers,
     attachOfferToTrip,
 };

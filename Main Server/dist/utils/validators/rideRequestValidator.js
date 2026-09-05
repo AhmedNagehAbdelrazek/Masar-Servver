@@ -49,6 +49,9 @@ exports.createRideRequestValidation = [
     (0, express_validator_1.body)('attributes_preferred')
         .optional()
         .isObject().withMessage(validation_keys_1.default.ATTRIBUTES_PREFERRED_MUST_BE_AN_OBJECT),
+    (0, express_validator_1.body)('note')
+        .optional()
+        .isString().trim().isLength({ max: 1000 }).withMessage(validation_keys_1.default.REASON_MUST_BE_AT_MOST_1000_CHARACTERS),
 ];
 exports.listRideRequestsValidation = [
     (0, express_validator_1.query)('status')
@@ -84,6 +87,9 @@ exports.updateRideRequestValidation = [
     (0, express_validator_1.body)('max_budget')
         .optional()
         .isFloat({ min: 0 }).withMessage(validation_keys_1.default.MAX_BUDGET_MUST_BE_A_NON_NEGATIVE_NUMBER),
+    (0, express_validator_1.body)('note')
+        .optional()
+        .isString().trim().isLength({ max: 1000 }).withMessage(validation_keys_1.default.REASON_MUST_BE_AT_MOST_1000_CHARACTERS),
 ];
 exports.createOfferValidation = [
     ...exports.rideRequestParamValidation,

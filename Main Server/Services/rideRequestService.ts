@@ -8,6 +8,10 @@ import notificationService from './notificationService';
 import { generateReferenceCode } from '../utils/referenceCode';
 import { RideRequest, RequestOffer, Booking, Trip, User, sequelize } from '../Models';
 import { BOOKING_STATUS, PAYMENT_STATUS, TRIP_STATUS, REQUEST_OFFER_STATUS, RIDE_REQUEST_STATUS, REQUEST_OFFER_TTL_HOURS } from '../config/constants';
+import { REDIS_KEYS } from '../utils/redisKeys';
+import { deleteKey } from '../config/redis';
+import homeService from './homeService';
+import realtimeService from './realtimeService';
 
 const MATCH_WINDOW_BEFORE_MS = 24 * 60 * 60 * 1000;
 const MATCH_WINDOW_AFTER_MS = 2 * 24 * 60 * 60 * 1000;
@@ -122,6 +126,7 @@ function serializeRideRequest(request : RideRequest, options = {}) {
     max_budget: request.maxBudget !== null && request.maxBudget !== undefined ? Number(request.maxBudget) : null,
     currency: request.currency,
     attributes_preferred: request.attributesPreferred,
+    note: request.note || null,
     status: request.status,
     expires_at: request.expiresAt,
     created_at: request.createdat || request.createdAt,
@@ -207,6 +212,7 @@ async function createRideRequest(userId, payload) {
     maxBudget: payload.max_budget !== undefined ? payload.max_budget : null,
     currency: 'JOD',
     attributesPreferred: payload.attributes_preferred || {},
+    note: payload.note ? String(payload.note).trim() : null,
     status: RIDE_REQUEST_STATUS.OPEN,
     expiresAt: computeExpiresAt(payload.arrival_deadline, payload.origin_time),
   });
@@ -316,6 +322,7 @@ async function updateRideRequest(userId, requestId, payload) {
   if (payload.seats_needed !== undefined) updatable.seatsNeeded = payload.seats_needed;
   if (payload.max_budget !== undefined) updatable.maxBudget = payload.max_budget;
   if (payload.attributes_preferred !== undefined) updatable.attributesPreferred = payload.attributes_preferred;
+  if (payload.note !== undefined) updatable.note = payload.note ? String(payload.note).trim() : null;
 
   await request.update(updatable);
   if (updatable.arrivalDeadline !== undefined) {
@@ -689,7 +696,27 @@ async function attachOfferToTrip(driverId, tripId, offerId, payload = {}) {
     },
   });
 
-  const passenger = await User.findByPk(offer.rideRequest.passengerId);
+  // Invalidate passenger + driver home caches and emit socket event
+  const passengerId = offer.rideRequest.passengerId;
+  try {
+    await deleteKey(REDIS_KEYS.PASSENGER_HOME(passengerId));
+  } catch (err) {
+    console.warn('[rideRequestService] passenger home cache invalidation failed:', (err as Error).message);
+  }
+  try {
+    await deleteKey(REDIS_KEYS.DRIVER_HOME(driverId));
+  } catch (err) {
+    console.warn('[rideRequestService] driver home cache invalidation failed:', (err as Error).message);
+  }
+  try {
+    await homeService.invalidateHomeForTrip(tripId, driverId);
+  } catch (_err) {}
+  try {
+    realtimeService.emitToUser(passengerId, 'home:invalidate', { trip_id: tripId });
+    realtimeService.emitToUser(driverId, 'home:invalidate', { trip_id: tripId });
+  } catch (_err) {}
+
+  const passenger = await User.findByPk(passengerId);
   if (passenger) {
     await notificationService.sendToUser(passenger, 'BOOKING_CREATED_FROM_OFFER', {
       channels: ['in_app', 'push'],

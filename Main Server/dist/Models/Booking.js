@@ -42,6 +42,16 @@ Booking.init({
         allowNull: true,
         defaultValue: 'JOD',
     },
+    pickupPlace: {
+        type: sequelize_1.DataTypes.STRING(120),
+        field: 'pickup_place',
+        allowNull: true,
+    },
+    pickupOrder: {
+        type: sequelize_1.DataTypes.SMALLINT,
+        field: 'pickup_order',
+        allowNull: true,
+    },
     dropoffPlace: {
         type: sequelize_1.DataTypes.STRING(120),
         allowNull: true,

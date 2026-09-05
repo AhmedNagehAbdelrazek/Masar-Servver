@@ -104,7 +104,10 @@ function serializeListRow(booking) {
                 ...tripLocationData(booking.trip),
             }
             : null,
+        pickup_place: booking.pickupPlace || null,
+        pickup_order: booking.pickupOrder != null ? Number(booking.pickupOrder) : null,
         dropoff_place: booking.dropoffPlace,
+        dropoff_order: booking.dropoffOrder != null ? Number(booking.dropoffOrder) : null,
     };
 }
 function serializeDetail(booking) {
@@ -122,7 +125,10 @@ function serializeDetail(booking) {
         booking_created_at: booking.createdat || booking.createdAt,
         cancellation_reason: booking.cancellationReason,
         cancelled_at: booking.cancelledAt,
+        pickup_place: booking.pickupPlace || null,
+        pickup_order: booking.pickupOrder != null ? Number(booking.pickupOrder) : null,
         dropoff_place: booking.dropoffPlace,
+        dropoff_order: booking.dropoffOrder != null ? Number(booking.dropoffOrder) : null,
         trip: booking.trip
             ? {
                 origin: booking.trip.originCity,
@@ -199,7 +205,8 @@ async function notifyDriver(trip, template, vars) {
     }
 }
 async function createBooking(passengerId, payload) {
-    const { trip_id, seat_number, seats, agreed_fare, dropoff_place, dropoff_deadline, drop_off_point, } = payload;
+    const { trip_id, seat_number, seats, agreed_fare, dropoff_place, dropoff_deadline, drop_off_point, pickup_point, pick_up_point, } = payload;
+    const pickupPointId = pickup_point || pick_up_point || payload.pickupPoint || payload.pick_up_point || null;
     const user = await Models_1.User.findByPk(passengerId);
     if (!user)
         throw ApiError_1.ApiErrors.notFound('USER_NOT_FOUND');
@@ -221,16 +228,25 @@ async function createBooking(passengerId, payload) {
     if (Number(agreed_fare) !== Number(trip.farePerSeat)) {
         throw ApiError_1.ApiErrors.validation('AGREED_FARE_DOES_NOT_MATCH_THE_CURRENT_TRIP_FARE');
     }
-    // Resolve the chosen drop-off point (must belong to this trip's route).
+    // Resolve the chosen drop-off and pickup points (must belong to this trip's route).
+    const stops = (trip.stops || []).slice().sort((a, b) => a.stopOrder - b.stopOrder);
     let resolvedDropoffPlace = dropoff_place || null;
     let resolvedDropoffOrder = null;
     if (drop_off_point) {
-        const stops = (trip.stops || []).slice().sort((a, b) => a.stopOrder - b.stopOrder);
         const stop = stops.find((s) => s.id === drop_off_point);
         if (!stop)
             throw ApiError_1.ApiErrors.custom('DROP_OFF_POINT_NOT_ON_TRIP', 409, 'DROP_OFF_POINT_NOT_ON_TRIP');
         resolvedDropoffPlace = stop.stopName || stop.city || dropoff_place || null;
         resolvedDropoffOrder = stop.stopOrder;
+    }
+    let resolvedPickupPlace = null;
+    let resolvedPickupOrder = null;
+    if (pickupPointId) {
+        const stop = stops.find((s) => s.id === pickupPointId);
+        if (!stop)
+            throw ApiError_1.ApiErrors.custom('PICKUP_POINT_NOT_ON_TRIP', 409, 'PICKUP_POINT_NOT_ON_TRIP');
+        resolvedPickupPlace = stop.stopName || stop.city || null;
+        resolvedPickupOrder = stop.stopOrder;
     }
     // Could the booking be satisfied right now? (re-checked atomically below)
     if (requestedSeats > Number(trip.availableSeats)) {
@@ -275,6 +291,8 @@ async function createBooking(passengerId, payload) {
             seatsBooked: requestedSeats,
             agreedFare: agreed_fare,
             currency: 'JOD',
+            pickupPlace: resolvedPickupPlace,
+            pickupOrder: resolvedPickupOrder,
             dropoffPlace: resolvedDropoffPlace,
             dropoffOrder: resolvedDropoffOrder,
             dropoffDeadline: dropoff_deadline ? new Date(dropoff_deadline) : null,
@@ -358,7 +376,10 @@ function serializePassengerDetail(booking, trip, passenger) {
         seat_number: booking.seatNumber,
         agreed_fare: Number(booking.agreedFare),
         currency: booking.currency,
+        pickup_place: booking.pickupPlace || null,
+        pickup_order: booking.pickupOrder != null ? Number(booking.pickupOrder) : null,
         dropoff_place: booking.dropoffPlace,
+        dropoff_order: booking.dropoffOrder != null ? Number(booking.dropoffOrder) : null,
         dropoff_deadline: booking.dropoffDeadline,
         cancellation_reason: booking.cancellationReason,
         cancelled_at: booking.cancelledAt,

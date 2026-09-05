@@ -10,6 +10,8 @@ export interface BookingAttributes {
   seatsBooked: number;
   agreedFare: number;
   currency?: string | null;
+  pickupPlace?: string | null;
+  pickupOrder?: number | null;
   dropoffPlace?: string | null;
   dropoffDeadline?: Date | null;
   dropoffOrder?: number | null;
@@ -24,7 +26,7 @@ export interface BookingAttributes {
   updatedAt?: Date;
 }
 
-export interface BookingCreationAttributes extends Optional<BookingAttributes, 'id' | 'seatNumber' | 'seatsBooked' | 'currency' | 'dropoffPlace' | 'dropoffDeadline' | 'dropoffOrder' | 'status' | 'cancellationReason' | 'cancelledBy' | 'cancelledAt' | 'paymentStatus' | 'completedAt' | 'createdAt' | 'updatedAt'> {}
+export interface BookingCreationAttributes extends Optional<BookingAttributes, 'id' | 'seatNumber' | 'seatsBooked' | 'currency' | 'pickupPlace' | 'pickupOrder' | 'dropoffPlace' | 'dropoffDeadline' | 'dropoffOrder' | 'status' | 'cancellationReason' | 'cancelledBy' | 'cancelledAt' | 'paymentStatus' | 'completedAt' | 'createdAt' | 'updatedAt'> {}
 
 export class Booking extends Model<BookingAttributes, BookingCreationAttributes> implements BookingAttributes {
   declare id: string;
@@ -34,6 +36,8 @@ export class Booking extends Model<BookingAttributes, BookingCreationAttributes>
   declare seatsBooked: number;
   declare agreedFare: number;
   declare currency?: string | null;
+  declare pickupPlace?: string | null;
+  declare pickupOrder?: number | null;
   declare dropoffPlace?: string | null;
   declare dropoffDeadline?: Date | null;
   declare dropoffOrder?: number | null;
@@ -80,6 +84,16 @@ Booking.init(
             type: DataTypes.STRING(3),
             allowNull: true,
             defaultValue: 'JOD',
+        },
+    pickupPlace: {
+            type: DataTypes.STRING(120),
+            field: 'pickup_place',
+            allowNull: true,
+        },
+    pickupOrder: {
+            type: DataTypes.SMALLINT,
+            field: 'pickup_order',
+            allowNull: true,
         },
     dropoffPlace: {
             type: DataTypes.STRING(120),

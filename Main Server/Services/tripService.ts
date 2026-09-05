@@ -4,7 +4,7 @@ import { ApiErrors } from '../utils/ApiError';
 import { TRIP_STATUS, GENDER_PREFERENCE, BOOKING_STATUS, FREE_OFFER_TYPE, PENALTY_TYPES, PENALTY_CATEGORY, PENALTY_SEVERITY, CANCELLATION_ESCALATION } from '../config/constants';
 import commissionService from './commissionService';
 import notificationService from './notificationService';
-import { releaseSeatLock } from '../utils/seatLock';
+import { releaseSeatLock, checkSeatLock } from '../utils/seatLock';
 import homeService from './homeService';
 import { seatNumbersFor } from '../utils/seatSerializer';
 import auditService from './auditService';
@@ -466,6 +466,63 @@ const getTripOptions = async (tripId) => {
 };
 
 /**
+ * Get seats for a trip - returns all seats and empty (available) seats.
+ * Any authenticated user may call it. Trip must exist; no status restriction
+ * beyond existence so passengers can inspect layout even before booking.
+ */
+const getTripSeats = async (tripId) => {
+  const trip = await Trip.findByPk(tripId, {
+    attributes: ['id', 'status', 'totalSeats', 'availableSeats', 'driverId'],
+  });
+  if (!trip) throw ApiErrors.notFound('TRIP_NOT_FOUND');
+
+  const seatRows = await TripSeat.findAll({
+    where: { tripId: trip.id },
+    order: [['seat_number', 'ASC']],
+  });
+
+  // Enrich with lock info (best-effort, never throws)
+  const seats = await Promise.all(
+    seatRows.map(async (s) => {
+      let locked = false;
+      let lockedBy = null;
+      let expiresAt = null;
+      try {
+        const lock = await checkSeatLock(tripId, s.seatNumber);
+        locked = lock.locked;
+        lockedBy = lock.passengerId;
+        expiresAt = lock.expiresAt;
+      } catch (_err) {
+        // redis offline - treat as unlocked
+      }
+      return {
+        seat_number: s.seatNumber,
+        seat_type: s.seatType,
+        is_available: s.seatType === 'available' && !locked,
+        is_locked: locked,
+        locked_by: lockedBy,
+        locked_expires_at: expiresAt,
+      };
+    })
+  );
+
+  const emptySeats = seats.filter((s) => s.seat_type === 'available' && !s.is_locked);
+  const availableSeats = seats.filter((s) => s.seat_type === 'available');
+
+  return {
+    trip_id: trip.id,
+    status: trip.status,
+    total_seats: trip.totalSeats,
+    available_seats: trip.availableSeats,
+    seats_count: seats.length,
+    seats,
+    empty_seats: emptySeats,
+    empty_seats_count: emptySeats.length,
+    available_seats_detail: availableSeats,
+  };
+};
+
+/**
  * Get trips for a driver (contract D-list). Each trip is serialized with its
  * current lifecycle `status` included.
  */
@@ -524,54 +581,94 @@ const getDriverTrips = async (driverId, status = null) => {
  * Includes driver details (name, rating, avatar) + vehicle.
  */
 async function fetchTripsForDate({ targetDate, originCity, destinationCity, genderPreference, timeFrom, timeTo, vehicleType, seats }) {
-  const qd = new Date(targetDate);
-  const dayStart = new Date(qd);
-  dayStart.setHours(0, 0, 0, 0);
-  const dayEnd = new Date(qd);
-  dayEnd.setHours(23, 59, 59, 999);
+  const hasDate = !!targetDate;
+  const now = new Date();
 
-  const dateBranch = {
-    [Op.or]: [
-      {
-        isRecurring: false,
-        departureTime: { [Op.gte]: dayStart, [Op.lte]: dayEnd },
-      },
-      {
-        isRecurring: true,
-        recurrenceDays: { [Op.contains]: [qd.getDay()] },
-        recurrenceEndDate: { [Op.or]: [{ [Op.gte]: qd }, { [Op.is]: null }] },
-      },
-    ],
-  };
+  let qd = null;
+  let dayStart = null;
+  let dayEnd = null;
+  if (hasDate) {
+    qd = new Date(targetDate);
+    dayStart = new Date(qd);
+    dayStart.setHours(0, 0, 0, 0);
+    dayEnd = new Date(qd);
+    dayEnd.setHours(23, 59, 59, 999);
+  }
 
   const where = {
     status: TRIP_STATUS.PUBLISHED,
     isModerated: false,
-    availableSeats: { [Op.gt]: 0 },
   };
 
-  const andConditions = [dateBranch];
-
-  if (timeFrom || timeTo) {
-    const [fhh, fmm] = (timeFrom || '00:00').split(':').map(Number);
-    const [thh, tmm] = (timeTo || '23:59').split(':').map(Number);
-    const windowStart = new Date(dayStart);
-    windowStart.setHours(fhh, fmm, 0, 0);
-    const windowEnd = new Date(dayStart);
-    windowEnd.setHours(thh, tmm, 59, 999);
-    andConditions.push({
-      departureTime: { [Op.gte]: windowStart, [Op.lte]: windowEnd },
-    });
+  // Seat filter: if seats requested, require at least that many; otherwise require at least 1
+  if (seats && Number(seats) > 0) {
+    where.availableSeats = { [Op.gte]: Number(seats) };
+  } else {
+    where.availableSeats = { [Op.gt]: 0 };
   }
-  where[Op.and] = andConditions;
 
   if (originCity) where.originCity = originCity;
   if (destinationCity) where.destinationCity = destinationCity;
   if (genderPreference && genderPreference !== GENDER_PREFERENCE.ALL) {
     where.genderPreference = { [Op.in]: [genderPreference] };
   }
-  if (seats && Number(seats) > 0) {
-    where.availableSeats = { [Op.gte]: Number(seats) };
+
+  const andConditions = [];
+
+  if (hasDate) {
+    const dateBranch = {
+      [Op.or]: [
+        {
+          isRecurring: false,
+          departureTime: { [Op.gte]: dayStart, [Op.lte]: dayEnd },
+        },
+        {
+          isRecurring: true,
+          recurrenceDays: { [Op.contains]: [qd.getDay()] },
+          recurrenceEndDate: { [Op.or]: [{ [Op.gte]: qd }, { [Op.is]: null }] },
+        },
+      ],
+    };
+    andConditions.push(dateBranch);
+
+    if (timeFrom || timeTo) {
+      const [fhh, fmm] = (timeFrom || '00:00').split(':').map(Number);
+      const [thh, tmm] = (timeTo || '23:59').split(':').map(Number);
+      const windowStart = new Date(dayStart);
+      windowStart.setHours(fhh, fmm, 0, 0);
+      const windowEnd = new Date(dayStart);
+      windowEnd.setHours(thh, tmm, 59, 999);
+      andConditions.push({
+        departureTime: { [Op.gte]: windowStart, [Op.lte]: windowEnd },
+      });
+    }
+
+    // Exclude trips whose departure time is already in the past (only for non-recurring)
+    andConditions.push({
+      [Op.or]: [
+        { isRecurring: true },
+        { departureTime: { [Op.gt]: now } },
+      ],
+    });
+  } else {
+    // No date filter: return all future trips (published + available), excluding past one-off trips
+    andConditions.push({
+      [Op.or]: [
+        { isRecurring: false, departureTime: { [Op.gt]: now } },
+        {
+          isRecurring: true,
+          [Op.or]: [
+            { recurrenceEndDate: { [Op.gte]: now } },
+            { recurrenceEndDate: { [Op.is]: null } },
+          ],
+        },
+      ],
+    });
+    // Time window for no-date case is applied post-query (time-of-day filtering)
+  }
+
+  if (andConditions.length > 0) {
+    where[Op.and] = andConditions;
   }
 
   const include = [
@@ -584,10 +681,31 @@ async function fetchTripsForDate({ targetDate, originCity, destinationCity, gend
     include[2] = { model: Vehicle, as: 'vehicle', where: { vehicleType } };
   }
 
-  const trips = await Trip.findAll({
+  let trips = await Trip.findAll({
     where,
     include,
     order: [['departure_time', 'ASC']],
+  });
+
+  // Post-filter time window when no specific date is given (filter by time-of-day)
+  if (!hasDate && (timeFrom || timeTo)) {
+    const parseMinutes = (t) => {
+      const [h, m] = t.split(':').map(Number);
+      return h * 60 + m;
+    };
+    const fromMin = timeFrom ? parseMinutes(timeFrom) : 0;
+    const toMin = timeTo ? parseMinutes(timeTo) : 23 * 60 + 59;
+    trips = trips.filter((trip) => {
+      const dt = new Date(trip.departureTime);
+      const minutes = dt.getHours() * 60 + dt.getMinutes();
+      return minutes >= fromMin && minutes <= toMin;
+    });
+  }
+
+  // Defensive: also filter out any non-recurring trips still in the past (in case DB clock drift)
+  trips = trips.filter((trip) => {
+    if (trip.isRecurring) return true;
+    return new Date(trip.departureTime).getTime() > now.getTime();
   });
 
   return trips;
@@ -605,19 +723,19 @@ const getAvailableTrips = async (filters = {}) => {
     vehicleType,
     seats,
   } = filters;
-  // if (!date) throw ApiErrors.validation('DATE_REQUIRED');
-  const queryDate = new Date(date);
 
-  // Guard: reject past search dates — returns localized DATE_CANNOT_BE_IN_THE_PAST (422)
-  // if (date) {
-  //   const today = new Date();
-  //   today.setHours(0, 0, 0, 0);
-  //   const normalizedQuery = new Date(queryDate);
-  //   normalizedQuery.setHours(0, 0, 0, 0);
-  //   if (normalizedQuery < today) {
-  //     throw ApiErrors.validation('DATE_CANNOT_BE_IN_THE_PAST');
-  //   }
-  // }
+  // Validate dates when provided; allow omitting date to return all trips
+  let queryDate = null;
+  if (date) {
+    queryDate = new Date(date);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const normalizedQuery = new Date(queryDate);
+    normalizedQuery.setHours(0, 0, 0, 0);
+    if (normalizedQuery < today) {
+      throw ApiErrors.validation('DATE_CANNOT_BE_IN_THE_PAST');
+    }
+  }
   if (returnDate) {
     const rd = new Date(returnDate);
     const today = new Date();
@@ -625,13 +743,15 @@ const getAvailableTrips = async (filters = {}) => {
     const normReturn = new Date(rd);
     normReturn.setHours(0, 0, 0, 0);
     if (normReturn < today) throw ApiErrors.validation('DATE_CANNOT_BE_IN_THE_PAST');
-    const normQuery = new Date(queryDate);
-    normQuery.setHours(0, 0, 0, 0);
-    if (normReturn < normQuery) throw ApiErrors.validation('DATE_CANNOT_BE_IN_THE_PAST');
+    if (queryDate) {
+      const normQuery = new Date(queryDate);
+      normQuery.setHours(0, 0, 0, 0);
+      if (normReturn < normQuery) throw ApiErrors.validation('DATE_CANNOT_BE_IN_THE_PAST');
+    }
   }
 
   const trips = await fetchTripsForDate({
-    targetDate: date,
+    targetDate: date || null,
     originCity,
     destinationCity,
     genderPreference,
@@ -863,6 +983,7 @@ module.exports = {
   createTrip,
   getTripById,
   getTripOptions,
+  getTripSeats,
   getDriverTrips,
   getAvailableTrips,
   startTrip,
@@ -1264,5 +1385,5 @@ async function cancelTripWithPenalty(driverId, tripId, { reason, note }) {
     penalty_type: escalation.severity,
   };
 }
-export { createTrip, getTripById, getTripOptions, getDriverTrips, getAvailableTrips, startTrip, completeTrip, updateTrip, cancelTrip, cancelTripWithPenalty, getTripAttributes, getTripPassengers };
+export { createTrip, getTripById, getTripOptions, getTripSeats, getDriverTrips, getAvailableTrips, startTrip, completeTrip, updateTrip, cancelTrip, cancelTripWithPenalty, getTripAttributes, getTripPassengers };
 export default module.exports;
