@@ -41,7 +41,13 @@ const auditService = __importStar(require("../Services/auditService"));
 const lockSeat = (0, catchAsync_1.catchAsync)(async (req, res) => {
     const authReq = req;
     const { trip_id } = req.params;
-    const { seat_number } = req.body;
+    const { seat_number, seat_numbers } = req.body;
+    if (seat_numbers !== undefined && seat_numbers !== null) {
+        const result = await seatLockService.lockSeats(trip_id, seat_numbers, String(authReq.user?.id));
+        auditService.markResource(res, { type: 'trip', id: trip_id, label: `seats ${seat_numbers.join(',')}` });
+        (0, httpResponse_1.successResponse)(res, result, 200);
+        return;
+    }
     const result = await seatLockService.lockSeat(trip_id, seat_number, String(authReq.user?.id));
     auditService.markResource(res, { type: 'trip', id: trip_id, label: `seat ${seat_number}` });
     (0, httpResponse_1.successResponse)(res, result, 200);

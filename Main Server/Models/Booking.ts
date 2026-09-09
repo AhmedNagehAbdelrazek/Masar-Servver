@@ -7,6 +7,7 @@ export interface BookingAttributes {
   tripId: string;
   passengerId: string;
   seatNumber?: number | null;
+  seatNumbers?: number[] | null;
   seatsBooked: number;
   agreedFare: number;
   currency?: string | null;
@@ -30,13 +31,14 @@ export interface BookingAttributes {
   updatedAt?: Date;
 }
 
-export interface BookingCreationAttributes extends Optional<BookingAttributes, 'id' | 'seatNumber' | 'seatsBooked' | 'currency' | 'pickupPlace' | 'pickupLat' | 'pickupLng' | 'pickupOrder' | 'dropoffPlace' | 'dropoffLat' | 'dropoffLng' | 'dropoffDeadline' | 'dropoffOrder' | 'status' | 'cancellationReason' | 'cancelledBy' | 'cancelledAt' | 'paymentStatus' | 'completedAt' | 'createdAt' | 'updatedAt'> {}
+export interface BookingCreationAttributes extends Optional<BookingAttributes, 'id' | 'seatNumber' | 'seatNumbers' | 'seatsBooked' | 'currency' | 'pickupPlace' | 'pickupLat' | 'pickupLng' | 'pickupOrder' | 'dropoffPlace' | 'dropoffLat' | 'dropoffLng' | 'dropoffDeadline' | 'dropoffOrder' | 'status' | 'cancellationReason' | 'cancelledBy' | 'cancelledAt' | 'paymentStatus' | 'completedAt' | 'createdAt' | 'updatedAt'> {}
 
 export class Booking extends Model<BookingAttributes, BookingCreationAttributes> implements BookingAttributes {
   declare id: string;
   declare tripId: string;
   declare passengerId: string;
   declare seatNumber?: number | null;
+  declare seatNumbers?: number[] | null;
   declare seatsBooked: number;
   declare agreedFare: number;
   declare currency?: string | null;
@@ -77,6 +79,11 @@ Booking.init(
         },
     seatNumber: {
             type: DataTypes.SMALLINT,
+            allowNull: true,
+        },
+    seatNumbers: {
+            type: DataTypes.ARRAY(DataTypes.SMALLINT),
+            field: 'seat_numbers',
             allowNull: true,
         },
     seatsBooked: {

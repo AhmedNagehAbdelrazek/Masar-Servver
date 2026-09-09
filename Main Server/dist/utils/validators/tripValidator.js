@@ -302,8 +302,28 @@ exports.lockSeatValidation = [
     (0, express_validator_1.param)('trip_id')
         .isUUID().withMessage(validation_keys_1.default.TRIP_ID_MUST_BE_A_VALID_UUID),
     (0, express_validator_1.body)('seat_number')
-        .notEmpty().withMessage(validation_keys_1.default.SEAT_NUMBER_IS_REQUIRED)
+        .optional()
         .isInt({ min: 1 }).withMessage(validation_keys_1.default.SEAT_NUMBER_MUST_BE_A_POSITIVE_INTEGER),
+    (0, express_validator_1.body)('seat_numbers')
+        .optional()
+        .isArray({ min: 1 }).withMessage(validation_keys_1.default.SEAT_NUMBERS_MUST_BE_A_NON_EMPTY_ARRAY)
+        .custom((arr) => {
+        if (!Array.isArray(arr) || !arr.every((n) => Number.isInteger(Number(n)) && Number(n) >= 1)) {
+            throw new Error(validation_keys_1.default.SEAT_NUMBERS_MUST_BE_POSITIVE_INTEGERS);
+        }
+        return true;
+    }),
+    (0, express_validator_1.body)()
+        .custom((_, { req }) => {
+        const hasSingle = req.body.seat_number !== undefined
+            && req.body.seat_number !== null;
+        const hasMulti = req.body.seat_numbers !== undefined
+            && req.body.seat_numbers !== null;
+        if ((hasSingle && hasMulti) || (!hasSingle && !hasMulti)) {
+            throw new Error(validation_keys_1.default.PROVIDE_SEAT_NUMBER_OR_SEAT_NUMBERS_NOT_BOTH);
+        }
+        return true;
+    }),
 ];
 exports.releaseSeatLockValidation = [
     (0, express_validator_1.param)('trip_id')

@@ -71,6 +71,8 @@ async function initDatabase({ runMigrations: doRun = true } = {}) {
         const { runMigrations } = require('../migrations');
         // NOTE: never use redo:true on boot — it wipes _schema_migrations and
         // replays every migration, crashing on columns that already exist.
+        // Use `pnpm db:migrate:redo` explicitly if you really want a full replay
+        // (the runner still skips already-existing columns per command).
         await runMigrations();
     }
     await syncSchema();

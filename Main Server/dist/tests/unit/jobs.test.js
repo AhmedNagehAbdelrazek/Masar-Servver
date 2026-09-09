@@ -114,11 +114,12 @@ const { JOBS, startJobs } = require('../../jobs');
     });
 });
 (0, globals_1.describe)('jobs registry', () => {
-    (0, globals_1.it)('exposes all three jobs with env-driven schedules', () => {
-        (0, globals_1.expect)(Object.keys(JOBS)).toEqual(['expirySweep', 'expiryReminder', 'lowBalanceWarning']);
+    (0, globals_1.it)('exposes all jobs with env-driven schedules', () => {
+        (0, globals_1.expect)(Object.keys(JOBS)).toEqual(['expirySweep', 'expiryReminder', 'lowBalanceWarning', 'sosEscalation', 'dataRetention', 'driverStats', 'tripLifecycle']);
         (0, globals_1.expect)(JOBS.expirySweep.schedule).toBeTruthy();
         (0, globals_1.expect)(JOBS.expiryReminder.schedule).toBeTruthy();
         (0, globals_1.expect)(JOBS.lowBalanceWarning.schedule).toBeTruthy();
+        (0, globals_1.expect)(JOBS.tripLifecycle.schedule).toBeTruthy();
     });
     (0, globals_1.it)('does not schedule cron jobs in the test environment', () => {
         const cron = require('node-cron');

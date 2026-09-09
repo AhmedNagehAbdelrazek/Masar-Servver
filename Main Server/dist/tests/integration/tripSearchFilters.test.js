@@ -135,6 +135,56 @@ describe('US1 - trip search filters', () => {
         expect(res.status).toBe(200);
         expect(res.body.trips.length).toBe(2);
     });
+    it('returns trips on the date AND all future ones', async () => {
+        // Seeded trips depart tomorrow; searching from today must still include them
+        const res = await getAgent()
+            .get('/api/trips/search/available')
+            .query({ origin_city: 'Amman', destination_city: 'Irbid', date: getFutureDate(0) })
+            .set('Authorization', `Bearer ${passengerToken}`);
+        expect(res.status).toBe(200);
+        expect(res.body.trips.length).toBe(2);
+    });
+    it('excludes stale recurring trips that neither start on/after the date nor run on it', async () => {
+        // A recurring series whose first departure is already past and which does
+        // not run on the searched weekday looks outdated and must not be returned,
+        // even though the series itself has not ended yet.
+        const searchedWeekday = new Date().getDay();
+        const otherDay = (searchedWeekday + 1) % 7;
+        const createRes = await getAgent()
+            .post('/api/trips')
+            .set('Authorization', `Bearer ${driverAToken}`)
+            .send({
+            origin_city: 'Amman',
+            destination_city: 'Irbid',
+            departure_date: getFutureDate(1),
+            departure_time: '10:00',
+            type_of_trip: 'repeated',
+            repeated_days: [otherDay],
+            repeated_end_date: getFutureDate(30),
+            fare_per_seat: '15.00',
+            seats: [
+                { seat_number: 1, type: 'driver' },
+                { seat_number: 2, type: 'available' },
+                { seat_number: 3, type: 'available' },
+                { seat_number: 4, type: 'unavailable' },
+            ],
+        });
+        expect(createRes.status).toBe(201);
+        const staleTripId = createRes.body.trip_id;
+        expect(typeof staleTripId).toBe('string');
+        // Backdate the first departure into the past to simulate a stale series
+        const past = new Date();
+        past.setDate(past.getDate() - 2);
+        await Trip.update({ departureTime: past }, { where: { id: staleTripId } });
+        const res = await getAgent()
+            .get('/api/trips/search/available')
+            .query({ origin_city: 'Amman', destination_city: 'Irbid', date: getFutureDate(0) })
+            .set('Authorization', `Bearer ${passengerToken}`);
+        expect(res.status).toBe(200);
+        // only the 2 seeded once-trips departing tomorrow; the stale series is out
+        expect(res.body.trips.length).toBe(2);
+        expect(res.body.trips.map((t) => t.id)).not.toContain(staleTripId);
+    });
     it('rejects invalid time range (from after to)', async () => {
         const res = await getAgent()
             .get('/api/trips/search/available')

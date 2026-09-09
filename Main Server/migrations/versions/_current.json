@@ -1221,6 +1221,11 @@
                     "field": "seat_number",
                     "seqType": "Sequelize.SMALLINT"
                 },
+                "seatNumbers": {
+                    "field": "seat_numbers",
+                    "allowNull": true,
+                    "seqType": "Sequelize.ARRAY(Sequelize.SMALLINT)"
+                },
                 "seatsBooked": {
                     "allowNull": false,
                     "defaultValue": {
@@ -3542,5 +3547,5 @@
             }
         }
     },
-    "revision": 25
+    "revision": 26
 }

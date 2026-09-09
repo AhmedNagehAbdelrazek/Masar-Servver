@@ -29,8 +29,17 @@ export const createBookingValidation: ValidationChain[] = [
   body('trip_id')
     .isUUID().withMessage(V.TRIP_ID_MUST_BE_A_VALID_UUID),
   body('seat_number')
-    .notEmpty().withMessage(V.SEAT_NUMBER_IS_REQUIRED)
+    .optional()
     .isInt({ min: 1 }).withMessage(V.SEAT_NUMBER_MUST_BE_A_POSITIVE_INTEGER),
+  body('seat_numbers')
+    .optional()
+    .isArray({ min: 1 }).withMessage(V.SEAT_NUMBERS_MUST_BE_A_NON_EMPTY_ARRAY)
+    .custom((value: unknown) => {
+      if (!Array.isArray(value) || !(value as unknown[]).every((n) => Number.isInteger(Number(n)) && Number(n) >= 1)) {
+        throw new Error(V.SEAT_NUMBERS_MUST_BE_POSITIVE_INTEGERS);
+      }
+      return true;
+    }),
   body('seats')
     .optional()
     .isInt({ min: 1 }).withMessage(V.SEATS_MUST_BE_POSITIVE_INTEGER),

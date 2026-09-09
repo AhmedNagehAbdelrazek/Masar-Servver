@@ -465,4 +465,94 @@ describe('Trip - Search Available Trips', () => {
         });
     });
 });
+describe('Trip - Driver overlap guard (2h window)', () => {
+    const OVERLAP_SEATS = [
+        { seat_number: 1, type: 'driver' },
+        { seat_number: 2, type: 'available' },
+        { seat_number: 3, type: 'available' },
+        { seat_number: 4, type: 'unavailable' },
+    ];
+    function overlapBody(date, time, extra = {}) {
+        return {
+            ...VALID_TRIP_BODY,
+            departure_date: date,
+            departure_time: time,
+            seats: OVERLAP_SEATS,
+            ...extra,
+        };
+    }
+    async function createTrip(date, time, extra = {}) {
+        return getAgent()
+            .post('/api/trips')
+            .set('Authorization', `Bearer ${driverToken}`)
+            .send(overlapBody(date, time, extra));
+    }
+    it('rejects a second trip inside the first trip window (05:00 blocks until 07:00)', async () => {
+        const date = getFutureDate(5);
+        const first = await createTrip(date, '05:00');
+        expect(first.status).toBe(201);
+        const second = await createTrip(date, '06:00');
+        expect(second.status).toBe(409);
+        expect(second.body.code).toBe('TRIP_TIME_OVERLAP');
+    });
+    it('allows a trip starting exactly when the previous one ends (07:00)', async () => {
+        const date = getFutureDate(5);
+        const first = await createTrip(date, '05:00');
+        expect(first.status).toBe(201);
+        const second = await createTrip(date, '07:00');
+        expect(second.status).toBe(201);
+    });
+    it('allows the same clock time on a different day', async () => {
+        const first = await createTrip(getFutureDate(5), '05:00');
+        expect(first.status).toBe(201);
+        const second = await createTrip(getFutureDate(6), '06:00');
+        expect(second.status).toBe(201);
+    });
+    it('frees the slot after the first trip is cancelled', async () => {
+        const date = getFutureDate(5);
+        const first = await createTrip(date, '05:00');
+        expect(first.status).toBe(201);
+        const cancelled = await getAgent()
+            .delete(`/api/trips/${first.body.trip_id}`)
+            .set('Authorization', `Bearer ${driverToken}`);
+        expect(cancelled.status).toBe(200);
+        const second = await createTrip(date, '06:00');
+        expect(second.status).toBe(201);
+    });
+    it('rejects moving a trip into another trip window via update', async () => {
+        const date = getFutureDate(5);
+        const first = await createTrip(date, '05:00');
+        expect(first.status).toBe(201);
+        const second = await createTrip(date, '10:00');
+        expect(second.status).toBe(201);
+        const secondId = second.body.trip_id;
+        const clash = await getAgent()
+            .put(`/api/trips/${secondId}`)
+            .set('Authorization', `Bearer ${driverToken}`)
+            .send({ departure_time: `${date}T06:00:00` });
+        expect(clash.status).toBe(409);
+        expect(clash.body.code).toBe('TRIP_TIME_OVERLAP');
+        const moved = await getAgent()
+            .put(`/api/trips/${secondId}`)
+            .set('Authorization', `Bearer ${driverToken}`)
+            .send({ departure_time: `${date}T12:00:00` });
+        expect(moved.status).toBe(200);
+    });
+    it('rejects a one-off trip overlapping a weekly series occurrence', async () => {
+        const startDate = getFutureDate(5);
+        const weekday = new Date(`${startDate}T00:00:00`).getDay();
+        const series = await createTrip(startDate, '10:00', {
+            type_of_trip: 'repeated',
+            repeated_days: [weekday],
+            repeated_end_date: getFutureDate(35),
+        });
+        expect(series.status).toBe(201);
+        // Same weekday one week later, inside the series window (10:00-12:00)
+        const sameWeekdayLater = getFutureDate(12);
+        expect(new Date(`${sameWeekdayLater}T00:00:00`).getDay()).toBe(weekday);
+        const clash = await createTrip(sameWeekdayLater, '11:00');
+        expect(clash.status).toBe(409);
+        expect(clash.body.code).toBe('TRIP_TIME_OVERLAP');
+    });
+});
 //# sourceMappingURL=trip.test.js.map

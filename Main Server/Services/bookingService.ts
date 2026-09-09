@@ -116,6 +116,7 @@ function serializeDetail(booking) {
     passenger_rating: booking.passenger ? Number(booking.passenger.avgRating) || 0 : null,
     seats_booked: booking.seatsBooked,
     seat_number: booking.seatNumber,
+    seat_numbers: booking.seatNumbers || (booking.seatNumber != null ? [booking.seatNumber] : []),
     agreed_fare: Number(booking.agreedFare),
     status: booking.status,
     payment_status: booking.paymentStatus,
@@ -215,6 +216,7 @@ async function createBooking(passengerId, payload) {
   const {
     trip_id,
     seat_number,
+    seat_numbers,
     seats,
     agreed_fare,
     dropoff_place,
@@ -236,9 +238,34 @@ async function createBooking(passengerId, payload) {
     throw ApiErrors.forbidden('ACCOUNT_IS_SUSPENDED_YOU_CANNOT_BOOK_TRIPS');
   }
 
-  const requestedSeats = seats === undefined ? 1 : Number(seats);
+  // Locked-seat paths: legacy single `seat_number`, or multi `seat_numbers`.
+  // A locked seat must be consumed here — otherwise the booking only decrements
+  // the counter and the seat row never changes state.
+  const hasSingleSeat = seat_number !== undefined && seat_number !== null;
+  const hasMultiSeats = seat_numbers !== undefined && seat_numbers !== null;
+  if (hasSingleSeat && hasMultiSeats) {
+    throw ApiErrors.validation('PROVIDE_SEAT_NUMBER_OR_SEAT_NUMBERS_NOT_BOTH');
+  }
+  let lockedSeats = null;
+  if (hasMultiSeats) {
+    const list = Array.isArray(seat_numbers) ? seat_numbers : [seat_numbers];
+    lockedSeats = [...new Set(list.map(Number))];
+    if (lockedSeats.length === 0 || lockedSeats.some((n) => !Number.isInteger(n) || n < 1)) {
+      throw ApiErrors.validation('SEAT_NUMBERS_MUST_BE_POSITIVE_INTEGERS');
+    }
+  } else if (hasSingleSeat) {
+    lockedSeats = [Number(seat_number)];
+    if (!Number.isInteger(lockedSeats[0]) || lockedSeats[0] < 1) {
+      throw ApiErrors.validation('SEAT_NUMBER_MUST_BE_A_POSITIVE_INTEGER');
+    }
+  }
+
+  const requestedSeats = seats === undefined ? (lockedSeats ? lockedSeats.length : 1) : Number(seats);
   if (!Number.isInteger(requestedSeats) || requestedSeats < 1) {
     throw ApiErrors.validation('SEATS_MUST_BE_POSITIVE_INTEGER');
+  }
+  if (lockedSeats && requestedSeats !== lockedSeats.length) {
+    throw ApiErrors.validation('SEATS_COUNT_MUST_MATCH_LOCKED_SEAT_NUMBERS');
   }
 
   const trip = await Trip.findByPk(trip_id, {
@@ -328,22 +355,26 @@ async function createBooking(passengerId, payload) {
     throw ApiErrors.custom('NOT_ENOUGH_AVAILABLE_SEATS_ON_THE_SELECTED_TRIP', 409, 'NOT_ENOUGH_AVAILABLE_SEATS_ON_THE_SELECTED_TRIP');
   }
 
-  // Legacy single-seat path uses an explicit seat lock + specific seat row.
-  const isSingleSeatLocked = seat_number !== undefined && seat_number !== null;
-  if (isSingleSeatLocked && requestedSeats !== 1) {
-    throw ApiErrors.validation('SEATS_MUST_BE_1');
-  }
+  // Locked-seat path uses explicit seat locks + specific seat rows.
+  const hasLockedSeats = lockedSeats !== null && lockedSeats.length > 0;
 
-  let seat = null;
-  if (isSingleSeatLocked) {
-    const lockStatus = await checkSeatLock(trip_id, seat_number);
-    if (!lockStatus.locked || lockStatus.passengerId !== passengerId) {
-      throw ApiErrors.custom('SEAT_LOCK_EXPIRED_OR_NOT_HELD', 404, 'SEAT_LOCK_EXPIRED');
+  let seatRows = [];
+  if (hasLockedSeats) {
+    for (const n of lockedSeats) {
+      const lockStatus = await checkSeatLock(trip_id, n);
+      if (!lockStatus.locked || lockStatus.passengerId !== passengerId) {
+        throw ApiErrors.custom('SEAT_LOCK_EXPIRED_OR_NOT_HELD', 404, 'SEAT_LOCK_EXPIRED');
+      }
     }
-    seat = await TripSeat.findOne({ where: { tripId: trip_id, seatNumber: seat_number } });
-    if (!seat) throw ApiErrors.notFound('SEAT_NOT_FOUND_ON_THIS_TRIP');
-    if (seat.seatType !== SEAT_TYPE.AVAILABLE) {
-      throw ApiErrors.conflict('SEAT_ALREADY_BOOKED');
+    const { Op } = require('sequelize');
+    seatRows = await TripSeat.findAll({ where: { tripId: trip_id, seatNumber: { [Op.in]: lockedSeats } } });
+    if (seatRows.length !== lockedSeats.length) {
+      throw ApiErrors.notFound('SEAT_NOT_FOUND_ON_THIS_TRIP');
+    }
+    for (const row of seatRows) {
+      if (row.seatType !== SEAT_TYPE.AVAILABLE) {
+        throw ApiErrors.conflict('SEAT_ALREADY_BOOKED');
+      }
     }
   }
 
@@ -360,16 +391,19 @@ async function createBooking(passengerId, payload) {
       throw ApiErrors.custom('NOT_ENOUGH_AVAILABLE_SEATS_ON_THE_SELECTED_TRIP', 409, 'NOT_ENOUGH_AVAILABLE_SEATS_ON_THE_SELECTED_TRIP');
     }
 
-    if (isSingleSeatLocked) {
-      seat.seatType = SEAT_TYPE.UNAVAILABLE;
-      await seat.save({ transaction: t });
+    if (hasLockedSeats) {
+      for (const row of seatRows) {
+        row.seatType = SEAT_TYPE.UNAVAILABLE;
+        await row.save({ transaction: t });
+      }
     }
 
     const row = await Booking.create(
       {
         tripId: trip_id,
         passengerId,
-        seatNumber: isSingleSeatLocked ? seat_number : null,
+        seatNumber: hasLockedSeats ? lockedSeats[0] : null,
+        seatNumbers: hasLockedSeats ? lockedSeats : null,
         seatsBooked: requestedSeats,
         agreedFare: agreed_fare,
         currency: 'JOD',
@@ -405,8 +439,20 @@ async function createBooking(passengerId, payload) {
     resourceId: booking.id,
     actorId: passengerId,
     actorType: 'passenger',
-    payload: { trip_id, seat_number: isSingleSeatLocked ? seat_number : null, seats: requestedSeats, reference_code: booking.referenceCode },
+    payload: { trip_id, seat_number: hasLockedSeats ? lockedSeats[0] : null, seat_numbers: hasLockedSeats ? lockedSeats : [], seats: requestedSeats, reference_code: booking.referenceCode },
   });
+
+  // Consume the seat locks now that the seats are booked — otherwise they
+  // linger until TTL expiry and the seats keep showing as locked.
+  if (hasLockedSeats) {
+    for (const n of lockedSeats) {
+      try {
+        await releaseSeatLock(trip_id, n);
+      } catch (_err) {
+        // best-effort per seat
+      }
+    }
+  }
 
   // Best-effort: passenger home cache should reflect the new booking/trip.
   try {
@@ -442,7 +488,8 @@ async function createBooking(passengerId, payload) {
     }),
     notifyDriver(trip, 'BOOKING_CONFIRMED_DRIVER', {
       passenger: user.fullName,
-      seat_number: isSingleSeatLocked ? seat_number : null,
+      seat_number: hasLockedSeats ? lockedSeats[0] : null,
+      seat_numbers: hasLockedSeats ? lockedSeats : [],
       seats: requestedSeats,
       route: routeLabel,
     }),
@@ -468,6 +515,7 @@ function serializePassengerDetail(booking, trip, passenger) {
     payment_status: booking.paymentStatus,
     seats_booked: booking.seatsBooked,
     seat_number: booking.seatNumber,
+    seat_numbers: booking.seatNumbers || (booking.seatNumber != null ? [booking.seatNumber] : []),
     agreed_fare: Number(booking.agreedFare),
     currency: booking.currency,
     pickup_place: booking.pickupPlace || null,
@@ -636,10 +684,38 @@ async function cancelBooking(passengerId, bookingId) {
       seat.seatType = SEAT_TYPE.AVAILABLE;
       await seat.save({ transaction: t });
     }
+
+    // Multi-seat bookings: restore every assigned row (legacy seatNumber is
+    // the first element, covered below for backward compatibility).
+    const bookedSeats = booking.seatNumbers && booking.seatNumbers.length > 0
+      ? booking.seatNumbers
+      : (booking.seatNumber != null ? [booking.seatNumber] : []);
+    if (bookedSeats.length > 1) {
+      const { Op } = require('sequelize');
+      const rows = await TripSeat.findAll({
+        where: { tripId: booking.tripId, seatNumber: { [Op.in]: bookedSeats } },
+        transaction: t,
+      });
+      for (const row of rows) {
+        if (row.seatType !== SEAT_TYPE.AVAILABLE) {
+          row.seatType = SEAT_TYPE.AVAILABLE;
+          await row.save({ transaction: t });
+        }
+      }
+    }
   });
 
   if (booking.seatNumber !== null && booking.seatNumber !== undefined) {
     await releaseSeatLock(booking.tripId, booking.seatNumber).catch(() => {});
+  }
+  if (booking.seatNumbers && booking.seatNumbers.length > 1) {
+    for (const n of booking.seatNumbers) {
+      try {
+        await releaseSeatLock(booking.tripId, n);
+      } catch (_err) {
+        // best-effort per seat
+      }
+    }
   }
 
   auditService.track({
@@ -654,6 +730,7 @@ async function cancelBooking(passengerId, bookingId) {
   await notifyDriver(booking.trip, 'BOOKING_CANCELLED_DRIVER', {
     passenger: user.fullName,
     seat_number: booking.seatNumber,
+    seat_numbers: booking.seatNumbers || (booking.seatNumber != null ? [booking.seatNumber] : []),
     route: `${booking.trip.originCity} - ${booking.trip.destinationCity}`,
   });
 

@@ -34,6 +34,15 @@ exports.createBookingValidation = [
     (0, express_validator_1.body)('seat_number')
         .optional()
         .isInt({ min: 1 }).withMessage(validation_keys_1.default.SEAT_NUMBER_MUST_BE_A_POSITIVE_INTEGER),
+    (0, express_validator_1.body)('seat_numbers')
+        .optional()
+        .isArray({ min: 1 }).withMessage(validation_keys_1.default.SEAT_NUMBERS_MUST_BE_A_NON_EMPTY_ARRAY)
+        .custom((value) => {
+        if (!Array.isArray(value) || !value.every((n) => Number.isInteger(Number(n)) && Number(n) >= 1)) {
+            throw new Error(validation_keys_1.default.SEAT_NUMBERS_MUST_BE_POSITIVE_INTEGERS);
+        }
+        return true;
+    }),
     (0, express_validator_1.body)('seats')
         .optional()
         .isInt({ min: 1 }).withMessage(validation_keys_1.default.SEATS_MUST_BE_POSITIVE_INTEGER),

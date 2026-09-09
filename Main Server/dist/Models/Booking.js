@@ -28,6 +28,11 @@ Booking.init({
         type: sequelize_1.DataTypes.SMALLINT,
         allowNull: true,
     },
+    seatNumbers: {
+        type: sequelize_1.DataTypes.ARRAY(sequelize_1.DataTypes.SMALLINT),
+        field: 'seat_numbers',
+        allowNull: true,
+    },
     seatsBooked: {
         type: sequelize_1.DataTypes.SMALLINT,
         allowNull: false,

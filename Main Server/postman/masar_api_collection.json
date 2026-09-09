@@ -10037,7 +10037,7 @@
                     "lock"
                   ]
                 },
-                "description": "Temporarily lock a seat on a trip (reserved while the passenger confirms).\n\nRequires a passenger/authenticated user.\n\n**Path parameter**\n- `trip_id` *(UUID, required)*.\n\n**Body fields**\n- `seat_number` *(number, required)* â€” positive integer seat number."
+                "description": "Temporarily lock a seat on a trip (reserved while the passenger confirms).\n\nRequires a passenger/authenticated user. Locks expire after 5 minutes.\n\n**Path parameter**\n- `trip_id` *(UUID, required)*.\n\n**Body fields (pick exactly one purpose)**\n- `seat_number` *(int, single-seat purpose)* — positive integer seat number. Use for booking one specific seat.\n- `seat_numbers` *(int[], multi-seat purpose)* — e.g. `[2, 3]`. Locks are all-or-nothing: if any seat is unavailable or held by someone else, nothing is locked (409) and you can retry with the remaining seats.\n\nThe matching `POST /bookings` call must consume the lock(s) via the same field (`seat_number` or `seat_numbers`) — a booking with only `seats: N` decrements capacity but does not assign the locked seats."
               },
               "response": [
                 {
@@ -10080,6 +10080,149 @@
                   ],
                   "cookie": [],
                   "body": "{\n  \"lock\": {\n    \"trip_id\": \"00000000-0000-0000-0000-000000000030\",\n    \"seat_number\": 2,\n    \"expires_at\": \"2026-08-31T12:05:00.000Z\"\n  }\n}"
+                },
+                {
+                  "name": "Already locked",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"seat_number\": 2 // integer â€” seat number to lock\n}"
+                    },
+                    "url": {
+                      "raw": "{{base_url}}/trips/{{trip_id}}/seats/lock",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "trips",
+                        "{{trip_id}}",
+                        "seats",
+                        "lock"
+                      ]
+                    },
+                    "description": "Temporarily lock a seat on a trip (reserved while the passenger confirms).\n\nRequires a passenger/authenticated user.\n\n**Path parameter**\n- `trip_id` *(UUID, required)*.\n\n**Body fields**\n- `seat_number` *(number, required)* â€” positive integer seat number."
+                  },
+                  "status": "Conflict",
+                  "code": 409,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json",
+                      "type": "text"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n  \"status\": \"error\",\n  \"message\": \"Seat is already locked by another passenger\",\n  \"code\": \"SEAT_ALREADY_LOCKED\"\n}"
+                }
+              ]
+            },
+            {
+              "name": "Lock Multiple Seats",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "exec": [
+                      "pm.environment.get('access_token') ? pm.request.headers.add({ key: 'Authorization', value: 'Bearer ' + pm.environment.get('access_token') }) : console.warn('No access_token set');"
+                    ],
+                    "type": "text/javascript"
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status code is 2xx or 4xx', function () {",
+                      "  pm.expect(pm.response.code).to.be.oneOf([200, 201, 204, 400, 401, 403, 404, 409, 422, 500]);",
+                      "});",
+                      "pm.test('Response is valid JSON', function () {",
+                      "  pm.response.to.be.json;",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"seat_numbers\": [2, 3] // lock seats 2 and 3 together (all-or-nothing)\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}/trips/{{trip_id}}/seats/lock",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "trips",
+                    "{{trip_id}}",
+                    "seats",
+                    "lock"
+                  ]
+                },
+                "description": "Lock several specific seats at once for a group/family booking (passenger only, 5-minute TTL).\n\n**Body fields**\n- `seat_numbers` *(int[], required here)* — e.g. `[2, 3]`.\n\nAll-or-nothing: returns 409 and locks nothing if any seat is unavailable or held by another passenger. Consume with `POST /bookings` using the same `seat_numbers` array (see “Book Multiple Seats”)."
+              },
+              "response": [
+                {
+                  "name": "Success",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"seat_number\": 2 // integer â€” seat number to lock\n}"
+                    },
+                    "url": {
+                      "raw": "{{base_url}}/trips/{{trip_id}}/seats/lock",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "trips",
+                        "{{trip_id}}",
+                        "seats",
+                        "lock"
+                      ]
+                    },
+                    "description": "Temporarily lock a seat on a trip (reserved while the passenger confirms).\n\nRequires a passenger/authenticated user.\n\n**Path parameter**\n- `trip_id` *(UUID, required)*.\n\n**Body fields**\n- `seat_number` *(number, required)* â€” positive integer seat number."
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json",
+                      "type": "text"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n  \"lock_ids\": [\"<trip_id>:2\", \"<trip_id>:3\"],\n  \"seat_numbers\": [2, 3],\n  \"expires_in\": 300\n}"
                 },
                 {
                   "name": "Already locked",
@@ -10301,7 +10444,7 @@
                     "bookings"
                   ]
                 },
-                "description": "Reserve seats (passenger only). **Pickup and dropoff points are created at booking time with name+lat+lng** (not just referencing trip stops).\n\n- `trip_id` *(UUID, required)*\n- `seats` *(int 1..available, optional, default 1)*\n- `pickup` *(object, preferred)* — `{ name: string max120, lat: decimal -90..90, lng: decimal -180..180 }` — stored as `pickup_place`/`pickup_lat`/`pickup_lng` on the booking and added to the trip context\n- `dropoff` *(object, preferred)* — `{ name, lat, lng }` — stored as `dropoff_place`/`dropoff_lat`/`dropoff_lng`\n- `pickup_point` *(alternative, UUID or object)* — UUID of a `TripStop` (`pickup`/`both`) OR object `{name, lat, lng}` — for referencing an existing trip stop\n- `drop_off_point` / `dropoff_point` *(alternative, UUID or object)* — same for dropoff\n- `seat_number` *(optional int)* — legacy single-seat lock path, requires prior `POST /trips/:trip_id/seats/lock` and `seats==1`\n- `agreed_fare` *(number, required)* — must equal trip fare unless agreed via offer\n\nExamples:\n1) Ad-hoc points (preferred): `{\"pickup\": {\"name\":\"Abdoun Circle\",\"lat\":\"31.9450\",\"lng\":\"35.8750\"}, \"dropoff\": {\"name\":\"Irbid Downtown\",\"lat\":\"32.5550\",\"lng\":\"35.8500\"}}`\n2) Reference existing stops: `{\"pickup_point\": \"<uuid>\", \"drop_off_point\": \"<uuid>\"}` where UUIDs come from `GET /trips/:trip_id/options` or `GET /trips/:trip_id/seats`\n3) Object via pickup_point: `{\"pickup_point\": {\"name\":\"My House\",\"lat\":\"31.95\",\"lng\":\"35.91\"}}`\n\nOn success invalidates `PASSENGER_HOME`/`DRIVER_HOME` and emits `home:invalidate`. Response includes `pickup_place`, `pickup_lat`, `pickup_lng`, `dropoff_place`, `dropoff_lat`, `dropoff_lng`."
+                "description": "Reserve seats (passenger only). **Pickup and dropoff points are created at booking time with name+lat+lng** (not just referencing trip stops).\n\n- `trip_id` *(UUID, required)*\n- `seats` *(int 1..available, optional, default 1 — or defaults to the locked-seat count)*\n- `pickup` *(object, preferred)* — `{ name: string max120, lat: decimal -90..90, lng: decimal -180..180 }` — stored as `pickup_place`/`pickup_lat`/`pickup_lng` on the booking and added to the trip context\n- `dropoff` *(object, preferred)* — `{ name, lat, lng }` — stored as `dropoff_place`/`dropoff_lat`/`dropoff_lng`\n- `pickup_point` *(alternative, UUID or object)* — UUID of a `TripStop` (`pickup`/`both`) OR object `{name, lat, lng}`\n- `drop_off_point` / `dropoff_point` *(alternative, UUID or object)* — same for dropoff\n- `agreed_fare` *(number, required)* — must equal trip fare unless agreed via offer\n\n**Seat selection — pick one purpose**\n1) Specific single seat: `seat_number` *(int)* — requires a prior `POST /trips/:trip_id/seats/lock` for that seat and `seats` omitted or `1`. The seat row flips to `unavailable` (see “Book Seat” body).\n2) Specific multiple seats: `seat_numbers` *(int[])* — requires a prior bulk lock of the same seats; `seats` must equal the array length. Every row flips to `unavailable` (see “Book Multiple Seats”).\n3) Capacity only: just `seats: N` — decrements `availableSeats` but assigns NO specific seat rows; locked seats are NOT consumed. Use only when the passenger doesn't care which seats.\n\nOn success invalidates `PASSENGER_HOME`/`DRIVER_HOME` and emits `home:invalidate`. Response booking includes `seat_number` (first/legacy) and `seat_numbers`."
               },
               "response": [
                 {
@@ -10352,6 +10495,172 @@
                   ],
                   "cookie": [],
                   "body": "{\n  \"booking\": {\n    \"id\": \"00000000-0000-0000-0000-000000000040\",\n    \"reference_code\": \"MSR-XYZ789\",\n    \"status\": \"confirmed\"\n  }\n}"
+                },
+                {
+                  "name": "Lock expired",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Authorization",
+                        "value": "Bearer {{access_token}}",
+                        "type": "text"
+                      },
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json",
+                        "type": "text"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"trip_id\": \"{{trip_id}}\", // UUID (required)\n  \"seat_number\": \"{{seat_number}}\", // integer seat number\n  \"seats_booked\": 1, // integer â‰¥ 1\n  \"agreed_fare\": 5, // number â‰¥ 0 (JOD)\n  \"dropoff_place\": \"\" // optional string\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{base_url}}/bookings",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "bookings"
+                      ]
+                    },
+                    "description": "PROPOSED. Reserve a seat after locking it."
+                  },
+                  "status": "Conflict",
+                  "code": 409,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json",
+                      "type": "text"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n  \"status\": \"error\",\n  \"message\": \"Seat lock has expired. Please lock the seat again.\",\n  \"code\": \"SEAT_LOCK_EXPIRED\"\n}"
+                }
+              ]
+            },
+            {
+              "name": "Book Multiple Seats",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "exec": [
+                      "pm.environment.get('access_token') ? pm.request.headers.add({ key: 'Authorization', value: 'Bearer ' + pm.environment.get('access_token') }) : console.warn('No access_token set');"
+                    ],
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Responds successfully', function () {",
+                      "    pm.response.to.be.oneOf([200, 201]);",
+                      "});",
+                      "pm.test('Returns a JSON body', function () {",
+                      "    pm.expect(pm.response.json()).to.be.an('object');",
+                      "});"
+                    ],
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"trip_id\": \"{{trip_id}}\",\n  \"seat_numbers\": [2, 3],\n  \"seats\": 2,\n  \"pickup\": {\n    \"name\": \"Abdoun Circle\",\n    \"lat\": \"31.9450\",\n    \"lng\": \"35.8750\"\n  },\n  \"dropoff\": {\n    \"name\": \"Irbid Downtown\",\n    \"lat\": \"32.5550\",\n    \"lng\": \"35.8500\"\n  },\n  \"agreed_fare\": 5\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}/bookings",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "bookings"
+                  ]
+                },
+                "description": "Reserve several specific seats at once (passenger only). Requires a prior bulk lock (`POST /trips/:trip_id/seats/lock` with the same `seat_numbers`) held by the same passenger.\n\n- `trip_id` *(UUID, required)*\n- `seat_numbers` *(int[], required here)* — must match the locked seats; every row flips to `unavailable`.\n- `seats` *(optional)* — must equal `seat_numbers` length when sent (defaults to it).\n- `agreed_fare` *(number, required)* — per-seat fare, must equal trip fare unless agreed via offer.\n- `pickup` / `dropoff` / `pickup_point` / `drop_off_point` — same optional trip-point fields as “Book Seat”.\n\n409 `SEAT_LOCK_EXPIRED` if any lock lapsed or belongs to someone else; 409 `SEAT_ALREADY_BOOKED` if any row was taken meanwhile."
+              },
+              "response": [
+                {
+                  "name": "Success",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Authorization",
+                        "value": "Bearer {{access_token}}",
+                        "type": "text"
+                      },
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json",
+                        "type": "text"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"trip_id\": \"{{trip_id}}\", // UUID (required)\n  \"seat_number\": \"{{seat_number}}\", // integer seat number\n  \"seats_booked\": 1, // integer â‰¥ 1\n  \"agreed_fare\": 5, // number â‰¥ 0 (JOD)\n  \"dropoff_place\": \"\" // optional string\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{base_url}}/bookings",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "bookings"
+                      ]
+                    },
+                    "description": "PROPOSED. Reserve a seat after locking it."
+                  },
+                  "status": "Created",
+                  "code": 201,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json",
+                      "type": "text"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n  \"booking\": {\n    \"id\": \"00000000-0000-4000-8000-000000000040\",\n    \"reference_code\": \"MSR-XYZ789\",\n    \"status\": \"confirmed\",\n    \"seats_booked\": 2,\n    \"seat_number\": 2,\n    \"seat_numbers\": [2, 3]\n  }\n}"
                 },
                 {
                   "name": "Lock expired",

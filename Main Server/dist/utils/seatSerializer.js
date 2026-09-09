@@ -4,7 +4,11 @@ exports.seatNumbersFor = seatNumbersFor;
 function seatNumbersFor(booking) {
     if (!booking)
         return [];
-    const seat = booking.seatNumber ?? booking.seat_number;
+    const rec = booking;
+    const multi = rec.seatNumbers ?? rec.seat_numbers;
+    if (Array.isArray(multi))
+        return multi;
+    const seat = rec.seatNumber ?? rec.seat_number;
     return seat != null ? [seat] : [];
 }
 const seatSerializer = { seatNumbersFor };
