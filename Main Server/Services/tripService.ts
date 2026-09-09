@@ -630,6 +630,8 @@ const getDriverTrips = async (driverId, status = null) => {
 /**
  * Helper to build a Trip query for a specific date/direction.
  * Includes driver details (name, rating, avatar) + vehicle.
+ * NOTE: `targetDate` is the START of the range (inclusive) — the search
+ * returns trips on that date AND all future ones, not just that single day.
  */
 async function fetchTripsForDate({ targetDate, originCity, destinationCity, genderPreference, timeFrom, timeTo, vehicleType, seats }) {
   const hasDate = !!targetDate;
@@ -637,13 +639,10 @@ async function fetchTripsForDate({ targetDate, originCity, destinationCity, gend
 
   let qd = null;
   let dayStart = null;
-  let dayEnd = null;
   if (hasDate) {
     qd = new Date(targetDate);
     dayStart = new Date(qd);
     dayStart.setHours(0, 0, 0, 0);
-    dayEnd = new Date(qd);
-    dayEnd.setHours(23, 59, 59, 999);
   }
 
   const where = {
@@ -667,32 +666,29 @@ async function fetchTripsForDate({ targetDate, originCity, destinationCity, gend
   const andConditions = [];
 
   if (hasDate) {
+    // Date is the start of the range (inclusive): one-off trips departing on
+    // the date or any later day, plus recurring trips still active on/after
+    // the date (they have occurrences in the future).
     const dateBranch = {
       [Op.or]: [
         {
           isRecurring: false,
-          departureTime: { [Op.gte]: dayStart, [Op.lte]: dayEnd },
+          departureTime: { [Op.gte]: dayStart },
         },
         {
           isRecurring: true,
-          recurrenceDays: { [Op.contains]: [qd.getDay()] },
-          recurrenceEndDate: { [Op.or]: [{ [Op.gte]: qd }, { [Op.is]: null }] },
+          [Op.or]: [
+            { recurrenceEndDate: { [Op.gte]: dayStart } },
+            { recurrenceEndDate: { [Op.is]: null } },
+          ],
         },
       ],
     };
     andConditions.push(dateBranch);
 
-    if (timeFrom || timeTo) {
-      const [fhh, fmm] = (timeFrom || '00:00').split(':').map(Number);
-      const [thh, tmm] = (timeTo || '23:59').split(':').map(Number);
-      const windowStart = new Date(dayStart);
-      windowStart.setHours(fhh, fmm, 0, 0);
-      const windowEnd = new Date(dayStart);
-      windowEnd.setHours(thh, tmm, 59, 999);
-      andConditions.push({
-        departureTime: { [Op.gte]: windowStart, [Op.lte]: windowEnd },
-      });
-    }
+    // Time window is a time-of-day filter applied post-query below (it must
+    // not be an absolute single-day datetime range, otherwise every future
+    // trip outside the target day would be excluded).
 
     // Exclude trips whose departure time is already in the past (only for non-recurring)
     andConditions.push({
@@ -738,8 +734,10 @@ async function fetchTripsForDate({ targetDate, originCity, destinationCity, gend
     order: [['departure_time', 'ASC']],
   });
 
-  // Post-filter time window when no specific date is given (filter by time-of-day)
-  if (!hasDate && (timeFrom || timeTo)) {
+  // Post-filter time window as time-of-day (applies with or without a date:
+  // with a date the results span that date + all future days, so an absolute
+  // single-day datetime range would wrongly exclude every later trip)
+  if (timeFrom || timeTo) {
     const parseMinutes = (t) => {
       const [h, m] = t.split(':').map(Number);
       return h * 60 + m;

@@ -1,3 +1,4 @@
+import fs from 'fs';
 import path from 'path';
 import { Worker } from 'worker_threads';
 import { runExpirySweep } from './expirySweepJob';
@@ -43,11 +44,45 @@ let started: boolean | string = false;
 let worker: Worker | null = null;
 let restarts = 0;
 
+function resolveWorkerPath(): string {
+  // Compiled runtime (dist/) ships worker.js; tsx source runtime only has
+  // worker.ts. Pick whichever exists so `new Worker()` never points at a
+  // missing file (which otherwise crash-loops every 30s).
+  const jsPath: string = path.join(__dirname, 'worker.js');
+  try {
+    if (fs.existsSync(jsPath)) return jsPath;
+  } catch {
+    // ignore and fall through to the TS source below
+  }
+  return path.join(__dirname, 'worker.ts');
+}
+
+function bootInline(reason: string): void {
+  console.warn(`[jobs] ${reason}; running jobs inline in this process instead`);
+  (require('./worker') as { boot: () => Promise<void> })
+    .boot()
+    .then(() => console.log('[jobs] inline worker started'))
+    .catch((err: unknown) => {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error('[jobs] inline worker boot failed:', msg);
+    });
+}
+
 function spawnWorker(): void {
-  worker = new Worker(path.join(__dirname, 'worker.js'));
+  const workerPath: string = resolveWorkerPath();
+  try {
+    worker = new Worker(workerPath);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    bootInline(`cannot spawn worker at ${workerPath} (${msg})`);
+    return;
+  }
+
+  let missingModule = false;
 
   worker.on('error', (err: Error) => {
     console.error('[jobs] worker error:', err.message);
+    if (/cannot find module/i.test(err.message)) missingModule = true;
   });
 
   worker.on('message', (msg: { type?: string; jobs?: string[] }) => {
@@ -59,6 +94,13 @@ function spawnWorker(): void {
   worker.on('exit', (code: number | null) => {
     if (code === 0) {
       console.log('[jobs] worker stopped');
+      return;
+    }
+    if (missingModule) {
+      // Permanent config error (e.g. worker file missing) — respawning would
+      // hot-loop forever, so fall back to in-process jobs exactly once.
+      worker = null;
+      bootInline(`worker module not found at ${workerPath}`);
       return;
     }
     const delay: number = Math.min(30_000, 1_000 * 2 ** restarts);

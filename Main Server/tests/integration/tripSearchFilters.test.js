@@ -155,6 +155,17 @@ describe('US1 - trip search filters', () => {
     expect(res.body.trips.length).toBe(2);
   });
 
+  it('returns trips on the date AND all future ones', async () => {
+    // Seeded trips depart tomorrow; searching from today must still include them
+    const res = await getAgent()
+      .get('/api/trips/search/available')
+      .query({ origin_city: 'Amman', destination_city: 'Irbid', date: getFutureDate(0) })
+      .set('Authorization', `Bearer ${passengerToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.trips.length).toBe(2);
+  });
+
   it('rejects invalid time range (from after to)', async () => {
     const res = await getAgent()
       .get('/api/trips/search/available')
