@@ -76,35 +76,43 @@ function bootInline(reason) {
 }
 function spawnWorker() {
     const workerPath = resolveWorkerPath();
+    let instance;
     try {
-        worker = new worker_threads_1.Worker(workerPath);
+        instance = new worker_threads_1.Worker(workerPath);
     }
     catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
         bootInline(`cannot spawn worker at ${workerPath} (${msg})`);
         return;
     }
-    let missingModule = false;
-    worker.on('error', (err) => {
+    worker = instance;
+    // The worker posts { type: 'started' } once it boots. Any error before that
+    // means it never got going (missing file, unsupported extension/loader,
+    // bad runtime, …) — respawning would hot-loop forever, so fall back to
+    // in-process jobs exactly once. Crashes after a successful start keep the
+    // old respawn-with-backoff behaviour.
+    let startedOk = false;
+    let startError = null;
+    instance.on('error', (err) => {
         console.error('[jobs] worker error:', err.message);
-        if (/cannot find module/i.test(err.message))
-            missingModule = true;
+        if (!startedOk && !startError)
+            startError = err;
     });
-    worker.on('message', (msg) => {
+    instance.on('message', (msg) => {
         if (msg && msg.type === 'started') {
+            startedOk = true;
+            startError = null;
             console.log(`[jobs] worker started with jobs: ${(msg.jobs || []).join(', ')}`);
         }
     });
-    worker.on('exit', (code) => {
+    instance.on('exit', (code) => {
         if (code === 0) {
             console.log('[jobs] worker stopped');
             return;
         }
-        if (missingModule) {
-            // Permanent config error (e.g. worker file missing) — respawning would
-            // hot-loop forever, so fall back to in-process jobs exactly once.
+        if (!startedOk && startError) {
             worker = null;
-            bootInline(`worker module not found at ${workerPath}`);
+            bootInline(`worker failed to start at ${workerPath} (${startError.message})`);
             return;
         }
         const delay = Math.min(30_000, 1_000 * 2 ** restarts);

@@ -70,37 +70,45 @@ function bootInline(reason: string): void {
 
 function spawnWorker(): void {
   const workerPath: string = resolveWorkerPath();
+  let instance: Worker;
   try {
-    worker = new Worker(workerPath);
+    instance = new Worker(workerPath);
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
     bootInline(`cannot spawn worker at ${workerPath} (${msg})`);
     return;
   }
+  worker = instance;
 
-  let missingModule = false;
+  // The worker posts { type: 'started' } once it boots. Any error before that
+  // means it never got going (missing file, unsupported extension/loader,
+  // bad runtime, …) — respawning would hot-loop forever, so fall back to
+  // in-process jobs exactly once. Crashes after a successful start keep the
+  // old respawn-with-backoff behaviour.
+  let startedOk = false;
+  let startError: Error | null = null;
 
-  worker.on('error', (err: Error) => {
+  instance.on('error', (err: Error) => {
     console.error('[jobs] worker error:', err.message);
-    if (/cannot find module/i.test(err.message)) missingModule = true;
+    if (!startedOk && !startError) startError = err;
   });
 
-  worker.on('message', (msg: { type?: string; jobs?: string[] }) => {
+  instance.on('message', (msg: { type?: string; jobs?: string[] }) => {
     if (msg && msg.type === 'started') {
+      startedOk = true;
+      startError = null;
       console.log(`[jobs] worker started with jobs: ${(msg.jobs || []).join(', ')}`);
     }
   });
 
-  worker.on('exit', (code: number | null) => {
+  instance.on('exit', (code: number | null) => {
     if (code === 0) {
       console.log('[jobs] worker stopped');
       return;
     }
-    if (missingModule) {
-      // Permanent config error (e.g. worker file missing) — respawning would
-      // hot-loop forever, so fall back to in-process jobs exactly once.
+    if (!startedOk && startError) {
       worker = null;
-      bootInline(`worker module not found at ${workerPath}`);
+      bootInline(`worker failed to start at ${workerPath} (${startError.message})`);
       return;
     }
     const delay: number = Math.min(30_000, 1_000 * 2 ** restarts);
