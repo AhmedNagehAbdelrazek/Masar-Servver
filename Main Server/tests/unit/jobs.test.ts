@@ -185,11 +185,12 @@ describe('lowBalanceWarningJob', () => {
 });
 
 describe('jobs registry', () => {
-  it('exposes all three jobs with env-driven schedules', () => {
-    expect(Object.keys(JOBS)).toEqual(['expirySweep', 'expiryReminder', 'lowBalanceWarning']);
+  it('exposes all jobs with env-driven schedules', () => {
+    expect(Object.keys(JOBS)).toEqual(['expirySweep', 'expiryReminder', 'lowBalanceWarning', 'sosEscalation', 'dataRetention', 'driverStats', 'tripLifecycle']);
     expect(JOBS.expirySweep.schedule).toBeTruthy();
     expect(JOBS.expiryReminder.schedule).toBeTruthy();
     expect(JOBS.lowBalanceWarning.schedule).toBeTruthy();
+    expect(JOBS.tripLifecycle.schedule).toBeTruthy();
   });
 
   it('does not schedule cron jobs in the test environment', () => {

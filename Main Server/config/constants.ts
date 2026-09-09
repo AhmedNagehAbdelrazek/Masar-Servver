@@ -47,6 +47,12 @@ export type TripStatus = (typeof TRIP_STATUS)[keyof typeof TRIP_STATUS];
  */
 export const TRIP_DURATION_HOURS = 2;
 
+/**
+ * Grace period after a trip's assumed end before the lifecycle job closes it
+ * (hours). Lets drivers complete slightly-late trips manually first.
+ */
+export const TRIP_LIFECYCLE_GRACE_HOURS = 1;
+
 export const SEAT_TYPE = {
   DRIVER: 'driver',
   UNAVAILABLE: 'unavailable',

@@ -39,6 +39,11 @@ exports.TRIP_STATUS = {
  * overlaps an existing active trip's window.
  */
 exports.TRIP_DURATION_HOURS = 2;
+/**
+ * Grace period after a trip's assumed end before the lifecycle job closes it
+ * (hours). Lets drivers complete slightly-late trips manually first.
+ */
+exports.TRIP_LIFECYCLE_GRACE_HOURS = 1;
 exports.SEAT_TYPE = {
     DRIVER: 'driver',
     UNAVAILABLE: 'unavailable',

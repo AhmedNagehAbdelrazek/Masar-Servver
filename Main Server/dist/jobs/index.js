@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.runDriverStats = exports.runDataRetention = exports.runSosEscalation = exports.runLowBalanceWarning = exports.runExpiryReminder = exports.runExpirySweep = exports.JOBS = void 0;
+exports.runTripLifecycle = exports.runDriverStats = exports.runDataRetention = exports.runSosEscalation = exports.runLowBalanceWarning = exports.runExpiryReminder = exports.runExpirySweep = exports.JOBS = void 0;
 exports.startJobs = startJobs;
 const fs_1 = __importDefault(require("fs"));
 const path_1 = __importDefault(require("path"));
@@ -20,6 +20,8 @@ const dataRetentionJob_1 = require("./dataRetentionJob");
 Object.defineProperty(exports, "runDataRetention", { enumerable: true, get: function () { return dataRetentionJob_1.runDataRetention; } });
 const driverStatsJob_1 = require("./driverStatsJob");
 Object.defineProperty(exports, "runDriverStats", { enumerable: true, get: function () { return driverStatsJob_1.runDriverStats; } });
+const tripLifecycleJob_1 = require("./tripLifecycleJob");
+Object.defineProperty(exports, "runTripLifecycle", { enumerable: true, get: function () { return tripLifecycleJob_1.runTripLifecycle; } });
 const JOBS = {
     expirySweep: {
         schedule: process.env.JOB_EXPIRY_SWEEP_CRON || '0 0 * * *',
@@ -44,6 +46,10 @@ const JOBS = {
     driverStats: {
         schedule: process.env.JOB_DRIVER_STATS_CRON || '0 2 * * *',
         task: driverStatsJob_1.runDriverStats,
+    },
+    tripLifecycle: {
+        schedule: process.env.JOB_TRIP_LIFECYCLE_CRON || '*/15 * * * *',
+        task: tripLifecycleJob_1.runTripLifecycle,
     },
 };
 exports.JOBS = JOBS;
@@ -137,7 +143,7 @@ function startJobs() {
     spawnWorker();
     return started;
 }
-exports.default = { startJobs, JOBS, runExpirySweep: expirySweepJob_1.runExpirySweep, runExpiryReminder: expiryReminderJob_1.runExpiryReminder, runLowBalanceWarning: lowBalanceWarningJob_1.runLowBalanceWarning, runSosEscalation: sosEscalationJob_1.runSosEscalation, runDataRetention: dataRetentionJob_1.runDataRetention, runDriverStats: driverStatsJob_1.runDriverStats };
+exports.default = { startJobs, JOBS, runExpirySweep: expirySweepJob_1.runExpirySweep, runExpiryReminder: expiryReminderJob_1.runExpiryReminder, runLowBalanceWarning: lowBalanceWarningJob_1.runLowBalanceWarning, runSosEscalation: sosEscalationJob_1.runSosEscalation, runDataRetention: dataRetentionJob_1.runDataRetention, runDriverStats: driverStatsJob_1.runDriverStats, runTripLifecycle: tripLifecycleJob_1.runTripLifecycle };
 module.exports = {
     startJobs,
     JOBS,
@@ -147,5 +153,6 @@ module.exports = {
     runSosEscalation: sosEscalationJob_1.runSosEscalation,
     runDataRetention: dataRetentionJob_1.runDataRetention,
     runDriverStats: driverStatsJob_1.runDriverStats,
+    runTripLifecycle: tripLifecycleJob_1.runTripLifecycle,
 };
 //# sourceMappingURL=index.js.map

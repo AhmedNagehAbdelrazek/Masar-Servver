@@ -7,6 +7,7 @@ import { runLowBalanceWarning } from './lowBalanceWarningJob';
 import { runSosEscalation } from './sosEscalationJob';
 import { runDataRetention } from './dataRetentionJob';
 import { runDriverStats } from './driverStatsJob';
+import { runTripLifecycle } from './tripLifecycleJob';
 
 interface JobDef {
   schedule: string;
@@ -37,6 +38,10 @@ const JOBS: Record<string, JobDef> = {
   driverStats: {
     schedule: process.env.JOB_DRIVER_STATS_CRON || '0 2 * * *',
     task: runDriverStats,
+  },
+  tripLifecycle: {
+    schedule: process.env.JOB_TRIP_LIFECYCLE_CRON || '*/15 * * * *',
+    task: runTripLifecycle,
   },
 };
 
@@ -136,8 +141,8 @@ function startJobs(): boolean | string {
   return started;
 }
 
-export { startJobs, JOBS, runExpirySweep, runExpiryReminder, runLowBalanceWarning, runSosEscalation, runDataRetention, runDriverStats };
-export default { startJobs, JOBS, runExpirySweep, runExpiryReminder, runLowBalanceWarning, runSosEscalation, runDataRetention, runDriverStats };
+export { startJobs, JOBS, runExpirySweep, runExpiryReminder, runLowBalanceWarning, runSosEscalation, runDataRetention, runDriverStats, runTripLifecycle };
+export default { startJobs, JOBS, runExpirySweep, runExpiryReminder, runLowBalanceWarning, runSosEscalation, runDataRetention, runDriverStats, runTripLifecycle };
 module.exports = {
   startJobs,
   JOBS,
@@ -147,4 +152,5 @@ module.exports = {
   runSosEscalation,
   runDataRetention,
   runDriverStats,
+  runTripLifecycle,
 };
