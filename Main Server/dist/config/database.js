@@ -69,7 +69,9 @@ async function initDatabase({ runMigrations: doRun = true } = {}) {
     }
     if (doRun) {
         const { runMigrations } = require('../migrations');
-        await runMigrations({ redo: true });
+        // NOTE: never use redo:true on boot — it wipes _schema_migrations and
+        // replays every migration, crashing on columns that already exist.
+        await runMigrations();
     }
     await syncSchema();
     return sequelize;

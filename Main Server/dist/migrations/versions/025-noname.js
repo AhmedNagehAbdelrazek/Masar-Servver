@@ -105,6 +105,7 @@ var migrationCommands = [{
 ];
 module.exports = {
     pos: 0,
+    migrationCommands,
     up: function (queryInterface, Sequelize) {
         var index = this.pos;
         return new Promise(function (resolve, reject) {

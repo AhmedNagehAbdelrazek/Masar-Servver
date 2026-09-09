@@ -151,7 +151,16 @@ async function runMigrationFileV2(
 
   if (!Array.isArray(commands) || commands.length === 0) {
     if (typeof migration.up === 'function') {
-      await migration.up(queryInterface, SequelizeLib);
+      try {
+        await migration.up(queryInterface, SequelizeLib);
+      } catch (err: unknown) {
+        const qErr: QueryError = err as QueryError;
+        const code: string | undefined = qErr && qErr.parent && qErr.parent.code;
+        if (code && IDEMPOTENT_ERROR_CODES.has(code)) {
+          return [{ index: -1, fn: 'up', code, sql: qErr.sql || (qErr.parent && qErr.parent.sql) }];
+        }
+        throw err;
+      }
     }
     return [];
   }
