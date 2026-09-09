@@ -63,8 +63,11 @@ const UNOPERATED_STATUSES = [constants_1.TRIP_STATUS.PUBLISHED, constants_1.TRIP
  * occurrence only, so per-occurrence ageing does not apply.
  * Everything is idempotent — only non-terminal statuses are touched.
  */
-async function runTripLifecycle(now = new Date()) {
+async function runTripLifecycle(context) {
     const result = { autoCompleted: [], expiredUnoperated: [], noShowBookings: 0, errors: [] };
+    // NOTE: the scheduler invokes tasks as taskFn(context), so the first
+    // argument is NOT a Date — always derive "now" internally.
+    const now = context instanceof Date ? context : new Date();
     const cutoff = new Date(now.getTime() - (constants_1.TRIP_DURATION_HOURS + constants_1.TRIP_LIFECYCLE_GRACE_HOURS) * 60 * 60 * 1000);
     const stale = await Models_1.Trip.findAll({
         where: {

@@ -153,4 +153,12 @@ describe('tripLifecycleJob - stale trip close-out', () => {
     expect((await Booking.findByPk(futureBooking.id)).status).toBe(BOOKING_STATUS.CONFIRMED);
     expect((await Booking.findByPk(recentBooking.id)).status).toBe(BOOKING_STATUS.CONFIRMED);
   });
+
+  it('tolerates being invoked with a scheduler context argument', async () => {
+    // node-cron invokes tasks as taskFn(context) — the job must not mistake
+    // that context object for a Date (regression: now.getTime is not a function).
+    await expect(runTripLifecycle({ date: new Date() })).resolves.toMatchObject({ errors: [] });
+    await expect(runTripLifecycle(new Date())).resolves.toMatchObject({ errors: [] });
+    await expect(runTripLifecycle()).resolves.toMatchObject({ errors: [] });
+  });
 });

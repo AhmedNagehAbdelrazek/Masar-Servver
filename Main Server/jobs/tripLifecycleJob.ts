@@ -36,8 +36,11 @@ export interface TripLifecycleResult {
  * occurrence only, so per-occurrence ageing does not apply.
  * Everything is idempotent — only non-terminal statuses are touched.
  */
-async function runTripLifecycle(now: Date = new Date()): Promise<TripLifecycleResult> {
+async function runTripLifecycle(context?: unknown): Promise<TripLifecycleResult> {
   const result: TripLifecycleResult = { autoCompleted: [], expiredUnoperated: [], noShowBookings: 0, errors: [] };
+  // NOTE: the scheduler invokes tasks as taskFn(context), so the first
+  // argument is NOT a Date — always derive "now" internally.
+  const now = context instanceof Date ? context : new Date();
   const cutoff = new Date(now.getTime() - (TRIP_DURATION_HOURS + TRIP_LIFECYCLE_GRACE_HOURS) * 60 * 60 * 1000);
 
   const stale = await Trip.findAll({
