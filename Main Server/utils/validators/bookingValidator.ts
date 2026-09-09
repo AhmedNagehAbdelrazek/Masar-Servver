@@ -29,7 +29,7 @@ export const createBookingValidation: ValidationChain[] = [
   body('trip_id')
     .isUUID().withMessage(V.TRIP_ID_MUST_BE_A_VALID_UUID),
   body('seat_number')
-    .optional()
+    .notEmpty().withMessage(V.SEAT_NUMBER_IS_REQUIRED)
     .isInt({ min: 1 }).withMessage(V.SEAT_NUMBER_MUST_BE_A_POSITIVE_INTEGER),
   body('seats')
     .optional()
