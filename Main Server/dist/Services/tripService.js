@@ -635,8 +635,10 @@ async function fetchTripsForDate({ targetDate, originCity, destinationCity, gend
     const andConditions = [];
     if (hasDate) {
         // Date is the start of the range (inclusive): one-off trips departing on
-        // the date or any later day, plus recurring trips still active on/after
-        // the date (they have occurrences in the future).
+        // the date or any later day, plus recurring trips that are still active
+        // AND either start on/after the date or actually run on the searched
+        // weekday. The weekday check keeps stale series (first departure long
+        // past, not running on the searched day) out of the results.
         const dateBranch = {
             [sequelize_1.Op.or]: [
                 {
@@ -645,9 +647,19 @@ async function fetchTripsForDate({ targetDate, originCity, destinationCity, gend
                 },
                 {
                     isRecurring: true,
-                    [sequelize_1.Op.or]: [
-                        { recurrenceEndDate: { [sequelize_1.Op.gte]: dayStart } },
-                        { recurrenceEndDate: { [sequelize_1.Op.is]: null } },
+                    [sequelize_1.Op.and]: [
+                        {
+                            [sequelize_1.Op.or]: [
+                                { recurrenceEndDate: { [sequelize_1.Op.gte]: dayStart } },
+                                { recurrenceEndDate: { [sequelize_1.Op.is]: null } },
+                            ],
+                        },
+                        {
+                            [sequelize_1.Op.or]: [
+                                { departureTime: { [sequelize_1.Op.gte]: dayStart } },
+                                { recurrenceDays: { [sequelize_1.Op.contains]: [dayStart.getDay()] } },
+                            ],
+                        },
                     ],
                 },
             ],
@@ -713,11 +725,19 @@ async function fetchTripsForDate({ targetDate, originCity, destinationCity, gend
             return minutes >= fromMin && minutes <= toMin;
         });
     }
-    // Defensive: also filter out any non-recurring trips still in the past (in case DB clock drift)
+    // Defensive: also filter out any trips that are effectively in the past
+    // (in case of DB clock drift). Recurring trips are kept only if they start
+    // on/after the searched date or run on its weekday — same rule as the query.
     trips = trips.filter((trip) => {
-        if (trip.isRecurring)
+        if (!trip.isRecurring) {
+            return new Date(trip.departureTime).getTime() > now.getTime();
+        }
+        if (!hasDate)
             return true;
-        return new Date(trip.departureTime).getTime() > now.getTime();
+        if (new Date(trip.departureTime).getTime() >= dayStart.getTime())
+            return true;
+        const days = trip.recurrenceDays || [];
+        return days.includes(dayStart.getDay());
     });
     return trips;
 }
