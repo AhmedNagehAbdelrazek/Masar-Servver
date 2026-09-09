@@ -488,7 +488,6 @@ function serializePassengerDetail(booking, trip, passenger) {
           origin: trip.originCity,
           destination: trip.destinationCity,
           price: Number(trip.farePerSeat),
-          departureTime: trip.departureTime,
           ...tripLocationData(trip),
         }
       : null,
@@ -531,7 +530,7 @@ async function listForPassenger(passengerId, filters = {}) {
       {
         model: Trip,
         as: 'trip',
-        attributes: ['id', 'driverId', 'originCity', 'originArea', 'originLat', 'originLng', 'destinationCity', 'destinationArea', 'destinationLat', 'destinationLng', 'farePerSeat'],
+        attributes: ['id', 'driverId', 'originCity', 'originArea', 'originLat', 'departureTime' ,  'originLng', 'destinationCity', 'destinationArea', 'destinationLat', 'destinationLng', 'farePerSeat'],
         include: [
           { model: User, as: 'driver', attributes: ['id', 'fullName', 'phone', 'avgRating', 'avatarUrl'] },
           { model: TripStop, as: 'stops' },

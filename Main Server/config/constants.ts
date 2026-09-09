@@ -40,6 +40,13 @@ export const TRIP_STATUS = {
 } as const;
 export type TripStatus = (typeof TRIP_STATUS)[keyof typeof TRIP_STATUS];
 
+/**
+ * Assumed duration of a trip for driver overlap detection (hours). A driver
+ * cannot publish another trip whose [departure, departure + duration) window
+ * overlaps an existing active trip's window.
+ */
+export const TRIP_DURATION_HOURS = 2;
+
 export const SEAT_TYPE = {
   DRIVER: 'driver',
   UNAVAILABLE: 'unavailable',

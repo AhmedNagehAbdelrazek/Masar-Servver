@@ -16,7 +16,7 @@ const createBooking = catchAsync(async (req: Request, res: Response): Promise<vo
 
 const listMyBookings = catchAsync(async (req: Request, res: Response): Promise<void> => {
   const authReq = req as AuthRequest;
-  const result = await (bookingService as unknown as { listForPassenger: (userId: string, q: unknown) => Promise<unknown> }).listForPassenger(String(authReq.user?.id), req.query);
+  const result = await bookingService.listForPassenger(String(authReq.user?.id), req.query);
   successResponse(res, result);
 });
 

@@ -96,6 +96,7 @@ export const APP_MESSAGES = {
   YOU_ARE_NOT_A_PARTICIPANT_OF_THIS_TRIP: { en: 'You are not a participant of this trip', ar: 'أنت لست مشاركاً في هذه الرحلة' },
   YOU_ARE_NOT_A_MEMBER_OF_THIS_TRIP: { en: 'You are not a member of this trip', ar: 'أنت لست عضواً في هذه الرحلة' },
   TRIP_ID_IS_REQUIRED: { en: 'trip_id is required', ar: 'معرف الرحلة مطلوب' },
+  DRIVER_ALREADY_HAS_A_TRIP_IN_THIS_TIME_SLOT: { en: 'You already have another trip scheduled in this time slot', ar: 'لديك رحلة أخرى مجدولة في هذا الوقت' },
   TRACKING_IS_ONLY_AVAILABLE_FOR_ACTIVE_TRIPS: { en: 'Tracking is only available for active trips', ar: 'التتبع متاح فقط للرحلات النشطة' },
   ONLY_THE_TRIP_DRIVER_CAN_SHARE_TRACKING: { en: 'Only the trip driver can share tracking', ar: 'سائق الرحلة فقط يمكنه مشاركة التتبع' },
 

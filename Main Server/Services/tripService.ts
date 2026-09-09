@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { Op } from 'sequelize';
 import { ApiErrors } from '../utils/ApiError';
-import { TRIP_STATUS, GENDER_PREFERENCE, BOOKING_STATUS, FREE_OFFER_TYPE, PENALTY_TYPES, PENALTY_CATEGORY, PENALTY_SEVERITY, CANCELLATION_ESCALATION } from '../config/constants';
+import { TRIP_STATUS, GENDER_PREFERENCE, BOOKING_STATUS, FREE_OFFER_TYPE, PENALTY_TYPES, PENALTY_CATEGORY, PENALTY_SEVERITY, CANCELLATION_ESCALATION, TRIP_DURATION_HOURS } from '../config/constants';
 import commissionService from './commissionService';
 import notificationService from './notificationService';
 import { releaseSeatLock, checkSeatLock } from '../utils/seatLock';
@@ -126,6 +126,132 @@ async function assertFreeTripsAvailable(driverId) {
 }
 
 /**
+ * Driver overlap guard. A driver cannot have two active trips whose time
+ * windows overlap. Each trip occupies [departure, departure + TRIP_DURATION_HOURS).
+ * Windows are half-open, so a trip starting exactly when another ends is allowed
+ * (e.g. 05:00 + 2h blocks until 07:00, and a 07:00 trip is fine).
+ *
+ * Covers one-off and recurring trips in both directions:
+ * - one-off vs one-off: direct window overlap.
+ * - one-off vs recurring series: the one-off date falls inside the series range,
+ *   on a series weekday, with an overlapping time-of-day.
+ * - recurring vs recurring: the series ranges intersect on a shared weekday
+ *   with an overlapping time-of-day.
+ */
+const BLOCKING_TRIP_STATUSES = [
+  TRIP_STATUS.PUBLISHED,
+  TRIP_STATUS.FULL,
+  TRIP_STATUS.IN_PROGRESS,
+  TRIP_STATUS.ONGOING,
+];
+
+function tripWindowEnd(start) {
+  return new Date(new Date(start).getTime() + TRIP_DURATION_HOURS * 60 * 60 * 1000);
+}
+
+function windowsOverlap(aStart, aEnd, bStart, bEnd) {
+  return new Date(aStart).getTime() < new Date(bEnd).getTime()
+    && new Date(bStart).getTime() < new Date(aEnd).getTime();
+}
+
+function dateOnly(d) {
+  const x = new Date(d);
+  x.setHours(0, 0, 0, 0);
+  return x;
+}
+
+function minutesOfDay(d) {
+  const dt = new Date(d);
+  return dt.getHours() * 60 + dt.getMinutes();
+}
+
+function timeWindowsOverlap(aStartMin, bStartMin) {
+  const durationMin = TRIP_DURATION_HOURS * 60;
+  return aStartMin < bStartMin + durationMin && bStartMin < aStartMin + durationMin;
+}
+
+// True when a shared weekday actually occurs inside [rangeStart, rangeEnd]
+// (rangeEnd null = open-ended, always true). Exact for weekly recurrence.
+function sharedWeekdayOccurs(rangeStart, rangeEnd, weekdays) {
+  if (!weekdays || weekdays.length === 0) return false;
+  if (!rangeEnd) return true;
+  const start = dateOnly(rangeStart);
+  const end = dateOnly(rangeEnd);
+  if (start > end) return false;
+  const spanDays = Math.round((end.getTime() - start.getTime()) / (24 * 60 * 60 * 1000));
+  if (spanDays >= 6) return true;
+  const cursor = new Date(start);
+  for (let i = 0; i <= spanDays; i++) {
+    if (weekdays.includes(cursor.getDay())) return true;
+    cursor.setDate(cursor.getDate() + 1);
+  }
+  return false;
+}
+
+function oneOffOverlapsSeries(oneOffStart, oneOffEnd, series) {
+  const first = dateOnly(series.departureTime);
+  const day = dateOnly(oneOffStart);
+  if (day < first) return false;
+  if (series.recurrenceEndDate && day > dateOnly(series.recurrenceEndDate)) return false;
+  if (!sharedWeekdayOccurs(day, day, series.recurrenceDays || [])) return false;
+  return timeWindowsOverlap(minutesOfDay(oneOffStart), minutesOfDay(series.departureTime));
+}
+
+function seriesOverlapSeries(a, b) {
+  const aFirst = dateOnly(a.departureTime);
+  const bFirst = dateOnly(b.departureTime);
+  const rangeStart = aFirst > bFirst ? aFirst : bFirst;
+  const aEnd = a.recurrenceEndDate ? dateOnly(a.recurrenceEndDate) : null;
+  const bEnd = b.recurrenceEndDate ? dateOnly(b.recurrenceEndDate) : null;
+  const rangeEnd = aEnd && bEnd ? (aEnd < bEnd ? aEnd : bEnd) : (aEnd || bEnd);
+  const shared = (a.recurrenceDays || []).filter((d) => (b.recurrenceDays || []).includes(d));
+  if (!sharedWeekdayOccurs(rangeStart, rangeEnd, shared)) return false;
+  return timeWindowsOverlap(minutesOfDay(a.departureTime), minutesOfDay(b.departureTime));
+}
+
+async function assertNoOverlappingTrip(driverId, { departureTime, isRecurring, recurrenceDays, recurrenceEndDate, excludeTripId = null }) {
+  const where = { driverId, status: BLOCKING_TRIP_STATUSES };
+  if (excludeTripId) where.id = { [Op.ne]: excludeTripId };
+  const existing = await Trip.findAll({
+    where,
+    attributes: ['id', 'departureTime', 'isRecurring', 'recurrenceDays', 'recurrenceEndDate', 'status'],
+  });
+  if (existing.length === 0) return;
+
+  const newStart = new Date(departureTime);
+  const newEnd = tripWindowEnd(newStart);
+  const candidate = {
+    departureTime: newStart,
+    recurrenceDays: isRecurring ? (recurrenceDays || []) : null,
+    recurrenceEndDate: isRecurring && recurrenceEndDate ? new Date(recurrenceEndDate) : null,
+  };
+
+  for (const t of existing) {
+    const curStart = new Date(t.departureTime);
+    const curEnd = tripWindowEnd(curStart);
+    let overlap = false;
+    if (!t.isRecurring && !isRecurring) {
+      overlap = windowsOverlap(newStart, newEnd, curStart, curEnd);
+    } else if (t.isRecurring && !isRecurring) {
+      overlap = oneOffOverlapsSeries(newStart, newEnd, t);
+    } else if (!t.isRecurring && isRecurring) {
+      overlap = oneOffOverlapsSeries(curStart, curEnd, candidate);
+    } else {
+      overlap = seriesOverlapSeries(candidate, t);
+    }
+    if (overlap) {
+      throw ApiErrors.custom(
+        'DRIVER_ALREADY_HAS_A_TRIP_IN_THIS_TIME_SLOT',
+        409,
+        'TRIP_TIME_OVERLAP',
+        null,
+        { conflicting_trip_id: t.id, conflicting_departure_time: t.departureTime }
+      );
+    }
+  }
+}
+
+/**
  * Create a new trip with seats, waypoints, and recurrence
  */
 const createTrip = async (driverId, data) => {
@@ -184,6 +310,14 @@ const createTrip = async (driverId, data) => {
       throw ApiErrors.validation('END_DATE_MUST_BE_AFTER_DEPARTURE_DATE');
     }
   }
+
+  // Overlap guard: the driver cannot have another active trip in this window.
+  await assertNoOverlappingTrip(driverId, {
+    departureTime: departureDateTime,
+    isRecurring,
+    recurrenceDays: isRecurring ? data.repeated_days : null,
+    recurrenceEndDate: isRecurring ? data.repeated_end_date : null,
+  });
 
   // Free-trips gate: block if the driver exhausted their free trip allowance.
   await assertFreeTripsAvailable(driverId);
@@ -1133,6 +1267,17 @@ async function updateTrip(driverId, tripId, data) {
     data.departure_time !== undefined &&
     new Date(data.departure_time).getTime() !== new Date(trip.departureTime).getTime();
   if (data.departure_time !== undefined) fields.departureTime = new Date(data.departure_time);
+
+  // Overlap guard: moving the departure into another active trip's window is refused.
+  if (departureChanged) {
+    await assertNoOverlappingTrip(driverId, {
+      departureTime: new Date(data.departure_time),
+      isRecurring: trip.isRecurring,
+      recurrenceDays: trip.recurrenceDays,
+      recurrenceEndDate: trip.recurrenceEndDate,
+      excludeTripId: trip.id,
+    });
+  }
 
   await trip.update(fields);
 

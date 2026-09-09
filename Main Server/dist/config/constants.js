@@ -33,6 +33,12 @@ exports.TRIP_STATUS = {
     COMPLETED: 'completed',
     CANCELLED: 'cancelled',
 };
+/**
+ * Assumed duration of a trip for driver overlap detection (hours). A driver
+ * cannot publish another trip whose [departure, departure + duration) window
+ * overlaps an existing active trip's window.
+ */
+exports.TRIP_DURATION_HOURS = 2;
 exports.SEAT_TYPE = {
     DRIVER: 'driver',
     UNAVAILABLE: 'unavailable',
