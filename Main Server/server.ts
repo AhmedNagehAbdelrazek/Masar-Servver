@@ -18,7 +18,7 @@ createSocketServer(httpServer);
 async function startServer(): Promise<void> {
   await initDatabase();
   await seedAdmin();
-  // await seedMockData();
+  await seedMockData();
   startJobs();
 
   httpServer.listen(PORT, () => {
