@@ -72,7 +72,7 @@ This table holds waypoints (points the driver will pass through). Ensure it matc
 | `destination_lng` | `trips.destination_lng` (NEW) |
 | `waypoints[]` | `trip_stops` (existing) – one row per stop |
 | `seats[]` | `trip_seats` (NEW) – one row per seat |
-| `departure_date` + `departure_time` | `trips.departure_time` (combine into TIMESTAMPTZ) |
+| `departure_time` (ISO-8601 with offset) | `trips.departure_time` (TIMESTAMPTZ, stored as UTC) |
 | `type_of_trip: once` | `trips.is_recurring = false`, `recurrence_days = NULL` |
 | `type_of_trip: repeated` | `trips.is_recurring = true`, `recurrence_days = [0,2,4]` (example) |
 | `repeated_days` | `trips.recurrence_days` (array of integers) |
@@ -130,8 +130,7 @@ This table holds waypoints (points the driver will pass through). Ensure it matc
     {"stop_name": "Madaba", "stop_lat": 31.7194, "stop_lng": 35.7933},
     {"stop_name": "Karak", "stop_lat": 31.1637, "stop_lng": 35.7621}
   ],
-  "departure_date": "2026-08-15",
-  "departure_time": "08:00",
+  "departure_time": "2026-08-15T08:00:00+03:00",
   "type_of_trip": "repeated",
   "repeated_days": [1, 3, 5],
   "repeated_end_date": "2026-12-31",
@@ -152,10 +151,10 @@ This table holds waypoints (points the driver will pass through). Ensure it matc
 **Validation Rules:**
 - Driver must be verified (`driver_verified = true`).
 - Vehicle must belong to the driver.
-- `departure_date` + `departure_time` must be in the future.
+- `departure_time` must be a timezone-aware ISO-8601 instant (with `Z` or `±HH:MM` offset, e.g. `...+03:00` for Jordan) and must be in the future. Naive datetimes without an offset are rejected.
 - At least 1 seat must be `available`.
 - `seat_number` values must match the vehicle's total seats (1 to `total_seats`).
-- If `type_of_trip = 'repeated'`, `repeated_days` must contain at least 1 day, and `repeated_end_date` must be > departure_date.
+- If `type_of_trip = 'repeated'`, `repeated_days` must contain at least 1 day, and `repeated_end_date` (a Jordan `YYYY-MM-DD` calendar day) must be after `departure_time`.
 - `allowed_type`: 'all' → no gender filter; 'women_only' → add attribute `women_only=true`; 'men_only' → add attribute `men_only=true` (or handle via filters).
 
 **Response (201 Created):**

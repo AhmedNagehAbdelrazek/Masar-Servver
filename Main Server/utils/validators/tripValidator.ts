@@ -1,6 +1,7 @@
 import { body, param, query, ValidationChain, Meta } from 'express-validator';
 import { GENDER_PREFERENCE, BOOKING_STATUS, VEHICLE_TYPES } from '../../config/constants';
 import V from '../../config/messages/validation-keys';
+import { hasTimezoneOffset } from '../time';
 
 export const createTripValidation: ValidationChain[] = [
   body('origin_city')
@@ -179,20 +180,14 @@ export const createTripValidation: ValidationChain[] = [
     .optional()
     .isInt({ min: 1 }).withMessage(V.STOP_ORDER_MUST_BE_A_POSITIVE_INTEGER),
 
-  body('departure_date')
-    .notEmpty().withMessage(V.DEPARTURE_DATE_IS_REQUIRED)
-    .isDate().withMessage(V.DEPARTURE_DATE_MUST_BE_A_VALID_DATE_YYYY_MM_DD)
-    .custom((value: unknown) => {
-      const date = new Date(`${String(value)}T00:00:00`);
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      if (date < today) throw new Error(V.DEPARTURE_DATE_MUST_BE_TODAY_OR_IN_THE_FUTURE);
-      return true;
-    }),
-
   body('departure_time')
     .notEmpty().withMessage(V.DEPARTURE_TIME_IS_REQUIRED)
-    .matches(/^([01]\d|2[0-3]):([0-5]\d)$/).withMessage(V.DEPARTURE_TIME_MUST_BE_IN_HH_MM_FORMAT),
+    .isISO8601().withMessage(V.DEPARTURE_TIME_MUST_BE_A_VALID_ISO_8601_DATETIME)
+    .custom((value: unknown) => {
+      if (!hasTimezoneOffset(value)) throw new Error(V.DATETIME_MUST_INCLUDE_TIMEZONE);
+      if (new Date(String(value)) <= new Date()) throw new Error(V.DEPARTURE_TIME_MUST_BE_IN_THE_FUTURE);
+      return true;
+    }),
 
   body('type_of_trip')
     .notEmpty().withMessage(V.TRIP_TYPE_IS_REQUIRED)
@@ -214,9 +209,14 @@ export const createTripValidation: ValidationChain[] = [
     .notEmpty().withMessage(V.END_DATE_IS_REQUIRED_FOR_RECURRING_TRIPS)
     .isDate().withMessage(V.END_DATE_MUST_BE_A_VALID_DATE)
     .custom((value: unknown, { req }: Meta) => {
-      const endDate = new Date(`${String(value)}T00:00:00`);
-      const startDate = new Date(`${(req as unknown as { body: Record<string, unknown> }).body.departure_date}T00:00:00`);
-      if (endDate <= startDate) throw new Error(V.END_DATE_MUST_BE_AFTER_DEPARTURE_DATE);
+      // Calendar dates are Jordan days: compare Jordan midnight
+      // against the timezone-aware departure instant.
+      const endDate = new Date(`${String(value)}T00:00:00+03:00`);
+      const departure = new Date(String((req as unknown as { body: Record<string, unknown> }).body.departure_time));
+      if (Number.isNaN(endDate.getTime()) || Number.isNaN(departure.getTime())) {
+        throw new Error(V.END_DATE_MUST_BE_A_VALID_DATE);
+      }
+      if (endDate <= departure) throw new Error(V.END_DATE_MUST_BE_AFTER_DEPARTURE_DATE);
       return true;
     }),
 
@@ -371,13 +371,18 @@ export const updateTripValidation: ValidationChain[] = [
     .optional()
     .isISO8601().withMessage(V.DEPARTURE_TIME_MUST_BE_A_VALID_ISO_8601_DATETIME)
     .custom((value: unknown) => {
+      if (!hasTimezoneOffset(value)) throw new Error(V.DATETIME_MUST_INCLUDE_TIMEZONE);
       if (new Date(String(value)) <= new Date()) throw new Error(V.DEPARTURE_TIME_MUST_BE_IN_THE_FUTURE);
       return true;
     }),
 
   body('arrival_time')
     .optional()
-    .isISO8601().withMessage(V.ARRIVAL_TIME_MUST_BE_A_VALID_ISO_8601_DATETIME),
+    .isISO8601().withMessage(V.ARRIVAL_TIME_MUST_BE_A_VALID_ISO_8601_DATETIME)
+    .custom((value: unknown) => {
+      if (!hasTimezoneOffset(value)) throw new Error(V.DATETIME_MUST_INCLUDE_TIMEZONE);
+      return true;
+    }),
 
   body('gender_preference')
     .optional()
@@ -434,7 +439,11 @@ export const updateTripValidation: ValidationChain[] = [
     .isInt({ min: 1 }).withMessage(V.STOP_ORDER_MUST_BE_A_POSITIVE_INTEGER),
   body('stops.*.estimated_arrival')
     .optional()
-    .isISO8601().withMessage(V.ESTIMATED_ARRIVAL_MUST_BE_A_VALID_ISO_8601_DATETIME),
+    .isISO8601().withMessage(V.ESTIMATED_ARRIVAL_MUST_BE_A_VALID_ISO_8601_DATETIME)
+    .custom((value: unknown) => {
+      if (!hasTimezoneOffset(value)) throw new Error(V.DATETIME_MUST_INCLUDE_TIMEZONE);
+      return true;
+    }),
 ];
 
 export const cancelTripValidation: ValidationChain[] = [

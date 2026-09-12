@@ -136,8 +136,7 @@ beforeEach(async () => {
     .send({
       origin_city: 'Amman',
       destination_city: 'Irbid',
-      departure_date: getFutureDate(1),
-      departure_time: '16:00',
+      departure_time: `${getFutureDate(1)}T16:00:00+03:00`,
       type_of_trip: 'once',
       fare_per_seat: '18.00',
       seats: [
@@ -603,8 +602,7 @@ describe('POST /api/trips/:trip_id/offers/:offer_id/attach - deferred materializ
       .send({
         origin_city: 'Amman',
         destination_city: 'Aqaba',
-        departure_date: getFutureDate(2),
-        departure_time: '09:00',
+        departure_time: `${getFutureDate(2)}T09:00:00+03:00`,
         type_of_trip: 'once',
         fare_per_seat: '30.00',
         seats: [

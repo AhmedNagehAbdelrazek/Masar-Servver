@@ -98,8 +98,7 @@ describe('Contract: POST /api/trips', () => {
       .send({
         origin_city: 'Amman',
         destination_city: 'Irbid',
-        departure_date: getFutureDate(1),
-        departure_time: '14:00',
+        departure_time: `${getFutureDate(1)}T14:00:00+03:00`,
         type_of_trip: 'once',
         fare_per_seat: '15.00',
         seats: [
@@ -130,6 +129,62 @@ describe('Contract: POST /api/trips', () => {
 
     expect(res.status).toBe(422);
   });
+
+  it('should return 422 when departure_time is missing', async () => {
+    const res = await getAgent()
+      .post('/api/trips')
+      .set('Authorization', `Bearer ${driverToken}`)
+      .send({
+        origin_city: 'Amman',
+        destination_city: 'Irbid',
+        type_of_trip: 'once',
+        fare_per_seat: '15.00',
+        seats: [
+          { seat_number: 1, type: 'driver' },
+          { seat_number: 2, type: 'available' },
+        ],
+      });
+
+    expect(res.status).toBe(422);
+  });
+
+  it('should return 422 DATETIME_MUST_INCLUDE_TIMEZONE for naive departure_time without offset', async () => {
+    const res = await getAgent()
+      .post('/api/trips')
+      .set('Authorization', `Bearer ${driverToken}`)
+      .send({
+        origin_city: 'Amman',
+        destination_city: 'Irbid',
+        departure_time: `${getFutureDate(1)}T14:00`,
+        type_of_trip: 'once',
+        fare_per_seat: '15.00',
+        seats: [
+          { seat_number: 1, type: 'driver' },
+          { seat_number: 2, type: 'available' },
+        ],
+      });
+
+    expect(res.status).toBe(422);
+  });
+
+  it('should return 422 for a past departure_time instant', async () => {
+    const res = await getAgent()
+      .post('/api/trips')
+      .set('Authorization', `Bearer ${driverToken}`)
+      .send({
+        origin_city: 'Amman',
+        destination_city: 'Irbid',
+        departure_time: '2020-01-01T10:00:00+03:00',
+        type_of_trip: 'once',
+        fare_per_seat: '15.00',
+        seats: [
+          { seat_number: 1, type: 'driver' },
+          { seat_number: 2, type: 'available' },
+        ],
+      });
+
+    expect(res.status).toBe(422);
+  });
 });
 
 describe('Contract: GET /api/trips/:trip_id', () => {
@@ -142,8 +197,7 @@ describe('Contract: GET /api/trips/:trip_id', () => {
       .send({
         origin_city: 'Amman',
         destination_city: 'Irbid',
-        departure_date: getFutureDate(1),
-        departure_time: '14:00',
+        departure_time: `${getFutureDate(1)}T14:00:00+03:00`,
         type_of_trip: 'once',
         fare_per_seat: '15.00',
         seats: [
@@ -199,8 +253,7 @@ describe('Contract: GET /api/trips/driver/my-trips', () => {
       .send({
         origin_city: 'Amman',
         destination_city: 'Irbid',
-        departure_date: getFutureDate(1),
-        departure_time: '14:00',
+        departure_time: `${getFutureDate(1)}T14:00:00+03:00`,
         type_of_trip: 'once',
         fare_per_seat: '15.00',
         seats: [
@@ -239,8 +292,7 @@ describe('Contract: GET /api/trips/search/available', () => {
       .send({
         origin_city: 'Amman',
         destination_city: 'Irbid',
-        departure_date: getFutureDate(1),
-        departure_time: '14:00',
+        departure_time: `${getFutureDate(1)}T14:00:00+03:00`,
         type_of_trip: 'once',
         fare_per_seat: '15.00',
         seats: [
@@ -293,8 +345,7 @@ describe('Contract: GET /api/trips/:id/options', () => {
       .send({
         origin_city: 'Amman',
         destination_city: 'Irbid',
-        departure_date: getFutureDate(1),
-        departure_time: '14:00',
+        departure_time: `${getFutureDate(1)}T14:00:00+03:00`,
         type_of_trip: 'once',
         fare_per_seat: '15.00',
         seats: [
@@ -383,8 +434,7 @@ describe('Contract: POST /api/trips/:trip_id/seats/lock', () => {
       .send({
         origin_city: 'Amman',
         destination_city: 'Irbid',
-        departure_date: getFutureDate(1),
-        departure_time: '14:00',
+        departure_time: `${getFutureDate(1)}T14:00:00+03:00`,
         type_of_trip: 'once',
         fare_per_seat: '15.00',
         seats: [
@@ -424,8 +474,7 @@ describe('Contract: DELETE /api/trips/:trip_id/seats/lock/:seat_number', () => {
       .send({
         origin_city: 'Amman',
         destination_city: 'Irbid',
-        departure_date: getFutureDate(1),
-        departure_time: '14:00',
+        departure_time: `${getFutureDate(1)}T14:00:00+03:00`,
         type_of_trip: 'once',
         fare_per_seat: '15.00',
         seats: [

@@ -14,7 +14,7 @@ function getStartableDeparture() {
   const pad = (n) => String(n).padStart(2, '0');
   const date = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
   const time = `${pad(d.getHours())}:${pad(d.getMinutes())}`;
-  return { date, time };
+  return `${date}T${time}:00+03:00`;
 }
 
 async function seedSubscription({ percentageCut = 8, balance = 100 } = {}) {
@@ -48,8 +48,7 @@ async function seedSubscription({ percentageCut = 8, balance = 100 } = {}) {
 const VALID_BODY = {
   origin_city: 'Amman',
   destination_city: 'Irbid',
-  departure_date: getStartableDeparture().date,
-  departure_time: getStartableDeparture().time,
+  departure_time: getStartableDeparture(),
   type_of_trip: 'once',
   fare_per_seat: '15.00',
   seats: [

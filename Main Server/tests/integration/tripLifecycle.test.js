@@ -28,8 +28,7 @@ async function createTripViaApi(extra = {}) {
     .send({
       origin_city: 'Amman',
       destination_city: 'Irbid',
-      departure_date: getFutureDate(1),
-      departure_time: '10:00',
+      departure_time: `${getFutureDate(1)}T10:00:00+03:00`,
       type_of_trip: 'once',
       fare_per_seat: '15.00',
       seats: [
@@ -139,7 +138,7 @@ describe('tripLifecycleJob - stale trip close-out', () => {
     const futureId = await createTripViaApi();
     const futureBooking = await addConfirmedBooking(futureId);
 
-    const recentId = await createTripViaApi({ departure_time: '13:00' });
+    const recentId = await createTripViaApi({ departure_time: `${getFutureDate(1)}T13:00:00+03:00` });
     const recentBooking = await addConfirmedBooking(recentId);
     await Trip.update({ departureTime: hoursAgo(1) }, { where: { id: recentId } });
 

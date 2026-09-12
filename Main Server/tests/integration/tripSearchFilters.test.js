@@ -37,8 +37,7 @@ async function createTrip(token, { departure_time, seats }) {
     .send({
       origin_city: 'Amman',
       destination_city: 'Irbid',
-      departure_date: getFutureDate(1),
-      departure_time,
+      departure_time: `${getFutureDate(1)}T${departure_time}:00+03:00`,
       type_of_trip: 'once',
       fare_per_seat: '15.00',
       seats,
@@ -179,8 +178,7 @@ describe('US1 - trip search filters', () => {
       .send({
         origin_city: 'Amman',
         destination_city: 'Irbid',
-        departure_date: getFutureDate(1),
-        departure_time: '10:00',
+        departure_time: `${getFutureDate(1)}T10:00:00+03:00`,
         type_of_trip: 'repeated',
         repeated_days: [otherDay],
         repeated_end_date: getFutureDate(30),

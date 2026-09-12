@@ -69,8 +69,7 @@ beforeEach(async () => {
     .send({
       origin_city: 'Amman',
       destination_city: 'Irbid',
-      departure_date: futureAt(14).split('T')[0],
-      departure_time: '14:00',
+      departure_time: futureAt(14),
       type_of_trip: 'once',
       fare_per_seat: '15.00',
       seats: [

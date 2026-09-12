@@ -60,8 +60,7 @@ beforeEach(async () => {
 const VALID_TRIP_BODY = {
   origin_city: 'Amman', origin_area: 'Abdoun', origin_lat: '31.9500', origin_lng: '35.9100',
   destination_city: 'Irbid', destination_area: 'Downtown', destination_lat: '32.5500', destination_lng: '35.8500',
-  departure_date: (() => { const d = new Date(); d.setDate(d.getDate() + 5); return d.toISOString().split('T')[0]; })(),
-  departure_time: '14:00', type_of_trip: 'once', fare_per_seat: '15.50',
+  departure_time: `${(() => { const d = new Date(); d.setDate(d.getDate() + 5); return d.toISOString().split('T')[0]; })()}T14:00:00+03:00`, type_of_trip: 'once', fare_per_seat: '15.50',
   seats: [
     { seat_number: 1, type: 'driver' },
     { seat_number: 2, type: 'available' },

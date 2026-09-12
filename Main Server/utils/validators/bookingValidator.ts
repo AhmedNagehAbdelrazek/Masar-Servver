@@ -1,6 +1,7 @@
 import { body, query, param, ValidationChain } from 'express-validator';
 import { BOOKING_STATUS } from '../../config/constants';
 import V from '../../config/messages/validation-keys';
+import { hasTimezoneOffset } from '../time';
 
 export const bookingListValidation: ValidationChain[] = [
   query('status')
@@ -168,7 +169,11 @@ export const createBookingValidation: ValidationChain[] = [
     .isString().trim().isLength({ max: 255 }).withMessage(V.DROPOFF_PLACE_MUST_BE_AT_MOST_255_CHARACTERS),
   body('dropoff_deadline')
     .optional()
-    .isISO8601().withMessage(V.DROPOFF_DEADLINE_MUST_BE_A_VALID_ISO_8601_DATETIME),
+    .isISO8601().withMessage(V.DROPOFF_DEADLINE_MUST_BE_A_VALID_ISO_8601_DATETIME)
+    .custom((value: unknown) => {
+      if (!hasTimezoneOffset(value)) throw new Error(V.DATETIME_MUST_INCLUDE_TIMEZONE);
+      return true;
+    }),
 ];
 
 export const passengerBookingListValidation: ValidationChain[] = [

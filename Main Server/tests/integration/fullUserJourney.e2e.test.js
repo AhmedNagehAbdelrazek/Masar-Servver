@@ -214,8 +214,7 @@ describe('End-to-end user journey (driver + passenger full flow)', () => {
         origin_area: 'Abdoun',
         destination_city: 'Irbid',
         destination_area: 'Downtown',
-        departure_date: localDateYYYYMMDD(dep),
-        departure_time: departureTimeHHMM(dep),
+        departure_time: `${localDateYYYYMMDD(dep)}T${departureTimeHHMM(dep)}:00+03:00`,
         type_of_trip: 'once',
         fare_per_seat: '20.00',
         seats: [
@@ -496,8 +495,7 @@ describe('End-to-end user journey (driver + passenger full flow)', () => {
       .send({
         origin_city: 'Zarqa',
         destination_city: 'Aqaba',
-        departure_date: localDateYYYYMMDD(dep),
-        departure_time: departureTimeHHMM(dep),
+        departure_time: `${localDateYYYYMMDD(dep)}T${departureTimeHHMM(dep)}:00+03:00`,
         type_of_trip: 'once',
         fare_per_seat: '30.00',
         seats: [

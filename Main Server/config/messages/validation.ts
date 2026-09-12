@@ -59,6 +59,7 @@ export const VALIDATION_MESSAGES = {
   COUNTRY_CODE_MUST_CONTAIN_ONLY_LETTERS: { en: "Country code must contain only letters", ar: "يجب أن يحتوي رمز الدولة على حروف فقط" },
   CURRENT_PASSWORD_IS_REQUIRED: { en: "Current password is required", ar: "كلمة المرور الحالية مطلوبة" },
   DATE_FROM_MUST_BE_A_VALID_ISO_8601_DATE: { en: "date_from must be a valid ISO-8601 date", ar: "يجب أن يكون تاريخ البدء تاريخاً صالحاً بصيغة ISO-8601" },
+  DATETIME_MUST_INCLUDE_TIMEZONE: { en: "Datetime must include a timezone (ISO-8601 with Z or ±HH:MM offset, e.g. 2026-09-15T06:00:00+03:00)", ar: "يجب أن يتضمن التاريخ والوقت منطقة زمنية (بصيغة ISO-8601 مع Z أو إزاحة مثل 2026-09-15T06:00:00+03:00)" },
   DATE_MUST_BE_A_VALID_DATE_YYYY_MM_DD: { en: "Date must be a valid date (YYYY-MM-DD)", ar: "يجب أن يكون التاريخ تاريخاً صالحاً (YYYY-MM-DD)" },
   DATE_CANNOT_BE_IN_THE_PAST: { en: "Date cannot be in the past", ar: "لا يمكن أن يكون التاريخ في الماضي" },
   DATE_TO_MUST_BE_A_VALID_ISO_8601_DATE: { en: "date_to must be a valid ISO-8601 date", ar: "يجب أن يكون تاريخ الانتهاء تاريخاً صالحاً بصيغة ISO-8601" },

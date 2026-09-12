@@ -101,8 +101,7 @@ const VALID_TRIP_BODY = {
   destination_area: 'Downtown',
   destination_lat: '32.5500',
   destination_lng: '35.8500',
-  departure_date: (() => { const d = new Date(); d.setDate(d.getDate() + 1); return d.toISOString().split('T')[0]; })(),
-  departure_time: '14:00',
+  departure_time: `${(() => { const d = new Date(); d.setDate(d.getDate() + 1); return d.toISOString().split('T')[0]; })()}T14:00:00+03:00`,
   type_of_trip: 'once',
   fare_per_seat: '15.50',
   seats: [
@@ -229,8 +228,8 @@ describe('Trip - Create Trip', () => {
       expect(res.status).toBe(422);
     });
 
-    it('should reject if departure_date is missing', async () => {
-      const { departure_date: _departure_date, ...body } = VALID_TRIP_BODY;
+    it('should reject naive departure_time without timezone', async () => {
+      const body = { ...VALID_TRIP_BODY, departure_time: `${getFutureDate(1)}T14:00` };
       const res = await getAgent()
         .post('/api/trips')
         .set('Authorization', `Bearer ${driverToken}`)
@@ -336,9 +335,10 @@ describe('Trip - Create Trip', () => {
     });
 
     it('should reject if departure time is in the past', async () => {
+      const pastDate = (() => { const d = new Date(); d.setDate(d.getDate() - 1); return d.toISOString().split('T')[0]; })();
       const body = {
         ...VALID_TRIP_BODY,
-        departure_date: (() => { const d = new Date(); d.setDate(d.getDate() - 1); return d.toISOString().split('T')[0]; })(),
+        departure_time: `${pastDate}T14:00:00+03:00`,
       };
       const res = await getAgent()
         .post('/api/trips')
@@ -356,7 +356,7 @@ describe('Trip - Create Trip', () => {
       const dep = new Date(Date.now() + 30 * 60 * 1000);
       const localDate = `${dep.getFullYear()}-${String(dep.getMonth() + 1).padStart(2, '0')}-${String(dep.getDate()).padStart(2, '0')}`;
       const localTime = `${String(dep.getHours()).padStart(2, '0')}:${String(dep.getMinutes()).padStart(2, '0')}`;
-      const body = { ...VALID_TRIP_BODY, departure_date: localDate, departure_time: localTime };
+      const body = { ...VALID_TRIP_BODY, departure_time: `${localDate}T${localTime}:00+03:00` };
       const res = await getAgent()
         .post('/api/trips')
         .set('Authorization', `Bearer ${driverToken}`)
@@ -560,8 +560,7 @@ describe('Trip - Driver overlap guard (2h window)', () => {
   function overlapBody(date, time, extra = {}) {
     return {
       ...VALID_TRIP_BODY,
-      departure_date: date,
-      departure_time: time,
+      departure_time: `${date}T${time}:00+03:00`,
       seats: OVERLAP_SEATS,
       ...extra,
     };
@@ -626,14 +625,14 @@ describe('Trip - Driver overlap guard (2h window)', () => {
     const clash = await getAgent()
       .put(`/api/trips/${secondId}`)
       .set('Authorization', `Bearer ${driverToken}`)
-      .send({ departure_time: `${date}T06:00:00` });
+      .send({ departure_time: `${date}T06:00:00+03:00` });
     expect(clash.status).toBe(409);
     expect(clash.body.code).toBe('TRIP_TIME_OVERLAP');
 
     const moved = await getAgent()
       .put(`/api/trips/${secondId}`)
       .set('Authorization', `Bearer ${driverToken}`)
-      .send({ departure_time: `${date}T12:00:00` });
+      .send({ departure_time: `${date}T12:00:00+03:00` });
     expect(moved.status).toBe(200);
   });
 

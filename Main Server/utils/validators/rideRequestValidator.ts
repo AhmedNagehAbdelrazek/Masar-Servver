@@ -1,6 +1,7 @@
 import { body, query, param, ValidationChain } from 'express-validator';
 import { RIDE_REQUEST_STATUS, REQUEST_OFFER_STATUS } from '../../config/constants';
 import V from '../../config/messages/validation-keys';
+import { hasTimezoneOffset } from '../time';
 
 export const rideRequestParamValidation: ValidationChain[] = [
   param('request_id')
@@ -33,10 +34,18 @@ export const createRideRequestValidation: ValidationChain[] = [
     .isFloat({ min: -180, max: 180 }).withMessage(V.ORIGIN_LNG_MUST_BE_A_VALID_LONGITUDE),
   body('origin_time')
     .optional()
-    .isISO8601().withMessage(V.ORIGIN_TIME_MUST_BE_A_VALID_ISO_8601_DATETIME),
+    .isISO8601().withMessage(V.ORIGIN_TIME_MUST_BE_A_VALID_ISO_8601_DATETIME)
+    .custom((value: unknown) => {
+      if (!hasTimezoneOffset(value)) throw new Error(V.DATETIME_MUST_INCLUDE_TIMEZONE);
+      return true;
+    }),
   body('arrival_deadline')
     .optional()
-    .isISO8601().withMessage(V.ARRIVAL_DEADLINE_MUST_BE_A_VALID_ISO_8601_DATETIME),
+    .isISO8601().withMessage(V.ARRIVAL_DEADLINE_MUST_BE_A_VALID_ISO_8601_DATETIME)
+    .custom((value: unknown) => {
+      if (!hasTimezoneOffset(value)) throw new Error(V.DATETIME_MUST_INCLUDE_TIMEZONE);
+      return true;
+    }),
   body('seats_needed')
     .optional()
     .isInt({ min: 1, max: 8 }).withMessage(V.SEATS_NEEDED_MUST_BE_BETWEEN_1_AND_8),
@@ -76,10 +85,18 @@ export const updateRideRequestValidation: ValidationChain[] = [
     .isString().trim().isLength({ max: 120 }).withMessage(V.DESTINATION_CITY_MUST_BE_AT_MOST_120_CHARACTERS),
   body('origin_time')
     .optional()
-    .isISO8601().withMessage(V.ORIGIN_TIME_MUST_BE_A_VALID_ISO_8601_DATETIME),
+    .isISO8601().withMessage(V.ORIGIN_TIME_MUST_BE_A_VALID_ISO_8601_DATETIME)
+    .custom((value: unknown) => {
+      if (!hasTimezoneOffset(value)) throw new Error(V.DATETIME_MUST_INCLUDE_TIMEZONE);
+      return true;
+    }),
   body('arrival_deadline')
     .optional()
-    .isISO8601().withMessage(V.ARRIVAL_DEADLINE_MUST_BE_A_VALID_ISO_8601_DATETIME),
+    .isISO8601().withMessage(V.ARRIVAL_DEADLINE_MUST_BE_A_VALID_ISO_8601_DATETIME)
+    .custom((value: unknown) => {
+      if (!hasTimezoneOffset(value)) throw new Error(V.DATETIME_MUST_INCLUDE_TIMEZONE);
+      return true;
+    }),
   body('seats_needed')
     .optional()
     .isInt({ min: 1, max: 8 }).withMessage(V.SEATS_NEEDED_MUST_BE_BETWEEN_1_AND_8),

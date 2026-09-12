@@ -8,6 +8,16 @@ import { releaseSeatLock, checkSeatLock } from '../utils/seatLock';
 import homeService from './homeService';
 import { seatNumbersFor } from '../utils/seatSerializer';
 import auditService from './auditService';
+import {
+  parseTimezoneAware,
+  parseJordanDateOnly,
+  parseJordanDateOrInstant,
+  parseJordanDayStart,
+  jordanDateOnly,
+  jordanMinutesOfDay,
+  jordanWeekday,
+  jordanStartOfToday,
+} from '../utils/time';
 import { hasFreeTripsOffer, freeTripsLimit } from '../utils/freeTrips';
 import { Trip, TripSeat, TripStop, TripAttribute, Vehicle, User, Booking, DriverSubscription, SubscriptionPlan, Penalty } from '../Models';
 
@@ -155,14 +165,13 @@ function windowsOverlap(aStart, aEnd, bStart, bEnd) {
 }
 
 function dateOnly(d) {
-  const x = new Date(d);
-  x.setHours(0, 0, 0, 0);
-  return x;
+  // Jordan calendar day (midnight Asia/Amman) — never server-local.
+  return jordanDateOnly(d);
 }
 
 function minutesOfDay(d) {
-  const dt = new Date(d);
-  return dt.getHours() * 60 + dt.getMinutes();
+  // Wall-clock minutes in Jordan for time-of-day comparisons.
+  return jordanMinutesOfDay(d);
 }
 
 function timeWindowsOverlap(aStartMin, bStartMin) {
@@ -182,7 +191,7 @@ function sharedWeekdayOccurs(rangeStart, rangeEnd, weekdays) {
   if (spanDays >= 6) return true;
   const cursor = new Date(start);
   for (let i = 0; i <= spanDays; i++) {
-    if (weekdays.includes(cursor.getDay())) return true;
+    if (weekdays.includes(jordanWeekday(cursor))) return true;
     cursor.setDate(cursor.getDate() + 1);
   }
   return false;
@@ -223,7 +232,7 @@ async function assertNoOverlappingTrip(driverId, { departureTime, isRecurring, r
   const candidate = {
     departureTime: newStart,
     recurrenceDays: isRecurring ? (recurrenceDays || []) : null,
-    recurrenceEndDate: isRecurring && recurrenceEndDate ? new Date(recurrenceEndDate) : null,
+    recurrenceEndDate: isRecurring ? parseJordanDateOrInstant(recurrenceEndDate) : null,
   };
 
   for (const t of existing) {
@@ -290,8 +299,9 @@ const createTrip = async (driverId, data) => {
     throw ApiErrors.validation('EXACTLY_ONE_SEAT_MUST_BE_MARKED_AS_DRIVER');
   }
 
-  // Validate departure time is in the future
-  const departureDateTime = new Date(`${data.departure_date}T${data.departure_time}`);
+  // Departure is a single timezone-aware ISO-8601 instant
+  // (e.g. 2026-09-15T06:00:00+03:00). Naive datetimes are rejected.
+  const departureDateTime = parseTimezoneAware(data.departure_time);
   if (departureDateTime <= new Date()) {
     throw ApiErrors.validation('DEPARTURE_TIME_MUST_BE_IN_THE_FUTURE');
   }
@@ -305,7 +315,7 @@ const createTrip = async (driverId, data) => {
     throw ApiErrors.validation('END_DATE_IS_REQUIRED_FOR_RECURRING_TRIPS');
   }
   if (isRecurring) {
-    const endDate = new Date(data.repeated_end_date);
+    const endDate = parseJordanDateOnly(data.repeated_end_date);
     if (endDate <= departureDateTime) {
       throw ApiErrors.validation('END_DATE_MUST_BE_AFTER_DEPARTURE_DATE');
     }
@@ -343,7 +353,7 @@ const createTrip = async (driverId, data) => {
     farePerSeat: data.fare_per_seat,
     isRecurring,
     recurrenceDays: isRecurring ? data.repeated_days : null,
-    recurrenceEndDate: isRecurring ? data.repeated_end_date : null,
+    recurrenceEndDate: isRecurring ? parseJordanDateOnly(data.repeated_end_date) : null,
     genderPreference: data.allowed_type || GENDER_PREFERENCE.ALL,
     driverInstructions: data.instructions || null,
     additionalInstructions: data.additional_instructions || null,
@@ -774,9 +784,10 @@ async function fetchTripsForDate({ targetDate, originCity, destinationCity, gend
   let qd = null;
   let dayStart = null;
   if (hasDate) {
-    qd = new Date(targetDate);
-    dayStart = new Date(qd);
-    dayStart.setHours(0, 0, 0, 0);
+    // Jordan calendar day: date-only input means Jordan midnight; a full
+    // timezone-aware datetime is floored to its Jordan day.
+    qd = parseJordanDayStart(targetDate);
+    dayStart = jordanDateOnly(qd);
   }
 
   const where = {
@@ -823,7 +834,7 @@ async function fetchTripsForDate({ targetDate, originCity, destinationCity, gend
             {
               [Op.or]: [
                 { departureTime: { [Op.gte]: dayStart } },
-                { recurrenceDays: { [Op.contains]: [dayStart.getDay()] } },
+                { recurrenceDays: { [Op.contains]: [jordanWeekday(dayStart)] } },
               ],
             },
           ],
@@ -891,8 +902,8 @@ async function fetchTripsForDate({ targetDate, originCity, destinationCity, gend
     const fromMin = timeFrom ? parseMinutes(timeFrom) : 0;
     const toMin = timeTo ? parseMinutes(timeTo) : 23 * 60 + 59;
     trips = trips.filter((trip) => {
-      const dt = new Date(trip.departureTime);
-      const minutes = dt.getHours() * 60 + dt.getMinutes();
+      // time_from/time_to are Jordan wall-clock times.
+      const minutes = jordanMinutesOfDay(trip.departureTime);
       return minutes >= fromMin && minutes <= toMin;
     });
   }
@@ -907,7 +918,7 @@ async function fetchTripsForDate({ targetDate, originCity, destinationCity, gend
     if (!hasDate) return true;
     if (new Date(trip.departureTime).getTime() >= dayStart.getTime()) return true;
     const days = trip.recurrenceDays || [];
-    return days.includes(dayStart.getDay());
+    return days.includes(jordanWeekday(dayStart));
   });
 
   return trips;
@@ -926,29 +937,20 @@ const getAvailableTrips = async (filters = {}) => {
     seats,
   } = filters;
 
-  // Validate dates when provided; allow omitting date to return all trips
+  // Validate dates when provided; allow omitting date to return all trips.
+  // Calendar days are Jordan days (Asia/Amman), never server-local.
   let queryDate = null;
   if (date) {
-    queryDate = new Date(date);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const normalizedQuery = new Date(queryDate);
-    normalizedQuery.setHours(0, 0, 0, 0);
-    if (normalizedQuery < today) {
+    queryDate = parseJordanDayStart(date);
+    if (jordanDateOnly(queryDate) < jordanStartOfToday()) {
       throw ApiErrors.validation('DATE_CANNOT_BE_IN_THE_PAST');
     }
   }
   if (returnDate) {
-    const rd = new Date(returnDate);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const normReturn = new Date(rd);
-    normReturn.setHours(0, 0, 0, 0);
-    if (normReturn < today) throw ApiErrors.validation('DATE_CANNOT_BE_IN_THE_PAST');
-    if (queryDate) {
-      const normQuery = new Date(queryDate);
-      normQuery.setHours(0, 0, 0, 0);
-      if (normReturn < normQuery) throw ApiErrors.validation('DATE_CANNOT_BE_IN_THE_PAST');
+    const rd = parseJordanDayStart(returnDate);
+    if (jordanDateOnly(rd) < jordanStartOfToday()) throw ApiErrors.validation('DATE_CANNOT_BE_IN_THE_PAST');
+    if (queryDate && jordanDateOnly(rd) < jordanDateOnly(queryDate)) {
+      throw ApiErrors.validation('DATE_CANNOT_BE_IN_THE_PAST');
     }
   }
 
@@ -1258,20 +1260,22 @@ async function updateTrip(driverId, tripId, data) {
 
   const fields = {};
   if (data.fare_per_seat !== undefined) fields.farePerSeat = data.fare_per_seat;
-  if (data.arrival_time !== undefined) fields.arrivalTime = data.arrival_time || null;
+  if (data.arrival_time !== undefined) {
+    fields.arrivalTime = data.arrival_time ? parseTimezoneAware(data.arrival_time) : null;
+  }
   if (data.gender_preference !== undefined) fields.genderPreference = data.gender_preference;
   if (data.driver_instructions !== undefined) fields.driverInstructions = data.driver_instructions;
   if (data.additional_instructions !== undefined) fields.additionalInstructions = data.additional_instructions || null;
 
   const departureChanged =
     data.departure_time !== undefined &&
-    new Date(data.departure_time).getTime() !== new Date(trip.departureTime).getTime();
-  if (data.departure_time !== undefined) fields.departureTime = new Date(data.departure_time);
+    parseTimezoneAware(data.departure_time).getTime() !== new Date(trip.departureTime).getTime();
+  if (data.departure_time !== undefined) fields.departureTime = parseTimezoneAware(data.departure_time);
 
   // Overlap guard: moving the departure into another active trip's window is refused.
   if (departureChanged) {
     await assertNoOverlappingTrip(driverId, {
-      departureTime: new Date(data.departure_time),
+      departureTime: parseTimezoneAware(data.departure_time),
       isRecurring: trip.isRecurring,
       recurrenceDays: trip.recurrenceDays,
       recurrenceEndDate: trip.recurrenceEndDate,
@@ -1302,7 +1306,7 @@ async function updateTrip(driverId, tripId, data) {
       lat: s.lat || null,
       lng: s.lng || null,
       stopType: s.stop_type || 'both',
-      estimatedArrival: s.estimated_arrival ? new Date(s.estimated_arrival) : null,
+      estimatedArrival: s.estimated_arrival ? parseTimezoneAware(s.estimated_arrival) : null,
     }));
     if (records.length > 0) await TripStop.bulkCreate(records);
   }

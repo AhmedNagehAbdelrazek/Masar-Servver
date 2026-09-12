@@ -13,6 +13,7 @@ import { generateReferenceCode } from '../utils/referenceCode';
 import homeService from './homeService';
 import realtimeService from './realtimeService';
 import { BOOKING_STATUS, PAYMENT_STATUS, TRIP_STATUS, SEAT_TYPE, USER_STATUS, STOP_TYPE } from '../config/constants';
+import { parseOptionalTimezoneAware } from '../utils/time';
 
 function serializeRoutePoints(trip) {
   return (trip.stops || [])
@@ -415,7 +416,7 @@ async function createBooking(passengerId, payload) {
         dropoffLat: resolvedDropoffLat,
         dropoffLng: resolvedDropoffLng,
         dropoffOrder: resolvedDropoffOrder,
-        dropoffDeadline: dropoff_deadline ? new Date(dropoff_deadline) : null,
+        dropoffDeadline: parseOptionalTimezoneAware(dropoff_deadline),
         status: BOOKING_STATUS.CONFIRMED,
         paymentStatus: PAYMENT_STATUS.PENDING,
         referenceCode,

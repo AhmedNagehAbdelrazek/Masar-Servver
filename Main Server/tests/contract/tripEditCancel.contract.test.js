@@ -74,8 +74,7 @@ const VALID_TRIP_BODY = {
   destination_area: 'Downtown',
   destination_lat: '32.5500',
   destination_lng: '35.8500',
-  departure_date: (() => { const d = new Date(); d.setDate(d.getDate() + 5); return d.toISOString().split('T')[0]; })(),
-  departure_time: '14:00',
+  departure_time: `${(() => { const d = new Date(); d.setDate(d.getDate() + 5); return d.toISOString().split('T')[0]; })()}T14:00:00+03:00`,
   type_of_trip: 'once',
   fare_per_seat: '15.50',
   seats: [

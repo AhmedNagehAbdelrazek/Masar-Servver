@@ -213,8 +213,7 @@ describe('US6 Contract - Ride Request Matches', () => {
       .send({
         origin_city: 'Amman',
         destination_city: 'Irbid',
-        departure_date: departureDate,
-        departure_time: '14:00',
+        departure_time: `${departureDate}T14:00:00+03:00`,
         type_of_trip: 'once',
         fare_per_seat: '15.00',
         seats: [

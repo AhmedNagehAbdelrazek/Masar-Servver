@@ -28,8 +28,7 @@ async function createTripFixture() {
     .send({
       origin_city: 'Amman',
       destination_city: 'Irbid',
-      departure_date: getFutureDate(1),
-      departure_time: '15:00',
+      departure_time: `${getFutureDate(1)}T15:00:00+03:00`,
       type_of_trip: 'once',
       fare_per_seat: '20.00',
       seats: [
