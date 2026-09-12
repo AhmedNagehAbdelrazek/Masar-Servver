@@ -186,7 +186,7 @@ async function listForDriver(driverId, filters = {}) {
   const { rows, count } = await Booking.findAndCountAll({
     where: bookingWhere,
     include: [
-      { model: Trip, as: 'trip', where: { driverId }, attributes: ['id', 'originCity', 'originArea', 'originLat', 'originLng', 'destinationCity', 'destinationArea', 'destinationLat', 'destinationLng', 'farePerSeat', 'departureTime', 'status'], include: [{ model: TripStop, as: 'stops' }] },
+      { model: Trip, as: 'trip', attributes: ['id', 'originCity', 'originArea', 'originLat', 'originLng', 'destinationCity', 'destinationArea', 'destinationLat', 'destinationLng', 'farePerSeat', 'departureTime', 'status'], include: [{ model: TripStop, as: 'stops' }] },
       { model: User, as: 'passenger', attributes: ['id', 'fullName', 'phone', 'avgRating'] },
     ],
     order: [[{ model: Trip, as: 'trip' }, 'departureTime', 'ASC']],
