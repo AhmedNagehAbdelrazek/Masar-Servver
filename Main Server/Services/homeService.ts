@@ -7,10 +7,24 @@ import balanceService from './balanceService';
 import subscriptionService from './subscriptionService';
 import recentSearchService from './recentSearchService';
 import realtimeService from './realtimeService';
-import { REDIS_KEYS, CACHE_TTL } from '../utils/redisKeys';
-import { getKey, setKey, deleteKey } from '../config/redis';
 import { seatNumbersFor } from '../utils/seatSerializer';
 import { hasFreeTripsOffer, freeTripsLimit } from '../utils/freeTrips';
+import { jordanStartOfToday } from '../utils/time';
+
+// NOTE: home payloads are intentionally NEVER cached (a stale next_trip is
+// worse than a fresh query). The invalidate* exports below stay as no-ops /
+// socket-only notifiers so existing call sites keep working.
+// The expiry sweep is lazy-required to avoid a module cycle
+// (tripService -> homeService -> tripExpiryService -> tripService).
+function sweepStaleTrips(tripIds) {
+  try {
+    const { refreshStaleTrips } = require('./tripExpiryService');
+    return refreshStaleTrips(tripIds);
+  } catch (err) {
+    console.warn('[homeService] expiry sweep failed:', err.message);
+    return Promise.resolve({ touched: 0 });
+  }
+}
 
 const HOUR_MS = 60 * 60 * 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -112,7 +126,7 @@ async function toRecentBookings(driverId) {
         attributes: ['fullName'],
       },
     ],
-    order: [['createdat', 'DESC']],
+    order: [[{ model: Trip, as: 'trip' }, 'departureTime', 'DESC']],
     limit: 5,
   });
 
@@ -138,11 +152,29 @@ async function buildHome(driverId) {
   if (!user) throw ApiErrors.notFound('USER_NOT_FOUND');
   const profile = await DriverProfile.findOne({ where: { driverId } });
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const tomorrow = new Date(today);
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  const todayWindow = { [Op.gte]: today, [Op.lt]: tomorrow };
+  // Close out anything that already expired so the home below reflects the
+  // current state, not the last cron run.
+  try {
+    const activeIds = (
+      await Trip.findAll({
+        where: {
+          driverId,
+          isRecurring: false,
+          status: { [Op.in]: [TRIP_STATUS.PUBLISHED, TRIP_STATUS.FULL, TRIP_STATUS.IN_PROGRESS, TRIP_STATUS.ONGOING] },
+        },
+        attributes: ['id'],
+      })
+    ).map((t) => t.id);
+    await sweepStaleTrips(activeIds);
+  } catch (err) {
+    console.warn('[homeService] pre-home sweep failed:', err.message);
+  }
+
+  // Jordan calendar day (never server-local midnight).
+  const todayStart = jordanStartOfToday();
+  const tomorrowStart = new Date(todayStart.getTime() + DAY_MS);
+  const todayWindow = { [Op.gte]: todayStart, [Op.lt]: tomorrowStart };
+  const now = new Date();
 
   const [subscription, nextTrip, completedToday, tripsToday, recentBookings] = await Promise.all([
     toSubscriptionSection(driverId),
@@ -150,6 +182,9 @@ async function buildHome(driverId) {
       where: {
         driverId,
         status: { [Op.in]: [TRIP_STATUS.PUBLISHED, TRIP_STATUS.FULL] },
+        // Upcoming only, earliest first: a stale published trip must never
+        // surface as the "next" trip.
+        departureTime: { [Op.gt]: now },
       },
       include: [
         { model: Vehicle, as: 'vehicle' },
@@ -184,21 +219,14 @@ async function buildHome(driverId) {
 }
 
 /**
- * Combined driver home payload, cached in Redis for 30s.
+ * Driver home payload — always built fresh, never cached.
  */
 async function getHome(driverId) {
-  const cacheKey = REDIS_KEYS.DRIVER_HOME(driverId);
-  const cached = await getKey(cacheKey);
-  if (cached) return JSON.parse(cached);
-
-  const payload = await buildHome(driverId);
-  await setKey(cacheKey, JSON.stringify(payload), CACHE_TTL.HOME);
-  return payload;
+  return buildHome(driverId);
 }
 
-async function invalidateHomeCache(driverId) {
-  await deleteKey(REDIS_KEYS.DRIVER_HOME(driverId));
-}
+// No cache exists anymore; kept so existing call sites keep working.
+async function invalidateHomeCache(_driverId) {}
 
 /**
  * Current plan + history for the dedicated subscription page (C4).
@@ -308,6 +336,18 @@ async function buildPassengerHome(passengerId) {
 
   const now = new Date();
 
+  // Close out anything that already expired so the home below reflects the
+  // current state, not the last cron run.
+  try {
+    const activeBookings = await Booking.findAll({
+      where: { passengerId, status: { [Op.in]: [BOOKING_STATUS.PENDING, BOOKING_STATUS.CONFIRMED] } },
+      attributes: ['tripId'],
+    });
+    await sweepStaleTrips(activeBookings.map((b) => b.tripId));
+  } catch (err) {
+    console.warn('[homeService] pre-home sweep failed:', err.message);
+  }
+
   const nextBooking = await Booking.findOne({
     where: { passengerId, status: { [Op.in]: [BOOKING_STATUS.PENDING, BOOKING_STATUS.CONFIRMED] } },
     include: [
@@ -360,27 +400,18 @@ async function buildPassengerHome(passengerId) {
 }
 
 /**
- * Combined passenger home payload, cached in Redis for 30s.
+ * Passenger home payload — always built fresh, never cached.
  */
 async function getPassengerHome(passengerId) {
-  const cacheKey = REDIS_KEYS.PASSENGER_HOME(passengerId);
-  const cached = await getKey(cacheKey);
-  if (cached) return JSON.parse(cached);
-
-  const payload = await buildPassengerHome(passengerId);
-  await setKey(cacheKey, JSON.stringify(payload), CACHE_TTL.HOME);
-  return payload;
+  return buildPassengerHome(passengerId);
 }
 
-async function invalidatePassengerHome(passengerId) {
-  await deleteKey(REDIS_KEYS.PASSENGER_HOME(passengerId));
-}
+// No cache exists anymore; kept so existing call sites keep working.
+async function invalidatePassengerHome(_passengerId) {}
 
 /**
- * Invalidate the driver + passenger home caches for a trip after any mutation
- * that changes a trip's status or bookings (complete, cancel, departure
- * change, booking cancelled), so the cached homes rebuild on next read.
- * Also emits a `home:invalidate` socket event so open clients can refresh.
+ * Notify participants of a trip mutation (open clients refresh their home).
+ * There is no home cache to clear — homes are always built fresh.
  * Best-effort — never throws.
  */
 async function invalidateHomeForTrip(tripId, driverId) {
@@ -393,8 +424,6 @@ async function invalidateHomeForTrip(tripId, driverId) {
     const userIds = new Set([driverId, ...bookings.map((b) => b.passengerId)]);
     for (const userId of userIds) {
       if (!userId) continue;
-      if (userId === driverId) await invalidateHomeCache(driverId);
-      else await invalidatePassengerHome(userId);
       try {
         realtimeService.emitToUser(userId, 'home:invalidate', { trip_id: tripId });
       } catch (_err) {
@@ -402,7 +431,7 @@ async function invalidateHomeForTrip(tripId, driverId) {
       }
     }
   } catch (err) {
-    console.warn('[homeService] trip home cache invalidation failed:', err.message);
+    console.warn('[homeService] home invalidation failed:', err.message);
   }
 }
 

@@ -15,6 +15,19 @@ import realtimeService from './realtimeService';
 import { BOOKING_STATUS, PAYMENT_STATUS, TRIP_STATUS, SEAT_TYPE, USER_STATUS, STOP_TYPE } from '../config/constants';
 import { parseOptionalTimezoneAware } from '../utils/time';
 
+// Reads must return the CURRENT state, not the last cron run: close out
+// anything already expired before serializing. Lazy-required to avoid a
+// module cycle (tripExpiryService -> tripService).
+async function sweepStaleTrips(tripIds) {
+  try {
+    const { refreshStaleTrips } = require('./tripExpiryService');
+    return await refreshStaleTrips(tripIds);
+  } catch (err) {
+    console.warn('[bookingService] expiry sweep failed:', err.message);
+    return { touched: 0 };
+  }
+}
+
 function serializeRoutePoints(trip) {
   return (trip.stops || [])
     .slice()
@@ -160,13 +173,23 @@ async function listForDriver(driverId, filters = {}) {
     if (date_to) bookingWhere.createdat[Op.lte] = new Date(new Date(date_to).setHours(23, 59, 59, 999));
   }
 
+  // Scope to the driver's own trips via tripId (a `where` inside the trip
+  // include pushes the join into the count subquery and breaks ordering by
+  // the trip's departure with pagination).
+  const driverTripIds = (
+    await Trip.findAll({ where: { driverId }, attributes: ['id'] })
+  ).map((t) => t.id);
+  // Expiry sweep first: a stale trip must read back in its terminal state.
+  await sweepStaleTrips(driverTripIds);
+  bookingWhere.tripId = { [Op.in]: driverTripIds };
+
   const { rows, count } = await Booking.findAndCountAll({
     where: bookingWhere,
     include: [
-      { model: Trip, as: 'trip', where: { driverId }, attributes: ['id', 'originCity', 'originArea', 'originLat', 'originLng', 'destinationCity', 'destinationArea', 'destinationLat', 'destinationLng', 'farePerSeat'], include: [{ model: TripStop, as: 'stops' }] },
+      { model: Trip, as: 'trip', where: { driverId }, attributes: ['id', 'originCity', 'originArea', 'originLat', 'originLng', 'destinationCity', 'destinationArea', 'destinationLat', 'destinationLng', 'farePerSeat', 'departureTime', 'status'], include: [{ model: TripStop, as: 'stops' }] },
       { model: User, as: 'passenger', attributes: ['id', 'fullName', 'phone', 'avgRating'] },
     ],
-    order: [['createdat', 'DESC']],
+    order: [[{ model: Trip, as: 'trip' }, 'departureTime', 'ASC']],
     offset,
     limit,
   });
@@ -181,16 +204,22 @@ async function listForDriver(driverId, filters = {}) {
  * Get a single booking on the driver's own trip (contract D4).
  */
 async function getForDriver(driverId, bookingId) {
-  const booking = await Booking.findByPk(bookingId, {
-    include: [
-      { model: Trip, as: 'trip', attributes: ['id', 'driverId', 'originCity', 'originArea', 'originLat', 'originLng', 'destinationCity', 'destinationArea', 'destinationLat', 'destinationLng', 'farePerSeat'], include: [{ model: TripStop, as: 'stops' }] },
-      { model: User, as: 'passenger', attributes: ['id', 'fullName', 'phone', 'avgRating'] },
-    ],
-  });
+  const fetchBooking = () =>
+    Booking.findByPk(bookingId, {
+      include: [
+        { model: Trip, as: 'trip', attributes: ['id', 'driverId', 'originCity', 'originArea', 'originLat', 'originLng', 'destinationCity', 'destinationArea', 'destinationLat', 'destinationLng', 'farePerSeat', 'departureTime', 'status'], include: [{ model: TripStop, as: 'stops' }] },
+        { model: User, as: 'passenger', attributes: ['id', 'fullName', 'phone', 'avgRating'] },
+      ],
+    });
+  let booking = await fetchBooking();
   if (!booking) throw ApiErrors.notFound('BOOKING_NOT_FOUND');
   if (!booking.trip || booking.trip.driverId !== driverId) {
     throw ApiErrors.forbidden('YOU_CAN_ONLY_VIEW_BOOKINGS_ON_YOUR_OWN_TRIPS');
   }
+
+  // Return the post-expiry version when the trip already aged out.
+  const swept = await sweepStaleTrips([booking.tripId]);
+  if (swept.touched > 0) booking = await fetchBooking();
 
   return { booking: serializeDetail(booking) };
 }
@@ -537,6 +566,8 @@ function serializePassengerDetail(booking, trip, passenger) {
           origin: trip.originCity,
           destination: trip.destinationCity,
           price: Number(trip.farePerSeat),
+          status: trip.status,
+          departure_time: trip.departureTime,
           ...tripLocationData(trip),
         }
       : null,
@@ -573,6 +604,15 @@ async function listForPassenger(passengerId, filters = {}) {
   if (status) where.status = status;
   if (trip_id) where.tripId = trip_id;
 
+  // Expiry sweep first: a stale trip must read back in its terminal state.
+  const liveTripIds = (
+    await Booking.findAll({
+      where: { passengerId, status: { [Op.in]: [BOOKING_STATUS.PENDING, BOOKING_STATUS.CONFIRMED] } },
+      attributes: ['tripId'],
+    })
+  ).map((b) => b.tripId);
+  await sweepStaleTrips(liveTripIds);
+
   const { rows, count } = await Booking.findAndCountAll({
     where,
     include: [
@@ -588,7 +628,7 @@ async function listForPassenger(passengerId, filters = {}) {
       },
       { model: Rating, as: 'ratings', attributes: ['stars'], where: { raterId: passengerId }, required: false },
     ],
-    order: [['createdat', 'DESC']],
+    order: [[{ model: Trip, as: 'trip' }, 'departureTime', 'ASC']],
     offset,
     limit,
   });
@@ -600,26 +640,32 @@ async function listForPassenger(passengerId, filters = {}) {
 }
 
 async function getForPassenger(passengerId, bookingId) {
-  const booking = await Booking.findByPk(bookingId, {
-    include: [
-      {
-        model: Trip,
-        as: 'trip',
-        attributes: ['id', 'driverId', 'originCity', 'originArea', 'originLat', 'originLng', 'destinationCity', 'destinationArea', 'destinationLat', 'destinationLng', 'farePerSeat'],
-        include: [
-          { model: User, as: 'driver', attributes: ['id', 'fullName', 'phone', 'avgRating', 'avatarUrl'] },
-          { model: TripStop, as: 'stops' },
-          { model: Vehicle, as: 'vehicle', attributes: ['id', 'vehicleType', 'plateNumber', 'seats'] },
-        ],
-      },
-      { model: User, as: 'passenger', attributes: ['id', 'fullName'] },
-      { model: Rating, as: 'ratings', attributes: ['stars'], where: { raterId: passengerId }, required: false },
-    ],
-  });
+  const fetchBooking = () =>
+    Booking.findByPk(bookingId, {
+      include: [
+        {
+          model: Trip,
+          as: 'trip',
+          attributes: ['id', 'driverId', 'originCity', 'originArea', 'originLat', 'originLng', 'destinationCity', 'destinationArea', 'destinationLat', 'destinationLng', 'farePerSeat', 'departureTime', 'status'],
+          include: [
+            { model: User, as: 'driver', attributes: ['id', 'fullName', 'phone', 'avgRating', 'avatarUrl'] },
+            { model: TripStop, as: 'stops' },
+            { model: Vehicle, as: 'vehicle', attributes: ['id', 'vehicleType', 'plateNumber', 'seats'] },
+          ],
+        },
+        { model: User, as: 'passenger', attributes: ['id', 'fullName'] },
+        { model: Rating, as: 'ratings', attributes: ['stars'], where: { raterId: passengerId }, required: false },
+      ],
+    });
+  let booking = await fetchBooking();
   if (!booking) throw ApiErrors.notFound('BOOKING_NOT_FOUND');
   if (booking.passengerId !== passengerId) {
     throw ApiErrors.forbidden('YOU_CAN_ONLY_VIEW_YOUR_OWN_BOOKINGS');
   }
+
+  // Return the post-expiry version when the trip already aged out.
+  const swept = await sweepStaleTrips([booking.tripId]);
+  if (swept.touched > 0) booking = await fetchBooking();
 
   return { booking: serializePassengerDetail(booking, booking.trip, booking.passenger) };
 }

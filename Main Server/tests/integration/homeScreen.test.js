@@ -195,9 +195,10 @@ describe('US1 - Home screen', () => {
 
   it('computes summary counts over the today window', async () => {
     await seedActiveSubscription(DRIVER_ID);
-    const startOfToday = new Date();
-    startOfToday.setHours(0, 0, 0, 0);
-    startOfToday.setSeconds(1);
+    // Jordan midnight + 1s: the home "today" window is Asia/Amman-anchored.
+    const shifted = new Date(Date.now() + 3 * 60 * 60 * 1000);
+    shifted.setUTCHours(0, 0, 1, 0);
+    const startOfToday = new Date(shifted.getTime() - 3 * 60 * 60 * 1000);
     await createTrip(DRIVER_ID, VEHICLE_ID, startOfToday, { status: TRIP_STATUS.COMPLETED });
     await createTrip(DRIVER_ID, VEHICLE_ID, future(30));
 
@@ -224,26 +225,28 @@ describe('US1 - Home screen', () => {
     expect(res.body.recent_bookings[0].seat_numbers).toEqual([]);
   });
 
-  it('serves the second call from the Redis cache', async () => {
+  it('serves fresh home data on every call without a cache (earliest upcoming first)', async () => {
     await seedActiveSubscription(DRIVER_ID);
-    const trip = await createTrip(DRIVER_ID, VEHICLE_ID, future(30));
-    await addBooking(trip.id, PASSENGER_ID, { seatNumber: 2 });
+    const later = await createTrip(DRIVER_ID, VEHICLE_ID, future(120));
+    await addBooking(later.id, PASSENGER_ID, { seatNumber: 2 });
 
     const first = await getAgent()
       .get('/api/driver/home')
       .set('Authorization', `Bearer ${driverToken}`);
     expect(first.status).toBe(200);
+    expect(first.body.next_trip.trip_id).toBe(later.id);
 
-    const cachedRaw = getRedisStore().get(`driver_home:${DRIVER_ID}`);
-    expect(cachedRaw).toBeDefined();
-    expect(JSON.parse(cachedRaw)).toEqual(first.body);
+    // Nothing is cached ...
+    expect(getRedisStore().get(`driver_home:${DRIVER_ID}`)).toBeUndefined();
 
+    // ... so a newly created earlier trip immediately becomes the next trip.
+    const earlier = await createTrip(DRIVER_ID, VEHICLE_ID, future(30));
     const second = await getAgent()
       .get('/api/driver/home')
       .set('Authorization', `Bearer ${driverToken}`);
 
     expect(second.status).toBe(200);
-    expect(second.body).toEqual(first.body);
+    expect(second.body.next_trip.trip_id).toBe(earlier.id);
   });
 
   it('returns 403 for an unverified driver', async () => {

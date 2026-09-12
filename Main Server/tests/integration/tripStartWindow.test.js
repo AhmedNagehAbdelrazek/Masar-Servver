@@ -204,20 +204,27 @@ describe('US2 - Start trip window and notifications', () => {
     expect(second.body.code).toBe('INVALID_TRIP_STATUS');
   });
 
-  it('invalidates the driver home cache on a successful start', async () => {
+  it('reflects a started trip in home immediately without a stale cache', async () => {
     const trip = await seedTrip(future(30));
 
-    await getAgent()
+    const before = await getAgent()
       .get('/api/driver/home')
       .set('Authorization', `Bearer ${driverToken}`);
-    expect(getRedisStore().get(`driver_home:${DRIVER_ID}`)).toBeDefined();
+    expect(before.status).toBe(200);
+    expect(before.body.next_trip).not.toBeNull();
+    expect(before.body.next_trip.trip_id).toBe(trip.id);
+    expect(getRedisStore().get(`driver_home:${DRIVER_ID}`)).toBeUndefined();
 
     const res = await getAgent()
       .post(`/api/trips/${trip.id}/start`)
       .set('Authorization', `Bearer ${driverToken}`);
     expect(res.status).toBe(200);
 
-    expect(getRedisStore().get(`driver_home:${DRIVER_ID}`)).toBeUndefined();
+    const after = await getAgent()
+      .get('/api/driver/home')
+      .set('Authorization', `Bearer ${driverToken}`);
+    expect(after.status).toBe(200);
+    expect(after.body.next_trip).toBeNull();
   });
 
   it('returns 403 when a different driver tries to start the trip', async () => {

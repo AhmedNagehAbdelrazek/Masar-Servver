@@ -469,6 +469,15 @@ function trackTripMutation({ action, driverId, tripId, payload = {} }) {
  * passengers + admins.
  */
 const getTripById = async (tripId) => {
+  // Reads return the current state: close out the trip first when it already
+  // aged past the lifecycle cutoff. Lazy-required to avoid a module cycle
+  // (tripExpiryService -> tripService).
+  try {
+    const { refreshStaleTrips } = require('./tripExpiryService');
+    await refreshStaleTrips([tripId]);
+  } catch (err) {
+    console.warn('[tripService] expiry sweep failed:', err.message);
+  }
   const trip = await Trip.findByPk(tripId, {
     include: [
       {
@@ -725,6 +734,24 @@ const getDriverTrips = async (driverId, status = null) => {
   const where = { driverId };
   if (status) where.status = status;
 
+  // Reads return the current state: close out anything already expired first.
+  try {
+    const liveIds = (
+      await Trip.findAll({
+        where: {
+          driverId,
+          isRecurring: false,
+          status: { [Op.in]: [TRIP_STATUS.PUBLISHED, TRIP_STATUS.FULL, TRIP_STATUS.IN_PROGRESS, TRIP_STATUS.ONGOING] },
+        },
+        attributes: ['id'],
+      })
+    ).map((t) => t.id);
+    const { refreshStaleTrips } = require('./tripExpiryService');
+    await refreshStaleTrips(liveIds);
+  } catch (err) {
+    console.warn('[tripService] expiry sweep failed:', err.message);
+  }
+
   const trips = await Trip.findAll({
     where,
     include: [
@@ -891,21 +918,58 @@ async function fetchTripsForDate({ targetDate, originCity, destinationCity, gend
     order: [['departure_time', 'ASC']],
   });
 
-  // Post-filter time window as time-of-day (applies with or without a date:
-  // with a date the results span that date + all future days, so an absolute
-  // single-day datetime range would wrongly exclude every later trip)
+  // Time-window semantics (Jordan wall-clock; `date` — or today when omitted
+  // — anchors the day):
+  // - from only: departures at/after <anchor day @ from> — the searched date
+  //   and everything after it — nearest future first.
+  // - to only: departures between NOW and <anchor day @ to>.
+  // - both: departures whose time-of-day falls in [from, to] across the whole
+  //   range, closest to `from` at the top.
+  // Recurring series repeat on later days, so they are matched on time-of-day.
   if (timeFrom || timeTo) {
     const parseMinutes = (t) => {
       const [h, m] = t.split(':').map(Number);
       return h * 60 + m;
     };
-    const fromMin = timeFrom ? parseMinutes(timeFrom) : 0;
-    const toMin = timeTo ? parseMinutes(timeTo) : 23 * 60 + 59;
-    trips = trips.filter((trip) => {
-      // time_from/time_to are Jordan wall-clock times.
-      const minutes = jordanMinutesOfDay(trip.departureTime);
-      return minutes >= fromMin && minutes <= toMin;
-    });
+    const fromMin = timeFrom ? parseMinutes(timeFrom) : null;
+    const toMin = timeTo ? parseMinutes(timeTo) : null;
+    const anchorStartMs = (hasDate ? dayStart : jordanStartOfToday()).getTime();
+    const byDepartureAsc = (a, b) => new Date(a.departureTime).getTime() - new Date(b.departureTime).getTime();
+
+    if (fromMin !== null && toMin === null) {
+      const cutoff = Math.max(anchorStartMs + fromMin * 60000, now.getTime());
+      trips = trips
+        .filter((trip) => {
+          if (trip.isRecurring) return jordanMinutesOfDay(trip.departureTime) >= fromMin;
+          return new Date(trip.departureTime).getTime() >= cutoff;
+        })
+        .sort(byDepartureAsc);
+    } else if (fromMin === null && toMin !== null) {
+      const upper = anchorStartMs + toMin * 60000;
+      trips = trips
+        .filter((trip) => {
+          if (trip.isRecurring) return jordanMinutesOfDay(trip.departureTime) <= toMin;
+          const ms = new Date(trip.departureTime).getTime();
+          return ms > now.getTime() && ms <= upper;
+        })
+        .sort(byDepartureAsc);
+    } else {
+      // Both bounds: time-of-day window across the whole range. Every
+      // in-window trip departs at/after <anchor day @ from>, so sorting by
+      // absolute distance to the window start is departure order — the trip
+      // closest to `from` (nearest future first) lands on top.
+      const anchorFromMs = anchorStartMs + fromMin * 60000;
+      trips = trips
+        .filter((trip) => {
+          const minutes = jordanMinutesOfDay(trip.departureTime);
+          return minutes >= fromMin && minutes <= toMin;
+        })
+        .sort(
+          (a, b) =>
+            Math.abs(new Date(a.departureTime).getTime() - anchorFromMs) -
+              Math.abs(new Date(b.departureTime).getTime() - anchorFromMs) || byDepartureAsc(a, b)
+        );
+    }
   }
 
   // Defensive: also filter out any trips that are effectively in the past
