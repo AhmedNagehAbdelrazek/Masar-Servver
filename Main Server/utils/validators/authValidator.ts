@@ -86,6 +86,8 @@ export const loginValidation: ValidationChain[] = [
     .notEmpty().withMessage(V.PHONE_NUMBER_IS_REQUIRED as string),
   body('password')
     .notEmpty().withMessage(V.PASSWORD_IS_REQUIRED as string),
+  body('role')
+    .isIn(['passenger', 'driver','admin']).withMessage(V.ROLE_MUST_BE_PASSENGER_OR_DRIVER as string),
 ];
 
 export const forgotPasswordValidation: ValidationChain[] = [

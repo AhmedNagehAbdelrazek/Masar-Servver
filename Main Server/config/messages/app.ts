@@ -39,6 +39,7 @@ export const APP_MESSAGES = {
   REGISTRATION_TOKEN_IS_REQUIRED: { en: 'Registration token is required', ar: 'رمز التسجيل مطلوب' },
   RESET_TOKEN_IS_REQUIRED: { en: 'Reset token is required', ar: 'رمز إعادة التعيين مطلوب' },
   INVALID_PHONE_OR_PASSWORD: { en: 'Invalid phone or password', ar: 'رقم الهاتف أو كلمة المرور غير صحيحة' },
+  ACCOUNT_ROLE_MISMATCH: { en: 'This account is not registered with the requested role', ar: 'هذا الحساب غير مسجل بالدور المطلوب' },
   CURRENT_PASSWORD_IS_INCORRECT: { en: 'Current password is incorrect', ar: 'كلمة المرور الحالية غير صحيحة' },
   NEW_PASSWORD_MUST_BE_DIFFERENT_FROM_THE_CURRENT_PASSWORD: { en: 'New password must be different from the current password', ar: 'يجب أن تختلف كلمة المرور الجديدة عن كلمة المرور الحالية' },
 

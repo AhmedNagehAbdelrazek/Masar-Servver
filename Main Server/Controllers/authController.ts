@@ -25,8 +25,8 @@ const registerPassword = catchAsync(async (req: Request, res: Response): Promise
 });
 
 const login = catchAsync(async (req: Request, res: Response): Promise<void> => {
-  const { phone, password } = req.body as { phone: string; password: string };
-  const result = await (authService as unknown as { login: (phone: string, password: string) => Promise<{ user: { id: string; phone: string } }> }).login(phone, password);
+  const { phone, password, role } = req.body as { phone: string; password: string; role?: string };
+  const result = await (authService as unknown as { login: (phone: string, password: string, role?: string) => Promise<{ user: { id: string; phone: string } }> }).login(phone, password, role);
   (auditService as unknown as { markResource: (res: Response, r: unknown) => void }).markResource(res, { type: 'user', id: result.user.id, label: result.user.phone });
   successResponse(res, result);
 });
