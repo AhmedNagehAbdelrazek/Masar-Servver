@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { Op } from 'sequelize';
 import { ApiErrors } from '../utils/ApiError';
-import { TRIP_STATUS, GENDER_PREFERENCE, BOOKING_STATUS, FREE_OFFER_TYPE, PENALTY_TYPES, PENALTY_CATEGORY, PENALTY_SEVERITY, CANCELLATION_ESCALATION, TRIP_DURATION_HOURS } from '../config/constants';
+import { TRIP_STATUS, GENDER_PREFERENCE, BOOKING_STATUS, FREE_OFFER_TYPE, PENALTY_TYPES, PENALTY_CATEGORY, PENALTY_SEVERITY, CANCELLATION_ESCALATION, TRIP_DURATION_HOURS, SEAT_TYPE } from '../config/constants';
 import commissionService from './commissionService';
 import notificationService from './notificationService';
 import { releaseSeatLock, checkSeatLock } from '../utils/seatLock';
@@ -351,6 +351,7 @@ const createTrip = async (driverId, data) => {
     totalSeats: vehicle.seats,
     availableSeats: availableSeats.length,
     farePerSeat: data.fare_per_seat,
+    totalProfit: Number(data.fare_per_seat) * availableSeats.length,
     isRecurring,
     recurrenceDays: isRecurring ? data.repeated_days : null,
     recurrenceEndDate: isRecurring ? parseJordanDateOnly(data.repeated_end_date) : null,
@@ -360,11 +361,13 @@ const createTrip = async (driverId, data) => {
     status: TRIP_STATUS.PUBLISHED,
   });
 
-  // Create seat configurations
+  // Create seat configurations. wasAvailable freezes the driver's
+  // designation so a booked seat still reads back as originally available.
   const seatRecords = data.seats.map((s) => ({
     tripId: trip.id,
     seatNumber: s.seat_number,
     seatType: s.type,
+    wasAvailable: s.type === SEAT_TYPE.AVAILABLE,
   }));
   await TripSeat.bulkCreate(seatRecords);
 
@@ -444,6 +447,7 @@ const createTrip = async (driverId, data) => {
     total_seats: trip.totalSeats,
     available_seats: trip.availableSeats,
     estimated_earnings: trip.availableSeats * trip.farePerSeat,
+    total_profit: Number(trip.totalProfit),
     message: 'TRIP_PUBLISHED_SUCCESSFULLY',
   };
 };
@@ -548,6 +552,7 @@ const getTripById = async (tripId) => {
     },
     departure_time: data.departureTime,
     fare_per_seat: Number(data.farePerSeat),
+    total_profit: Number(data.totalProfit) || 0,
     currency: data.currency || 'JOD',
     total_seats: data.totalSeats,
     available_seats: data.availableSeats,
@@ -605,6 +610,7 @@ const getTripById = async (tripId) => {
   delete data.destinationLat;
   delete data.destinationLng;
   delete data.farePerSeat;
+  delete data.totalProfit;
   delete data.totalSeats;
   delete data.availableSeats;
   delete data.genderPreference;
@@ -702,6 +708,7 @@ const getTripSeats = async (tripId) => {
       return {
         seat_number: s.seatNumber,
         seat_type: s.seatType,
+        was_available: Boolean(s.wasAvailable),
         is_available: s.seatType === 'available' && !locked,
         is_locked: locked,
         locked_by: lockedBy,
@@ -730,7 +737,7 @@ const getTripSeats = async (tripId) => {
  * Get trips for a driver (contract D-list). Each trip is serialized with its
  * current lifecycle `status` included.
  */
-const getDriverTrips = async (driverId, status = null) => {
+const getDriverTrips = async (driverId : string, status : string | null ) => {
   const where = { driverId };
   if (status) where.status = status;
 
@@ -770,6 +777,7 @@ const getDriverTrips = async (driverId, status = null) => {
     departure_time: trip.departureTime,
     arrival_time: trip.arrivalTime,
     fare_per_seat: Number(trip.farePerSeat),
+    total_profit: Number(trip.totalProfit) || 0,
     currency: trip.currency || 'JOD',
     total_seats: trip.totalSeats,
     available_seats: trip.availableSeats,
@@ -783,6 +791,7 @@ const getDriverTrips = async (driverId, status = null) => {
     seats: (trip.seats || []).map((s) => ({
       seat_number: s.seatNumber,
       seat_type: s.seatType,
+      was_available: Boolean(s.wasAvailable),
     })),
     waypoints: (trip.stops || []).map((s) => ({
       stop_name: s.stopName,
@@ -1323,7 +1332,12 @@ async function updateTrip(driverId, tripId, data) {
   }
 
   const fields = {};
-  if (data.fare_per_seat !== undefined) fields.farePerSeat = data.fare_per_seat;
+  if (data.fare_per_seat !== undefined) {
+    fields.farePerSeat = data.fare_per_seat;
+    // Keep the full-occupancy profit in line with the new fare.
+    const sellableSeats = await TripSeat.count({ where: { tripId: trip.id, wasAvailable: true } });
+    fields.totalProfit = Number(data.fare_per_seat) * sellableSeats;
+  }
   if (data.arrival_time !== undefined) {
     fields.arrivalTime = data.arrival_time ? parseTimezoneAware(data.arrival_time) : null;
   }
@@ -1407,6 +1421,7 @@ async function updateTrip(driverId, tripId, data) {
       destination_city: trip.destinationCity,
       departure_time: trip.departureTime,
       fare_per_seat: Number(trip.farePerSeat),
+      total_profit: Number(trip.totalProfit) || 0,
       status: trip.status,
       attributes: attributes.map((a) => ({ attr_key: a.attrKey, attr_value: a.attrValue })),
       notified_passengers: notifiedPassengers,

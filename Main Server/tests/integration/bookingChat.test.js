@@ -166,7 +166,7 @@ beforeEach(async () => {
     .set('Authorization', `Bearer ${passenger1Token}`)
     .send({
       trip_id: tripId,
-      seat_number: 2,
+      seat_numbers: [2],
       agreed_fare: '20.00',
     });
   expect(bookingRes.status).toBe(201);

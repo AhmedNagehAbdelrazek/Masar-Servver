@@ -245,7 +245,6 @@ async function notifyDriver(trip, template, vars) {
 async function createBooking(passengerId, payload) {
   const {
     trip_id,
-    seat_number,
     seat_numbers,
     seats,
     agreed_fare,
@@ -268,33 +267,28 @@ async function createBooking(passengerId, payload) {
     throw ApiErrors.forbidden('ACCOUNT_IS_SUSPENDED_YOU_CANNOT_BOOK_TRIPS');
   }
 
-  // Locked-seat paths: legacy single `seat_number`, or multi `seat_numbers`.
-  // A locked seat must be consumed here — otherwise the booking only decrements
-  // the counter and the seat row never changes state.
-  const hasSingleSeat = seat_number !== undefined && seat_number !== null;
-  const hasMultiSeats = seat_numbers !== undefined && seat_numbers !== null;
-  if (hasSingleSeat && hasMultiSeats) {
-    throw ApiErrors.validation('PROVIDE_SEAT_NUMBER_OR_SEAT_NUMBERS_NOT_BOTH');
+  // Unified seat selection: `seat_numbers` is a mandatory list with
+  // 1..N seats. Each seat must be a locked seat held by this passenger —
+  // otherwise the booking only decrements the counter and the seat rows
+  // never change state.
+  if (payload.seat_number !== undefined && payload.seat_number !== null) {
+    throw ApiErrors.validation('SEAT_NUMBER_DEPRECATED_USE_SEAT_NUMBERS');
   }
-  let lockedSeats = null;
-  if (hasMultiSeats) {
-    const list = Array.isArray(seat_numbers) ? seat_numbers : [seat_numbers];
-    lockedSeats = [...new Set(list.map(Number))];
-    if (lockedSeats.length === 0 || lockedSeats.some((n) => !Number.isInteger(n) || n < 1)) {
-      throw ApiErrors.validation('SEAT_NUMBERS_MUST_BE_POSITIVE_INTEGERS');
-    }
-  } else if (hasSingleSeat) {
-    lockedSeats = [Number(seat_number)];
-    if (!Number.isInteger(lockedSeats[0]) || lockedSeats[0] < 1) {
-      throw ApiErrors.validation('SEAT_NUMBER_MUST_BE_A_POSITIVE_INTEGER');
-    }
+  if (seat_numbers === undefined || seat_numbers === null) {
+    throw ApiErrors.validation('SEAT_NUMBERS_IS_REQUIRED');
+  }
+  const list = Array.isArray(seat_numbers) ? seat_numbers : [seat_numbers];
+  const lockedSeats = [...new Set(list.map(Number))];
+  if (
+    lockedSeats.length === 0 ||
+    lockedSeats.length !== list.length ||
+    lockedSeats.some((n) => !Number.isInteger(n) || n < 1)
+  ) {
+    throw ApiErrors.validation('SEAT_NUMBERS_MUST_BE_POSITIVE_INTEGERS');
   }
 
-  const requestedSeats = seats === undefined ? (lockedSeats ? lockedSeats.length : 1) : Number(seats);
-  if (!Number.isInteger(requestedSeats) || requestedSeats < 1) {
-    throw ApiErrors.validation('SEATS_MUST_BE_POSITIVE_INTEGER');
-  }
-  if (lockedSeats && requestedSeats !== lockedSeats.length) {
+  const requestedSeats = lockedSeats.length;
+  if (seats !== undefined && seats !== null && Number(seats) !== requestedSeats) {
     throw ApiErrors.validation('SEATS_COUNT_MUST_MATCH_LOCKED_SEAT_NUMBERS');
   }
 
@@ -385,8 +379,8 @@ async function createBooking(passengerId, payload) {
     throw ApiErrors.custom('NOT_ENOUGH_AVAILABLE_SEATS_ON_THE_SELECTED_TRIP', 409, 'NOT_ENOUGH_AVAILABLE_SEATS_ON_THE_SELECTED_TRIP');
   }
 
-  // Locked-seat path uses explicit seat locks + specific seat rows.
-  const hasLockedSeats = lockedSeats !== null && lockedSeats.length > 0;
+  // Mandatory locked-seat path: explicit seat locks + specific seat rows.
+  const hasLockedSeats = true;
 
   let seatRows = [];
   if (hasLockedSeats) {
@@ -596,13 +590,42 @@ function serializePassengerDetail(booking, trip, passenger) {
   };
 }
 
+// Bring active bookings in line with their trip's terminal state so reads
+// return the CURRENT status, not a stale snapshot. Runs after the expiry
+// sweep (which handles time-based close-out) and covers drift where the
+// trip was driver-cancelled/completed but a booking row missed the update.
+// Terminal bookings are never touched; NO_SHOW rows (expiry path) are kept.
+async function syncBookingsWithTripStatus(passengerId) {
+  const active = await Booking.findAll({
+    where: { passengerId, status: { [Op.in]: [BOOKING_STATUS.PENDING, BOOKING_STATUS.CONFIRMED] } },
+    include: [{ model: Trip, as: 'trip', attributes: ['id', 'driverId', 'status'] }],
+  });
+  for (const booking of active) {
+    const tripStatus = booking.trip && booking.trip.status;
+    try {
+      if (tripStatus === TRIP_STATUS.CANCELLED) {
+        await booking.update({
+          status: BOOKING_STATUS.CANCELLED,
+          cancellationReason: booking.cancellationReason || 'Trip cancelled by driver',
+          cancelledBy: booking.cancelledBy || (booking.trip ? booking.trip.driverId : null),
+          cancelledAt: booking.cancelledAt || new Date(),
+        });
+      } else if (tripStatus === TRIP_STATUS.COMPLETED) {
+        await booking.update({
+          status: BOOKING_STATUS.COMPLETED,
+          paymentStatus: booking.paymentStatus === PAYMENT_STATUS.PENDING ? 'paid_cash' : booking.paymentStatus,
+          completedAt: booking.completedAt || new Date(),
+        });
+      }
+    } catch (err) {
+      console.warn('[bookingService] booking status sync failed:', err.message);
+    }
+  }
+}
+
 async function listForPassenger(passengerId, filters = {}) {
   const { status, trip_id } = filters;
   const { page, limit, offset } = parsePagination(filters);
-
-  const where = { passengerId };
-  if (status) where.status = status;
-  if (trip_id) where.tripId = trip_id;
 
   // Expiry sweep first: a stale trip must read back in its terminal state.
   const liveTripIds = (
@@ -612,6 +635,13 @@ async function listForPassenger(passengerId, filters = {}) {
     })
   ).map((b) => b.tripId);
   await sweepStaleTrips(liveTripIds);
+  // Then reconcile any drift vs the trip's current status BEFORE filtering,
+  // so `?status=` sees the fresh values.
+  await syncBookingsWithTripStatus(passengerId);
+
+  const where = { passengerId };
+  if (status) where.status = status;
+  if (trip_id) where.tripId = trip_id;
 
   const { rows, count } = await Booking.findAndCountAll({
     where,
@@ -619,7 +649,7 @@ async function listForPassenger(passengerId, filters = {}) {
       {
         model: Trip,
         as: 'trip',
-        attributes: ['id', 'driverId', 'originCity', 'originArea', 'originLat', 'departureTime' ,  'originLng', 'destinationCity', 'destinationArea', 'destinationLat', 'destinationLng', 'farePerSeat'],
+        attributes: ['id', 'driverId', 'originCity', 'originArea', 'originLat', 'departureTime', 'originLng', 'destinationCity', 'destinationArea', 'destinationLat', 'destinationLng', 'farePerSeat', 'status'],
         include: [
           { model: User, as: 'driver', attributes: ['id', 'fullName', 'phone', 'avgRating', 'avatarUrl'] },
           { model: TripStop, as: 'stops' },
@@ -666,6 +696,10 @@ async function getForPassenger(passengerId, bookingId) {
   // Return the post-expiry version when the trip already aged out.
   const swept = await sweepStaleTrips([booking.tripId]);
   if (swept.touched > 0) booking = await fetchBooking();
+
+  // Reconcile drift vs the trip's terminal state (cancelled/completed).
+  await syncBookingsWithTripStatus(passengerId);
+  booking = await fetchBooking();
 
   return { booking: serializePassengerDetail(booking, booking.trip, booking.passenger) };
 }

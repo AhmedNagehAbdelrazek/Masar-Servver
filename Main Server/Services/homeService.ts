@@ -88,6 +88,7 @@ function toNextTrip(trip) {
     destination_area: trip.destinationArea,
     departure_time: trip.departureTime,
     fare_per_seat: Number(trip.farePerSeat),
+    total_profit: Number(trip.totalProfit) || 0,
     currency: trip.currency || 'JOD',
     total_seats: trip.totalSeats,
     available_seats: trip.availableSeats,

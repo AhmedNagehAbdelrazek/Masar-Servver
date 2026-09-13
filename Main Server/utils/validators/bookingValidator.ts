@@ -1,4 +1,4 @@
-import { body, query, param, ValidationChain } from 'express-validator';
+import { body, query, param, ValidationChain, Meta } from 'express-validator';
 import { BOOKING_STATUS } from '../../config/constants';
 import V from '../../config/messages/validation-keys';
 import { hasTimezoneOffset } from '../time';
@@ -29,21 +29,42 @@ export const bookingParamValidation: ValidationChain[] = [
 export const createBookingValidation: ValidationChain[] = [
   body('trip_id')
     .isUUID().withMessage(V.TRIP_ID_MUST_BE_A_VALID_UUID),
+  // Unified seat selection: a mandatory list with 1..N seats.
+  // The legacy single `seat_number` field is no longer accepted — clients
+  // must send `seat_numbers` (even for a single seat).
   body('seat_number')
     .optional()
-    .isInt({ min: 1 }).withMessage(V.SEAT_NUMBER_MUST_BE_A_POSITIVE_INTEGER),
+    .custom(() => {
+      throw new Error(V.SEAT_NUMBER_DEPRECATED_USE_SEAT_NUMBERS);
+    }),
   body('seat_numbers')
-    .optional()
+    .exists().withMessage(V.SEAT_NUMBERS_IS_REQUIRED)
     .isArray({ min: 1 }).withMessage(V.SEAT_NUMBERS_MUST_BE_A_NON_EMPTY_ARRAY)
     .custom((value: unknown) => {
-      if (!Array.isArray(value) || !(value as unknown[]).every((n) => Number.isInteger(Number(n)) && Number(n) >= 1)) {
+      if (!Array.isArray(value) || value.length === 0) {
+        throw new Error(V.SEAT_NUMBERS_MUST_BE_A_NON_EMPTY_ARRAY);
+      }
+      if (!(value as unknown[]).every((n) => Number.isInteger(Number(n)) && Number(n) >= 1)) {
+        throw new Error(V.SEAT_NUMBERS_MUST_BE_POSITIVE_INTEGERS);
+      }
+      const nums = (value as unknown[]).map(Number);
+      if (new Set(nums).size !== nums.length) {
         throw new Error(V.SEAT_NUMBERS_MUST_BE_POSITIVE_INTEGERS);
       }
       return true;
     }),
   body('seats')
     .optional()
-    .isInt({ min: 1 }).withMessage(V.SEATS_MUST_BE_POSITIVE_INTEGER),
+    .isInt({ min: 1 }).withMessage(V.SEATS_MUST_BE_POSITIVE_INTEGER)
+    .custom((value: unknown, { req }: Meta) => {
+      const body = (req as unknown as { body: Record<string, unknown> }).body;
+      if (body.seat_numbers !== undefined && Array.isArray(body.seat_numbers)) {
+        if (Number(value) !== (body.seat_numbers as unknown[]).length) {
+          throw new Error(V.SEATS_COUNT_MUST_MATCH_SEAT_NUMBERS);
+        }
+      }
+      return true;
+    }),
   // pickup_point: allow UUID referencing TripStop OR object with name+lat/lng created at booking time
   body('pickup_point')
     .optional()

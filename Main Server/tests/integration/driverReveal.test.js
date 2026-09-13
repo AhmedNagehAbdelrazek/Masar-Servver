@@ -30,7 +30,7 @@ async function makeBooking() {
   const res = await getAgent()
     .post('/api/bookings')
     .set('Authorization', `Bearer ${ownerToken}`)
-    .send({ trip_id: tripId, seat_number: 2, agreed_fare: '15.00' });
+    .send({ trip_id: tripId, seat_numbers: [2], agreed_fare: '15.00' });
   return res.body.booking.id;
 }
 

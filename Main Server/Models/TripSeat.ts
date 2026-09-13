@@ -7,16 +7,18 @@ export interface TripSeatAttributes {
   tripId: string;
   seatNumber: number;
   seatType: string;
+  wasAvailable: boolean;
   createdAt?: Date;
 }
 
-export interface TripSeatCreationAttributes extends Optional<TripSeatAttributes, 'id' | 'createdAt'> {}
+export interface TripSeatCreationAttributes extends Optional<TripSeatAttributes, 'id' | 'wasAvailable' | 'createdAt'> {}
 
 export class TripSeat extends Model<TripSeatAttributes, TripSeatCreationAttributes> implements TripSeatAttributes {
   declare id: string;
   declare tripId: string;
   declare seatNumber: number;
   declare seatType: string;
+  declare wasAvailable: boolean;
   declare readonly createdAt?: Date;
 }
 
@@ -38,6 +40,12 @@ TripSeat.init(
     seatType: {
             type: DataTypes.ENUM(...Object.values(SEAT_TYPE)),
             allowNull: false,
+        },
+    wasAvailable: {
+            type: DataTypes.BOOLEAN,
+            field: 'was_available',
+            allowNull: false,
+            defaultValue: false,
         },
   },
   {

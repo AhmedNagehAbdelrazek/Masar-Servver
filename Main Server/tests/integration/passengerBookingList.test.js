@@ -91,7 +91,7 @@ async function createBooking(token) {
   return getAgent()
     .post('/api/bookings')
     .set('Authorization', `Bearer ${token}`)
-    .send({ trip_id: tripId, seat_number: 2, agreed_fare: '15.00' });
+    .send({ trip_id: tripId, seat_numbers: [2], agreed_fare: '15.00' });
 }
 
 describe('US4 - enriched passenger booking list', () => {

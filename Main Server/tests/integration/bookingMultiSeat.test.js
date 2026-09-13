@@ -81,10 +81,15 @@ beforeEach(async () => {
 
 describe('US3 - multi-seat booking with drop-off', () => {
   it('creates a confirmed booking for multiple seats and reduces capacity', async () => {
+    await getAgent()
+      .post(`/api/trips/${tripId}/seats/lock`)
+      .set('Authorization', `Bearer ${passengerToken}`)
+      .send({ seat_numbers: [2, 3] });
+
     const res = await getAgent()
       .post('/api/bookings')
       .set('Authorization', `Bearer ${passengerToken}`)
-      .send({ trip_id: tripId, seats: 2, agreed_fare: '15.00', drop_off_point: stopId });
+      .send({ trip_id: tripId, seat_numbers: [2, 3], agreed_fare: '15.00', drop_off_point: stopId });
 
     expect(res.status).toBe(201);
     expect(res.body.booking.status).toBe('confirmed');
@@ -97,27 +102,43 @@ describe('US3 - multi-seat booking with drop-off', () => {
   });
 
   it('rejects a drop_off_point that is not on the trip', async () => {
+    await getAgent()
+      .post(`/api/trips/${tripId}/seats/lock`)
+      .set('Authorization', `Bearer ${passengerToken}`)
+      .send({ seat_numbers: [2] });
+
     const foreignStop = 'f4000000-0000-4000-8000-000000000099';
     const res = await getAgent()
       .post('/api/bookings')
       .set('Authorization', `Bearer ${passengerToken}`)
-      .send({ trip_id: tripId, seats: 1, agreed_fare: '15.00', drop_off_point: foreignStop });
+      .send({ trip_id: tripId, seat_numbers: [2], agreed_fare: '15.00', drop_off_point: foreignStop });
 
     expect(res.status).toBe(409);
     expect(res.body.code).toBe('DROP_OFF_POINT_NOT_ON_TRIP');
   });
 
   it('rejects seats exceeding available seats', async () => {
+    await getAgent()
+      .post(`/api/trips/${tripId}/seats/lock`)
+      .set('Authorization', `Bearer ${passengerToken}`)
+      .send({ seat_numbers: [2] });
+    const first = await getAgent()
+      .post('/api/bookings')
+      .set('Authorization', `Bearer ${passengerToken}`)
+      .send({ trip_id: tripId, seat_numbers: [2], agreed_fare: '15.00' });
+    expect(first.status).toBe(201);
+
+    // Only 1 seat left — requesting 2 exceeds availability (checked before locks).
     const res = await getAgent()
       .post('/api/bookings')
       .set('Authorization', `Bearer ${passengerToken}`)
-      .send({ trip_id: tripId, seats: 3, agreed_fare: '15.00' });
+      .send({ trip_id: tripId, seat_numbers: [2, 3], agreed_fare: '15.00' });
 
     expect(res.status).toBe(409);
     expect(res.body.code).toBe('NOT_ENOUGH_AVAILABLE_SEATS_ON_THE_SELECTED_TRIP');
   });
 
-  it('rejects combining seat_number lock booking with seats > 1', async () => {
+  it('rejects the deprecated single seat_number field', async () => {
     const res = await getAgent()
       .post('/api/bookings')
       .set('Authorization', `Bearer ${passengerToken}`)

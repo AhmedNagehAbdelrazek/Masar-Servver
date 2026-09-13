@@ -4667,7 +4667,7 @@
                     "trips"
                   ]
                 },
-                "description": "Publish a new trip. Requires role `driver` with an **active subscription plan and sufficient balance** (else `422 NO_ACTIVE_PLAN` / `INSUFFICIENT_BALANCE`). On success, `trip_id` is saved to a collection variable automatically.\n\n**Body fields**\n- `origin_city` *(string, required)* — max 100 chars.\n- `origin_area` *(string, optional)* — max 120 chars.\n- `origin_lat` / `origin_lng` *(string, optional)* — decimal; lat -90..90, lng -180..180.\n- `destination_city` *(string, required)* — max 100 chars.\n- `destination_area` *(string, optional)* — max 120 chars.\n- `destination_lat` / `destination_lng` *(string, optional)* — decimal; lat -90..90, lng -180..180.\n- `departure_time` *(string, required)* — timezone-aware ISO-8601 with offset, e.g. `2026-09-15T06:00:00+03:00` (Jordan) or `...Z` (UTC). Naive datetimes without an offset are rejected with 422. Must be in the future.\n- `type_of_trip` *(string, required)* — `once` | `repeated`.\n- `fare_per_seat` *(string, required)* — decimal with up to 2 decimal places, ≥ 0.\n- `seats` *(array, required)* — each `{ \"seat_number\": number, \"type\": \"driver\" | \"available\" | \"unavailable\" }`.\n- `instructions` *(array, optional)* — non-empty strings, max 1000 chars each.\n- `additional_instructions` *(string, optional)* — max 1000 chars.\n- `allowed_type` *(string, optional)* — `all` | `women_only` | `men_only`.\n- `stops` *(array, optional)* — intermediate `TripStop`s, each `{ name|stop_name, city, address, lat|stop_lat, lng|stop_lng, stop_type: pickup|dropoff|both, stop_order }`.\n\nPickup/dropoff points with `name`+`lat`+`lng` are **created at booking time** (`POST /bookings` with `pickup`/`dropoff` objects), not at trip creation. Trip `stops` are the driver's fixed route intermediaries."
+                "description": "Publish a new trip. Requires role `driver` with an **active subscription plan and sufficient balance** (else `422 NO_ACTIVE_PLAN` / `INSUFFICIENT_BALANCE`). On success, `trip_id` is saved to a collection variable automatically.\n\n**Body fields**\n- `origin_city` *(string, required)* — max 100 chars.\n- `origin_area` *(string, optional)* — max 120 chars.\n- `origin_lat` / `origin_lng` *(string, optional)* — decimal; lat -90..90, lng -180..180.\n- `destination_city` *(string, required)* — max 100 chars.\n- `destination_area` *(string, optional)* — max 120 chars.\n- `destination_lat` / `destination_lng` *(string, optional)* — decimal; lat -90..90, lng -180..180.\n- `departure_time` *(string, required)* — timezone-aware ISO-8601 with offset, e.g. `2026-09-15T06:00:00+03:00` (Jordan) or `...Z` (UTC). Naive datetimes without an offset are rejected with 422. Must be in the future.\n- `type_of_trip` *(string, required)* — `once` | `repeated`.\n- `fare_per_seat` *(string, required)* — decimal with up to 2 decimal places, ≥ 0.\n- `seats` *(array, required)* — each `{ \"seat_number\": number, \"type\": \"driver\" | \"available\" | \"unavailable\" }`.\n- `instructions` *(array, optional)* — non-empty strings, max 1000 chars each.\n- `additional_instructions` *(string, optional)* — max 1000 chars.\n- `allowed_type` *(string, optional)* — `all` | `women_only` | `men_only`.\n- `stops` *(array, optional)* — intermediate `TripStop`s, each `{ name|stop_name, city, address, lat|stop_lat, lng|stop_lng, stop_type: pickup|dropoff|both, stop_order }`.\n\nPickup/dropoff points with `name`+`lat`+`lng` are **created at booking time** (`POST /bookings` with `pickup`/`dropoff` objects), not at trip creation. Trip `stops` are the driver's fixed route intermediaries.\n\n- `total_profit` *(number)* - full-occupancy revenue of the trip (`fare_per_seat` x sellable seats), stored at creation and recomputed when the fare is edited."
               },
               "response": [
                 {
@@ -4784,7 +4784,7 @@
                     "trips"
                   ]
                 },
-                "description": "Publish a recurring trip. Same as `Create Trip` but with `type_of_trip: repeated`.\n\n- `repeated_days` *(array, required when repeated)* — weekdays `0` (Sun) … `6` (Sat).\n- `repeated_end_date` *(string, required when repeated)* — `YYYY-MM-DD` (Jordan calendar day), after `departure_time`.\nSee `Create Trip (Driver)` for other fields. Stops are the driver's fixed route; passenger pickup/dropoff with `name`+`lat`+`lng` are provided at `POST /bookings`."
+                "description": "Publish a recurring trip. Same as `Create Trip` but with `type_of_trip: repeated`.\n\n- `repeated_days` *(array, required when repeated)* — weekdays `0` (Sun) … `6` (Sat).\n- `repeated_end_date` *(string, required when repeated)* — `YYYY-MM-DD` (Jordan calendar day), after `departure_time`.\nSee `Create Trip (Driver)` for other fields. Stops are the driver's fixed route; passenger pickup/dropoff with `name`+`lat`+`lng` are provided at `POST /bookings`.\n\n- `total_profit` *(number)* - full-occupancy revenue of the trip (`fare_per_seat` x sellable seats), stored at creation and recomputed when the fare is edited."
               },
               "response": [
                 {
@@ -4910,7 +4910,7 @@
                     "my-trips"
                   ]
                 },
-                "description": "Get all trips for the authenticated driver (newest first).\n\nRequires role `driver`.\n\nNo query parameters."
+                "description": "Get all trips for the authenticated driver (newest first).\n\nRequires role `driver`.\n\nNo query parameters.\n\n- `total_profit` *(number)* - full-occupancy revenue of the trip (`fare_per_seat` x sellable seats), stored at creation and recomputed when the fare is edited."
               },
               "response": [
                 {
@@ -5029,7 +5029,7 @@
                     }
                   ]
                 },
-                "description": "Get the driver's trips filtered by status.\n\nRequires role `driver`.\n\n**Query parameters**\n- `status` *(optional)* â€” Options: `published` | `full` | `in_progress` | `ongoing` | `completed` | `cancelled`."
+                "description": "Get the driver's trips filtered by status.\n\nRequires role `driver`.\n\n**Query parameters**\n- `status` *(optional)* â€” Options: `published` | `full` | `in_progress` | `ongoing` | `completed` | `cancelled`.\n\n- `total_profit` *(number)* - full-occupancy revenue of the trip (`fare_per_seat` x sellable seats), stored at creation and recomputed when the fare is edited."
               },
               "response": [
                 {
@@ -5444,7 +5444,7 @@
                     "{{trip_id}}"
                   ]
                 },
-                "description": "PROPOSED. Partial trip update."
+                "description": "PROPOSED. Partial trip update.\n\n- `total_profit` *(number)* - full-occupancy revenue of the trip (`fare_per_seat` x sellable seats), stored at creation and recomputed when the fare is edited."
               },
               "response": [
                 {
@@ -5734,7 +5734,7 @@
                     "{{trip_id}}"
                   ]
                 },
-                "description": "Get full trip details including driver profile, vehicle info, waypoints, attributes, and confirmed passengers with booking details.\n\nAccess: trip driver, confirmed passengers, or admins only. Returns 403 for unrelated users.\n\n**Path params:**\n- `trip_id` (UUID, required) â€” the trip ID."
+                "description": "Get full trip details including driver profile, vehicle info, waypoints, attributes, and confirmed passengers with booking details.\n\nAccess: trip driver, confirmed passengers, or admins only. Returns 403 for unrelated users.\n\n**Path params:**\n- `trip_id` (UUID, required) â€” the trip ID.\n\n- `total_profit` *(number)* - full-occupancy revenue of the trip (`fare_per_seat` x sellable seats), stored at creation and recomputed when the fare is edited."
               },
               "response": [
                 {
@@ -9563,7 +9563,7 @@
                     "{{trip_id}}"
                   ]
                 },
-                "description": "Get full details of a single trip.\n\n**Path parameter**\n- `trip_id` *(UUID, required)* â€” set automatically when creating a trip, or paste a trip UUID."
+                "description": "Get full details of a single trip.\n\n**Path parameter**\n- `trip_id` *(UUID, required)* â€” set automatically when creating a trip, or paste a trip UUID.\n\n- `total_profit` *(number)* - full-occupancy revenue of the trip (`fare_per_seat` x sellable seats), stored at creation and recomputed when the fare is edited."
               },
               "response": [
                 {
@@ -9797,7 +9797,7 @@
                     "seats"
                   ]
                 },
-                "description": "Get seats for a trip (any authenticated user).\n\n**Path** `GET /trips/:trip_id/seats`\n- Returns all `TripSeat` rows ordered by `seat_number` enriched with Redis lock state (`is_locked`, `locked_by`, `locked_expires_at`).\n- `seats` — all seats with `seat_number`, `seat_type` (`driver`|`available`|`unavailable`), `is_available` (available && not locked), `is_locked`.\n- `empty_seats` — subset where `seat_type === 'available'` and `!is_locked` (truly bookable now).\n- `available_seats_detail` — all DB-available seats regardless of lock.\n- Also returns `total_seats`, `available_seats` (Trip.availableSeats counter), `seats_count`, `empty_seats_count`.\n\nTrip stops created via `pickup_point`/`dropoff_point` (name+lat/lng) are visible via `GET /trips/:trip_id/options` and usable as `pickup_point`/`drop_off_point` UUIDs in `POST /bookings`."
+                "description": "Get seats for a trip (any authenticated user).\n\n**Path** `GET /trips/:trip_id/seats`\n- Returns all `TripSeat` rows ordered by `seat_number` enriched with Redis lock state (`is_locked`, `locked_by`, `locked_expires_at`).\n- `seats` — all seats with `seat_number`, `seat_type` (`driver`|`available`|`unavailable`), `is_available` (available && not locked), `is_locked`.\n- `empty_seats` — subset where `seat_type === 'available'` and `!is_locked` (truly bookable now).\n- `available_seats_detail` — all DB-available seats regardless of lock.\n- Also returns `total_seats`, `available_seats` (Trip.availableSeats counter), `seats_count`, `empty_seats_count`.\n\nTrip stops created via `pickup_point`/`dropoff_point` (name+lat/lng) are visible via `GET /trips/:trip_id/options` and usable as `pickup_point`/`drop_off_point` UUIDs in `POST /bookings`.\n\nEach seat carries `was_available` *(boolean)* - true when the driver designated the seat as bookable at trip creation. A booked seat reads back `seat_type: \"unavailable\"` with `was_available: true`; originally blocked seats and the driver seat have `was_available: false`."
               },
               "response": [
                 {
@@ -9914,7 +9914,7 @@
                     "empty-seats"
                   ]
                 },
-                "description": "Alias for `GET /trips/:trip_id/seats` — returns the same payload but emphasizes empty seats. Useful for passenger UI to show only bookable seats.\n\n**Path** `GET /trips/:trip_id/empty-seats` — identical to `/seats`.\n\nTrip stops created via `pickup_point`/`dropoff_point` (name+lat/lng) are visible via `GET /trips/:trip_id/options` and usable as `pickup_point`/`drop_off_point` UUIDs in `POST /bookings`."
+                "description": "Alias for `GET /trips/:trip_id/seats` — returns the same payload but emphasizes empty seats. Useful for passenger UI to show only bookable seats.\n\n**Path** `GET /trips/:trip_id/empty-seats` — identical to `/seats`.\n\nTrip stops created via `pickup_point`/`dropoff_point` (name+lat/lng) are visible via `GET /trips/:trip_id/options` and usable as `pickup_point`/`drop_off_point` UUIDs in `POST /bookings`.\n\nEach seat carries `was_available` *(boolean)* - true when the driver designated the seat as bookable at trip creation. A booked seat reads back `seat_type: \"unavailable\"` with `was_available: true`; originally blocked seats and the driver seat have `was_available: false`."
               },
               "response": [
                 {
@@ -10035,7 +10035,7 @@
                     "lock"
                   ]
                 },
-                "description": "Temporarily lock a seat on a trip (reserved while the passenger confirms).\n\nRequires a passenger/authenticated user. Locks expire after 5 minutes.\n\n**Path parameter**\n- `trip_id` *(UUID, required)*.\n\n**Body fields (pick exactly one purpose)**\n- `seat_number` *(int, single-seat purpose)* — positive integer seat number. Use for booking one specific seat.\n- `seat_numbers` *(int[], multi-seat purpose)* — e.g. `[2, 3]`. Locks are all-or-nothing: if any seat is unavailable or held by someone else, nothing is locked (409) and you can retry with the remaining seats.\n\nThe matching `POST /bookings` call must consume the lock(s) via the same field (`seat_number` or `seat_numbers`) — a booking with only `seats: N` decrements capacity but does not assign the locked seats."
+                "description": "Temporarily lock a seat on a trip (reserved while the passenger confirms).\n\nRequires a passenger/authenticated user. Locks expire after 5 minutes.\n\n**Path parameter**\n- `trip_id` *(UUID, required)*.\n\n**Body fields (pick exactly one purpose)**\n- `seat_number` *(int, single-seat purpose)* — positive integer seat number. Use for booking one specific seat.\n- `seat_numbers` *(int[], multi-seat purpose)* — e.g. `[2, 3]`. Locks are all-or-nothing: if any seat is unavailable or held by someone else, nothing is locked (409) and you can retry with the remaining seats.\n\nThe matching `POST /bookings` call must consume the lock(s) via the unified mandatory `seat_numbers` list (e.g. lock `seat_number: 2` -> book `seat_numbers: [2]`; bulk lock -> book the same array) — a booking with only `seats: N` decrements capacity but does not assign the locked seats."
               },
               "response": [
                 {
@@ -10426,7 +10426,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"trip_id\": \"{{trip_id}}\",\n  \"seat_number\":2,\n  \"seats\": 1,\n  \"pickup\": {\n    \"name\": \"Abdoun Circle\",\n    \"lat\": \"31.9450\",\n    \"lng\": \"35.8750\"\n  },\n  \"dropoff\": {\n    \"name\": \"Irbid Downtown\",\n    \"lat\": \"32.5550\",\n    \"lng\": \"35.8500\"\n  },\n  \"agreed_fare\": 5\n}",
+                  "raw": "{\n  \"trip_id\": \"{{trip_id}}\",\n  \"seat_numbers\": [2],\n  \"pickup\": {\n    \"name\": \"Abdoun Circle\",\n    \"lat\": \"31.9450\",\n    \"lng\": \"35.8750\"\n  },\n  \"dropoff\": {\n    \"name\": \"Irbid Downtown\",\n    \"lat\": \"32.5550\",\n    \"lng\": \"35.8500\"\n  },\n  \"agreed_fare\": 5\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -10442,7 +10442,7 @@
                     "bookings"
                   ]
                 },
-                "description": "Reserve seats (passenger only). **Pickup and dropoff points are created at booking time with name+lat+lng** (not just referencing trip stops).\n\n- `trip_id` *(UUID, required)*\n- `seats` *(int 1..available, optional, default 1 — or defaults to the locked-seat count)*\n- `pickup` *(object, preferred)* — `{ name: string max120, lat: decimal -90..90, lng: decimal -180..180 }` — stored as `pickup_place`/`pickup_lat`/`pickup_lng` on the booking and added to the trip context\n- `dropoff` *(object, preferred)* — `{ name, lat, lng }` — stored as `dropoff_place`/`dropoff_lat`/`dropoff_lng`\n- `pickup_point` *(alternative, UUID or object)* — UUID of a `TripStop` (`pickup`/`both`) OR object `{name, lat, lng}`\n- `drop_off_point` / `dropoff_point` *(alternative, UUID or object)* — same for dropoff\n- `agreed_fare` *(number, required)* — must equal trip fare unless agreed via offer\n\n**Seat selection — pick one purpose**\n1) Specific single seat: `seat_number` *(int)* — requires a prior `POST /trips/:trip_id/seats/lock` for that seat and `seats` omitted or `1`. The seat row flips to `unavailable` (see “Book Seat” body).\n2) Specific multiple seats: `seat_numbers` *(int[])* — requires a prior bulk lock of the same seats; `seats` must equal the array length. Every row flips to `unavailable` (see “Book Multiple Seats”).\n3) Capacity only: just `seats: N` — decrements `availableSeats` but assigns NO specific seat rows; locked seats are NOT consumed. Use only when the passenger doesn't care which seats.\n\nOn success invalidates `PASSENGER_HOME`/`DRIVER_HOME` and emits `home:invalidate`. Response booking includes `seat_number` (first/legacy) and `seat_numbers`."
+                "description": "Reserve seats (passenger only). **Pickup and dropoff points are created at booking time with name+lat+lng** (not just referencing trip stops).\n\n- `trip_id` *(UUID, required)*\n- `seat_numbers` *(int[], REQUIRED)* - unified seat selection: a list with 1..N seats (e.g. `[2]` for one seat, `[2, 3]` for two). Requires a prior `POST /trips/:trip_id/seats/lock` for the SAME seats held by the same passenger. The legacy single `seat_number` field is rejected (422).\n- `seats` *(optional)* - when sent, must equal the `seat_numbers` length (defaults to it).\n- `pickup` *(object, preferred)* - `{ name: string max120, lat: decimal -90..90, lng: decimal -180..180 }` - stored as `pickup_place`/`pickup_lat`/`pickup_lng` on the booking and added to the trip context\n- `dropoff` *(object, preferred)* - `{ name, lat, lng }` - stored as `dropoff_place`/`dropoff_lat`/`dropoff_lng`\n- `pickup_point` *(alternative, UUID or object)* - UUID of a `TripStop` (`pickup`/`both`) OR object `{name, lat, lng}`\n- `drop_off_point` / `dropoff_point` *(alternative, UUID or object)* - same for dropoff\n- `agreed_fare` *(number, required)* - must equal trip fare unless agreed via offer\n\nEvery locked seat row flips to `unavailable`. 409 `SEAT_LOCK_EXPIRED` if any lock lapsed or belongs to someone else; 409 `NOT_ENOUGH_AVAILABLE_SEATS_ON_THE_SELECTED_TRIP` when the list is longer than the remaining capacity.\n\nOn success invalidates `PASSENGER_HOME`/`DRIVER_HOME` and emits `home:invalidate`. Response booking includes `seat_numbers` (and `seat_number`, the first element, for backward compatibility)."
               },
               "response": [
                 {
@@ -10608,7 +10608,7 @@
                     "bookings"
                   ]
                 },
-                "description": "Reserve several specific seats at once (passenger only). Requires a prior bulk lock (`POST /trips/:trip_id/seats/lock` with the same `seat_numbers`) held by the same passenger.\n\n- `trip_id` *(UUID, required)*\n- `seat_numbers` *(int[], required here)* — must match the locked seats; every row flips to `unavailable`.\n- `seats` *(optional)* — must equal `seat_numbers` length when sent (defaults to it).\n- `agreed_fare` *(number, required)* — per-seat fare, must equal trip fare unless agreed via offer.\n- `pickup` / `dropoff` / `pickup_point` / `drop_off_point` — same optional trip-point fields as “Book Seat”.\n\n409 `SEAT_LOCK_EXPIRED` if any lock lapsed or belongs to someone else; 409 `SEAT_ALREADY_BOOKED` if any row was taken meanwhile."
+                "description": "Reserve several specific seats at once (passenger only). Requires a prior bulk lock (`POST /trips/:trip_id/seats/lock` with the same `seat_numbers`) held by the same passenger.\n\n- `trip_id` *(UUID, required)*\n- `seat_numbers` *(int[], REQUIRED)* - the unified mandatory seat list (1..N seats); must match the locked seats. Every row flips to `unavailable`.\n- `seats` *(optional)* - must equal `seat_numbers` length when sent (defaults to it).\n- `agreed_fare` *(number, required)* - per-seat fare, must equal trip fare unless agreed via offer.\n- `pickup` / `dropoff` / `pickup_point` / `drop_off_point` - same optional trip-point fields as \"Book Seat\".\n\n409 `SEAT_LOCK_EXPIRED` if any lock lapsed or belongs to someone else; 409 `SEAT_ALREADY_BOOKED` if any row was taken meanwhile; 409 `NOT_ENOUGH_AVAILABLE_SEATS_ON_THE_SELECTED_TRIP` when the list exceeds remaining capacity."
               },
               "response": [
                 {
@@ -10787,7 +10787,7 @@
                     }
                   ]
                 },
-                "description": "PROPOSED. List my bookings.\n\nEnriched (spec 012): each row includes trip, driver, vehicle, fare, and the authenticated passenger's own `passenger_rating` of the driver.\n**Query parameters**\n- `status` *(optional)* — filter by stored `BOOKING_STATUS` (pending | confirmed | cancelled | completed | ...).\n- `trip_id` *(optional)* — filter by trip UUID.\n- `page` / `limit` *(optional)* — pagination."
+                "description": "PROPOSED. List my bookings.\n\nEnriched (spec 012): each row includes trip, driver, vehicle, fare, and the authenticated passenger's own `passenger_rating` of the driver.\n**Query parameters**\n- `status` *(optional)* — filter by stored `BOOKING_STATUS` (pending | confirmed | cancelled | completed | ...).\n- `trip_id` *(optional)* — filter by trip UUID.\n- `page` / `limit` *(optional)* — pagination.\n\nBooking statuses are reconciled against the trip on read: a booking whose trip was driver-cancelled reads back `cancelled`, and one whose trip completed reads back `completed` (persisted), so `?status=` filters see the current values. Each row also carries the trip `status`."
               },
               "response": [
                 {

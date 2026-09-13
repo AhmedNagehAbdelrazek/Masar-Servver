@@ -122,7 +122,7 @@ describe('multi-seat lock + booking with seat_numbers', () => {
     expect(byNumber[3].is_available).toBe(false);
   });
 
-  it('booking without seat_numbers does not touch seat rows (locks must be consumed explicitly)', async () => {
+  it('rejects booking without the mandatory seat_numbers list', async () => {
     const lock = await getAgent()
       .post(`/api/trips/${tripId}/seats/lock`)
       .set('Authorization', `Bearer ${passengerAToken}`)
@@ -133,8 +133,7 @@ describe('multi-seat lock + booking with seat_numbers', () => {
       .post('/api/bookings')
       .set('Authorization', `Bearer ${passengerAToken}`)
       .send({ trip_id: tripId, seats: 2, agreed_fare: '15.00' });
-    expect(booked.status).toBe(201);
-    expect(booked.body.booking.seat_numbers).toEqual([]);
+    expect(booked.status).toBe(422);
 
     expect(await seatType(2)).toBe('available');
     expect(await seatType(3)).toBe('available');

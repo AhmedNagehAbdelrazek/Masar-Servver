@@ -304,7 +304,7 @@ describe('End-to-end user journey (driver + passenger full flow)', () => {
     const book = await getAgent()
       .post('/api/bookings')
       .set('Authorization', `Bearer ${passengerToken}`)
-      .send({ trip_id: tripId, seat_number: 2, agreed_fare: '20.00' });
+      .send({ trip_id: tripId, seat_numbers: [2], agreed_fare: '20.00' });
     expect(book.status).toBe(201);
     expect(book.body.booking.reference_code).toMatch(/^MSR-/);
     expect(book.body.booking.status).toBe(BOOKING_STATUS.CONFIRMED);

@@ -84,7 +84,7 @@ describe('US2 Contract - Passenger Booking Endpoints', () => {
     const res = await getAgent()
       .post('/api/bookings')
       .set('Authorization', `Bearer ${passengerToken}`)
-      .send({ trip_id: tripId, seat_number: 2, agreed_fare: '15.50' });
+      .send({ trip_id: tripId, seat_numbers: [2], agreed_fare: '15.50' });
 
     expect(res.status).toBe(201);
     expect(res.body.booking).toBeDefined();
@@ -116,7 +116,7 @@ describe('US2 Contract - Passenger Booking Endpoints', () => {
     const created = await getAgent()
       .post('/api/bookings')
       .set('Authorization', `Bearer ${passengerToken}`)
-      .send({ trip_id: tripId, seat_number: 2, agreed_fare: '15.50' });
+      .send({ trip_id: tripId, seat_numbers: [2], agreed_fare: '15.50' });
     const bookingId = created.body.booking.id;
 
     const res = await getAgent()
@@ -139,7 +139,7 @@ describe('US2 Contract - Passenger Booking Endpoints', () => {
     const res = await getAgent()
       .post('/api/bookings')
       .set('Authorization', `Bearer ${passengerToken}`)
-      .send({ trip_id: tripId, seat_number: 3, agreed_fare: '15.50' });
+      .send({ trip_id: tripId, seat_numbers: [3], agreed_fare: '15.50' });
 
     expect(res.status).toBe(404);
     expect(res.body.code).toBe('SEAT_LOCK_EXPIRED');
@@ -153,7 +153,7 @@ describe('US2 Contract - Passenger Booking Endpoints', () => {
     const created = await getAgent()
       .post('/api/bookings')
       .set('Authorization', `Bearer ${passengerToken}`)
-      .send({ trip_id: tripId, seat_number: 2, agreed_fare: '15.50' });
+      .send({ trip_id: tripId, seat_numbers: [2], agreed_fare: '15.50' });
     const bookingId = created.body.booking.id;
 
     const res = await getAgent()
@@ -183,7 +183,7 @@ describe('US5 Contract - Driver Profile Reveal', () => {
     const created = await getAgent()
       .post('/api/bookings')
       .set('Authorization', `Bearer ${passengerToken}`)
-      .send({ trip_id: tripId, seat_number: 2, agreed_fare: '15.50' });
+      .send({ trip_id: tripId, seat_numbers: [2], agreed_fare: '15.50' });
     const bookingId = created.body.booking.id;
 
     const res = await getAgent()
@@ -222,7 +222,7 @@ describe('US5 Contract - Driver Profile Reveal', () => {
     const created = await getAgent()
       .post('/api/bookings')
       .set('Authorization', `Bearer ${passengerToken}`)
-      .send({ trip_id: tripId, seat_number: 2, agreed_fare: '15.50' });
+      .send({ trip_id: tripId, seat_numbers: [2], agreed_fare: '15.50' });
     const bookingId = created.body.booking.id;
     await getAgent()
       .put(`/api/bookings/${bookingId}/cancel`)

@@ -21,6 +21,7 @@ export interface TripAttributes {
   totalSeats: number;
   availableSeats: number;
   farePerSeat: number;
+  totalProfit: number;
   currency?: string | null;
   isRecurring: boolean;
   recurrencePattern?: unknown | null;
@@ -40,7 +41,7 @@ export interface TripAttributes {
   updatedAt?: Date;
 }
 
-export interface TripCreationAttributes extends Optional<TripAttributes, 'id' | 'originArea' | 'originAddress' | 'originLat' | 'originLng' | 'destinationArea' | 'destinationAddress' | 'destinationLat' | 'destinationLng' | 'arrivalTime' | 'currency' | 'isRecurring' | 'recurrencePattern' | 'recurrenceDays' | 'recurrenceEndDate' | 'genderPreference' | 'driverInstructions' | 'additionalInstructions' | 'status' | 'isFeatured' | 'featuredUntil' | 'isBlockedByBalance' | 'isModerated' | 'moderationReason' | 'moderatedBy' | 'createdAt' | 'updatedAt'> {}
+export interface TripCreationAttributes extends Optional<TripAttributes, 'id' | 'originArea' | 'originAddress' | 'originLat' | 'originLng' | 'destinationArea' | 'destinationAddress' | 'destinationLat' | 'destinationLng' | 'arrivalTime' | 'totalProfit' | 'currency' | 'isRecurring' | 'recurrencePattern' | 'recurrenceDays' | 'recurrenceEndDate' | 'genderPreference' | 'driverInstructions' | 'additionalInstructions' | 'status' | 'isFeatured' | 'featuredUntil' | 'isBlockedByBalance' | 'isModerated' | 'moderationReason' | 'moderatedBy' | 'createdAt' | 'updatedAt'> {}
 
 export class Trip extends Model<TripAttributes, TripCreationAttributes> implements TripAttributes {
   declare id: string;
@@ -61,6 +62,7 @@ export class Trip extends Model<TripAttributes, TripCreationAttributes> implemen
   declare totalSeats: number;
   declare availableSeats: number;
   declare farePerSeat: number;
+  declare totalProfit: number;
   declare currency?: string | null;
   declare isRecurring: boolean;
   declare recurrencePattern?: unknown | null;
@@ -154,6 +156,12 @@ Trip.init(
     farePerSeat: {
             type: (DataTypes as unknown as { DECIMAL: (a?: number, b?: number) => unknown; NUMERIC: (a?: number, b?: number) => unknown }).NUMERIC(10, 2) as unknown as import('sequelize').DataType,
             allowNull: false,
+        },
+    totalProfit: {
+            type: (DataTypes as unknown as { DECIMAL: (a?: number, b?: number) => unknown; NUMERIC: (a?: number, b?: number) => unknown }).NUMERIC(12, 2) as unknown as import('sequelize').DataType,
+            field: 'total_profit',
+            allowNull: false,
+            defaultValue: 0,
         },
     currency: {
             type: DataTypes.STRING(3),
