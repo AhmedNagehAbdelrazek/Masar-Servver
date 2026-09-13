@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { Op } from 'sequelize';
 import { Booking, Trip, TripSeat } from '../Models';
-import { BOOKING_STATUS, TRIP_DURATION_HOURS, TRIP_LIFECYCLE_GRACE_HOURS, TRIP_STATUS } from '../config/constants';
+import { BOOKING_STATUS, TRIP_DURATION_HOURS, TRIP_STATUS } from '../config/constants';
 import * as tripService from './tripService';
 import notificationService from './notificationService';
 import homeService from './homeService';
@@ -16,8 +16,17 @@ const STARTED_STATUSES = [TRIP_STATUS.IN_PROGRESS, TRIP_STATUS.ONGOING];
 const UNOPERATED_STATUSES = [TRIP_STATUS.PUBLISHED, TRIP_STATUS.FULL];
 const STALE_STATUSES = [...STARTED_STATUSES, ...UNOPERATED_STATUSES];
 
+// Trips that never left expire the moment departure passes — no grace
+// period, so a booking never lingers as `confirmed` past the trip time.
+function unoperatedCutoff(now = new Date()) {
+  return now;
+}
+
+// Trips that did start get the assumed ride duration before they are
+// auto-completed; completing at departure would kill mid-ride trips
+// (chat, commission and ratings all depend on the live state).
 function lifecycleCutoff(now = new Date()) {
-  return new Date(now.getTime() - (TRIP_DURATION_HOURS + TRIP_LIFECYCLE_GRACE_HOURS) * 60 * 60 * 1000);
+  return new Date(now.getTime() - TRIP_DURATION_HOURS * 60 * 60 * 1000);
 }
 
 async function expireUnoperatedTrip(trip) {
@@ -100,10 +109,12 @@ async function closeOutStaleTrip(trip, result) {
 }
 
 /**
- * Bring trips to their terminal lifecycle state when their assumed end
- * (departure + duration + grace) is in the past:
- * - started trips are auto-completed through the normal completeTrip flow
- * - never-operated trips are cancelled and their bookings become NO_SHOW
+ * Bring trips to their terminal lifecycle state:
+ * - never-operated trips (published/full) expire the moment departure passes:
+ *   cancelled with their bookings set to NO_SHOW
+ * - started trips (in_progress/ongoing) are auto-completed through the
+ *   normal completeTrip flow once departure + the assumed ride duration
+ *   (TRIP_DURATION_HOURS) is in the past
  *
  * Recurring series are excluded (stored departureTime is the first occurrence
  * only). Idempotent — only non-terminal statuses are touched.
@@ -115,19 +126,28 @@ async function closeOutStaleTrip(trip, result) {
 async function refreshStaleTrips(tripIds = null) {
   const result = { autoCompleted: [], expiredUnoperated: [], noShowBookings: 0, errors: [], touched: 0 };
   try {
-    const cutoff = lifecycleCutoff(new Date());
-    const where = {
-      isRecurring: false,
-      departureTime: { [Op.lte]: cutoff },
-      status: { [Op.in]: STALE_STATUSES },
-    };
+    const now = new Date();
+    let idFilter = null;
     if (tripIds !== null && tripIds !== undefined) {
       const ids = [...new Set((Array.isArray(tripIds) ? tripIds : [tripIds]).filter(Boolean))].map(String);
       if (ids.length === 0) return result;
-      where.id = { [Op.in]: ids };
+      idFilter = { id: { [Op.in]: ids } };
     }
     const stale = await Trip.findAll({
-      where,
+      where: {
+        isRecurring: false,
+        [Op.or]: [
+          {
+            status: { [Op.in]: UNOPERATED_STATUSES },
+            departureTime: { [Op.lte]: unoperatedCutoff(now) },
+          },
+          {
+            status: { [Op.in]: STARTED_STATUSES },
+            departureTime: { [Op.lte]: lifecycleCutoff(now) },
+          },
+        ],
+        ...(idFilter || {}),
+      },
       attributes: ['id', 'driverId', 'status', 'departureTime'],
     });
     for (const trip of stale) {
@@ -142,6 +162,6 @@ async function refreshStaleTrips(tripIds = null) {
   return result;
 }
 
-module.exports = { refreshStaleTrips, lifecycleCutoff };
-export { refreshStaleTrips, lifecycleCutoff };
+module.exports = { refreshStaleTrips, lifecycleCutoff, unoperatedCutoff };
+export { refreshStaleTrips, lifecycleCutoff, unoperatedCutoff };
 export default module.exports;

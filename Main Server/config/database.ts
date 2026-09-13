@@ -46,7 +46,7 @@ export async function syncSchema(): Promise<void> {
     // fresh DB still boots without manual steps. `alter: true` is disabled
     // because it emits uncastable ALTERs (TEXT→TEXT[], varchar→enum) and
     // crashes startup; use a migration for column type changes instead.
-    await sequelize.sync({ force: false });
+    await sequelize.sync({ force: true });
     console.log('Connection to database established successfully.');
   } catch (error) {
     console.error('Unable to connect to the database:', error);

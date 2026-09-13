@@ -45,13 +45,9 @@ export type TripStatus = (typeof TRIP_STATUS)[keyof typeof TRIP_STATUS];
  * cannot publish another trip whose [departure, departure + duration) window
  * overlaps an existing active trip's window.
  */
-export const TRIP_DURATION_HOURS = 2;
+export const TRIP_DURATION_HOURS = 0;
 
-/**
- * Grace period after a trip's assumed end before the lifecycle job closes it
- * (hours). Lets drivers complete slightly-late trips manually first.
- */
-export const TRIP_LIFECYCLE_GRACE_HOURS = 1;
+
 
 export const SEAT_TYPE = {
   DRIVER: 'driver',

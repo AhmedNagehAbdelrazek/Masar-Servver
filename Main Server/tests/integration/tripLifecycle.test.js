@@ -134,7 +134,7 @@ describe('tripLifecycleJob - stale trip close-out', () => {
     expect(updated.status).toBe(BOOKING_STATUS.NO_SHOW);
   });
 
-  it('leaves future trips and just-departed trips untouched', async () => {
+  it('leaves future trips untouched but expires just-departed unoperated trips immediately', async () => {
     const futureId = await createTripViaApi();
     const futureBooking = await addConfirmedBooking(futureId);
 
@@ -145,12 +145,31 @@ describe('tripLifecycleJob - stale trip close-out', () => {
     const result = await runTripLifecycle();
 
     expect(result.autoCompleted).toEqual([]);
-    expect(result.expiredUnoperated).toEqual([]);
+    expect(result.expiredUnoperated).toEqual([recentId]);
+    expect(result.noShowBookings).toBe(1);
 
     expect((await Trip.findByPk(futureId)).status).toBe(TRIP_STATUS.PUBLISHED);
-    expect((await Trip.findByPk(recentId)).status).toBe(TRIP_STATUS.PUBLISHED);
     expect((await Booking.findByPk(futureBooking.id)).status).toBe(BOOKING_STATUS.CONFIRMED);
-    expect((await Booking.findByPk(recentBooking.id)).status).toBe(BOOKING_STATUS.CONFIRMED);
+
+    expect((await Trip.findByPk(recentId)).status).toBe(TRIP_STATUS.CANCELLED);
+    expect((await Booking.findByPk(recentBooking.id)).status).toBe(BOOKING_STATUS.NO_SHOW);
+  });
+
+  it('leaves started trips within the assumed ride duration untouched', async () => {
+    const tripId = await createTripViaApi();
+    const booking = await addConfirmedBooking(tripId);
+    await Trip.update(
+      { departureTime: hoursAgo(1), status: TRIP_STATUS.IN_PROGRESS },
+      { where: { id: tripId } }
+    );
+
+    const result = await runTripLifecycle();
+
+    expect(result.autoCompleted).toEqual([]);
+    expect(result.expiredUnoperated).toEqual([]);
+
+    expect((await Trip.findByPk(tripId)).status).toBe(TRIP_STATUS.IN_PROGRESS);
+    expect((await Booking.findByPk(booking.id)).status).toBe(BOOKING_STATUS.CONFIRMED);
   });
 
   it('tolerates being invoked with a scheduler context argument', async () => {

@@ -9,8 +9,8 @@ export interface TripLifecycleResult {
 }
 
 /**
- * Closes out stale trips whose assumed end
- * (departure + TRIP_DURATION_HOURS + TRIP_LIFECYCLE_GRACE_HOURS) is in the past.
+ * Closes out stale trips: never-operated ones the moment departure passes,
+ * started ones once departure + TRIP_DURATION_HOURS is in the past.
  *
  * Delegates to tripExpiryService.refreshStaleTrips (same close-out used by
  * read paths, so cron and reads always converge on the same terminal state).
