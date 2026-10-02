@@ -34,6 +34,11 @@ nginx.local.conf
 .env.*
 .env
 
+# Firebase / GCP service-account keys — never commit, use .env vars instead
+*firebase-adminsdk*.json
+*serviceAccount*.json
+*-firebase-adminsdk-*.json
+
 # OS / Editor
 .DS_Store
 Thumbs.db
