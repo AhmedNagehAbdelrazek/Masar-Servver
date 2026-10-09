@@ -1,0 +1,9 @@
+node_modules
+# Keep environment variables out of version control
+.env
+!.env.example
+/prisma/migrations/dev.db*
+
+*.log
+# Prisma AI skills scaffolding (regenerable via `prisma init`)
+skills-lock.json
