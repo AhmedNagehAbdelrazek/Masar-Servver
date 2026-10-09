@@ -20,7 +20,13 @@ describe('pagination', () => {
 
 describe('locale', () => {
   it('defaults to ar', () => {
-    expect(resolveLocaleMode({})).toBe('ar');
+    const prev = process.env.APP_LOCALE;
+    delete process.env.APP_LOCALE;
+    try {
+      expect(resolveLocaleMode({})).toBe('ar');
+    } finally {
+      process.env.APP_LOCALE = prev;
+    }
   });
 
   it('honors ?lang and Accept-Language', () => {

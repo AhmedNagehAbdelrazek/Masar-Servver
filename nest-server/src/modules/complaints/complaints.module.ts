@@ -1,9 +1,12 @@
 import { Module } from '@nestjs/common';
+import { AdminComplaintsController } from './admin-complaints.controller.js';
 import { ComplaintsController } from './complaints.controller.js';
 import { ComplaintsService } from './complaints.service.js';
+import { DriverComplaintsController } from './driver-complaints.controller.js';
 
 @Module({
-  controllers: [ComplaintsController],
-  providers: [ComplaintsService]
+  controllers: [ComplaintsController, DriverComplaintsController, AdminComplaintsController],
+  providers: [ComplaintsService],
+  exports: [ComplaintsService],
 })
 export class ComplaintsModule {}

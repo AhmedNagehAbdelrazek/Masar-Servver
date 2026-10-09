@@ -4,11 +4,74 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
-import { Injectable } from '@nestjs/common';
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+import { BadRequestException, Injectable } from '@nestjs/common';
+import { createHash } from 'node:crypto';
+import { PrismaService } from '../../prisma/prisma.service.js';
+import { CloudinaryUploader } from './uploaders/cloudinary.uploader.js';
+import { LocalUploader } from './uploaders/local.uploader.js';
+import { S3Uploader } from './uploaders/s3.uploader.js';
 let UploadService = class UploadService {
+    prisma;
+    constructor(prisma) {
+        this.prisma = prisma;
+    }
+    uploader() {
+        const provider = (process.env.UPLOAD_PROVIDER ?? 'cloudinary').toLowerCase();
+        if (provider === 'local')
+            return { uploader: new LocalUploader(), provider };
+        if (provider === 's3')
+            return { uploader: new S3Uploader(), provider };
+        if (provider === 'cloudinary')
+            return { uploader: new CloudinaryUploader(), provider };
+        throw new Error(`Unknown upload provider "${provider}". Available: cloudinary, local, s3`);
+    }
+    async upload(file) {
+        if (!file) {
+            throw new BadRequestException({ message: 'No file uploaded', code: 'BAD_REQUEST' });
+        }
+        const hash = createHash('sha256').update(file.buffer).digest('hex');
+        const existing = await this.prisma.uploadedImage.findUnique({ where: { hash } });
+        if (existing) {
+            return {
+                id: existing.id,
+                url: existing.url,
+                filename: existing.filename,
+                cached: true,
+                provider: existing.provider,
+            };
+        }
+        const { uploader, provider } = this.uploader();
+        const { url, filename } = await uploader.upload(file.buffer, {
+            mimetype: file.mimetype,
+            originalname: file.originalname,
+        });
+        const image = await this.prisma.uploadedImage.create({
+            data: {
+                hash,
+                url,
+                filename,
+                mimetype: file.mimetype,
+                size: file.size,
+                provider,
+            },
+        });
+        return { id: image.id, url, filename, cached: false, provider: image.provider };
+    }
+    async remove(imageId) {
+        const image = await this.prisma.uploadedImage.findUnique({ where: { id: imageId } });
+        if (!image)
+            return;
+        const { uploader } = this.uploader();
+        await uploader.delete(image.filename);
+        await this.prisma.uploadedImage.delete({ where: { id: imageId } });
+    }
 };
 UploadService = __decorate([
-    Injectable()
+    Injectable(),
+    __metadata("design:paramtypes", [PrismaService])
 ], UploadService);
 export { UploadService };
 //# sourceMappingURL=upload.service.js.map

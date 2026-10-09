@@ -12,7 +12,8 @@ let FavoritesModule = class FavoritesModule {
 FavoritesModule = __decorate([
     Module({
         controllers: [FavoritesController],
-        providers: [FavoritesService]
+        providers: [FavoritesService],
+        exports: [FavoritesService],
     })
 ], FavoritesModule);
 export { FavoritesModule };

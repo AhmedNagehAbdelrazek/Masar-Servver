@@ -5,14 +5,16 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
 import { Module } from '@nestjs/common';
+import { AdminPlansController } from './admin-plans.controller.js';
 import { PlansController } from './plans.controller.js';
 import { PlansService } from './plans.service.js';
 let PlansModule = class PlansModule {
 };
 PlansModule = __decorate([
     Module({
-        controllers: [PlansController],
-        providers: [PlansService]
+        controllers: [PlansController, AdminPlansController],
+        providers: [PlansService],
+        exports: [PlansService],
     })
 ], PlansModule);
 export { PlansModule };

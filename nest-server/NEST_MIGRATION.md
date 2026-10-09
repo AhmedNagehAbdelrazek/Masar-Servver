@@ -19,6 +19,13 @@ Health: `GET /api/healthz`, `GET /api/health/realtime` (public). Swagger: `/docs
 
 ## Done
 
+- [x] Wave 0: test foundation — `app_db_test` + baseline migration applied,
+  `src/test/` harness (`test-app` with `ioredis-mock` override, `db.resetTestState`,
+  `jwt` factory, `.env.test`), serial e2e config, locale/pagination unit specs
+- [x] Wave 1: leaf modules fully ported with 1:1 tests (73 e2e + 5 unit green):
+  upload (5), plans + payment-methods incl. both `/api/*` and `/api/admin/*` mounts (29),
+  ratings incl. `GET /driver/ratings` (10), complaints incl. driver + admin endpoints (15),
+  favorites (11), health (3)
 - [x] Scaffold (Nest 12, pnpm, ESM nodenext with `.js` import suffixes)
 - [x] `prisma/schema.prisma` — all 34 tables ported from `Models/*.ts` + `migrations/001–032`
   (`createdat`/`updatedat` column mapping preserved, UUID PKs, native enums).
@@ -77,6 +84,31 @@ Health: `GET /api/healthz`, `GET /api/health/realtime` (public). Swagger: `/docs
 7. Cutover: baseline migration on staging copy → row-count check →
    `prisma migrate deploy` → strangler proxy Express→Nest per prefix →
    Postman collection + `docs/Maps_Tracking_Guide.md` re-point → decommission.
+
+## Porting rules (learned)
+
+- Nest defaults `@Post()` to **201**; Express `successResponse` defaults to **200**.
+  Every ported POST needs explicit `@HttpCode(200)` unless Express used 201.
+- Dynamic `import('cloudinary'/'@aws-sdk/client-s3')` breaks `tsc` (nodenext);
+  use static imports — both SDKs are now regular dependencies.
+- `TestingModule` comes from `@nestjs/testing`; `createNestApplication<NestExpressApplication>()`
+  is required for `useStaticAssets`.
+- `ioredis-mock` has no types — shimmed in `src/test/ioredis-mock.d.ts`.
+- `filename` is NOT unique on `UploadedImage` — use `findFirst`, not `findUnique`.
+- Tests: unit `*.spec.ts` next to source (`vitest.config.ts`); HTTP `test/*.e2e-spec.ts`
+  (`vitest.config.e2e.ts`, `fileParallelism: false` — specs share one DB);
+  both load `.env.test` (`app_db_test`, `APP_LOCALE=en`).
+- Custom class-validator constraints MUST carry `@ValidatorConstraint()` or they
+  silently never run (found via free_offer case).
+- Cross-field / request-context rules (self-complaint, resolution-required,
+  free-offer-required) live in services as 422 `VALIDATION_ERROR` with `details`.
+- Required DTO fields get `@IsDefined()` so absent keys 422 like Express `notEmpty`.
+- Prisma enum with `@map`: `e_wallet @map("e-wallet")` — convert at service boundary.
+- DELETE routes whose Express chain lacks `validate` use plain-string params
+  (malformed ids fall through to 404, not 422).
+- Verified Express discrepancy (do not copy): `GET /api/plans` excludes free plans
+  though `tests/contract/plan.contract.test.js` expects them — that test fails
+  against Express itself (11/12). Port asserts actual behavior.
 
 ## Notes / gotchas
 

@@ -1,4 +1,4 @@
-import { Logger, ValidationPipe } from '@nestjs/common';
+import { Logger } from '@nestjs/common';
 import { NestFactory, Reflector } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
@@ -12,6 +12,7 @@ import { HttpExceptionFilter } from './common/filters/http-exception.filter.js';
 import { AuditInterceptor } from './common/interceptors/audit.interceptor.js';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor.js';
 import { AppAuthGuard } from './common/guards/app-auth.guard.js';
+import { ApiValidationPipe } from './common/pipes/api-validation.pipe.js';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard.js';
 import { RolesGuard } from './common/guards/roles.guard.js';
 import { RedisService } from './redis/redis.service.js';
@@ -26,12 +27,12 @@ async function bootstrap(): Promise<void> {
   app.use(morgan('short'));
   app.useBodyParser('json');
   app.useBodyParser('urlencoded', { extended: true });
-  app.useStaticAssets(join(process.cwd(), 'uploads'), { prefix: '/uploads/' });
+  app.useStaticAssets(join(process.env.LOCAL_UPLOAD_DIR ?? join(process.cwd(), 'uploads')), {
+    prefix: '/uploads/',
+  });
 
   app.setGlobalPrefix('api', { exclude: ['/'] });
-  app.useGlobalPipes(
-    new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }),
-  );
+  app.useGlobalPipes(new ApiValidationPipe());
   app.useGlobalFilters(new HttpExceptionFilter());
   app.useGlobalInterceptors(
     new ResponseInterceptor(),
