@@ -336,6 +336,10 @@ export const VALIDATION_MESSAGES = {
   VEHICLE_VEHICLE_TYPE_MUST_BE_ONE_OF_SEDAN_SUV_VAN_BUS_HATCHBACK: { en: "vehicle.vehicle_type must be one of sedan, suv, van, bus, hatchback", ar: "يجب أن يكون vehicle_type للمركبة أحد: sedan، suv، van، bus، hatchback" },
   WAS_LATE_MUST_BE_A_BOOLEAN: { en: "was_late must be a boolean", ar: "يجب أن تكون حالة التأخر قيمة منطقية" },
   WAYPOINTS_MUST_BE_AN_ARRAY: { en: "Waypoints must be an array", ar: "يجب أن تكون نقاط الطريق مصفوفة" },
+  ORIGIN_AND_DESTINATION_ARE_REQUIRED: { en: "Origin and destination are required", ar: "نقطة الانطلاق والوجهة مطلوبتان" },
+  PICKUP_TYPE_MUST_BE_ONE_OF_STOP_CUSTOM: { en: "pickup_type must be one of: stop, custom", ar: "يجب أن يكون نوع الصعود أحد: stop، custom" },
+  PICKUP_STATUS_MUST_BE_ONE_OF_ARRIVED_PICKED_UP_MISSED: { en: "pickup_status must be one of: arrived, picked_up, missed", ar: "يجب أن تكون حالة الصعود أحد: arrived، picked_up، missed" },
+  PICKUP_STOP_ID_MUST_BE_A_VALID_UUID: { en: "pickup_stop_id must be a valid UUID", ar: "يجب أن يكون معرّف محطة الصعود معرّفاً صالحاً" },
   YOU_CANNOT_FILE_A_COMPLAINT_AGAINST_YOURSELF: { en: "You cannot file a complaint against yourself", ar: "لا يمكنك تقديم شكوى ضد نفسك" },
 };
 

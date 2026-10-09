@@ -4,6 +4,9 @@ import { ApiErrors } from '../utils/ApiError';
 import { TRIP_STATUS, GENDER_PREFERENCE, BOOKING_STATUS, FREE_OFFER_TYPE, PENALTY_TYPES, PENALTY_CATEGORY, PENALTY_SEVERITY, CANCELLATION_ESCALATION, TRIP_DURATION_HOURS, SEAT_TYPE } from '../config/constants';
 import commissionService from './commissionService';
 import notificationService from './notificationService';
+import realtimeService from './realtimeService';
+import routeService from './routeService';
+import mapsConfig from '../config/maps';
 import { releaseSeatLock, checkSeatLock } from '../utils/seatLock';
 import homeService from './homeService';
 import { seatNumbersFor } from '../utils/seatSerializer';
@@ -424,6 +427,14 @@ const createTrip = async (driverId, data) => {
     stopRecords.sort((a, b) => a.stopOrder - b.stopOrder);
     stopRecords.forEach((r, idx) => { r.stopOrder = idx + 1; });
     await TripStop.bulkCreate(stopRecords);
+  }
+
+  // spec 013: best-effort route compute — failure marks route_status=failed and
+  // never blocks publish (O8). computeTripRoute never throws for provider errors.
+  try {
+    await routeService.computeTripRoute(trip.id);
+  } catch (err) {
+    console.warn('[tripService] route compute failed:', err.message);
   }
 
   trackTripMutation({
@@ -1112,7 +1123,7 @@ const startTrip = async (driverId, tripId) => {
     );
   }
 
-  await trip.update({ status: TRIP_STATUS.IN_PROGRESS });
+  await trip.update({ status: TRIP_STATUS.IN_PROGRESS, startedAt: new Date() });
 
   // US2: best-effort notify confirmed passengers that the trip has started.
   try {
@@ -1166,7 +1177,19 @@ const completeTrip = async (driverId, tripId) => {
 
   const result = await commissionService.deductCommission(trip, driverId);
 
-  await trip.update({ status: TRIP_STATUS.COMPLETED });
+  await trip.update({ status: TRIP_STATUS.COMPLETED, completedAt: new Date() });
+
+  // spec 013: compact the driven path best-effort; the job retries if empty.
+  try {
+    await routeService.compactActualPath(trip.id);
+  } catch (err) {
+    console.warn('[tripService] actual path compaction failed:', err.message);
+  }
+  try {
+    realtimeService.emitToRoom(`trip:${trip.id}`, 'tracking:ended', { trip_id: trip.id, reason: 'completed' });
+  } catch (_err) {
+    // socket layer offline (e.g. tests) — ignore
+  }
 
   // Finalize confirmed bookings (spec 009 US3): completed + paid_cash + timestamp.
   const confirmedBookings = await Booking.findAll({
@@ -1266,11 +1289,241 @@ module.exports = {
   startTrip,
   completeTrip,
   updateTrip,
+  replaceTripStops,
+  getTripRoute,
+  setPickupStatus,
+  getBookingRoute,
+  getTripActual,
   cancelTrip,
   cancelTripWithPenalty,
   getTripAttributes,
   getTripPassengers,
 };
+
+/**
+ * Replace a trip's stops wholesale (PATCH /trips/:id/stops). Open trips only;
+ * recompute is best-effort and booked passengers are notified (O8 pattern).
+ */
+async function replaceTripStops(driverId, tripId, stops) {
+  const trip = await Trip.findByPk(tripId);
+  if (!trip) throw ApiErrors.notFound('TRIP_NOT_FOUND');
+  if (trip.driverId !== driverId) throw ApiErrors.forbidden('YOU_CAN_ONLY_EDIT_YOUR_OWN_TRIPS');
+  if (![TRIP_STATUS.PUBLISHED, TRIP_STATUS.FULL].includes(trip.status)) {
+    throw ApiErrors.custom('TRIP_STOPS_LOCKED_AFTER_START', 422, 'TRIP_STOPS_LOCKED_AFTER_START');
+  }
+  const list = Array.isArray(stops) ? stops : [];
+  if (list.length > mapsConfig.maxTripStops) throw ApiErrors.custom('TOO_MANY_WAYPOINTS', 422, 'TOO_MANY_WAYPOINTS');
+  const records = [];
+  for (let i = 0; i < list.length; i++) {
+    const s = list[i] || {};
+    const lat = Number(s.lat ?? s.stop_lat ?? s.latitude);
+    const lng = Number(s.lng ?? s.stop_lng ?? s.longitude);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+      throw ApiErrors.validation('STOP_LATITUDE_MUST_BE_A_DECIMAL');
+    }
+    records.push({
+      tripId: trip.id,
+      stopOrder: i + 1,
+      stopName: s.stop_name || s.name || s.city || null,
+      city: s.city || s.stop_name || s.name || null,
+      address: s.address || null,
+      lat: String(lat),
+      lng: String(lng),
+      stopLat: String(lat),
+      stopLng: String(lng),
+      stopType: s.stop_type || 'both',
+    });
+  }
+  await TripStop.destroy({ where: { tripId: trip.id } });
+  if (records.length) await TripStop.bulkCreate(records);
+
+  let routeStatus = trip.routeStatus;
+  try {
+    const out = await routeService.computeTripRoute(trip.id);
+    if (out.ok) routeStatus = 'ready';
+    else routeStatus = 'failed';
+  } catch (err) {
+    routeStatus = 'failed';
+    console.warn('[tripService] stops recompute failed:', err.message);
+  }
+
+  try {
+    await notificationService.notifyConfirmedPassengers([trip.id], 'ROUTE_UPDATED', { data: { trip_id: trip.id } });
+  } catch (err) {
+    console.warn('[tripService] route_updated notification failed:', err.message);
+  }
+  try {
+    const fresh = await Trip.findByPk(trip.id, { attributes: ['routeVersion'] });
+    realtimeService.emitToRoom(`trip:${trip.id}`, 'tracking:route_updated', { route_version: fresh.routeVersion });
+  } catch (_err) {
+    // socket layer offline (e.g. tests) — ignore
+  }
+  trackTripMutation({ action: 'trip.stops_replaced', driverId, tripId: trip.id, payload: { stops: records.length, route_status: routeStatus } });
+  return { trip_id: trip.id, stops: records.length, route_status: routeStatus };
+}
+
+/**
+ * Planned route view (API5 driver/admin, API11 support read-only).
+ * Passengers never see other pickups here — use the booking-scoped view (API9).
+ * Phone numbers are never included; names are first-name only (O7/masking).
+ */
+async function getTripRoute(requesterId, requesterRole, tripId, { audited = false } = {}) {
+  const trip = await Trip.findByPk(tripId, { include: [{ model: TripStop, as: 'stops' }] });
+  if (!trip) throw ApiErrors.notFound('TRIP_NOT_FOUND');
+  const isOwner = trip.driverId === requesterId;
+  const isStaff = ['admin', 'support', 'moderator'].includes(requesterRole);
+  if (!isOwner && !isStaff) throw ApiErrors.forbidden('YOU_CAN_ONLY_VIEW_ROUTES_ON_YOUR_OWN_TRIPS');
+
+  const bookings = await Booking.findAll({
+    where: { tripId: trip.id, status: BOOKING_STATUS.CONFIRMED },
+    include: [{ model: User, as: 'passenger', attributes: ['id', 'fullName'] }],
+    order: [['pickupOrder', 'ASC']],
+  });
+  const waypoints = await routeService.buildWaypoints(trip);
+  const nav = routeService.buildNavigationLinks(waypoints);
+  const out = {
+    trip_id: trip.id,
+    route_status: trip.routeStatus,
+    route_version: trip.routeVersion,
+    polyline: trip.routePolyline,
+    distance_m: trip.routeDistanceM != null ? Number(trip.routeDistanceM) : null,
+    duration_s: trip.routeDurationS != null ? Number(trip.routeDurationS) : null,
+    stops: (trip.stops || []).slice().sort((a, b) => a.stopOrder - b.stopOrder).map((s) => ({
+      id: s.id,
+      stop_order: s.stopOrder,
+      stop_name: s.stopName,
+      city: s.city,
+      lat: s.lat != null ? Number(s.lat) : (s.stopLat != null ? Number(s.stopLat) : null),
+      lng: s.lng != null ? Number(s.lng) : (s.stopLng != null ? Number(s.stopLng) : null),
+      stop_type: s.stopType,
+    })),
+    pickups: bookings.map((b) => ({
+      booking_id: b.id,
+      first_name: b.passenger && b.passenger.fullName ? String(b.passenger.fullName).split(' ')[0] : null,
+      seats: b.seatsBooked,
+      lat: b.pickupLat != null ? Number(b.pickupLat) : null,
+      lng: b.pickupLng != null ? Number(b.pickupLng) : null,
+      pickup_order: b.pickupOrder,
+      pickup_status: b.pickupStatus,
+    })),
+    navigation_url: nav.navigation_url,
+    navigation_legs: nav.legs,
+  };
+  if (audited || !isOwner) {
+    auditService.track({ action: 'trip.route_viewed', resourceType: 'trip', resourceId: trip.id, actorId: requesterId, actorType: requesterRole, payload: {} });
+  }
+  return out;
+}
+
+/**
+ * Driver marks one booked pickup arrived/picked_up/missed (API8).
+ * : picked_up notifies via socket only — the passenger is in the car.
+ */
+async function setPickupStatus(driverId, tripId, bookingId, status) {
+  const trip = await Trip.findByPk(tripId, { attributes: ['id', 'driverId'] });
+  if (!trip) throw ApiErrors.notFound('TRIP_NOT_FOUND');
+  if (trip.driverId !== driverId) throw ApiErrors.forbidden('YOU_CAN_ONLY_MANAGE_PICKUPS_ON_YOUR_OWN_TRIPS');
+  const booking = await Booking.findOne({
+    where: { id: bookingId, tripId },
+    include: [{ model: User, as: 'passenger', attributes: ['id', 'fullName'] }],
+  });
+  if (!booking) throw ApiErrors.notFound('BOOKING_NOT_FOUND');
+  if (booking.status !== BOOKING_STATUS.CONFIRMED) throw ApiErrors.conflict('BOOKING_IS_NOT_CONFIRMED');
+
+  const now = new Date();
+  const patch = { pickupStatus: status };
+  if (status === 'arrived') patch.arrivedAt = now;
+  if (status === 'picked_up') patch.pickedUpAt = now;
+  // : missed touches pickup_status ONLY — booking.status stays CONFIRMED
+  // so the driver no-show rate (expiry-driven NO_SHOW rows) is never polluted
+  // by passenger misses. Passenger-side no-show tracking is out of scope.
+  await booking.update(patch);
+
+  try {
+    realtimeService.emitToRoom(`trip:${tripId}`, 'tracking:pickup_status', { trip_id: tripId, booking_id: booking.id, state: status });
+  } catch (_err) {
+    // socket layer offline (e.g. tests) — ignore
+  }
+  if (booking.passenger && (status === 'arrived' || status === 'missed')) {
+    try {
+      await notificationService.sendToUser(booking.passenger, status === 'arrived' ? 'DRIVER_ARRIVED' : 'PICKUP_MISSED', {
+        channels: ['in_app', 'push'],
+        data: { trip_id: tripId, booking_id: booking.id },
+      });
+    } catch (err) {
+      console.warn('[tripService] pickup-status notification failed:', err.message);
+    }
+  }
+  auditService.track({ action: 'booking.pickup_status', resourceType: 'booking', resourceId: booking.id, actorId: driverId, actorType: 'driver', payload: { trip_id: tripId, pickup_status: status } });
+  return { booking_id: booking.id, pickup_status: status };
+}
+
+/**
+ * Booking-scoped route view (API9): planned route plus MY pickup only, plus
+ * the recorded path when available. Participant or staff; staff see the
+ * recorded path only on completed trips (same rule as the admin endpoint).
+ */
+async function getBookingRoute(requesterId, requesterRole, bookingId) {
+  const booking = await Booking.findByPk(bookingId, { include: [{ model: Trip, as: 'trip', include: [{ model: TripStop, as: 'stops' }] }] });
+  if (!booking || !booking.trip) throw ApiErrors.notFound('BOOKING_NOT_FOUND');
+  const trip = booking.trip;
+  const isMine = booking.passengerId === requesterId;
+  const isOwner = trip.driverId === requesterId;
+  const isStaff = ['admin', 'support', 'moderator'].includes(requesterRole);
+  if (!isMine && !isOwner && !isStaff) throw ApiErrors.forbidden('YOU_CAN_ONLY_VIEW_YOUR_OWN_BOOKINGS');
+  const done = trip.status === TRIP_STATUS.COMPLETED;
+  return {
+    trip_id: trip.id,
+    booking_id: booking.id,
+    route_status: trip.routeStatus,
+    route_version: trip.routeVersion,
+    polyline: trip.routePolyline,
+    distance_m: trip.routeDistanceM != null ? Number(trip.routeDistanceM) : null,
+    duration_s: trip.routeDurationS != null ? Number(trip.routeDurationS) : null,
+    my_pickup: {
+      lat: booking.pickupLat != null ? Number(booking.pickupLat) : null,
+      lng: booking.pickupLng != null ? Number(booking.pickupLng) : null,
+      label: booking.pickupLabel || booking.pickupPlace,
+      pickup_status: booking.pickupStatus,
+    },
+    actual_path_polyline: done || isMine || isOwner ? trip.actualPathPolyline : null,
+    actual_distance_m: trip.actualDistanceM != null ? Number(trip.actualDistanceM) : null,
+    actual_duration_s: trip.actualDurationS != null ? Number(trip.actualDurationS) : null,
+  };
+}
+
+/**
+ * Recorded path view (GET /trips/:id/route/actual + admin actual endpoint).
+ * Participants get planned + recorded (null until compacted); staff are
+ * refused until completion — no live snooping through the history door.
+ */
+async function getTripActual(requesterId, requesterRole, tripId) {
+  const trip = await Trip.findByPk(tripId);
+  if (!trip) throw ApiErrors.notFound('TRIP_NOT_FOUND');
+  const isOwner = trip.driverId === requesterId;
+  const isStaff = ['admin', 'support', 'moderator'].includes(requesterRole);
+  let isPassenger = false;
+  if (!isOwner && !isStaff) {
+    const mine = await Booking.findOne({ where: { tripId, passengerId: requesterId }, attributes: ['id'] });
+    isPassenger = !!mine;
+    if (!isPassenger) throw ApiErrors.forbidden('YOU_CAN_ONLY_VIEW_ROUTES_ON_YOUR_OWN_TRIPS');
+  }
+  const done = trip.status === TRIP_STATUS.COMPLETED;
+  if (isStaff && !done) throw ApiErrors.forbidden('ACTUAL_PATH_AVAILABLE_AFTER_COMPLETION');
+  if (isStaff) {
+    auditService.track({ action: 'trip.actual_viewed', resourceType: 'trip', resourceId: trip.id, actorId: requesterId, actorType: requesterRole, payload: {} });
+  }
+  return {
+    trip_id: trip.id,
+    route_status: trip.routeStatus,
+    polyline: trip.routePolyline,
+    actual_path_polyline: trip.actualPathPolyline,
+    actual_distance_m: trip.actualDistanceM != null ? Number(trip.actualDistanceM) : null,
+    actual_duration_s: trip.actualDurationS != null ? Number(trip.actualDurationS) : null,
+    started_at: trip.startedAt,
+    completed_at: trip.completedAt,
+  };
+}
 
 /**
  * Lean passenger list for one of the driver's own trips — shaped for
@@ -1681,5 +1934,5 @@ async function cancelTripWithPenalty(driverId, tripId, { reason, note }) {
     penalty_type: escalation.severity,
   };
 }
-export { createTrip, getTripById, getTripOptions, getTripSeats, getDriverTrips, getAvailableTrips, startTrip, completeTrip, updateTrip, cancelTrip, cancelTripWithPenalty, getTripAttributes, getTripPassengers };
+export { createTrip, getTripById, getTripOptions, getTripSeats, getDriverTrips, getAvailableTrips, startTrip, completeTrip, updateTrip, replaceTripStops, getTripRoute, setPickupStatus, getBookingRoute, getTripActual, cancelTrip, cancelTripWithPenalty, getTripAttributes, getTripPassengers };
 export default module.exports;

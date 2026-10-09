@@ -254,6 +254,14 @@ export const NOTIFICATION_TYPE = {
   SUBSCRIPTION_PAYMENT: 'subscription_payment',
   PAYMENT_CONFIRMED: 'payment_confirmed',
   SYSTEM_ANNOUNCEMENT: 'system_announcement',
+  PICKUP_ADDED: 'pickup_added',
+  PICKUP_CHANGED: 'pickup_changed',
+  PICKUP_CANCELLED: 'pickup_cancelled',
+  ROUTE_UPDATED: 'route_updated',
+  DRIVER_NEARBY: 'driver_nearby',
+  DRIVER_ARRIVED: 'driver_arrived',
+  PICKUP_MISSED: 'pickup_missed',
+  NEXT_PICKUP: 'next_pickup',
 } as const;
 export type NotificationType = (typeof NOTIFICATION_TYPE)[keyof typeof NOTIFICATION_TYPE];
 
@@ -274,6 +282,13 @@ export const NOTIFICATION_CATEGORIES = {
       NOTIFICATION_TYPE.TRIP_REMINDER,
       NOTIFICATION_TYPE.TRIP_CANCELLED,
       NOTIFICATION_TYPE.DELAY_REPORT,
+      NOTIFICATION_TYPE.PICKUP_ADDED,
+      NOTIFICATION_TYPE.PICKUP_CHANGED,
+      NOTIFICATION_TYPE.PICKUP_CANCELLED,
+      NOTIFICATION_TYPE.ROUTE_UPDATED,
+      NOTIFICATION_TYPE.DRIVER_NEARBY,
+      NOTIFICATION_TYPE.DRIVER_ARRIVED,
+      NOTIFICATION_TYPE.PICKUP_MISSED,
     ],
   },
   subscriptions: {
@@ -298,6 +313,13 @@ export const NOTIFICATION_GROUP_LABELS = {
     subscription_payment: 'الباقات',
     payment_confirmed: 'اعتماد الدفع',
     subscription_expiring: 'انتهاء الباقة',
+    pickup_added: 'نقطة صعود جديدة',
+    pickup_changed: 'تغيير نقطة الصعود',
+    pickup_cancelled: 'إلغاء نقطة الصعود',
+    route_updated: 'تحديث المسار',
+    driver_nearby: 'السائق قريب',
+    driver_arrived: 'وصل السائق',
+    pickup_missed: 'تفويت الصعود',
   },
   en: {
     booking_confirmed: 'New bookings',
@@ -309,6 +331,13 @@ export const NOTIFICATION_GROUP_LABELS = {
     subscription_payment: 'Plans',
     payment_confirmed: 'Payment confirmed',
     subscription_expiring: 'Plan expiring',
+    pickup_added: 'New pickup',
+    pickup_changed: 'Pickup changed',
+    pickup_cancelled: 'Pickup cancelled',
+    route_updated: 'Route updated',
+    driver_nearby: 'Driver nearby',
+    driver_arrived: 'Driver arrived',
+    pickup_missed: 'Pickup missed',
   },
 } as const;
 
@@ -329,6 +358,14 @@ export const NOTIFICATION_TYPE_LABELS = {
     subscription_payment: 'الباقات',
     payment_confirmed: 'اعتماد الدفع',
     system_announcement: 'إعلانات النظام',
+    pickup_added: 'نقطة صعود جديدة',
+    pickup_changed: 'تغيير نقطة الصعود',
+    pickup_cancelled: 'إلغاء نقطة الصعود',
+    route_updated: 'تحديث المسار',
+    driver_nearby: 'السائق قريب',
+    driver_arrived: 'وصل السائق',
+    pickup_missed: 'تفويت الصعود',
+    next_pickup: 'الصعود التالي',
   },
   en: {
     booking_confirmed: 'Booking confirmed',
@@ -346,6 +383,14 @@ export const NOTIFICATION_TYPE_LABELS = {
     subscription_payment: 'Subscription payment',
     payment_confirmed: 'Payment confirmed',
     system_announcement: 'System announcement',
+    pickup_added: 'New pickup',
+    pickup_changed: 'Pickup changed',
+    pickup_cancelled: 'Pickup cancelled',
+    route_updated: 'Route updated',
+    driver_nearby: 'Driver nearby',
+    driver_arrived: 'Driver arrived',
+    pickup_missed: 'Pickup missed',
+    next_pickup: 'Next pickup',
   },
 } as const;
 
@@ -366,3 +411,38 @@ export const PAGINATION = {
 
 export const TEST_PHONES: readonly string[] = ['+962700000000', '+962711111111'] as const;
 export const TEST_OTP: string = '000000';
+
+// Maps, tracking & journey (spec 013). Platform defaults live in config/maps.ts;
+// these are the allowed enum values — never hardcode the strings elsewhere.
+export const ROUTE_STATUS = {
+  PENDING: 'pending',
+  READY: 'ready',
+  FAILED: 'failed',
+} as const;
+export type RouteStatus = (typeof ROUTE_STATUS)[keyof typeof ROUTE_STATUS];
+
+export const PICKUP_TYPE = {
+  STOP: 'stop',
+  CUSTOM: 'custom',
+} as const;
+export type PickupType = (typeof PICKUP_TYPE)[keyof typeof PICKUP_TYPE];
+
+export const PICKUP_STATUS = {
+  PENDING: 'pending',
+  ARRIVED: 'arrived',
+  PICKED_UP: 'picked_up',
+  MISSED: 'missed',
+} as const;
+export type PickupStatus = (typeof PICKUP_STATUS)[keyof typeof PICKUP_STATUS];
+
+export const MAPS = {
+  REGION_CODE: 'jo',
+  WAYPOINT_LIMIT: 25,
+  NAV_LINK_WAYPOINT_LIMIT: 9,
+} as const;
+
+export const TRACKING = {
+  INTERVAL_SECONDS: 5,
+  BATCH_MAX_POINTS: 60,
+  MAX_POINT_AGE_SECONDS: 300,
+} as const;

@@ -457,13 +457,14 @@ UI (reporter): dismiss the emergency screen.
 ## 8. Live Tracking Events
 
 Drivers share location to `trip:{tripId}`; passengers watch. Only the trip's
-driver can start/send location; trip must be active (`in_progress`/`ongoing`).
+driver can start/send location; trip must be `in_progress` (spec 013 — `ongoing`
+no longer opens live rooms; joins on finished trips are refused).
 
 ### 8.1 Client → Server
 
 #### `tracking:join` (both roles)
 Join the trip room. Membership = driver of the trip OR passenger with CONFIRMED
-booking on it.
+booking on it, and the trip must be `in_progress`.
 
 ```json
 { "trip_id": "<uuid>" }
@@ -490,14 +491,26 @@ Ack success data (same shape as `tracking:update` below).
   "lat": 31.9539,          // required, number
   "lng": 35.9106,          // required, number
   "speed": 12.5,           // optional, km/h (enables server ETA estimate)
-  "heading": 270           // optional, degrees
+  "heading": 270,          // optional, degrees
+  "accuracy": 8,           // optional, meters
+  "recorded_at": "2026-10-02T10:00:00.000Z", // optional; older than 5 min is discarded
+  "occurrence_date": "2026-10-02"            // optional, recurring-trip occurrence
 }
 ```
 
+Offline buffering: send them back as a batch (max 60, original timestamps kept):
+
+```json
+{ "trip_id": "<uuid>", "points": [{ "lat": 0, "lng": 0, "recorded_at": "..." }] }
+```
+
+Batch ack: `{ "trip_id": "...", "received": 2, "stored": 2 }` (stale points are
+skipped silently inside batches).
+
 Ack success data = the broadcast `tracking:update` object (see below), including
-computed `eta_minutes` (when destination set and speed > 0).
-Errors: `VALIDATION_ERROR`, `FORBIDDEN` ("Only the trip driver"), `CONFLICT`
-("only for active trips"), `RATE_LIMITED`.
+computed `eta_minutes` (next pickup first, destination fallback, speed > 0).
+Errors: `VALIDATION_ERROR`, `LOCATION_POINT_TOO_OLD`, `FORBIDDEN` ("Only the trip
+driver"), `CONFLICT` ("only for active trips"), `RATE_LIMITED`.
 
 #### `tracking:stop` (driver only)
 
@@ -525,6 +538,38 @@ Broadcast to everyone in `trip:{tripId}` on start / each location ping / stop.
 
 Passenger UI: animate marker to `(driver_lat, driver_lng)`; show ETA if present;
 clear map state when `status == "stopped"`.
+
+NOTE: each passenger ALSO gets a personal `tracking:update` on their `user:{id}`
+room with the ETA to their own pickup only. Prefer the personal copy for the
+passenger ETA banner; never show other passengers' pickups.
+
+#### `tracking:next_pickup` (driver only)
+```json
+{ "trip_id": "<uuid>", "booking_id": "<uuid>", "label": "Wasfi Al-Tal St",
+  "distance_m": 850, "remaining_count": 2 }
+```
+
+#### `tracking:proximity` (passenger, fires once per booking)
+```json
+{ "trip_id": "<uuid>", "booking_id": "<uuid>", "state": "near" }
+```
+`state` is `near` (≈1 km, configurable) then `arrived` (≈150 m).
+
+#### `tracking:pickup_status` (room)
+```json
+{ "trip_id": "<uuid>", "booking_id": "<uuid>",
+  "state": "arrived" }  // arrived | picked_up | missed
+```
+
+#### `tracking:route_updated` (room)
+```json
+{ "route_version": 4 }  // refetch GET /api/trips/:id/route (or booking route)
+```
+
+#### `tracking:ended` (room)
+```json
+{ "trip_id": "<uuid>", "reason": "completed" }  // stop sending locations
+```
 
 ---
 

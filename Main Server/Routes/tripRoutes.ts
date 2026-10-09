@@ -1,10 +1,12 @@
 import { Router } from 'express';
 const router: Router = Router();
 import * as c from '../Controllers/tripController';
+import * as mapsC from '../Controllers/mapsController';
 import protect from '../middlewares/protect';
 import { roleGuard } from '../middlewares/roleGuard';
 import validate from '../middlewares/validatorMiddleware';
 import { createTripValidation, updateTripValidation, tripParamValidation, tripPassengersValidation, searchAvailableTripsValidation, cancelTripValidation } from '../utils/validators/tripValidator';
+import { replaceStopsValidation, pickupPreviewValidation, pickupStatusValidation } from '../utils/validators/mapsValidator';
 import { param } from 'express-validator';
 
 // Create trip (driver only)
@@ -46,6 +48,21 @@ router.get('/:trip_id/attributes', protect, ...tripParamValidation, validate, c.
 
 // Trip passengers for dropdown selection (driver owner only)
 router.get('/:trip_id/passengers', protect, roleGuard(['driver']), ...tripPassengersValidation, validate, c.getTripPassengers);
+
+// Edit stops wholesale: add/remove/reorder, recompute route, notify passengers
+router.patch('/:trip_id/stops', protect, roleGuard(['driver']), ...tripParamValidation, ...replaceStopsValidation, validate, c.updateTripStops);
+
+// Passenger pickup preview: accepted? + detour impact before booking
+router.post('/:trip_id/pickup-preview', protect, roleGuard(['passenger']), ...tripParamValidation, ...pickupPreviewValidation, validate, mapsC.pickupPreview);
+
+// Planned route with ordered pickups + navigation links (driver owner, admin)
+router.get('/:trip_id/route', protect, roleGuard(['driver', 'admin']), ...tripParamValidation, validate, c.getTripRoute);
+
+// Recorded driven path (participants; null until compacted)
+router.get('/:trip_id/route/actual', protect, roleGuard(['driver', 'passenger']), ...tripParamValidation, validate, c.getTripActual);
+
+// Driver marks one booked pickup arrived/picked_up/missed
+router.patch('/:trip_id/pickups/:booking_id', protect, roleGuard(['driver']), ...tripParamValidation, ...pickupStatusValidation, validate, c.setTripPickupStatus);
 
 // Attach an accepted ride-request offer to this trip (driver owner only, deferred materialization)
 const attachOfferValidation = [

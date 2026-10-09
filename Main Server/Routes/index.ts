@@ -30,6 +30,8 @@ import offersRoutes from './offersRoutes';
 import supportTicketRoutes from './supportTicketRoutes';
 import favoriteRoutes from './favoriteRoutes';
 import profileRoutes from './profileRoutes';
+import mapsRoutes from './mapsRoutes';
+import adminTripRoutes from './adminTripRoutes';
 
 router.use('/healthz', healthRoutes);
 router.use('/health', realtimeHealthRoutes);
@@ -60,6 +62,8 @@ router.use('/complaints', complaintRoutes);
 router.use('/notifications', notificationRoutes);
 router.use('/settings/notifications', notificationSettingRoutes);
 router.use('/vehicles', vehicleRoutes);
+router.use('/maps', mapsRoutes);
+router.use('/admin', adminTripRoutes);
 
 export default router;
 module.exports = router;

@@ -142,6 +142,22 @@ Key payloads:
 { "trip_id": "...", "driver_lat": 31.95, "driver_lng": 35.91,
   "eta_minutes": 7, "status": "en_route" }
 
+// tracking:next_pickup (driver only)
+{ "trip_id": "...", "booking_id": "...", "label": "...",
+  "distance_m": 850, "remaining_count": 2 }
+
+// tracking:proximity (passenger, once per booking: "near" then "arrived")
+{ "trip_id": "...", "booking_id": "...", "state": "near" }
+
+// tracking:pickup_status (room: arrived | picked_up | missed)
+{ "trip_id": "...", "booking_id": "...", "state": "picked_up" }
+
+// tracking:route_updated (room — refetch the route over REST)
+{ "route_version": 4 }
+
+// tracking:ended (room — stop sending locations)
+{ "trip_id": "...", "reason": "completed" }
+
 // sos:ack
 { "status": "received", "sos_event_id": "..." }
 ```

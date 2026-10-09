@@ -7,6 +7,11 @@ export const REDIS_KEYS = {
   OTP: (phone: string): string => `otp:${phone}`,
   REFRESH_TOKEN: (userId: string): string => `refresh:${userId}`,
   PLANS_ACTIVE: 'plans:active',
+  ROUTE: (hash: string): string => `route:${hash}`,
+  MAPS_RATELIMIT: (userId: string): string => `ratelimit:maps:${userId}`,
+  MAPS_USAGE: (api: string, day: string): string => `maps:usage:${api}:${day}`,
+  PROXIMITY: (bookingId: string, kind: string): string => `proximity:${bookingId}:${kind}`,
+  JOB_LASTRUN: (job: string): string => `jobs:lastrun:${job}`,
 } as const;
 
 export const CACHE_TTL = {

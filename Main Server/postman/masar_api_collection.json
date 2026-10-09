@@ -22393,6 +22393,589 @@
         }
       ],
       "description": "Service health probes (no auth required)."
+    },
+    {
+      "name": "Maps & Tracking",
+      "description": "Spec 013 (maps, tracking & journey) — implemented. MAPS_MOCK=true until billing is on.",
+      "item": [
+        {
+          "name": "Route Preview",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "pm.environment.get('access_token') ? pm.request.headers.add({ key: 'Authorization', value: 'Bearer ' + pm.environment.get('access_token') }) : console.warn('No access_token set');"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Responds successfully', function () {",
+                  "    pm.response.to.be.oneOf([200]);",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/maps/route-preview",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "maps",
+                "route-preview"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"origin\": {\n    \"lat\": 31.9539,\n    \"lng\": 35.9106\n  },\n  \"destination\": {\n    \"lat\": 32.5568,\n    \"lng\": 35.8469\n  },\n  \"stops\": []\n}"
+            },
+            "description": "Driver. Draft waypoints in, route out, nothing saved. Requires role `driver`."
+          }
+        },
+        {
+          "name": "Reverse Geocode",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "pm.environment.get('access_token') ? pm.request.headers.add({ key: 'Authorization', value: 'Bearer ' + pm.environment.get('access_token') }) : console.warn('No access_token set');"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Responds successfully', function () {",
+                  "    pm.response.to.be.oneOf([200]);",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/maps/reverse-geocode",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "maps",
+                "reverse-geocode"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"lat\": 31.9539,\n  \"lng\": 35.9106\n}"
+            },
+            "description": "Driver or passenger. lat/lng to city/area/label in request locale."
+          }
+        },
+        {
+          "name": "Pickup Preview",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "pm.environment.get('access_token') ? pm.request.headers.add({ key: 'Authorization', value: 'Bearer ' + pm.environment.get('access_token') }) : console.warn('No access_token set');"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Responds successfully', function () {",
+                  "    pm.response.to.be.oneOf([200]);",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/trips/{{trip_id}}/pickup-preview",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "trips",
+                "{{trip_id}}",
+                "pickup-preview"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"lat\": 32.25,\n  \"lng\": 35.8793\n}"
+            },
+            "description": "Passenger. Returns accepted, distance_from_route_m, detour_seconds, reason."
+          }
+        },
+        {
+          "name": "Replace Trip Stops",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "pm.environment.get('access_token') ? pm.request.headers.add({ key: 'Authorization', value: 'Bearer ' + pm.environment.get('access_token') }) : console.warn('No access_token set');"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Responds successfully', function () {",
+                  "    pm.response.to.be.oneOf([200]);",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/trips/{{trip_id}}/stops",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "trips",
+                "{{trip_id}}",
+                "stops"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"stops\": [\n    {\n      \"stop_name\": \"Jerash\",\n      \"city\": \"Jerash\",\n      \"lat\": 32.27,\n      \"lng\": 35.89,\n      \"stop_type\": \"both\"\n    }\n  ]\n}"
+            },
+            "description": "Driver owner. Replaces all stops, recomputes the route, notifies passengers."
+          }
+        },
+        {
+          "name": "Trip Route View",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "pm.environment.get('access_token') ? pm.request.headers.add({ key: 'Authorization', value: 'Bearer ' + pm.environment.get('access_token') }) : console.warn('No access_token set');"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Responds successfully', function () {",
+                  "    pm.response.to.be.oneOf([200]);",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/trips/{{trip_id}}/route",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "trips",
+                "{{trip_id}}",
+                "route"
+              ]
+            },
+            "description": "Driver owner or admin. Polyline, stops, ordered pickups (first name only), navigation_url/legs, route_version."
+          }
+        },
+        {
+          "name": "Set Pickup Status",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "pm.environment.get('access_token') ? pm.request.headers.add({ key: 'Authorization', value: 'Bearer ' + pm.environment.get('access_token') }) : console.warn('No access_token set');"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Responds successfully', function () {",
+                  "    pm.response.to.be.oneOf([200]);",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/trips/{{trip_id}}/pickups/{{booking_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "trips",
+                "{{trip_id}}",
+                "pickups",
+                "{{booking_id}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pickup_status\": \"arrived\"\n}"
+            },
+            "description": "Driver owner. pickup_status is arrived | picked_up | missed."
+          }
+        },
+        {
+          "name": "Booking Route View",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "pm.environment.get('access_token') ? pm.request.headers.add({ key: 'Authorization', value: 'Bearer ' + pm.environment.get('access_token') }) : console.warn('No access_token set');"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Responds successfully', function () {",
+                  "    pm.response.to.be.oneOf([200]);",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/bookings/{{booking_id}}/route",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "bookings",
+                "{{booking_id}}",
+                "route"
+              ]
+            },
+            "description": "Own booking (passenger) or trip driver. Planned route plus my pickup only."
+          }
+        },
+        {
+          "name": "Trip Actual Path",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "pm.environment.get('access_token') ? pm.request.headers.add({ key: 'Authorization', value: 'Bearer ' + pm.environment.get('access_token') }) : console.warn('No access_token set');"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Responds successfully', function () {",
+                  "    pm.response.to.be.oneOf([200]);",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/trips/{{trip_id}}/route/actual",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "trips",
+                "{{trip_id}}",
+                "route",
+                "actual"
+              ]
+            },
+            "description": "Participant. Recorded driven path after completion (null until compacted)."
+          }
+        },
+        {
+          "name": "Edit Pickup",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "pm.environment.get('access_token') ? pm.request.headers.add({ key: 'Authorization', value: 'Bearer ' + pm.environment.get('access_token') }) : console.warn('No access_token set');"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Responds successfully', function () {",
+                  "    pm.response.to.be.oneOf([200]);",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/bookings/{{booking_id}}/pickup",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "bookings",
+                "{{booking_id}}",
+                "pickup"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"lat\": 32.3,\n  \"lng\": 35.875\n}"
+            },
+            "description": "Passenger. Allowed while published and before the cutoff; same validation as booking."
+          }
+        },
+        {
+          "name": "Admin Trip Route",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "pm.environment.get('admin_token') ? pm.request.headers.add({ key: 'Authorization', value: 'Bearer ' + pm.environment.get('admin_token') }) : console.warn('No admin_token set');"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Responds successfully', function () {",
+                  "    pm.response.to.be.oneOf([200]);",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/trips/{{trip_id}}/route",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "trips",
+                "{{trip_id}}",
+                "route"
+              ]
+            },
+            "description": "Admin, support, moderator. Read-only; every view is audited."
+          }
+        },
+        {
+          "name": "Admin Trip Actual Path",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "pm.environment.get('admin_token') ? pm.request.headers.add({ key: 'Authorization', value: 'Bearer ' + pm.environment.get('admin_token') }) : console.warn('No admin_token set');"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Responds successfully', function () {",
+                  "    pm.response.to.be.oneOf([200]);",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/trips/{{trip_id}}/route/actual",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "trips",
+                "{{trip_id}}",
+                "route",
+                "actual"
+              ]
+            },
+            "description": "Admin, support, moderator. Completed trips only; every view is audited."
+          }
+        }
+      ]
     }
   ],
   "auth": {

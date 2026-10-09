@@ -1,5 +1,5 @@
 import { body, query, param, ValidationChain, Meta } from 'express-validator';
-import { BOOKING_STATUS } from '../../config/constants';
+import { BOOKING_STATUS, PICKUP_TYPE } from '../../config/constants';
 import V from '../../config/messages/validation-keys';
 import { hasTimezoneOffset } from '../time';
 
@@ -158,6 +158,13 @@ export const createBookingValidation: ValidationChain[] = [
   body('pickup.lng')
     .optional()
     .isFloat({ min: -180, max: 180 }).withMessage(V.ORIGIN_LONGITUDE_MUST_BE_BETWEEN_180_AND_180),
+  // spec 013: explicit pickup model (stop id or custom point descriptor)
+  body('pickup_type')
+    .optional()
+    .isIn(Object.values(PICKUP_TYPE)).withMessage(V.PICKUP_TYPE_MUST_BE_ONE_OF_STOP_CUSTOM),
+  body('pickup_stop_id')
+    .optional()
+    .isUUID().withMessage(V.PICKUP_STOP_ID_MUST_BE_A_VALID_UUID),
   body('dropoff')
     .optional()
     .isObject().withMessage(V.STOPS_MUST_BE_AN_ARRAY),

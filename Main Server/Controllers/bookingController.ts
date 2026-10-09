@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { catchAsync } from '../utils/catchAsync';
 import { successResponse } from '../utils/httpResponse';
 import * as bookingService from '../Services/bookingService';
+import * as tripService from '../Services/tripService';
 import * as delayService from '../Services/delayService';
 import * as auditService from '../Services/auditService';
 
@@ -28,8 +29,7 @@ const getBooking = catchAsync(async (req: Request, res: Response): Promise<void>
   successResponse(res, result);
 });
 
-const cancelBooking = catchAsync(async (req: Request, res: Response): Promise<void> => {
-  const authReq = req as AuthRequest;
+const cancelBooking = catchAsync(async (req: Request, res: Response): Promise<void> => {  const authReq = req as AuthRequest;
   const { booking_id } = req.params as { booking_id: string };
   const result = await (bookingService as unknown as { cancelBooking: (userId: string, id: string) => Promise<{ booking: { id: string } }> }).cancelBooking(String(authReq.user?.id), booking_id);
   (auditService as unknown as { markResource: (res: Response, r: unknown) => void }).markResource(res, { type: 'booking', id: booking_id, label: `booking ${result.booking.id}` });
@@ -41,6 +41,21 @@ const getDriverProfile = catchAsync(async (req: Request, res: Response): Promise
   const { booking_id } = req.params as { booking_id: string };
   const result = await (bookingService as unknown as { getDriverReveal: (userId: string, role: string, id: string) => Promise<unknown> }).getDriverReveal(String(authReq.user?.id), String(authReq.user?.role), booking_id);
   (auditService as unknown as { markResource: (res: Response, r: unknown) => void }).markResource(res, { type: 'booking', id: booking_id, action: 'driver_profile_revealed' });
+  successResponse(res, result);
+});
+
+const getBookingRoute = catchAsync(async (req: Request, res: Response): Promise<void> => {
+  const authReq = req as AuthRequest;
+  const { booking_id } = req.params as { booking_id: string };
+  const route = await (tripService as unknown as { getBookingRoute: (uid: string, role: string, bid: string) => Promise<unknown> }).getBookingRoute(String(authReq.user?.id), String(authReq.user?.role), booking_id);
+  successResponse(res, route);
+});
+
+const editBookingPickup = catchAsync(async (req: Request, res: Response): Promise<void> => {
+  const authReq = req as AuthRequest;
+  const { booking_id } = req.params as { booking_id: string };
+  const result = await (bookingService as unknown as { editPickup: (uid: string, bid: string, body: unknown) => Promise<{ booking_id: string }> }).editPickup(String(authReq.user?.id), booking_id, req.body);
+  (auditService as unknown as { markResource: (res: Response, r: unknown) => void }).markResource(res, { type: 'booking', id: result.booking_id });
   successResponse(res, result);
 });
 
@@ -59,5 +74,5 @@ const listDelays = catchAsync(async (req: Request, res: Response): Promise<void>
   successResponse(res, result);
 });
 
-export { createBooking, listMyBookings, getBooking, cancelBooking, getDriverProfile, reportDelay, listDelays };
-export default { createBooking, listMyBookings, getBooking, cancelBooking, getDriverProfile, reportDelay, listDelays };
+export { createBooking, listMyBookings, getBooking, cancelBooking, getBookingRoute, editBookingPickup, getDriverProfile, reportDelay, listDelays };
+export default { createBooking, listMyBookings, getBooking, cancelBooking, getBookingRoute, editBookingPickup, getDriverProfile, reportDelay, listDelays };
