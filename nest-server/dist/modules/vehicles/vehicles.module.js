@@ -12,7 +12,8 @@ let VehiclesModule = class VehiclesModule {
 VehiclesModule = __decorate([
     Module({
         controllers: [VehiclesController],
-        providers: [VehiclesService]
+        providers: [VehiclesService],
+        exports: [VehiclesService],
     })
 ], VehiclesModule);
 export { VehiclesModule };

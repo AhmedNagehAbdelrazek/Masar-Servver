@@ -649,7 +649,7 @@ export class AuthService {
     if (existingPlate) throw conflict('A_VEHICLE_WITH_THIS_PLATE_NUMBER_ALREADY_EXISTS');
     const owned = await this.prisma.vehicle.findFirst({ where: { driverId: userId } });
     if (owned) {
-      throw new BadRequestException({
+      throw new UnprocessableEntityException({
         message: 'YOU_ALREADY_HAVE_A_REGISTERED_VEHICLE_UPDATE_IT_INSTEAD',
         code: 'VALIDATION_ERROR',
       });

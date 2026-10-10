@@ -42,6 +42,13 @@ let RealtimeGateway = RealtimeGateway_1 = class RealtimeGateway {
     emitToRoom(room, event, data) {
         this.server?.to(room).emit(event, data);
     }
+    async disconnectUserSockets(userId) {
+        try {
+            await this.server?.in(`user:${userId}`).disconnectSockets();
+        }
+        catch {
+        }
+    }
 };
 __decorate([
     WebSocketServer(),

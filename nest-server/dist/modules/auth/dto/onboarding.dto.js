@@ -8,7 +8,8 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 import { Transform, Type } from 'class-transformer';
-import { IsDefined, IsIn, IsInt, IsNotEmpty, IsOptional, IsString, Max, MaxLength, Min, MinLength, Validate, ValidatorConstraint, } from 'class-validator';
+import { IsDefined, IsIn, IsInt, IsNotEmpty, IsOptional, IsString, Max, MaxLength, Min, MinLength, } from 'class-validator';
+import { IsModelYear } from '../../../common/validators/model-year.validator.js';
 export class OnboardingProfileDto {
     fullName;
     age;
@@ -133,22 +134,6 @@ __decorate([
     IsIn(['male', 'female']),
     __metadata("design:type", String)
 ], OnboardingPassengerProfileDto.prototype, "gender", void 0);
-let ModelYearRangeRule = class ModelYearRangeRule {
-    validate(value) {
-        if (value === undefined || value === null)
-            return true;
-        const currentYear = new Date().getFullYear();
-        const num = Number(value);
-        return Number.isInteger(num) && num >= currentYear - 10 && num <= currentYear;
-    }
-    defaultMessage() {
-        const currentYear = new Date().getFullYear();
-        return `Model year must be between ${currentYear - 10} and ${currentYear} (within the last 10 years)`;
-    }
-};
-ModelYearRangeRule = __decorate([
-    ValidatorConstraint({ name: 'modelYearRange', async: false })
-], ModelYearRangeRule);
 export class OnboardingVehicleDto {
     vehicleType;
     manufacturer;
@@ -189,7 +174,7 @@ __decorate([
     IsOptional(),
     IsInt(),
     Type(() => Number),
-    Validate(ModelYearRangeRule),
+    IsModelYear(),
     __metadata("design:type", Number)
 ], OnboardingVehicleDto.prototype, "modelYear", void 0);
 __decorate([

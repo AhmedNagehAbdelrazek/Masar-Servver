@@ -10,10 +10,8 @@ import {
   MaxLength,
   Min,
   MinLength,
-  Validate,
-  ValidatorConstraint,
-  type ValidatorConstraintInterface,
 } from 'class-validator';
+import { IsModelYear } from '../../../common/validators/model-year.validator.js';
 
 // Port of onboardingProfileValidation (driver).
 export class OnboardingProfileDto {
@@ -113,21 +111,6 @@ export class OnboardingPassengerProfileDto {
   gender!: 'male' | 'female';
 }
 
-@ValidatorConstraint({ name: 'modelYearRange', async: false })
-class ModelYearRangeRule implements ValidatorConstraintInterface {
-  validate(value: unknown): boolean {
-    if (value === undefined || value === null) return true;
-    const currentYear = new Date().getFullYear();
-    const num = Number(value);
-    return Number.isInteger(num) && num >= currentYear - 10 && num <= currentYear;
-  }
-
-  defaultMessage(): string {
-    const currentYear = new Date().getFullYear();
-    return `Model year must be between ${currentYear - 10} and ${currentYear} (within the last 10 years)`;
-  }
-}
-
 // Port of onboardingVehicleValidation.
 export class OnboardingVehicleDto {
   @IsDefined()
@@ -152,7 +135,7 @@ export class OnboardingVehicleDto {
   @IsOptional()
   @IsInt()
   @Type(() => Number)
-  @Validate(ModelYearRangeRule)
+  @IsModelYear()
   modelYear?: number;
 
   @IsOptional()

@@ -55,4 +55,12 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
   emitToRoom(room: string, event: string, data: unknown): void {
     this.server?.to(room).emit(event, data);
   }
+
+  async disconnectUserSockets(userId: string): Promise<void> {
+    try {
+      await this.server?.in(`user:${userId}`).disconnectSockets();
+    } catch {
+      // best-effort
+    }
+  }
 }

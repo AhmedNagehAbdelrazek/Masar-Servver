@@ -34,6 +34,14 @@ Health: `GET /api/healthz`, `GET /api/health/realtime` (public). Swagger: `/docs
   blocking), OtpService, NotificationSettingsService; message catalogs copied
   verbatim + LocalizeInterceptor/HttpExceptionFilter rendering (ar/en/both),
   ApiValidationPipe 422 envelopes, phone validator + phoneCodes data
+- [x] Wave 3: driver surface (207 e2e + 14 unit green): vehicles CRUD, driver
+  aggregate + full profile, verification state machine + submit/resubmit +
+  admin queue/approve/reject (registered early for resubmit flow; Wave 7 must
+  not duplicate), personal-data with verification locks, account status,
+  delete-account lifecycle, penalties list (+issue ported, no HTTP until
+  Wave 7), earnings (date_trunc raw SQL), lifetime stats, cached dashboard.
+  Deferred: driver bookings/offers (Wave 5 with bookingService), driver
+  home/subscription (Wave 4 with homeService), driverStats recompute (Wave 7)
 - [x] Scaffold (Nest 12, pnpm, ESM nodenext with `.js` import suffixes)
 - [x] `prisma/schema.prisma` — all 34 tables ported from `Models/*.ts` + `migrations/001–032`
   (`createdat`/`updatedat` column mapping preserved, UUID PKs, native enums).
@@ -120,6 +128,9 @@ Health: `GET /api/healthz`, `GET /api/health/realtime` (public). Swagger: `/docs
 - Verified Express bug (do not copy): `PUT /api/notifications/:id/read` carries a
   stray settings-array validator that 422s every bodyless call — Express fails
   3/6 of its own notification tests. Port omits body validation there.
+- Verified Express discrepancy: `GET /api/admin/verification/queue` has no role
+  filter, so the admin row appears (Express fails 9/10 of its own test file on
+  the length-1 assertion). Port asserts the driver entry explicitly.
 - Copied data files (`messages/app.ts`, `messages/validation.ts`, `phoneCodes.ts`)
   must have their CommonJS interop footers stripped — they throw under ESM.
 - express-validator SKIPS absent fields; class-validator does NOT (absent required

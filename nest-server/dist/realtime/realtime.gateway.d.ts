@@ -20,4 +20,5 @@ export declare class RealtimeGateway implements OnGatewayConnection, OnGatewayDi
     emitToUser(userId: string, event: string, data: unknown): void;
     emitToRole(role: string, event: string, data: unknown): void;
     emitToRoom(room: string, event: string, data: unknown): void;
+    disconnectUserSockets(userId: string): Promise<void>;
 }
