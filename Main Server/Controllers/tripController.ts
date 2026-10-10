@@ -181,6 +181,48 @@ const cancelTripWithPenalty = catchAsync(async (req: Request, res: Response): Pr
   successResponse(res, result, 200);
 });
 
+const updateTripStops = catchAsync(async (req: Request, res: Response): Promise<void> => {  const authReq = req as AuthRequest;
+  const { trip_id } = req.params as { trip_id: string };
+  const result = await (tripService as unknown as { replaceTripStops: (userId: string, id: string, stops: unknown) => Promise<{ trip_id: string }> }).replaceTripStops(String(authReq.user?.id), trip_id, req.body.stops);
+  (auditService as unknown as { markResource: (res: Response, r: unknown) => void }).markResource(res, { type: 'trip', id: result.trip_id });
+  successResponse(res, result, 200);
+});
+
+const getTripRoute = catchAsync(async (req: Request, res: Response): Promise<void> => {
+  const authReq = req as AuthRequest;
+  const { trip_id } = req.params as { trip_id: string };
+  const route = await (tripService as unknown as { getTripRoute: (uid: string, role: string, tid: string, o: unknown) => Promise<unknown> }).getTripRoute(String(authReq.user?.id), String(authReq.user?.role), trip_id, {});
+  successResponse(res, route);
+});
+
+const setTripPickupStatus = catchAsync(async (req: Request, res: Response): Promise<void> => {  const authReq = req as AuthRequest;
+  const { trip_id, booking_id } = req.params as { trip_id: string; booking_id: string };
+  const result = await (tripService as unknown as { setPickupStatus: (uid: string, tid: string, bid: string, s: unknown) => Promise<{ booking_id: string }> }).setPickupStatus(String(authReq.user?.id), trip_id, booking_id, req.body.pickup_status);
+  (auditService as unknown as { markResource: (res: Response, r: unknown) => void }).markResource(res, { type: 'booking', id: result.booking_id });
+  successResponse(res, result);
+});
+
+const getTripActual = catchAsync(async (req: Request, res: Response): Promise<void> => {
+  const authReq = req as AuthRequest;
+  const { trip_id } = req.params as { trip_id: string };
+  const actual = await (tripService as unknown as { getTripActual: (uid: string, role: string, tid: string) => Promise<unknown> }).getTripActual(String(authReq.user?.id), String(authReq.user?.role), trip_id);
+  successResponse(res, actual);
+});
+
+const getAdminTripRoute = catchAsync(async (req: Request, res: Response): Promise<void> => {
+  const authReq = req as AuthRequest;
+  const { trip_id } = req.params as { trip_id: string };
+  const route = await (tripService as unknown as { getTripRoute: (uid: string, role: string, tid: string, o: unknown) => Promise<unknown> }).getTripRoute(String(authReq.user?.id), String(authReq.user?.role), trip_id, { audited: true });
+  successResponse(res, route);
+});
+
+const getAdminTripActual = catchAsync(async (req: Request, res: Response): Promise<void> => {
+  const authReq = req as AuthRequest;
+  const { trip_id } = req.params as { trip_id: string };
+  const actual = await (tripService as unknown as { getTripActual: (uid: string, role: string, tid: string) => Promise<unknown> }).getTripActual(String(authReq.user?.id), String(authReq.user?.role), trip_id);
+  successResponse(res, actual);
+});
+
 const attachOfferToTrip = catchAsync(async (req: Request, res: Response): Promise<void> => {
   const authReq = req as AuthRequest;
   const { trip_id, offer_id } = req.params as { trip_id: string; offer_id: string };
@@ -197,6 +239,12 @@ export {
   startTrip,
   completeTrip,
   updateTrip,
+  updateTripStops,
+  getTripRoute,
+  setTripPickupStatus,
+  getTripActual,
+  getAdminTripRoute,
+  getAdminTripActual,
   cancelTrip,
   cancelTripWithPenalty,
   getTripAttributes,
@@ -213,6 +261,12 @@ export default {
   startTrip,
   completeTrip,
   updateTrip,
+  updateTripStops,
+  getTripRoute,
+  setTripPickupStatus,
+  getTripActual,
+  getAdminTripRoute,
+  getAdminTripActual,
   cancelTrip,
   cancelTripWithPenalty,
   getTripAttributes,

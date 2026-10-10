@@ -9,10 +9,11 @@ export interface TripLocationAttributes {
   lng: number;
   speed?: number | null;
   heading?: number | null;
+  occurrenceDate?: string | null;
   createdAt?: Date;
 }
 
-export interface TripLocationCreationAttributes extends Optional<TripLocationAttributes, 'id' | 'speed' | 'heading' | 'createdAt'> {}
+export interface TripLocationCreationAttributes extends Optional<TripLocationAttributes, 'id' | 'speed' | 'heading' | 'occurrenceDate' | 'createdAt'> {}
 
 export class TripLocation extends Model<TripLocationAttributes, TripLocationCreationAttributes> implements TripLocationAttributes {
   declare id: string;
@@ -22,6 +23,7 @@ export class TripLocation extends Model<TripLocationAttributes, TripLocationCrea
   declare lng: number;
   declare speed?: number | null;
   declare heading?: number | null;
+  declare occurrenceDate?: string | null;
   declare readonly createdAt?: Date;
 }
 
@@ -56,6 +58,12 @@ TripLocation.init(
             type: (DataTypes as unknown as { DECIMAL: (a?: number, b?: number) => unknown; NUMERIC: (a?: number, b?: number) => unknown }).NUMERIC(10, 2) as unknown as import('sequelize').DataType,
             allowNull: true,
         },
+    // spec 013 DB4: which recurrence occurrence this point belongs to
+    occurrenceDate: {
+            type: DataTypes.DATEONLY,
+            field: 'occurrence_date',
+            allowNull: true,
+        },
   },
   {
         sequelize,
@@ -68,6 +76,10 @@ TripLocation.init(
             {
                 name: 'idx_trip_locations_trip_created',
                 fields: ['trip_id', 'createdat'],
+            },
+            {
+                name: 'idx_trip_locations_trip_occurrence',
+                fields: ['trip_id', 'occurrence_date'],
             },
         ],
     }

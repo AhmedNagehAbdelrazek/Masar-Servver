@@ -9,10 +9,13 @@ import { deleteKey } from '../config/redis';
 import { checkSeatLock, releaseSeatLock } from '../utils/seatLock';
 import auditService from './auditService';
 import notificationService from './notificationService';
+import pickupService from './pickupService';
+import routeService from './routeService';
+import mapsConfig from '../config/maps';
 import { generateReferenceCode } from '../utils/referenceCode';
 import homeService from './homeService';
 import realtimeService from './realtimeService';
-import { BOOKING_STATUS, PAYMENT_STATUS, TRIP_STATUS, SEAT_TYPE, USER_STATUS, STOP_TYPE } from '../config/constants';
+import { BOOKING_STATUS, PAYMENT_STATUS, TRIP_STATUS, SEAT_TYPE, USER_STATUS, STOP_TYPE, PICKUP_TYPE, PICKUP_STATUS } from '../config/constants';
 import { parseOptionalTimezoneAware } from '../utils/time';
 
 // Reads must return the CURRENT state, not the last cron run: close out
@@ -374,6 +377,54 @@ async function createBooking(passengerId, payload) {
     }
   }
 
+  // spec 013: pickup model. Default = trip origin; stop ids auto-accept;
+  // custom points pass the shared distance/detour validator (rejects block booking).
+  let pickupPoint = {
+    pickupType: PICKUP_TYPE.CUSTOM,
+    pickupStopId: null,
+    label: trip.originCity,
+    city: trip.originCity,
+    area: trip.originArea || null,
+    lat: trip.originLat != null ? Number(trip.originLat) : null,
+    lng: trip.originLng != null ? Number(trip.originLng) : null,
+    detourSeconds: 0,
+  };
+  if (rawPickupInput != null) {
+    if (isUuid(rawPickupInput)) {
+      const checked = await pickupService.validatePickup(trip_id, { pickup_type: PICKUP_TYPE.STOP, pickup_stop_id: rawPickupInput });
+      const stop = await TripStop.findByPk(rawPickupInput);
+      pickupPoint = {
+        pickupType: PICKUP_TYPE.STOP,
+        pickupStopId: rawPickupInput,
+        label: checked.point.label || resolvedPickupPlace,
+        city: (stop && stop.city) || null,
+        area: null,
+        lat: checked.point.lat,
+        lng: checked.point.lng,
+        detourSeconds: 0,
+      };
+    } else if (typeof rawPickupInput === 'object') {
+      const checked = await pickupService.validatePickup(trip_id, {
+        pickup_type: (payload.pickup_type === PICKUP_TYPE.STOP ? PICKUP_TYPE.STOP : PICKUP_TYPE.CUSTOM),
+        pickup_stop_id: payload.pickup_stop_id || null,
+        lat: resolvedPickupLat != null ? Number(resolvedPickupLat) : null,
+        lng: resolvedPickupLng != null ? Number(resolvedPickupLng) : null,
+        pickup_label: resolvedPickupPlace,
+      });
+      if (!checked.accepted) throw ApiErrors.custom(checked.reason, 422, checked.reason);
+      pickupPoint = {
+        pickupType: PICKUP_TYPE.CUSTOM,
+        pickupStopId: null,
+        label: (checked.point && checked.point.label) || resolvedPickupPlace,
+        city: null,
+        area: null,
+        lat: (checked.point && checked.point.lat) ?? (resolvedPickupLat != null ? Number(resolvedPickupLat) : null),
+        lng: (checked.point && checked.point.lng) ?? (resolvedPickupLng != null ? Number(resolvedPickupLng) : null),
+        detourSeconds: checked.detourSeconds,
+      };
+    }
+  }
+
   // Could the booking be satisfied right now? (re-checked atomically below)
   if (requestedSeats > Number(trip.availableSeats)) {
     throw ApiErrors.custom('NOT_ENOUGH_AVAILABLE_SEATS_ON_THE_SELECTED_TRIP', 409, 'NOT_ENOUGH_AVAILABLE_SEATS_ON_THE_SELECTED_TRIP');
@@ -431,10 +482,17 @@ async function createBooking(passengerId, payload) {
         seatsBooked: requestedSeats,
         agreedFare: agreed_fare,
         currency: 'JOD',
-        pickupPlace: resolvedPickupPlace,
-        pickupLat: resolvedPickupLat,
-        pickupLng: resolvedPickupLng,
+        pickupPlace: resolvedPickupPlace ?? pickupPoint.label,
+        pickupLat: resolvedPickupLat ?? pickupPoint.lat,
+        pickupLng: resolvedPickupLng ?? pickupPoint.lng,
         pickupOrder: resolvedPickupOrder,
+        pickupType: pickupPoint.pickupType,
+        pickupStopId: pickupPoint.pickupStopId,
+        pickupLabel: pickupPoint.label,
+        pickupCity: pickupPoint.city,
+        pickupArea: pickupPoint.area,
+        detourSeconds: pickupPoint.detourSeconds,
+        pickupStatus: PICKUP_STATUS.PENDING,
         dropoffPlace: resolvedDropoffPlace,
         dropoffLat: resolvedDropoffLat,
         dropoffLng: resolvedDropoffLng,
@@ -502,8 +560,7 @@ async function createBooking(passengerId, payload) {
 
   const routeLabel = `${trip.originCity} - ${trip.destinationCity}`;
   await Promise.allSettled([
-    notificationService.sendToUser(user, 'BOOKING_CONFIRMED_PASSENGER', {
-      channels: ['in_app', 'push'],
+    notificationService.sendToUser(user, 'BOOKING_CONFIRMED_PASSENGER', {      channels: ['in_app', 'push'],
       vars: {
         reference_code: booking.referenceCode,
         origin: trip.originCity,
@@ -518,6 +575,26 @@ async function createBooking(passengerId, payload) {
       route: routeLabel,
     }),
   ]);
+
+  // spec 013: route recompute is best-effort AFTER the booking succeeded (O8).
+  // Driver learns the new pickup; live viewers refetch on route_updated.
+  try {
+    const recomputed = await routeService.computeTripRoute(trip_id);
+    if (recomputed.ok) {
+      try {
+        realtimeService.emitToRoom(`trip:${trip_id}`, 'tracking:route_updated', { route_version: recomputed.routeVersion });
+      } catch (_err) {
+        // socket layer offline (e.g. tests) — ignore
+      }
+    }
+  } catch (err) {
+    console.warn('[bookingService] post-booking recompute failed:', err.message);
+  }
+  try {
+    await notifyDriver(trip, 'PICKUP_ADDED', { passenger: user.fullName, route: routeLabel });
+  } catch (err) {
+    console.warn('[bookingService] pickup_added notification failed:', err.message);
+  }
 
   const fullTrip = await Trip.findByPk(trip_id, {
     include: [
@@ -815,9 +892,106 @@ async function cancelBooking(passengerId, bookingId) {
     route: `${booking.trip.originCity} - ${booking.trip.destinationCity}`,
   });
 
+  // spec 013 (O2): after departure only the pickup is skipped — no re-routing.
+  // Before departure, recompute best-effort and tell the driver + room.
+  if ([TRIP_STATUS.IN_PROGRESS, TRIP_STATUS.ONGOING].includes(booking.trip.status)) {
+    try {
+      await notifyDriver(booking.trip, 'PICKUP_CANCELLED', { route: `${booking.trip.originCity} - ${booking.trip.destinationCity}` });
+    } catch (err) {
+      console.warn('[bookingService] pickup_cancelled notification failed:', err.message);
+    }
+  } else {
+    try {
+      const recomputed = await routeService.computeTripRoute(booking.tripId);
+      if (recomputed.ok) {
+        try {
+          realtimeService.emitToRoom(`trip:${booking.tripId}`, 'tracking:route_updated', { route_version: recomputed.routeVersion });
+        } catch (_err) {
+          // socket layer offline (e.g. tests) — ignore
+        }
+      }
+    } catch (err) {
+      console.warn('[bookingService] post-cancel recompute failed:', err.message);
+    }
+    try {
+      await notifyDriver(booking.trip, 'PICKUP_CANCELLED', { route: `${booking.trip.originCity} - ${booking.trip.destinationCity}` });
+    } catch (err) {
+      console.warn('[bookingService] pickup_cancelled notification failed:', err.message);
+    }
+  }
+
   await homeService.invalidateHomeForTrip(booking.tripId, booking.trip.driverId);
 
   return { booking: { id: booking.id, status: booking.status, cancelled_at: booking.cancelledAt } };
+}
+
+/**
+ * Passenger changes their pickup before the cutoff (API10). Same shared
+ * validation as booking; recompute + driver notify are best-effort.
+ */
+async function editPickup(passengerId, bookingId, input) {
+  const booking = await Booking.findByPk(bookingId, {
+    include: [{ model: Trip, as: 'trip' }],
+  });
+  if (!booking) throw ApiErrors.notFound('BOOKING_NOT_FOUND');
+  if (booking.passengerId !== passengerId) throw ApiErrors.forbidden('YOU_CAN_ONLY_EDIT_YOUR_OWN_BOOKINGS');
+  if (booking.status !== BOOKING_STATUS.CONFIRMED) throw ApiErrors.conflict('BOOKING_IS_NOT_CONFIRMED');
+  pickupService.assertBookable(booking.trip);
+
+  const cutoffMs = mapsConfig.pickupEditCutoffMinutes * 60 * 1000;
+  if (new Date(booking.trip.departureTime).getTime() - Date.now() < cutoffMs) {
+    throw ApiErrors.custom('PICKUP_EDIT_CUTOFF_PASSED', 422, 'PICKUP_EDIT_CUTOFF_PASSED');
+  }
+
+  const type = (input && input.pickup_type) || (input && input.pickup_stop_id ? PICKUP_TYPE.STOP : PICKUP_TYPE.CUSTOM);
+  const checked = await pickupService.validatePickup(booking.tripId, {
+    pickup_type: type,
+    pickup_stop_id: (input && input.pickup_stop_id) || null,
+    lat: input && input.lat != null ? Number(input.lat) : null,
+    lng: input && input.lng != null ? Number(input.lng) : null,
+    pickup_label: input && (input.pickup_label || input.label),
+  }, {});
+  if (!checked.accepted) throw ApiErrors.custom(checked.reason, 422, checked.reason);
+
+  await booking.update({
+    pickupType: type,
+    pickupStopId: (checked.point && checked.point.pickupStopId) || null,
+    pickupLabel: (checked.point && checked.point.label) || null,
+    pickupLat: checked.point.lat,
+    pickupLng: checked.point.lng,
+    detourSeconds: checked.detourSeconds,
+    pickupStatus: PICKUP_STATUS.PENDING,
+    arrivedAt: null,
+    pickedUpAt: null,
+  });
+
+  try {
+    const out = await routeService.computeTripRoute(booking.tripId);
+    if (out.ok) {
+      try {
+        realtimeService.emitToRoom(`trip:${booking.tripId}`, 'tracking:route_updated', { route_version: out.routeVersion });
+      } catch (_err) {
+        // socket layer offline (e.g. tests) — ignore
+      }
+    }
+  } catch (err) {
+    console.warn('[bookingService] pickup-edit recompute failed:', err.message);
+  }
+  try {
+    const driver = await User.findByPk(booking.trip.driverId);
+    const passenger = await User.findByPk(passengerId, { attributes: ['fullName'] });
+    if (driver) {
+      await notificationService.sendToUser(driver, 'PICKUP_CHANGED', {
+        channels: ['in_app', 'push'],
+        vars: { passenger: (passenger && passenger.fullName) || 'A passenger', route: `${booking.trip.originCity} - ${booking.trip.destinationCity}` },
+        data: { trip_id: booking.tripId, booking_id: booking.id },
+      });
+    }
+  } catch (err) {
+    console.warn('[bookingService] pickup_changed notification failed:', err.message);
+  }
+  auditService.track({ action: 'booking.pickup_changed', resourceType: 'booking', resourceId: booking.id, actorId: passengerId, actorType: 'passenger', payload: { trip_id: booking.tripId } });
+  return { booking_id: booking.id, pickup_type: type, detour_seconds: checked.detourSeconds };
 }
 
 /**
@@ -893,6 +1067,6 @@ async function getDriverReveal(requesterId, requesterRole, bookingId) {
   };
 }
 
-module.exports = { listForDriver, getForDriver, createBooking, listForPassenger, getForPassenger, cancelBooking, getDriverReveal };
-export { listForDriver, getForDriver, createBooking, listForPassenger, getForPassenger, cancelBooking, getDriverReveal };
+module.exports = { listForDriver, getForDriver, createBooking, editPickup, listForPassenger, getForPassenger, cancelBooking, getDriverReveal };
+export { listForDriver, getForDriver, createBooking, editPickup, listForPassenger, getForPassenger, cancelBooking, getDriverReveal };
 export default module.exports;

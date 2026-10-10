@@ -174,16 +174,16 @@ All in `Main Server/Models/`. Conventions: `underscored:true`, UUID PK, `created
 
 ### Trips & seats
 
-- **Trip** — `origin_*|destination_* (city+area+lat/lng), departure|arrival, fare|currency JOD|total|available, is_recurring|recurrence_days SMALLINT[]|recurrence_end, gender_preference all|women_only|men_only, instructions[], status published|full|in_progress|ongoing|completed|cancelled, is_blocked|is_featured`.
+- **Trip** — `origin_*|destination_* (city+area+lat/lng), departure|arrival, fare|currency JOD|total|available, is_recurring|recurrence_days SMALLINT[]|recurrence_end, gender_preference all|women_only|men_only, instructions[], status published|full|in_progress|ongoing|completed|cancelled, is_blocked|is_featured` + spec-013 `route_polyline|route_distance_m|route_duration_s|route_status|route_computed_at|route_version, actual_path_*|started_at|completed_at`.
 - **TripSeat** — `UNIQUE(trip,number)`; types `driver|available|unavailable`; invariant: exactly 1 driver seat, ≥1 available.
 - **TripStop** — `UNIQUE(trip,order)`; `city|address|lat|lng|stop_type pickup|dropoff|both`; ordered; doubles as dropoff options.
 - **TripAttribute** — `UNIQUE(trip,key)`; flexible extras (was orphaned before 004, now CRUD).
-- **TripLocation** (005) — `trip+driver+lat/lng+speed/heading`; retention 30d.
+- **TripLocation** (005) — `trip+driver+lat/lng+speed/heading` + spec-013 `occurrence_date`; retention 30d (1yr SOS-linked).
 - Seat locks are **Redis only** (`seat_lock:{trip}:{seat} NX EX 300`, 5-min TTL). No `SeatLock` table.
 
 ### Bookings & marketplace
 
-- **Booking** — `seatNumber|seatsBooked (multi-seat 012)|agreedFare|status pending|confirmed|cancelled|completed|no_show|referenceCode MSR-|payment pending|paid_cash|paid_other|disputed|dropoff*|completedAt|cancel*`. Term is `booking`.
+- **Booking** — `seatNumber|seatsBooked (multi-seat 012)|agreedFare|status pending|confirmed|cancelled|completed|no_show|referenceCode MSR-|payment pending|paid_cash|paid_other|disputed|dropoff*|completedAt|cancel*` + spec-013 pickup `pickup_type stop|custom|pickup_stop_id|pickup_label|pickup_city|pickup_area|detour_seconds|pickup_status pending|arrived|picked_up|missed|arrived_at|picked_up_at`. Term is `booking`.
 - **RideRequest** — `open|offered|accepted|expired|cancelled`; board for passenger demand.
 - **RequestOffer** — `sent|accepted|declined|expired + agreed_fare|booking_id|tripId nullable`; 1 offer/driver/request; TTL 24h (`REQUEST_OFFER_TTL_HOURS`); accept closes request → negotiate → `attach` to trip creates booking.
 - **Rating** — `booking|rater|ratee|stars1-5|wasLate|lateMinutes|review|tags|isVisible`, `UNIQUE(booking+rater)`, immutable, bidirectional.
@@ -245,7 +245,10 @@ Source: `Main Server/config/constants.ts` (368 lines). This is the **options reg
 | `FREE_OFFER_TYPE` | `trips, credit` |
 | `SOS_STATUS/URGENCY` | `pending|acknowledged|resolved|cancelled` |
 | `MESSAGE_TYPE` | `text, image, system` |
-| `NOTIFICATION_TYPE (15)` | includes `subscription_payment, payment_confirmed, TRIP_STARTED, sos_alert (admin-only)`, + `NOTIFICATION_CATEGORIES bookings|trips|subscriptions`, group + type labels ar/en |
+| `NOTIFICATION_TYPE (23)` | includes `subscription_payment, payment_confirmed, TRIP_STARTED, sos_alert (admin-only)`, + spec-013 `pickup_added|pickup_changed|pickup_cancelled|route_updated|driver_nearby|driver_arrived|pickup_missed|next_pickup`, + `NOTIFICATION_CATEGORIES bookings|trips|subscriptions`, group + type labels ar/en |
+| `ROUTE_STATUS` | `pending, ready, failed` (spec 013; failure never blocks publish/booking) |
+| `PICKUP_TYPE` | `stop, custom` (spec 013; drop-offs stay stop-only) |
+| `PICKUP_STATUS` | `pending, arrived, picked_up, missed` (spec 013; driver-driven) |
 | `STOP_TYPE` | `pickup, dropoff, both` |
 | `REQUEST_OFFER_TTL_HOURS` | `24` |
 | `ADMIN_RESOURCES` | `["trip","reservation"]` (legacy string) |
@@ -311,12 +314,12 @@ Reference codes: Booking `MSR-XXXXXX`, Ticket `TKT-XXXXXX` (via `utils/reference
 - Rooms: `user:<id>` + `role:<role>`; Redis adapter; 2-min recovery; 10k conn target.
 - Modules per connection: `chatSocket, notificationSocket, sosSocket, trackingSocket, presenceSocket, enforcementSocket, adminSocket`.
 - **Chat:** trip P2P only `confirmed→completed`, plus support-ticket chat; typing 4s idle; read receipts; 10 msgs/10s rate limit; history via REST.
-- **Tracking:** live 3–5s + ETA; 1 loc/2s rate limit; persist-before-broadcast.
+- **Tracking:** live 3–5s + ETA; 1 loc/2s rate limit; persist-before-broadcast; `trip:<id>` rooms for `in_progress` trips only (013 — `ongoing` no longer opens rooms); single + batch (≤60, 5-min age window) ingest; per-passenger filtered ETA + next-pickup guidance; near/arrived proximity once per booking; `route_updated|pickup_status|ended` room events.
 - **SOS:** trip-only; ack/resolve; 60s re-alert; escalate L1 after 5min (`sosEscalationJob`).
 - **Presence:** 60s grace; `presence:{user}` in Redis.
 - **Enforcement:** revoke on suspend/ban; `disconnectUserSockets()` emits `force_disconnect`.
 - **Admin live dashboard** + metrics/alerts (>5% >1s latency or >5% conn fail /1min).
-- **Retention:** chat 1yr, location 30d, SOS long-term (`dataRetentionJob`).
+- **Retention:** chat 1yr, location 30d (1yr on SOS-linked trips, 013), SOS long-term (`dataRetentionJob`).
 - REST complements: chat history, `/admin/sos` list/ack/resolve, `/health/realtime` metrics.
 - Client guides: `docs/Flutter_Socket_IO_Integration_Guide.md`, `docs/Flutter_Socket_Simple_Guide.md`.
 
@@ -332,7 +335,9 @@ Started by `startJobs()` after boot (`jobs/index.js`). Worker thread (`worker.js
 | `expiryReminderJob` | Upcoming-expiry reminders | `JOB_REMINDER_CRON` |
 | `lowBalanceWarningJob` | Driver low-balance warnings | `JOB_LOW_BALANCE_WARNING_CRON` |
 | `sosEscalationJob` | Escalate unanswered SOS (L1 after 5min, 60s re-alert) | `JOB_SOS_*` |
-| `dataRetentionJob` | Purge chat>1yr, location>30d | `JOB_RETENTION_*` |
+| `dataRetentionJob` | Purge chat>1yr, location>30d (SOS-linked location>1yr) | `JOB_RETENTION_*` |
+| `routeRetryJob` | Retry `pending|failed` trip routes (013) | `JOB_ROUTE_RETRY_CRON` |
+| `actualPathJob` | Compact completed trips into recorded paths (013) | `JOB_PATH_COMPACT_CRON` |
 | `tripLifecycleJob` | Trip state transitions, no-show handling | `JOB_TRIP_*` |
 | `driverStatsJob` | Nightly materialization of `totalTrips|responseRate|punctualityRate|professionalDriver` | `JOB_DRIVER_STATS_CRON` |
 
@@ -350,7 +355,7 @@ Started by `startJobs()` after boot (`jobs/index.js`). Worker thread (`worker.js
 ## 14. Notifications
 
 - `Services/notificationService/` with `sms/push/inApp` channels; FCM + Twilio/log SMS; locale templates `ar` default.
-- 15 `NOTIFICATION_TYPE`s grouped `bookings|trips|subscriptions` with ar/en labels (`GROUP_LABELS`, `TYPE_LABELS`).
+- 23 `NOTIFICATION_TYPE`s grouped `bookings|trips|subscriptions` with ar/en labels (`GROUP_LABELS`, `TYPE_LABELS`), including spec-013 `pickup_added|pickup_changed|pickup_cancelled|route_updated|driver_nearby|driver_arrived|pickup_missed|next_pickup`.
 - `NotificationSetting` per user+type (`enabledInApp|enabledPush`), defaults all-on, auto-init for new users, partial update, master switch hard-overwrite (010).
 - Delivery respects flags; `sos_alert` admin-only. Best-effort async with retry+audit — mutation always wins.
 
@@ -364,7 +369,7 @@ Started by `startJobs()` after boot (`jobs/index.js`). Worker thread (`worker.js
 
 ---
 
-## 16. Features by Spec (001–012)
+## 16. Features by Spec (001–013)
 
 ### 001 — Driver Trip Creation & Dashboard
 
@@ -437,11 +442,17 @@ Started by `startJobs()` after boot (`jobs/index.js`). Worker thread (`worker.js
 **Decisions:** docs are columns → `document_reviews` upsert (UNIQUE driver+key, last-wins); status derived `banned→blocked, suspended→suspended, active/warned+unverified|pending|rejected→pending, +approved→active`; suspend inserts penalty, unblock closes open suspension; ≤2s reads, ≤8 COUNTs summary.
 **Models:** `DocumentReview NEW`; migration `020`.
 
-### 012 — Passenger Flow Completion (current — AGENTS.md pointer)
+### 012 — Passenger Flow Completion
 
 **What it does:** Extend `GET /trips/search/available` (`time_from|time_to, vehicle_type, seats>=, gender`; AND; empty→`[]`; records `RecentSearch`); `GET /trips/:id/options` (ordered `TripStop` dropoffs + open count, `published|full` only); `POST /bookings` multi-seat + `drop_off_point` must be trip stop + atomic lock/decrement (backward-compat single `seat_number`); `GET /bookings[?status]` enriched (status as-stored, trip time/route, driver+vehicle summaries, fare, own rating) + detail; `GET /bookings/:id/driver-profile` (confirmed only, passenger|driver|admin, `User` + `DriverProfile nationalID|totalTrips|responseRate|punctualityRate|professionalDriver` + `Vehicle`); `GET /ride-requests/:id/matches` (owner-only, rank route→time→seats→gender, advisory never auto-books); `GET /profile/passenger/home` (next_booking nearest pending/confirmed, last_searched distinct 5 routes, last ended trips, 30s cache).
 **Decisions:** term `booking`; drop-offs = `TripStop`; stats materialized by `driverStatsJob` nightly, not per-request; PII only via reveal.
 **Models:** `driver_profiles.+punctualityRate|professionalDriver, RecentSearch NEW`; migrations `021` (+`022 national-id, 023 home-address, 024 recent-search-updatedat fix, 026 seat-numbers, 027 profit/seat-history`).
+
+### 013 — Maps, Tracking & Journey (current — AGENTS.md pointer)
+
+**What it does:** Map-based trips with stored routes (`POST /api/maps/route-preview`, `POST /api/maps/reverse-geocode`, route computed on publish); passenger pickup as stop-or-custom-point with distance/detour validation (`POST /api/trips/:id/pickup-preview`, `POST /api/bookings` pickup block defaulting to origin); driver stops replace (`PATCH /api/trips/:id/stops`); live `trip:<id>` rooms on `in_progress` trips only with batch ingest, per-passenger ETA, next-pickup guidance, once-per-booking proximity (`near|arrived`), pickup `arrived|picked_up|missed` transitions; route views for owner/admin (`GET /api/trips/:id/route` + navigation links), booking-scoped history (`GET /api/bookings/:id/route`, `GET /api/trips/:id/route/actual`), passenger pickup edit before cutoff, audited admin views (`GET /api/admin/trips/:id/route|/route/actual`); SOS alerts carry last driver position; `routeRetryJob` + `actualPathJob` + SOS-aware retention.
+**Decisions:** custom pickups auto-accept within platform limits (no driver approval); no bookings after start (cancels skip without re-route); Google deep links, no nav SDK; `MAPS_MOCK=true` until billing; route failure never blocks publish/booking; live ETA straight-line + speed (no per-update Routes calls); one-row recurrence + `occurrence_date`; waypoint overflow rejected (legs split for nav links only); `missed` touches `pickup_status` only (driver no-show rate untouched); 30d raw points / 1yr SOS-linked; `sendToUser` matches UPPER + lower type keys (taxonomy fix).
+**Models:** `trips.+route_*|actual_*|started_at|completed_at, bookings.+pickup_*|detour|status, trip_locations.+occurrence_date`; migrations `028–032`; Postman `Maps & Tracking` folder; `docs/Maps_Tracking_Guide.md` + socket guide updates.
 
 ---
 
@@ -454,16 +465,17 @@ All under `/api` (`Main Server/Routes/index.ts`):
 | `/api/healthz`, `/api/health` | health / realtimeHealth | Liveness & realtime metrics |
 | `/api/auth` | authRoutes | Register, login, OTP, tokens, change-password |
 | `/api/upload` | uploadRoutes | Image upload (provider abstraction) |
-| `/api/trips` | tripRoutes + seatLockRoutes | Trips, stops, attributes, seat locking, search/options/start/cancel |
+| `/api/trips` | tripRoutes + seatLockRoutes | Trips, stops, attributes, seat locking, search/options/start/cancel + route view, stops replace, pickup status |
+| `/api/maps` | mapsRoutes | Route preview, reverse-geocode (spec 013) |
 | `/api/driver/dashboard` | dashboardRoutes | Legacy dashboard (metrics, today/upcoming) |
 | `/api/driver` | driverRoutes + driverVerificationRoutes | Driver profile/full, personal-data, ratings, notification-settings, account-status, delete-account, verification submit |
 | `/api/plans` | planRoutes | Plan catalog |
 | `/api/payment-methods` | paymentMethodRoutes | Admin-guarded payment methods |
 | `/api/subscriptions` | subscriptionRoutes | Driver subscriptions (trial, pay, queue, history) |
-| `/api/admin` | adminSubscriptionRoutes + adminModerationRoutes + sosRoutes | Subscription approvals, users/trips moderation, penalties, SOS |
+| `/api/admin` | adminSubscriptionRoutes + adminModerationRoutes + sosRoutes + adminTripRoutes | Subscription approvals, users/trips moderation, penalties, SOS, read-only trip routes/paths |
 | `/api/admin/verification` | adminVerificationRoutes | Verification queue approve/reject |
 | `/api/admin/dashboard` | adminDashboardRoutes | 19 dashboard endpoints |
-| `/api/bookings` | bookingRoutes | Passenger bookings (multi-seat, cancel, driver-profile reveal) |
+| `/api/bookings` | bookingRoutes | Passenger bookings (multi-seat, cancel, driver-profile reveal) + pickup edit, booking route view |
 | `/api/ride-requests` | rideRequestRoutes | Ride-request board + matches |
 | `/api/offers` | offersRoutes | Request offers + attach |
 | `/api/support-tickets` | supportTicketRoutes | Tickets + messages |
@@ -506,6 +518,11 @@ All under `/api` (`Main Server/Routes/index.ts`):
 | 025-noname | Misc (see file) |
 | 026-seat-numbers | Multi-seat `seat_numbers` |
 | 027-profit-history | Profit / seat-history |
+| 028-trip-route | Planned route on trips (`route_polyline|distance_m|duration_s|status|computed_at|version`) |
+| 029-booking-pickup | Pickup model on bookings (`type|stop_id|label|city|area|detour|status|timestamps`) |
+| 030-trip-actual-path | Recorded path on trips (+`started_at|completed_at`) |
+| 031-trip-location-occurrence | `occurrence_date` + index on `trip_locations` |
+| 032-notification-types | No-op by design (read-path defaults cover the 8 new types) |
 
 ---
 
@@ -520,8 +537,8 @@ All under `/api` (`Main Server/Routes/index.ts`):
 
 ## 20. Current Plan & Roadmap
 
-- **Active:** `specs/012-passenger-flow-completion` (see `plan.md` — AGENTS.md pointer). Implements search filters, trip options, multi-seat bookings, enriched booking lists, driver-profile reveal, request matches, passenger home + `RecentSearch` + stats materialization.
-- **Done:** 001 (trips/dashboard), 002 (subscriptions), 003 (audit docs), 004 (driver hardening), 005 (realtime), 006 (verification), 007 (driver home), 008 (trip cancel/notify-settings), 009 (seeder gaps), 010 (profile/settings), 011 (admin dashboard P1).
+- **Active:** `specs/013-maps-tracking-journey` (see `plan.md` — AGENTS.md pointer). Implements map routes, pickup booking, live tracking, history/admin views, jobs, notifications.
+- **Done:** 001 (trips/dashboard), 002 (subscriptions), 003 (audit docs), 004 (driver hardening), 005 (realtime), 006 (verification), 007 (driver home), 008 (trip cancel/notify-settings), 009 (seeder gaps), 010 (profile/settings), 011 (admin dashboard P1), 012 (passenger flow).
 - **Known follow-ups:** re-enable commented trip/booking/rating sections in `seed-mock.ts`; `025-noname` cleanup; serverless-incompatible realtime (keep persistent); payment gateway evaluation (currently out of scope — virtual ledger stands); admin dashboard P2 (beyond 011).
 
 ---

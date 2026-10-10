@@ -15,6 +15,15 @@ export interface BookingAttributes {
   pickupLat?: number | null;
   pickupLng?: number | null;
   pickupOrder?: number | null;
+  pickupType?: string | null;
+  pickupStopId?: string | null;
+  pickupLabel?: string | null;
+  pickupCity?: string | null;
+  pickupArea?: string | null;
+  detourSeconds?: number | null;
+  pickupStatus?: string | null;
+  arrivedAt?: Date | null;
+  pickedUpAt?: Date | null;
   dropoffPlace?: string | null;
   dropoffLat?: number | null;
   dropoffLng?: number | null;
@@ -31,7 +40,7 @@ export interface BookingAttributes {
   updatedAt?: Date;
 }
 
-export interface BookingCreationAttributes extends Optional<BookingAttributes, 'id' | 'seatNumber' | 'seatNumbers' | 'seatsBooked' | 'currency' | 'pickupPlace' | 'pickupLat' | 'pickupLng' | 'pickupOrder' | 'dropoffPlace' | 'dropoffLat' | 'dropoffLng' | 'dropoffDeadline' | 'dropoffOrder' | 'status' | 'cancellationReason' | 'cancelledBy' | 'cancelledAt' | 'paymentStatus' | 'completedAt' | 'createdAt' | 'updatedAt'> {}
+export interface BookingCreationAttributes extends Optional<BookingAttributes, 'id' | 'seatNumber' | 'seatNumbers' | 'seatsBooked' | 'currency' | 'pickupPlace' | 'pickupLat' | 'pickupLng' | 'pickupOrder' | 'pickupType' | 'pickupStopId' | 'pickupLabel' | 'pickupCity' | 'pickupArea' | 'detourSeconds' | 'pickupStatus' | 'arrivedAt' | 'pickedUpAt' | 'dropoffPlace' | 'dropoffLat' | 'dropoffLng' | 'dropoffDeadline' | 'dropoffOrder' | 'status' | 'cancellationReason' | 'cancelledBy' | 'cancelledAt' | 'paymentStatus' | 'completedAt' | 'createdAt' | 'updatedAt'> {}
 
 export class Booking extends Model<BookingAttributes, BookingCreationAttributes> implements BookingAttributes {
   declare id: string;
@@ -46,6 +55,15 @@ export class Booking extends Model<BookingAttributes, BookingCreationAttributes>
   declare pickupLat?: number | null;
   declare pickupLng?: number | null;
   declare pickupOrder?: number | null;
+  declare pickupType?: string | null;
+  declare pickupStopId?: string | null;
+  declare pickupLabel?: string | null;
+  declare pickupCity?: string | null;
+  declare pickupArea?: string | null;
+  declare detourSeconds?: number | null;
+  declare pickupStatus?: string | null;
+  declare arrivedAt?: Date | null;
+  declare pickedUpAt?: Date | null;
   declare dropoffPlace?: string | null;
   declare dropoffLat?: number | null;
   declare dropoffLng?: number | null;
@@ -118,6 +136,53 @@ Booking.init(
     pickupOrder: {
             type: DataTypes.SMALLINT,
             field: 'pickup_order',
+            allowNull: true,
+        },
+    // spec 013 DB2: pickup model (see migration 029)
+    pickupType: {
+            type: DataTypes.ENUM('stop', 'custom'),
+            field: 'pickup_type',
+            allowNull: true,
+        },
+    pickupStopId: {
+            type: DataTypes.UUID,
+            field: 'pickup_stop_id',
+            allowNull: true,
+        },
+    pickupLabel: {
+            type: DataTypes.TEXT,
+            field: 'pickup_label',
+            allowNull: true,
+        },
+    pickupCity: {
+            type: DataTypes.STRING(100),
+            field: 'pickup_city',
+            allowNull: true,
+        },
+    pickupArea: {
+            type: DataTypes.STRING(120),
+            field: 'pickup_area',
+            allowNull: true,
+        },
+    detourSeconds: {
+            type: DataTypes.INTEGER,
+            field: 'detour_seconds',
+            allowNull: true,
+        },
+    pickupStatus: {
+            type: DataTypes.ENUM('pending', 'arrived', 'picked_up', 'missed'),
+            field: 'pickup_status',
+            allowNull: false,
+            defaultValue: 'pending',
+        },
+    arrivedAt: {
+            type: DataTypes.DATE,
+            field: 'arrived_at',
+            allowNull: true,
+        },
+    pickedUpAt: {
+            type: DataTypes.DATE,
+            field: 'picked_up_at',
             allowNull: true,
         },
     dropoffPlace: {

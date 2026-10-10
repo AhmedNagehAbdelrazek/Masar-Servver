@@ -4,6 +4,8 @@ import realtimeService from '../Services/realtimeService';
 import realtimeMetrics from '../Services/realtimeMetrics';
 import { checkRateLimit } from '../Services/socketRateLimiter';
 import { ApiErrors } from '../utils/ApiError';
+import { TRIP_STATUS } from '../config/constants';
+import { Trip } from '../Models';
 import { ok, errorFromApiError, rateLimited } from '../utils/socketAck';
 
 interface AuthedSocket extends Socket {
@@ -16,6 +18,10 @@ interface TrackingPayload {
   lng?: number;
   speed?: number;
   heading?: number;
+  accuracy?: number;
+  recorded_at?: string;
+  occurrence_date?: string;
+  points?: Array<Record<string, unknown>>;
 }
 
 const trackingSocket = (io: Server, socket: AuthedSocket): void => {
@@ -27,6 +33,12 @@ const trackingSocket = (io: Server, socket: AuthedSocket): void => {
       const tripId: string | undefined = payload ? payload.trip_id : undefined;
       const member: boolean = await (realtimeService as unknown as { isTripMember: (u: unknown, id: string | undefined) => Promise<boolean> }).isTripMember(user, tripId);
       if (!member) throw ApiErrors.forbidden('YOU_ARE_NOT_A_MEMBER_OF_THIS_TRIP');
+      // spec 013 (O6/X2): live rooms exist for in_progress trips only — even
+      // members are refused once the trip completes or is cancelled.
+      const trip = await Trip.findByPk(tripId as string, { attributes: ['status'] });
+      if (!trip || trip.status !== TRIP_STATUS.IN_PROGRESS) {
+        throw ApiErrors.conflict('TRACKING_IS_ONLY_AVAILABLE_FOR_ACTIVE_TRIPS');
+      }
       socket.join(`trip:${tripId}`);
       if (ack) ack(ok({ room: `trip:${tripId}` }));
     } catch (err: unknown) {
@@ -57,6 +69,10 @@ const trackingSocket = (io: Server, socket: AuthedSocket): void => {
         lng: payload ? payload.lng : undefined,
         speed: payload ? payload.speed : undefined,
         heading: payload ? payload.heading : undefined,
+        accuracy: payload ? payload.accuracy : undefined,
+        recorded_at: payload ? payload.recorded_at : undefined,
+        occurrence_date: payload ? payload.occurrence_date : undefined,
+        points: payload ? payload.points : undefined,
       });
       if (ack) ack(ok(result));
     } catch (err: unknown) {

@@ -284,6 +284,24 @@ export const APP_MESSAGES = {
   // ===== Date / search =====
   DATE_CANNOT_BE_IN_THE_PAST: { en: 'Date cannot be in the past', ar: 'لا يمكن أن يكون التاريخ في الماضي' },
 
+  // ===== Maps, tracking & journey (spec 013) =====
+  MAPS_UNAVAILABLE: { en: 'Map service is temporarily unavailable. Your trip was saved and the route will refresh automatically.', ar: 'خدمة الخرائط غير متاحة مؤقتاً. تم حفظ رحلتك وسيتم تحديث المسار تلقائياً.' },
+  MAPS_TIMEOUT: { en: 'Map service timed out. Please try again.', ar: 'انتهت مهلة خدمة الخرائط. يرجى المحاولة مرة أخرى.' },
+  MAPS_QUOTA_EXCEEDED: { en: 'Map service quota exceeded. Please try again later.', ar: 'تم تجاوز حصة خدمة الخرائط. يرجى المحاولة لاحقاً.' },
+  PICKUP_TOO_FAR_FROM_ROUTE: { en: 'This pickup is too far from the trip route. Please choose a closer point.', ar: 'نقطة الصعود بعيدة جداً عن مسار الرحلة. يرجى اختيار نقطة أقرب.' },
+  PICKUP_DETOUR_TOO_LONG: { en: 'This pickup adds too much extra travel time. Please choose a closer point.', ar: 'نقطة الصعود تضيف وقتاً إضافياً كبيراً. يرجى اختيار نقطة أقرب.' },
+  TOO_MANY_WAYPOINTS: { en: 'Too many stops for one route. Please remove a stop and try again.', ar: 'عدد المحطات كبير جداً لمسار واحد. يرجى إزالة محطة والمحاولة مرة أخرى.' },
+  PICKUP_EDIT_CUTOFF_PASSED: { en: 'Pickup can no longer be changed for this trip.', ar: 'لا يمكن تغيير نقطة الصعود لهذه الرحلة بعد الآن.' },
+  ORIGIN_DESTINATION_REQUIRED: { en: 'Origin and destination are required to compute a route.', ar: 'نقطة الانطلاق والوجهة مطلوبتان لحساب المسار.' },
+  ORIGIN_DESTINATION_TOO_CLOSE: { en: 'Origin and destination are too close to form a route.', ar: 'نقطة الانطلاق والوجهة قريبتان جداً ولا تشكلان مساراً.' },
+  TRIP_STOPS_LOCKED_AFTER_START: { en: 'Stops can only be changed before the trip starts.', ar: 'لا يمكن تغيير المحطات إلا قبل بدء الرحلة.' },
+  YOU_CAN_ONLY_VIEW_ROUTES_ON_YOUR_OWN_TRIPS: { en: 'You can only view routes on your own trips.', ar: 'يمكنك عرض المسارات لرحلاتك فقط.' },
+  YOU_CAN_ONLY_MANAGE_PICKUPS_ON_YOUR_OWN_TRIPS: { en: 'You can only manage pickups on your own trips.', ar: 'يمكنك إدارة نقاط الصعود لرحلاتك فقط.' },
+  BOOKING_IS_NOT_CONFIRMED: { en: 'Booking is not confirmed.', ar: 'الحجز غير مؤكد.' },
+  YOU_CAN_ONLY_EDIT_YOUR_OWN_BOOKINGS: { en: 'You can only edit your own bookings.', ar: 'يمكنك تعديل حجوزاتك فقط.' },
+  ACTUAL_PATH_AVAILABLE_AFTER_COMPLETION: { en: 'The recorded path is available after the trip completes.', ar: 'المسار المسجل متاح بعد اكتمال الرحلة.' },
+  LOCATION_POINT_TOO_OLD: { en: 'Location point is too old and was discarded.', ar: 'نقطة الموقع قديمة جداً وتم تجاهلها.' },
+
   // ===== Successes =====
 } as const;
 

@@ -37,11 +37,22 @@ export interface TripAttributes {
   isModerated: boolean;
   moderationReason?: string | null;
   moderatedBy?: string | null;
+  routePolyline?: string | null;
+  routeDistanceM?: number | null;
+  routeDurationS?: number | null;
+  routeStatus?: string | null;
+  routeComputedAt?: Date | null;
+  routeVersion?: number | null;
+  actualPathPolyline?: string | null;
+  actualDistanceM?: number | null;
+  actualDurationS?: number | null;
+  startedAt?: Date | null;
+  completedAt?: Date | null;
   createdAt?: Date;
   updatedAt?: Date;
 }
 
-export interface TripCreationAttributes extends Optional<TripAttributes, 'id' | 'originArea' | 'originAddress' | 'originLat' | 'originLng' | 'destinationArea' | 'destinationAddress' | 'destinationLat' | 'destinationLng' | 'arrivalTime' | 'totalProfit' | 'currency' | 'isRecurring' | 'recurrencePattern' | 'recurrenceDays' | 'recurrenceEndDate' | 'genderPreference' | 'driverInstructions' | 'additionalInstructions' | 'status' | 'isFeatured' | 'featuredUntil' | 'isBlockedByBalance' | 'isModerated' | 'moderationReason' | 'moderatedBy' | 'createdAt' | 'updatedAt'> {}
+export interface TripCreationAttributes extends Optional<TripAttributes, 'id' | 'originArea' | 'originAddress' | 'originLat' | 'originLng' | 'destinationArea' | 'destinationAddress' | 'destinationLat' | 'destinationLng' | 'arrivalTime' | 'totalProfit' | 'currency' | 'isRecurring' | 'recurrencePattern' | 'recurrenceDays' | 'recurrenceEndDate' | 'genderPreference' | 'driverInstructions' | 'additionalInstructions' | 'status' | 'isFeatured' | 'featuredUntil' | 'isBlockedByBalance' | 'isModerated' | 'moderationReason' | 'moderatedBy' | 'routePolyline' | 'routeDistanceM' | 'routeDurationS' | 'routeStatus' | 'routeComputedAt' | 'routeVersion' | 'actualPathPolyline' | 'actualDistanceM' | 'actualDurationS' | 'startedAt' | 'completedAt' | 'createdAt' | 'updatedAt'> {}
 
 export class Trip extends Model<TripAttributes, TripCreationAttributes> implements TripAttributes {
   declare id: string;
@@ -228,6 +239,64 @@ Trip.init(
         },
     moderatedBy: {
             type: DataTypes.UUID,
+            allowNull: true,
+        },
+    // spec 013 DB1: planned route (see migration 028)
+    routePolyline: {
+            type: DataTypes.TEXT,
+            allowNull: true,
+        },
+    routeDistanceM: {
+            type: DataTypes.INTEGER,
+            field: 'route_distance_m',
+            allowNull: true,
+        },
+    routeDurationS: {
+            type: DataTypes.INTEGER,
+            field: 'route_duration_s',
+            allowNull: true,
+        },
+    routeStatus: {
+            type: DataTypes.ENUM('pending', 'ready', 'failed'),
+            field: 'route_status',
+            allowNull: false,
+            defaultValue: 'pending',
+        },
+    routeComputedAt: {
+            type: DataTypes.DATE,
+            field: 'route_computed_at',
+            allowNull: true,
+        },
+    routeVersion: {
+            type: DataTypes.INTEGER,
+            field: 'route_version',
+            allowNull: false,
+            defaultValue: 0,
+        },
+    // spec 013 DB3: recorded driven path (see migration 030)
+    actualPathPolyline: {
+            type: DataTypes.TEXT,
+            field: 'actual_path_polyline',
+            allowNull: true,
+        },
+    actualDistanceM: {
+            type: DataTypes.INTEGER,
+            field: 'actual_distance_m',
+            allowNull: true,
+        },
+    actualDurationS: {
+            type: DataTypes.INTEGER,
+            field: 'actual_duration_s',
+            allowNull: true,
+        },
+    startedAt: {
+            type: DataTypes.DATE,
+            field: 'started_at',
+            allowNull: true,
+        },
+    completedAt: {
+            type: DataTypes.DATE,
+            field: 'completed_at',
             allowNull: true,
         },
   },
