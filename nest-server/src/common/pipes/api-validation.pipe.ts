@@ -34,7 +34,7 @@ export class ApiValidationPipe extends ValidationPipe {
       transform: true,
       exceptionFactory: (errors: ValidationError[]) =>
         new UnprocessableEntityException({
-          message: 'Validation failed',
+          message: 'VALIDATION_FAILED',
           code: 'VALIDATION_ERROR',
           details: toDetails(errors),
         }),

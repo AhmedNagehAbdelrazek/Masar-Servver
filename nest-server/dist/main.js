@@ -11,6 +11,7 @@ import { HttpExceptionFilter } from './common/filters/http-exception.filter.js';
 import { AuditInterceptor } from './common/interceptors/audit.interceptor.js';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor.js';
 import { AppAuthGuard } from './common/guards/app-auth.guard.js';
+import { LocalizeInterceptor } from './common/interceptors/localize.interceptor.js';
 import { ApiValidationPipe } from './common/pipes/api-validation.pipe.js';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard.js';
 import { RolesGuard } from './common/guards/roles.guard.js';
@@ -29,7 +30,7 @@ async function bootstrap() {
     app.setGlobalPrefix('api', { exclude: ['/'] });
     app.useGlobalPipes(new ApiValidationPipe());
     app.useGlobalFilters(new HttpExceptionFilter());
-    app.useGlobalInterceptors(new ResponseInterceptor(), app.get(AuditInterceptor));
+    app.useGlobalInterceptors(new ResponseInterceptor(), new LocalizeInterceptor(), app.get(AuditInterceptor));
     app.useGlobalGuards(new AppAuthGuard(app.get(Reflector), app.get(JwtAuthGuard), app.get(RolesGuard)));
     const swaggerConfig = new DocumentBuilder()
         .setTitle('Masar API (Nest)')

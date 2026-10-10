@@ -1,15 +1,26 @@
-import { IsIn, IsString, Length, Matches } from 'class-validator';
+import { Transform } from 'class-transformer';
+import { IsAlpha, IsDefined, IsIn, IsNotEmpty, IsString, Length } from 'class-validator';
 
-// Port of Main Server/utils/validators/authValidator.ts (register/phone subset)
+// Port of registerPhoneValidation. Phone-format validation (per-country
+// length/digits) runs in AuthService via validatePhone, mirroring the
+// validator's custom check (422 on failure).
 export class RegisterPhoneDto {
+  @IsDefined()
   @IsString()
-  @Length(2, 5)
+  @IsNotEmpty()
+  @IsAlpha()
+  @Length(2, 2)
+  @Transform(({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value))
   country_code!: string;
 
+  @IsDefined()
   @IsString()
-  @Matches(/^[0-9+\s-]{5,20}$/)
+  @IsNotEmpty()
+  @Transform(({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value))
   phone!: string;
 
+  @IsDefined()
+  @IsNotEmpty()
   @IsIn(['passenger', 'driver'])
   role!: 'passenger' | 'driver';
 }

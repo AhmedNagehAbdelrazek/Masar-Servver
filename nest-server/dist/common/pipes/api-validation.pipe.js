@@ -20,7 +20,7 @@ export class ApiValidationPipe extends ValidationPipe {
             forbidNonWhitelisted: false,
             transform: true,
             exceptionFactory: (errors) => new UnprocessableEntityException({
-                message: 'Validation failed',
+                message: 'VALIDATION_FAILED',
                 code: 'VALIDATION_ERROR',
                 details: toDetails(errors),
             }),

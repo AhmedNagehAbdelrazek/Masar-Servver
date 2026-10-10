@@ -7,18 +7,26 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
-import { IsString, Matches } from 'class-validator';
+import { Transform } from 'class-transformer';
+import { IsDefined, IsNotEmpty, IsString, Length, Matches } from 'class-validator';
 export class VerifyOtpDto {
     phone;
     otp;
 }
 __decorate([
+    IsDefined(),
     IsString(),
+    IsNotEmpty(),
+    Transform(({ value }) => (typeof value === 'string' ? value.trim() : value)),
     __metadata("design:type", String)
 ], VerifyOtpDto.prototype, "phone", void 0);
 __decorate([
+    IsDefined(),
     IsString(),
-    Matches(/^[0-9]{6}$/),
+    IsNotEmpty(),
+    Length(6, 6),
+    Matches(/^\d+$/),
+    Transform(({ value }) => (typeof value === 'string' ? value.trim() : value)),
     __metadata("design:type", String)
 ], VerifyOtpDto.prototype, "otp", void 0);
 //# sourceMappingURL=verify-otp.dto.js.map

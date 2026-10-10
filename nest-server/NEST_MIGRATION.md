@@ -26,6 +26,14 @@ Health: `GET /api/healthz`, `GET /api/health/realtime` (public). Swagger: `/docs
   upload (5), plans + payment-methods incl. both `/api/*` and `/api/admin/*` mounts (29),
   ratings incl. `GET /driver/ratings` (10), complaints incl. driver + admin endpoints (15),
   favorites (11), health (3)
+- [x] Wave 2: identity backbone with 1:1 tests (62 e2e):
+  notifications incl. settings + grouped screen (14), full auth incl. OTP/
+  password flows + driver/vehicle/passenger onboarding (36), passenger profile
+  incl. account summary (12; /home deferred to Wave 4 with homeService)
+- [x] Shared providers: BalanceService (ledger rules, FIFO commission, trip
+  blocking), OtpService, NotificationSettingsService; message catalogs copied
+  verbatim + LocalizeInterceptor/HttpExceptionFilter rendering (ar/en/both),
+  ApiValidationPipe 422 envelopes, phone validator + phoneCodes data
 - [x] Scaffold (Nest 12, pnpm, ESM nodenext with `.js` import suffixes)
 - [x] `prisma/schema.prisma` — all 34 tables ported from `Models/*.ts` + `migrations/001–032`
   (`createdat`/`updatedat` column mapping preserved, UUID PKs, native enums).
@@ -109,6 +117,16 @@ Health: `GET /api/healthz`, `GET /api/health/realtime` (public). Swagger: `/docs
 - Verified Express discrepancy (do not copy): `GET /api/plans` excludes free plans
   though `tests/contract/plan.contract.test.js` expects them — that test fails
   against Express itself (11/12). Port asserts actual behavior.
+- Verified Express bug (do not copy): `PUT /api/notifications/:id/read` carries a
+  stray settings-array validator that 422s every bodyless call — Express fails
+  3/6 of its own notification tests. Port omits body validation there.
+- Copied data files (`messages/app.ts`, `messages/validation.ts`, `phoneCodes.ts`)
+  must have their CommonJS interop footers stripped — they throw under ESM.
+- express-validator SKIPS absent fields; class-validator does NOT (absent required
+  fields fail). Consequence: Express-optional fields (e.g. login `role`) need
+  explicit `@IsOptional()` in DTOs.
+- Services return/throw message KEYS; LocalizeInterceptor (success) and
+  HttpExceptionFilter (errors, incl. details via tValidation bridge) render them.
 
 ## Notes / gotchas
 

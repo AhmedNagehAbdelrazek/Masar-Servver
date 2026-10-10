@@ -7,23 +7,32 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
-import { IsIn, IsString, Length, Matches } from 'class-validator';
+import { Transform } from 'class-transformer';
+import { IsAlpha, IsDefined, IsIn, IsNotEmpty, IsString, Length } from 'class-validator';
 export class RegisterPhoneDto {
     country_code;
     phone;
     role;
 }
 __decorate([
+    IsDefined(),
     IsString(),
-    Length(2, 5),
+    IsNotEmpty(),
+    IsAlpha(),
+    Length(2, 2),
+    Transform(({ value }) => (typeof value === 'string' ? value.trim() : value)),
     __metadata("design:type", String)
 ], RegisterPhoneDto.prototype, "country_code", void 0);
 __decorate([
+    IsDefined(),
     IsString(),
-    Matches(/^[0-9+\s-]{5,20}$/),
+    IsNotEmpty(),
+    Transform(({ value }) => (typeof value === 'string' ? value.trim() : value)),
     __metadata("design:type", String)
 ], RegisterPhoneDto.prototype, "phone", void 0);
 __decorate([
+    IsDefined(),
+    IsNotEmpty(),
     IsIn(['passenger', 'driver']),
     __metadata("design:type", String)
 ], RegisterPhoneDto.prototype, "role", void 0);

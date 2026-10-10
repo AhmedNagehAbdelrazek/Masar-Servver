@@ -7,6 +7,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
+import { hasKey, localizeDetail, shape } from '../i18n/i18n.js';
 import { resolveLocaleMode } from '../utils/locale.js';
 
 // Port of Main Server/middlewares/globalErrorHandler.ts + utils/ApiError.ts
@@ -29,16 +30,31 @@ export class HttpExceptionFilter implements ExceptionFilter {
       const body = exception.getResponse();
       if (typeof body === 'object' && body !== null && 'code' in body) {
         const payload = body as Record<string, unknown>;
+        // Services throw catalog KEYS as message (e.g. 'OTP_SENT'); render
+        // per request locale. Raw strings pass through (entryFor fallback).
+        const shaped =
+          typeof payload.message === 'string' && hasKey(payload.message)
+            ? shape(
+                payload.message,
+                (payload.params as Record<string, unknown> | undefined) ?? null,
+                mode,
+              )
+            : { message: payload.message };
         const out: Record<string, unknown> = {
           status: 'error',
-          message: payload.message,
+          ...shaped,
           code: payload.code,
         };
-        if (payload.message_en !== undefined) {
-          if (mode === 'both') out.message_en = payload.message_en;
-          else if (mode === 'en') out.message = payload.message_en;
+        if (Array.isArray(payload.details)) {
+          out.details = (payload.details as Record<string, string>[]).map((d) =>
+            localizeDetail(
+              d as { field: string; message: string; value?: unknown },
+              mode,
+            ),
+          );
+        } else if (payload.details !== undefined) {
+          out.details = payload.details;
         }
-        if (payload.details !== undefined) out.details = payload.details;
         res.status(status).json(out);
         return;
       }

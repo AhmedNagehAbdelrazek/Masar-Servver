@@ -10,6 +10,7 @@ import { AppAuthGuard } from '../common/guards/app-auth.guard.js';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard.js';
 import { RolesGuard } from '../common/guards/roles.guard.js';
 import { AuditInterceptor } from '../common/interceptors/audit.interceptor.js';
+import { LocalizeInterceptor } from '../common/interceptors/localize.interceptor.js';
 import { ResponseInterceptor } from '../common/interceptors/response.interceptor.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { RedisService } from '../redis/redis.service.js';
@@ -26,6 +27,7 @@ function buildRedisStub(redis) {
         deleteKey: async (...keys) => (keys.length === 0 ? 0 : await redis.del(...keys)),
         exists: async (key) => (await redis.exists(key)) === 1,
         incr: (key) => redis.incr(key),
+        keys: (pattern) => redis.keys(pattern),
         onModuleDestroy: async () => undefined,
     };
 }
@@ -42,7 +44,7 @@ export async function createTestApp() {
     app.setGlobalPrefix('api', { exclude: ['/'] });
     app.useGlobalPipes(new ApiValidationPipe());
     app.useGlobalFilters(new HttpExceptionFilter());
-    app.useGlobalInterceptors(new ResponseInterceptor(), app.get(AuditInterceptor));
+    app.useGlobalInterceptors(new ResponseInterceptor(), new LocalizeInterceptor(), app.get(AuditInterceptor));
     app.useGlobalGuards(new AppAuthGuard(app.get(Reflector), app.get(JwtAuthGuard), app.get(RolesGuard)));
     await app.init();
     const prisma = app.get(PrismaService);

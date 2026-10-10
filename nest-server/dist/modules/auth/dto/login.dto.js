@@ -7,18 +7,23 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
-import { IsIn, IsOptional, IsString } from 'class-validator';
+import { Transform } from 'class-transformer';
+import { IsDefined, IsIn, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 export class LoginDto {
     phone;
     password;
     role;
 }
 __decorate([
+    IsDefined(),
     IsString(),
+    IsNotEmpty(),
+    Transform(({ value }) => (typeof value === 'string' ? value.trim() : value)),
     __metadata("design:type", String)
 ], LoginDto.prototype, "phone", void 0);
 __decorate([
-    IsString(),
+    IsDefined(),
+    IsNotEmpty(),
     __metadata("design:type", String)
 ], LoginDto.prototype, "password", void 0);
 __decorate([

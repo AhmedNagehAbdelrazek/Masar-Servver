@@ -54,6 +54,9 @@ let RedisService = RedisService_1 = class RedisService {
     async incr(key) {
         return this.client.incr(key);
     }
+    async keys(pattern) {
+        return this.client.keys(pattern);
+    }
     async onModuleDestroy() {
         try {
             this.client.disconnect();

@@ -12,5 +12,6 @@ export declare class RedisService implements OnModuleDestroy {
     deleteKey(...keys: string[]): Promise<number>;
     exists(key: string): Promise<boolean>;
     incr(key: string): Promise<number>;
+    keys(pattern: string): Promise<string[]>;
     onModuleDestroy(): Promise<void>;
 }

@@ -6,6 +6,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 };
 var HttpExceptionFilter_1;
 import { Catch, HttpException, HttpStatus, Logger, } from '@nestjs/common';
+import { hasKey, localizeDetail, shape } from '../i18n/i18n.js';
 import { resolveLocaleMode } from '../utils/locale.js';
 let HttpExceptionFilter = HttpExceptionFilter_1 = class HttpExceptionFilter {
     logger = new Logger(HttpExceptionFilter_1.name);
@@ -22,19 +23,20 @@ let HttpExceptionFilter = HttpExceptionFilter_1 = class HttpExceptionFilter {
             const body = exception.getResponse();
             if (typeof body === 'object' && body !== null && 'code' in body) {
                 const payload = body;
+                const shaped = typeof payload.message === 'string' && hasKey(payload.message)
+                    ? shape(payload.message, payload.params ?? null, mode)
+                    : { message: payload.message };
                 const out = {
                     status: 'error',
-                    message: payload.message,
+                    ...shaped,
                     code: payload.code,
                 };
-                if (payload.message_en !== undefined) {
-                    if (mode === 'both')
-                        out.message_en = payload.message_en;
-                    else if (mode === 'en')
-                        out.message = payload.message_en;
+                if (Array.isArray(payload.details)) {
+                    out.details = payload.details.map((d) => localizeDetail(d, mode));
                 }
-                if (payload.details !== undefined)
+                else if (payload.details !== undefined) {
                     out.details = payload.details;
+                }
                 res.status(status).json(out);
                 return;
             }

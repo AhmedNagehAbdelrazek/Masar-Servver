@@ -5,14 +5,22 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
 import { Module } from '@nestjs/common';
+import { RealtimeModule } from '../../realtime/realtime.module.js';
+import { InAppChannel } from './channels/in-app.channel.js';
+import { PushChannel } from './channels/push.channel.js';
+import { SmsChannel } from './channels/sms.channel.js';
+import { NotificationSettingsController } from './notification-settings.controller.js';
+import { NotificationSettingsService } from './notification-settings.service.js';
 import { NotificationsController } from './notifications.controller.js';
 import { NotificationsService } from './notifications.service.js';
 let NotificationsModule = class NotificationsModule {
 };
 NotificationsModule = __decorate([
     Module({
-        controllers: [NotificationsController],
-        providers: [NotificationsService]
+        imports: [RealtimeModule],
+        controllers: [NotificationsController, NotificationSettingsController],
+        providers: [NotificationsService, NotificationSettingsService, SmsChannel, PushChannel, InAppChannel],
+        exports: [NotificationsService, NotificationSettingsService],
     })
 ], NotificationsModule);
 export { NotificationsModule };
