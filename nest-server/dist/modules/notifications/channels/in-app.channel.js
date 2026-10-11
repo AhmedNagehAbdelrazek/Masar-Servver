@@ -7,8 +7,11 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
+var __param = (this && this.__param) || function (paramIndex, decorator) {
+    return function (target, key) { decorator(target, key, paramIndex); }
+};
 var InAppChannel_1;
-import { Injectable, Logger } from '@nestjs/common';
+import { forwardRef, Inject, Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service.js';
 import { RealtimeGateway } from '../../../realtime/realtime.gateway.js';
 let InAppChannel = InAppChannel_1 = class InAppChannel {
@@ -61,6 +64,7 @@ let InAppChannel = InAppChannel_1 = class InAppChannel {
 };
 InAppChannel = InAppChannel_1 = __decorate([
     Injectable(),
+    __param(1, Inject(forwardRef(() => RealtimeGateway))),
     __metadata("design:paramtypes", [PrismaService,
         RealtimeGateway])
 ], InAppChannel);

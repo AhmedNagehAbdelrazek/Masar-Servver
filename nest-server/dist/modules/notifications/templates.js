@@ -131,6 +131,38 @@ export const TEMPLATES = {
         ar: { title: 'إلغاء طلب حذف الحساب', body: 'تم إلغاء طلب حذف حسابك بنجاح. حسابك يعود إلى حالته السابقة.' },
         en: { title: 'Account deletion request cancelled', body: 'Your account deletion request has been cancelled. Your account returns to its previous state.' },
     },
+    PICKUP_ADDED: {
+        ar: { title: 'نقطة صعود جديدة', body: 'أضاف {passenger} نقطة صعود جديدة إلى رحلتك {route}.' },
+        en: { title: 'New pickup', body: '{passenger} added a new pickup to your trip {route}.' },
+    },
+    PICKUP_CHANGED: {
+        ar: { title: 'تغيير نقطة الصعود', body: 'غيّر {passenger} نقطة الصعود في رحلتك {route}.' },
+        en: { title: 'Pickup changed', body: '{passenger} changed their pickup on your trip {route}.' },
+    },
+    PICKUP_CANCELLED: {
+        ar: { title: 'إلغاء نقطة الصعود', body: 'أُلغيت نقطة صعود في رحلتك {route}.' },
+        en: { title: 'Pickup cancelled', body: 'A pickup on your trip {route} was cancelled.' },
+    },
+    ROUTE_UPDATED: {
+        ar: { title: 'تحديث المسار', body: 'تم تحديث مسار الرحلة {route}. يرجى مراجعة التفاصيل.' },
+        en: { title: 'Route updated', body: 'The route for trip {route} was updated. Please review the details.' },
+    },
+    DRIVER_NEARBY: {
+        ar: { title: 'السائق قريب', body: 'السائق على بعد {distance_m} متر من نقطة صعودك.' },
+        en: { title: 'Driver nearby', body: 'Your driver is {distance_m} meters from your pickup.' },
+    },
+    DRIVER_ARRIVED: {
+        ar: { title: 'وصل السائق', body: 'وصل السائق إلى نقطة صعودك. يرجى الاستعداد.' },
+        en: { title: 'Driver arrived', body: 'Your driver has arrived at your pickup. Please be ready.' },
+    },
+    PICKUP_MISSED: {
+        ar: { title: 'تفويت الصعود', body: 'تم تسجيل نقطة صعودك على أنها فائتة.' },
+        en: { title: 'Pickup missed', body: 'Your pickup was marked as missed.' },
+    },
+    NEXT_PICKUP: {
+        ar: { title: 'الصعود التالي', body: 'الصعود التالي: {label} على بعد {distance_m} متر.' },
+        en: { title: 'Next pickup', body: 'Next pickup: {label}, {distance_m} meters away.' },
+    },
 };
 export function interpolate(template, vars = {}) {
     return template.replace(/\{(\w+)\}/g, (match, key) => Object.prototype.hasOwnProperty.call(vars, key) ? String(vars[key]) : match);

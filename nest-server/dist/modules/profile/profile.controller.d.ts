@@ -1,9 +1,11 @@
 import type { AuthUser } from '../../common/guards/jwt-auth.guard.js';
+import { HomeService } from '../subscriptions/home.service.js';
 import { UpdatePassengerProfileDto } from './dto/update-profile.dto.js';
 import { ProfileService } from './profile.service.js';
 export declare class ProfileController {
     private readonly profile;
-    constructor(profile: ProfileService);
+    private readonly home;
+    constructor(profile: ProfileService, home: HomeService);
     getMyProfile(user?: AuthUser): Promise<{
         passenger_profile: {
             full_name: string | null;
@@ -23,4 +25,5 @@ export declare class ProfileController {
             count: number;
         }[];
     }>;
+    getPassengerHome(user?: AuthUser): Promise<Record<string, unknown>>;
 }

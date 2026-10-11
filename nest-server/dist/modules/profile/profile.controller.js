@@ -13,12 +13,15 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 import { Body, Controller, Get, Put } from '@nestjs/common';
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import { Roles } from '../../common/decorators/roles.decorator.js';
+import { HomeService } from '../subscriptions/home.service.js';
 import { UpdatePassengerProfileDto } from './dto/update-profile.dto.js';
 import { ProfileService } from './profile.service.js';
 let ProfileController = class ProfileController {
     profile;
-    constructor(profile) {
+    home;
+    constructor(profile, home) {
         this.profile = profile;
+        this.home = home;
     }
     getMyProfile(user) {
         return this.profile.getMyProfile(user?.id ?? '');
@@ -28,6 +31,9 @@ let ProfileController = class ProfileController {
     }
     getAccountSummary(user) {
         return this.profile.getAccountSummary(user?.id ?? '');
+    }
+    getPassengerHome(user) {
+        return this.home.getPassengerHome(user?.id ?? '');
     }
 };
 __decorate([
@@ -52,10 +58,18 @@ __decorate([
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
 ], ProfileController.prototype, "getAccountSummary", null);
+__decorate([
+    Get('home'),
+    __param(0, CurrentUser()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], ProfileController.prototype, "getPassengerHome", null);
 ProfileController = __decorate([
     Controller('profile/passenger'),
     Roles('passenger'),
-    __metadata("design:paramtypes", [ProfileService])
+    __metadata("design:paramtypes", [ProfileService,
+        HomeService])
 ], ProfileController);
 export { ProfileController };
 //# sourceMappingURL=profile.controller.js.map

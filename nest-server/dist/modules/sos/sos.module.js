@@ -4,15 +4,18 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
+import { RealtimeModule } from '../../realtime/realtime.module.js';
 import { SosController } from './sos.controller.js';
 import { SosService } from './sos.service.js';
 let SosModule = class SosModule {
 };
 SosModule = __decorate([
     Module({
+        imports: [forwardRef(() => RealtimeModule)],
         controllers: [SosController],
-        providers: [SosService]
+        providers: [SosService],
+        exports: [SosService],
     })
 ], SosModule);
 export { SosModule };

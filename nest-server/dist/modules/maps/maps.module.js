@@ -5,14 +5,18 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
 import { Module } from '@nestjs/common';
+import { GeoService } from './geo.service.js';
+import { MapsClient } from './maps.client.js';
 import { MapsController } from './maps.controller.js';
-import { MapsService } from './maps.service.js';
+import { PickupService } from './pickup.service.js';
+import { RouteService } from './route.service.js';
 let MapsModule = class MapsModule {
 };
 MapsModule = __decorate([
     Module({
         controllers: [MapsController],
-        providers: [MapsService]
+        providers: [GeoService, MapsClient, RouteService, PickupService],
+        exports: [GeoService, MapsClient, RouteService, PickupService],
     })
 ], MapsModule);
 export { MapsModule };

@@ -49,6 +49,12 @@ export class RedisService implements OnModuleDestroy {
     return this.client.incr(key);
   }
 
+  /** Atomic SET NX EX (null when the key already exists). */
+  async setKeyNx(key: string, value: string, ttlSeconds: number): Promise<boolean> {
+    const result = await this.client.set(key, value, 'EX', ttlSeconds, 'NX');
+    return result === 'OK';
+  }
+
   async keys(pattern: string): Promise<string[]> {
     return this.client.keys(pattern);
   }

@@ -48,6 +48,12 @@ let DriverController = class DriverController {
     getEarnings(query, user) {
         return this.driver.getEarnings(user?.id ?? '', query);
     }
+    getHome(user) {
+        return this.driver.getHome(user?.id ?? '');
+    }
+    getSubscription(user) {
+        return this.driver.getSubscription(user?.id ?? '');
+    }
     getStats(user) {
         return this.driver.getStats(user?.id ?? '');
     }
@@ -121,6 +127,20 @@ __decorate([
     __metadata("design:paramtypes", [EarningsQuery, Object]),
     __metadata("design:returntype", Promise)
 ], DriverController.prototype, "getEarnings", null);
+__decorate([
+    Get('home'),
+    __param(0, CurrentUser()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], DriverController.prototype, "getHome", null);
+__decorate([
+    Get('subscription'),
+    __param(0, CurrentUser()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], DriverController.prototype, "getSubscription", null);
 __decorate([
     Get('stats'),
     __param(0, CurrentUser()),

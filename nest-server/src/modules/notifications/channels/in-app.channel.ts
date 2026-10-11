@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { forwardRef, Inject, Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service.js';
 import { RealtimeGateway } from '../../../realtime/realtime.gateway.js';
 
@@ -15,6 +15,7 @@ export class InAppChannel {
 
   constructor(
     private readonly prisma: PrismaService,
+    @Inject(forwardRef(() => RealtimeGateway))
     private readonly realtime: RealtimeGateway,
   ) {}
 

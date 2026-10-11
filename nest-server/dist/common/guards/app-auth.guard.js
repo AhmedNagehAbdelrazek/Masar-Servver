@@ -22,6 +22,8 @@ let AppAuthGuard = class AppAuthGuard {
         this.rolesGuard = rolesGuard;
     }
     async canActivate(context) {
+        if (context.getType() !== 'http')
+            return true;
         const isPublic = this.reflector.getAllAndOverride(IS_PUBLIC_KEY, [
             context.getHandler(),
             context.getClass(),

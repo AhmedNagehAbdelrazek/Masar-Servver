@@ -39,6 +39,10 @@ function buildRedisStub(redis: Redis): Partial<RedisService> {
     exists: async (key: string): Promise<boolean> => ((await redis.exists(key)) as number) === 1,
     incr: (key: string): Promise<number> => redis.incr(key) as Promise<number>,
     keys: (pattern: string): Promise<string[]> => redis.keys(pattern) as Promise<string[]>,
+    setKeyNx: async (key: string, value: string, ttlSeconds: number): Promise<boolean> => {
+      const result = (await redis.set(key, value, 'EX', ttlSeconds, 'NX')) as unknown;
+      return result === 'OK';
+    },
     onModuleDestroy: async (): Promise<void> => undefined,
   };
 }

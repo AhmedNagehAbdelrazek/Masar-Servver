@@ -1,6 +1,7 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { maskNationalId, maskPhone } from '../../common/utils/masking.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
+import { HomeService } from '../subscriptions/home.service.js';
 import { DashboardService } from './dashboard.service.js';
 import { DeletionService } from './deletion.service.js';
 import { DriverProfileService } from './driver-profile.service.js';
@@ -29,7 +30,22 @@ export class DriverService {
     private readonly earnings: EarningsService,
     private readonly stats: StatsService,
     private readonly dashboard: DashboardService,
+    private readonly home: HomeService,
   ) {}
+
+  private async assertDriverEligible(userId: string): Promise<void> {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new NotFoundException({ message: 'USER_NOT_FOUND', code: 'USER_NOT_FOUND' });
+    if (
+      user.isVerified !== true ||
+      (['suspended', 'banned'] as string[]).includes(user.status)
+    ) {
+      throw new ForbiddenException({
+        message: 'ACCOUNT_MUST_BE_VERIFIED_AND_ACTIVE_TO_ACCESS_THIS_RESOURCE',
+        code: 'FORBIDDEN',
+      });
+    }
+  }
 
   async getProfile(userId: string): Promise<{ profile: Record<string, unknown> }> {
     const user = await this.prisma.user.findUnique({
@@ -156,5 +172,15 @@ export class DriverService {
 
   getDashboard(userId: string): Promise<Record<string, unknown>> {
     return this.dashboard.getDashboard(userId);
+  }
+
+  async getHome(userId: string): Promise<Record<string, unknown>> {
+    await this.assertDriverEligible(userId);
+    return this.home.getHome(userId);
+  }
+
+  async getSubscription(userId: string): Promise<Record<string, unknown>> {
+    await this.assertDriverEligible(userId);
+    return this.home.getSubscription(userId);
   }
 }

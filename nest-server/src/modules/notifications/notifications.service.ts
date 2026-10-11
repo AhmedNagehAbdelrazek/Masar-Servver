@@ -1,4 +1,4 @@
-import { ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, forwardRef, Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { RealtimeGateway } from '../../realtime/realtime.gateway.js';
 import { InAppChannel } from './channels/in-app.channel.js';
@@ -30,6 +30,7 @@ export class NotificationsService {
 
   constructor(
     private readonly prisma: PrismaService,
+    @Inject(forwardRef(() => RealtimeGateway))
     private readonly realtime: RealtimeGateway,
     private readonly sms: SmsChannel,
     private readonly push: PushChannel,
@@ -56,8 +57,10 @@ export class NotificationsService {
 
     let allowedChannels = [...channels];
     try {
+      // Template keys are UPPER_SNAKE while stored settings values are
+      // lowercase — check both instead of migrating data (Express parity).
       const setting = await this.prisma.notificationSetting.findFirst({
-        where: { userId: user.id, notificationType: type },
+        where: { userId: user.id, notificationType: { in: [type, String(type).toLowerCase()] } },
       });
       if (setting) {
         if (!setting.enabledInApp) allowedChannels = allowedChannels.filter((c) => c !== 'in_app');

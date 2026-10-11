@@ -42,6 +42,12 @@ Health: `GET /api/healthz`, `GET /api/health/realtime` (public). Swagger: `/docs
   Wave 7), earnings (date_trunc raw SQL), lifetime stats, cached dashboard.
   Deferred: driver bookings/offers (Wave 5 with bookingService), driver
   home/subscription (Wave 4 with homeService), driverStats recompute (Wave 7)
+- [x] Wave 4: money (242 e2e + 16 unit green): subscriptions (lifecycle,
+  resubmit, free one-time rule, queue ordering, renewal merge, pending queue,
+  approve/reject with notify), commission service (gating math unit-tested;
+  trip-gated HTTP tests land with Wave 5), driver + passenger home, driver
+  subscription page, recent-search. Deferred: expiry-sweep test (Wave 7 jobs),
+  subscriptionSmoke + commission HTTP tests (Wave 5 trips)
 - [x] Scaffold (Nest 12, pnpm, ESM nodenext with `.js` import suffixes)
 - [x] `prisma/schema.prisma` — all 34 tables ported from `Models/*.ts` + `migrations/001–032`
   (`createdat`/`updatedat` column mapping preserved, UUID PKs, native enums).
@@ -131,6 +137,30 @@ Health: `GET /api/healthz`, `GET /api/health/realtime` (public). Swagger: `/docs
 - Verified Express discrepancy: `GET /api/admin/verification/queue` has no role
   filter, so the admin row appears (Express fails 9/10 of its own test file on
   the length-1 assertion). Port asserts the driver entry explicitly.
+- Verified Express contradiction (test wins): the service bans manual free-plan
+  subscription, but `subscription.test.js` demands one-time free activation and
+  fails 11/12 against Express. Port implements one-time-per-driver free
+  activation (422 FREE_PLAN_ALREADY_USED on repeat).
+- Prisma `seatNumbers` defaults to `[]` while Sequelize leaves it NULL; the
+  `seatNumbersFor` port treats empty arrays as absent (falls through to
+  `seatNumber), matching Express in all tested cases.
+- Passenger-home `rating` renders null for falsy (0/unset) averages, mirroring
+  the Express truthiness check (Prisma defaults disagree with `== null`).
+- Pre-home tripExpiry sweeps are skipped (best-effort in Express too);
+  tripExpiryService arrives with Wave 5.
+- [x] Wave 5.1: trips core (create with balance/free/overlap gates, search with
+  Jordan-day + recurrence + time-window logic, detail/options/seats/my-trips/
+  attributes/passengers, legacy cancel, atomic seat locks) + contracts
+- [x] Wave 5.2: trip lifecycle (start window + balance gate, complete with
+  commission/bookings/debt flow, update with overlap recheck + notify,
+  penalized cancel with escalation, tripExpiry sweep) + commission +
+  subscription-smoke suites
+- Verified Express discrepancies (do not copy): trip detail/reveal outsider
+  assertions (access check is commented out; service returns 200 with data —
+  both details files fail in Express); overlap guard dead with
+  TRIP_DURATION_HOURS=0 (3 overlap + 1 lifecycle test fail) — port implements
+  the documented 2h window (see trip.constants.ts); smoke no-auth
+  payment-methods call (401 vs expected 200).
 - Copied data files (`messages/app.ts`, `messages/validation.ts`, `phoneCodes.ts`)
   must have their CommonJS interop footers stripped — they throw under ESM.
 - express-validator SKIPS absent fields; class-validator does NOT (absent required
@@ -138,6 +168,24 @@ Health: `GET /api/healthz`, `GET /api/health/realtime` (public). Swagger: `/docs
   explicit `@IsOptional()` in DTOs.
 - Services return/throw message KEYS; LocalizeInterceptor (success) and
   HttpExceptionFilter (errors, incl. details via tValidation bridge) render them.
+- [x] Wave 5.3: maps stack (geo/route/pickup + mapsClient) + booking ops
+  (delays, driver/passenger booking lists, reveal) — see plan 013 notes
+- [x] Wave 5.4: ride-requests + offers + attach/matches
+- [x] Wave 5.5: live tracking gateway (join/start/location/batch/stop,
+  heartbeat, proximity once-only alerts) + handshake auth middleware
+  (user/role rooms at connect; AppAuthGuard skips non-HTTP contexts)
+- [x] Wave 6: comms + safety — chat (booking/support socket handlers +
+  REST history, `chat:*` rate limits + typing throttle), SOS (socket trigger
+  with reuse-first dedupe, `sos:ack`/`sos:resolved`, admin list/ack/resolve,
+  escalation sweep ported for Wave 7 jobs), support-tickets (full CRUD +
+  staff status flow + staff in-app notify). Suites: chat 9/9, support-tickets
+  20/20, sos 4/4. Full gates: 32 files / 449 e2e + 16 unit green.
+- Cycle gotcha: `TrackingService -/-> NotificationsService` must use
+  `@Inject(forwardRef(...))` — the eager type evaluated to undefined when a
+  spec imports TripsModule first (broke trip-lifecycle standalone/in-suite).
+- Test-helper gotcha: compute "today" in Asia/Amman, not UTC — `toISOString()`
+  is a day behind 00:00–03:00 Jordan time and makes date=today searches 422
+  (fixed in trip-search `jordanDate`).
 
 ## Notes / gotchas
 

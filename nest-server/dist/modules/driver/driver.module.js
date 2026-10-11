@@ -8,6 +8,7 @@ import { Module } from '@nestjs/common';
 import { RealtimeModule } from '../../realtime/realtime.module.js';
 import { BalanceModule } from '../balance/balance.module.js';
 import { NotificationsModule } from '../notifications/notifications.module.js';
+import { SubscriptionsModule } from '../subscriptions/subscriptions.module.js';
 import { AdminVerificationController } from './admin-verification.controller.js';
 import { DashboardController } from './dashboard.controller.js';
 import { DashboardService } from './dashboard.service.js';
@@ -27,7 +28,7 @@ let DriverModule = class DriverModule {
 };
 DriverModule = __decorate([
     Module({
-        imports: [NotificationsModule, BalanceModule, RealtimeModule],
+        imports: [NotificationsModule, BalanceModule, RealtimeModule, SubscriptionsModule],
         controllers: [
             DriverController,
             DashboardController,

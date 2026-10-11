@@ -54,6 +54,10 @@ let RedisService = RedisService_1 = class RedisService {
     async incr(key) {
         return this.client.incr(key);
     }
+    async setKeyNx(key, value, ttlSeconds) {
+        const result = await this.client.set(key, value, 'EX', ttlSeconds, 'NX');
+        return result === 'OK';
+    }
     async keys(pattern) {
         return this.client.keys(pattern);
     }

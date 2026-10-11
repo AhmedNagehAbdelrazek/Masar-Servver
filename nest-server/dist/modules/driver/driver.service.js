@@ -7,9 +7,10 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { maskNationalId, maskPhone } from '../../common/utils/masking.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
+import { HomeService } from '../subscriptions/home.service.js';
 import { DashboardService } from './dashboard.service.js';
 import { DeletionService } from './deletion.service.js';
 import { DriverProfileService } from './driver-profile.service.js';
@@ -33,7 +34,8 @@ let DriverService = class DriverService {
     earnings;
     stats;
     dashboard;
-    constructor(prisma, profiles, personalData, deletion, penalties, earnings, stats, dashboard) {
+    home;
+    constructor(prisma, profiles, personalData, deletion, penalties, earnings, stats, dashboard, home) {
         this.prisma = prisma;
         this.profiles = profiles;
         this.personalData = personalData;
@@ -42,6 +44,19 @@ let DriverService = class DriverService {
         this.earnings = earnings;
         this.stats = stats;
         this.dashboard = dashboard;
+        this.home = home;
+    }
+    async assertDriverEligible(userId) {
+        const user = await this.prisma.user.findUnique({ where: { id: userId } });
+        if (!user)
+            throw new NotFoundException({ message: 'USER_NOT_FOUND', code: 'USER_NOT_FOUND' });
+        if (user.isVerified !== true ||
+            ['suspended', 'banned'].includes(user.status)) {
+            throw new ForbiddenException({
+                message: 'ACCOUNT_MUST_BE_VERIFIED_AND_ACTIVE_TO_ACCESS_THIS_RESOURCE',
+                code: 'FORBIDDEN',
+            });
+        }
     }
     async getProfile(userId) {
         const user = await this.prisma.user.findUnique({
@@ -129,6 +144,14 @@ let DriverService = class DriverService {
     getDashboard(userId) {
         return this.dashboard.getDashboard(userId);
     }
+    async getHome(userId) {
+        await this.assertDriverEligible(userId);
+        return this.home.getHome(userId);
+    }
+    async getSubscription(userId) {
+        await this.assertDriverEligible(userId);
+        return this.home.getSubscription(userId);
+    }
 };
 DriverService = __decorate([
     Injectable(),
@@ -139,7 +162,8 @@ DriverService = __decorate([
         PenaltyService,
         EarningsService,
         StatsService,
-        DashboardService])
+        DashboardService,
+        HomeService])
 ], DriverService);
 export { DriverService };
 //# sourceMappingURL=driver.service.js.map

@@ -5,14 +5,23 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
 import { Module } from '@nestjs/common';
+import { RealtimeModule } from '../../realtime/realtime.module.js';
+import { BalanceModule } from '../balance/balance.module.js';
+import { NotificationsModule } from '../notifications/notifications.module.js';
+import { AdminSubscriptionsController } from './admin-subscriptions.controller.js';
+import { CommissionService } from './commission.service.js';
+import { HomeService } from './home.service.js';
+import { RecentSearchService } from './recent-search.service.js';
 import { SubscriptionsController } from './subscriptions.controller.js';
 import { SubscriptionsService } from './subscriptions.service.js';
 let SubscriptionsModule = class SubscriptionsModule {
 };
 SubscriptionsModule = __decorate([
     Module({
-        controllers: [SubscriptionsController],
-        providers: [SubscriptionsService]
+        imports: [BalanceModule, NotificationsModule, RealtimeModule],
+        controllers: [SubscriptionsController, AdminSubscriptionsController],
+        providers: [SubscriptionsService, CommissionService, HomeService, RecentSearchService],
+        exports: [SubscriptionsService, CommissionService, HomeService, RecentSearchService],
     })
 ], SubscriptionsModule);
 export { SubscriptionsModule };

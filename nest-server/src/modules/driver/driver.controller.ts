@@ -7,9 +7,7 @@ import { UpdatePersonalDataDto } from './dto/personal-data.dto.js';
 import { DriverService } from './driver.service.js';
 
 // Express parity: Routes/driverRoutes.ts mounted at /api/driver (driver-only).
-// Wave 3: profile, full, personal-data, account-status, delete-account,
-// penalties, earnings, stats. Bookings/offers arrive with Wave 5 services;
-// home/subscription with Wave 4.
+// Bookings/offers arrive with Wave 5 services.
 @Controller('driver')
 @Roles('driver')
 export class DriverController {
@@ -85,6 +83,16 @@ export class DriverController {
     breakdown: { bucket: string; earnings: number; trips: number }[];
   }> {
     return this.driver.getEarnings(user?.id ?? '', query);
+  }
+
+  @Get('home')
+  getHome(@CurrentUser() user?: AuthUser): Promise<Record<string, unknown>> {
+    return this.driver.getHome(user?.id ?? '');
+  }
+
+  @Get('subscription')
+  getSubscription(@CurrentUser() user?: AuthUser): Promise<Record<string, unknown>> {
+    return this.driver.getSubscription(user?.id ?? '');
   }
 
   @Get('stats')

@@ -7,8 +7,11 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
+var __param = (this && this.__param) || function (paramIndex, decorator) {
+    return function (target, key) { decorator(target, key, paramIndex); }
+};
 var NotificationsService_1;
-import { ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, forwardRef, Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { RealtimeGateway } from '../../realtime/realtime.gateway.js';
 import { InAppChannel } from './channels/in-app.channel.js';
@@ -45,7 +48,7 @@ let NotificationsService = NotificationsService_1 = class NotificationsService {
         let allowedChannels = [...channels];
         try {
             const setting = await this.prisma.notificationSetting.findFirst({
-                where: { userId: user.id, notificationType: type },
+                where: { userId: user.id, notificationType: { in: [type, String(type).toLowerCase()] } },
             });
             if (setting) {
                 if (!setting.enabledInApp)
@@ -210,6 +213,7 @@ let NotificationsService = NotificationsService_1 = class NotificationsService {
 };
 NotificationsService = NotificationsService_1 = __decorate([
     Injectable(),
+    __param(1, Inject(forwardRef(() => RealtimeGateway))),
     __metadata("design:paramtypes", [PrismaService,
         RealtimeGateway,
         SmsChannel,

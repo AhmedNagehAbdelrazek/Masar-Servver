@@ -28,6 +28,10 @@ function buildRedisStub(redis) {
         exists: async (key) => (await redis.exists(key)) === 1,
         incr: (key) => redis.incr(key),
         keys: (pattern) => redis.keys(pattern),
+        setKeyNx: async (key, value, ttlSeconds) => {
+            const result = (await redis.set(key, value, 'EX', ttlSeconds, 'NX'));
+            return result === 'OK';
+        },
         onModuleDestroy: async () => undefined,
     };
 }

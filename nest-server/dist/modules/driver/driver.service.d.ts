@@ -1,4 +1,5 @@
 import { PrismaService } from '../../prisma/prisma.service.js';
+import { HomeService } from '../subscriptions/home.service.js';
 import { DashboardService } from './dashboard.service.js';
 import { DeletionService } from './deletion.service.js';
 import { DriverProfileService } from './driver-profile.service.js';
@@ -15,7 +16,9 @@ export declare class DriverService {
     private readonly earnings;
     private readonly stats;
     private readonly dashboard;
-    constructor(prisma: PrismaService, profiles: DriverProfileService, personalData: PersonalDataService, deletion: DeletionService, penalties: PenaltyService, earnings: EarningsService, stats: StatsService, dashboard: DashboardService);
+    private readonly home;
+    constructor(prisma: PrismaService, profiles: DriverProfileService, personalData: PersonalDataService, deletion: DeletionService, penalties: PenaltyService, earnings: EarningsService, stats: StatsService, dashboard: DashboardService, home: HomeService);
+    private assertDriverEligible;
     getProfile(userId: string): Promise<{
         profile: Record<string, unknown>;
     }>;
@@ -76,4 +79,6 @@ export declare class DriverService {
         };
     }>;
     getDashboard(userId: string): Promise<Record<string, unknown>>;
+    getHome(userId: string): Promise<Record<string, unknown>>;
+    getSubscription(userId: string): Promise<Record<string, unknown>>;
 }

@@ -44,6 +44,8 @@ export declare class DriverController {
             trips: number;
         }[];
     }>;
+    getHome(user?: AuthUser): Promise<Record<string, unknown>>;
+    getSubscription(user?: AuthUser): Promise<Record<string, unknown>>;
     getStats(user?: AuthUser): Promise<{
         stats: {
             total_trips: number;
