@@ -186,6 +186,29 @@ Health: `GET /api/healthz`, `GET /api/health/realtime` (public). Swagger: `/docs
 - Test-helper gotcha: compute "today" in Asia/Amman, not UTC — `toISOString()`
   is a day behind 00:00–03:00 Jordan time and makes date=today searches 422
   (fixed in trip-search `jordanDate`).
+- [x] Wave 7.1: admin dashboard (`admin-dashboard` module, 19 routes under
+  `/api/admin/dashboard`: summary/recent-trips/top-routes/pending-requests/
+  latest-complaints, drivers directory + stats, 7 dossier reads, status/
+  account/ document mutations, reservations). Suites: admin-dashboard 22/22,
+  admin-drivers 25/25.
+- [x] Wave 7.2: admin moderation (`admin-moderation` module: `admin/users`
+  list/update, `admin/penalties` wired to `PenaltyService.issue()` incl. the
+  ends_at cross-field rules, `PUT admin/trips/:id` moderate added to the
+  existing controller; `admin/complaints` already covered, not duplicated).
+  Suite: admin-moderation 13/13.
+- [x] Wave 7.3: gap check — driverBookings, passengerBookingList and
+  oneVehicleConstraint were already covered (booking-ops / verification
+  specs); added trip-profit (4/4: total_profit, was_available history,
+  fare recompute) + adminSubscription gaps (8 tests: masked id, balance
+  credit, debt clearing, 409s, adminNotes).
+- [x] Wave 7.4: all 9 job bodies ported in `JobsService` (schedules
+  unchanged, `NODE_ENV=test` guard kept, `SosService.runEscalation` +
+  `DriverStatsService.recomputeAllDrivers()` wired) + expiry-sweep,
+  historyJobs, i18n (5/5; bare-`@IsUUID` DTO messages pass through
+  untranslated — documented in spec) and full-journey (2/2) suites.
+- [x] Wave 8: ratings re-run against the full stack (trips via POST
+  /api/trips + seat-lock + bookings) — 10/10.
+- Full gates: 39 files / 533 e2e + 34 unit green, `tsc --noEmit` clean.
 
 ## Notes / gotchas
 

@@ -1,4 +1,4 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, UnprocessableEntityException } from '@nestjs/common';
 import { buildPagination, parsePagination } from '../../common/utils/pagination.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { EnforcementService } from './enforcement.service.js';
@@ -10,8 +10,8 @@ const STATUS_BY_TYPE: Record<string, string> = {
 };
 
 // Port of Main Server/Services/penaltyService.ts. listForDriver serves the
-// driver endpoint now; issue() serves the Wave 7 admin endpoint (ported here
-// for completeness, no HTTP until Wave 7).
+// driver endpoint now; issue() serves the admin endpoint (wired to
+// POST /api/admin/penalties by AdminPenaltiesController).
 @Injectable()
 export class PenaltyService {
   private readonly logger = new Logger(PenaltyService.name);
@@ -68,6 +68,39 @@ export class PenaltyService {
     },
   ): Promise<{ penalty: Record<string, unknown> }> {
     const { user_id: userId, type, reason, details, complaint_id: complaintId, ends_at: endsAt } = payload;
+    // Port of the cross-field ends_at rules in penaltyService.issue +
+    // penaltyValidator.ts (suspension requires ends_at, ban forbids it,
+    // ends_at must be in the future). DTO format checks run first via the
+    // global ApiValidationPipe; these throw the same 422 VALIDATION_ERROR
+    // envelope as Express ApiErrors.validation().
+    if (type === 'suspension' && !endsAt) {
+      throw new UnprocessableEntityException({
+        message: 'ENDS_AT_IS_REQUIRED_FOR_A_SUSPENSION',
+        code: 'VALIDATION_ERROR',
+        details: [{ field: 'ends_at', message: 'ENDS_AT_IS_REQUIRED_FOR_A_SUSPENSION' }],
+      });
+    }
+    if (type === 'ban' && endsAt) {
+      throw new UnprocessableEntityException({
+        message: 'ENDS_AT_IS_FORBIDDEN_FOR_A_BAN',
+        code: 'VALIDATION_ERROR',
+        details: [{ field: 'ends_at', message: 'ENDS_AT_IS_FORBIDDEN_FOR_A_BAN' }],
+      });
+    }
+    if (endsAt && Number.isNaN(Date.parse(endsAt))) {
+      throw new UnprocessableEntityException({
+        message: 'ENDS_AT_MUST_BE_A_VALID_ISO_8601_DATETIME',
+        code: 'VALIDATION_ERROR',
+        details: [{ field: 'ends_at', message: 'ENDS_AT_MUST_BE_A_VALID_ISO_8601_DATETIME' }],
+      });
+    }
+    if (endsAt && new Date(endsAt) <= new Date()) {
+      throw new UnprocessableEntityException({
+        message: 'ENDS_AT_MUST_BE_IN_THE_FUTURE',
+        code: 'VALIDATION_ERROR',
+        details: [{ field: 'ends_at', message: 'ENDS_AT_MUST_BE_IN_THE_FUTURE' }],
+      });
+    }
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new NotFoundException({ message: 'USER_NOT_FOUND', code: 'USER_NOT_FOUND' });
 

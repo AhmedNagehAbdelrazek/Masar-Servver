@@ -12,6 +12,7 @@ import { DriverProfileService } from './driver-profile.service.js';
 import { DriverVerificationController } from './driver-verification.controller.js';
 import { DriverVerificationService } from './driver-verification.service.js';
 import { DriverService } from './driver.service.js';
+import { DriverStatsService } from './driver-stats.service.js';
 import { EarningsService } from './earnings.service.js';
 import { EnforcementService } from './enforcement.service.js';
 import { PenaltyService } from './penalty.service.js';
@@ -39,7 +40,8 @@ import { VerificationService } from './verification.service.js';
     DashboardService,
     DriverVerificationService,
     VerificationService,
+    DriverStatsService,
   ],
-  exports: [DriverService, VerificationService, PenaltyService, EnforcementService],
+  exports: [DriverService, VerificationService, PenaltyService, EnforcementService, DriverStatsService],
 })
 export class DriverModule {}

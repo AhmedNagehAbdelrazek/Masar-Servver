@@ -738,3 +738,387 @@ describe('Contract: driver subscription page', () => {
     expect(res.status).toBe(401);
   });
 });
+
+// Port of Main Server/tests/integration/adminSubscription.test.js (gaps only).
+// Pending-queue shape + approve/reject envelopes are covered above; these
+// blocks assert the admin behaviors that had no coverage: exact masked
+// national id, balance credit + expiry timestamps, debt clearing,
+// first-action-wins 409s, APPROVAL_BLOCKED on deactivated plans, adminNotes
+// persistence and empty-reason 422.
+describe('Admin subscriptions - pending queue details', () => {
+  let ctx: TestContext;
+  let adminToken: string;
+  let driverToken: string;
+  let plan: { id: string };
+  let method: { id: string };
+  let screenshot: { id: number };
+
+  const ADMIN_ID = '550e8400-e29b-41d4-a716-446655440e01';
+  const DRIVER_ID = '550e8400-e29b-41d4-a716-446655440e02';
+
+  beforeAll(async () => {
+    ctx = await createTestApp();
+  });
+  afterAll(async () => {
+    await ctx.app.close();
+  });
+
+  beforeEach(async () => {
+    await resetTestState(ctx.prisma, ctx.redis);
+    await ctx.prisma.user.create({
+      data: {
+        id: ADMIN_ID,
+        fullName: 'Admin',
+        phone: '+962710000301',
+        countryCode: 'JO',
+        role: 'admin',
+        passwordHash: 'hashed',
+        isVerified: true,
+      },
+    });
+    await ctx.prisma.user.create({
+      data: {
+        id: DRIVER_ID,
+        fullName: 'Driver Three',
+        phone: '+962710000302',
+        countryCode: 'JO',
+        role: 'driver',
+        passwordHash: 'hashed',
+        isVerified: true,
+      },
+    });
+    await ctx.prisma.driverProfile.create({ data: { driverId: DRIVER_ID, nationalID: 'N5554443' } });
+    plan = await ctx.prisma.subscriptionPlan.create({
+      data: {
+        name: 'Basic',
+        periodDays: 30,
+        percentageCut: 8,
+        cost: 15,
+        features: [],
+        isFree: false,
+        isActive: true,
+      },
+    });
+    method = await ctx.prisma.paymentMethod.create({
+      data: {
+        name: 'Bank of Jordan',
+        accountNumber: 'JO94BOJX0000000000',
+        type: 'bank_account',
+        email: 'payments@boj.com',
+        isActive: true,
+      },
+    });
+    screenshot = await ctx.prisma.uploadedImage.create({
+      data: {
+        hash: `admin-sub-shot-${Date.now()}`,
+        url: 'https://res.cloudinary.com/x/screenshot.jpg',
+        filename: 'admin-subscription-screenshot.jpg',
+        mimetype: 'image/jpeg',
+        size: 1024,
+      },
+    });
+    adminToken = generateAccessToken({ id: ADMIN_ID, role: 'admin' });
+    driverToken = generateAccessToken({ id: DRIVER_ID, role: 'driver' });
+  });
+
+  async function createPending(): Promise<string> {
+    const res = await ctx.agent
+      .post('/api/subscriptions')
+      .set('Authorization', `Bearer ${driverToken}`)
+      .send({ plan_id: plan.id, payment_method_id: method.id, screenshot_id: screenshot.id });
+    expect(res.status).toBe(201);
+    return res.body.subscription_id as string;
+  }
+
+  it('lists pending requests with masked national id', async () => {
+    await createPending();
+
+    const res = await ctx.agent
+      .get('/api/admin/subscriptions/pending')
+      .set('Authorization', `Bearer ${adminToken}`);
+    expect(res.status).toBe(200);
+    expect(res.body.pending).toHaveLength(1);
+    expect(res.body.pending[0].driver.national_id_masked).toBe('****4443');
+    expect(res.body.pending[0].driver.full_name).toBe('Driver Three');
+    expect(res.body.pending[0].plan.name).toBe('Basic');
+    expect(res.body.pending[0].payment_method.name).toBe('Bank of Jordan');
+    expect(res.body.pending[0].screenshot_id).toBe(screenshot.id);
+    expect(res.body.pending[0].screenshot_url).toContain('res.cloudinary.com');
+  });
+});
+
+describe('Admin subscriptions - approval details', () => {
+  let ctx: TestContext;
+  let adminToken: string;
+  let driverToken: string;
+  let plan: { id: string };
+  let method: { id: string };
+  let screenshot: { id: number };
+
+  const ADMIN_ID = '550e8400-e29b-41d4-a716-446655440e01';
+  const DRIVER_ID = '550e8400-e29b-41d4-a716-446655440e02';
+
+  beforeAll(async () => {
+    ctx = await createTestApp();
+  });
+  afterAll(async () => {
+    await ctx.app.close();
+  });
+
+  beforeEach(async () => {
+    await resetTestState(ctx.prisma, ctx.redis);
+    await ctx.prisma.user.create({
+      data: {
+        id: ADMIN_ID,
+        fullName: 'Admin',
+        phone: '+962710000301',
+        countryCode: 'JO',
+        role: 'admin',
+        passwordHash: 'hashed',
+        isVerified: true,
+      },
+    });
+    await ctx.prisma.user.create({
+      data: {
+        id: DRIVER_ID,
+        fullName: 'Driver Three',
+        phone: '+962710000302',
+        countryCode: 'JO',
+        role: 'driver',
+        passwordHash: 'hashed',
+        isVerified: true,
+      },
+    });
+    await ctx.prisma.driverProfile.create({ data: { driverId: DRIVER_ID, nationalID: 'N5554443' } });
+    plan = await ctx.prisma.subscriptionPlan.create({
+      data: {
+        name: 'Basic',
+        periodDays: 30,
+        percentageCut: 8,
+        cost: 15,
+        features: [],
+        isFree: false,
+        isActive: true,
+      },
+    });
+    method = await ctx.prisma.paymentMethod.create({
+      data: {
+        name: 'Bank of Jordan',
+        accountNumber: 'JO94BOJX0000000000',
+        type: 'bank_account',
+        email: 'payments@boj.com',
+        isActive: true,
+      },
+    });
+    screenshot = await ctx.prisma.uploadedImage.create({
+      data: {
+        hash: `admin-approve-shot-${Date.now()}`,
+        url: 'https://res.cloudinary.com/x/screenshot.jpg',
+        filename: 'admin-subscription-screenshot.jpg',
+        mimetype: 'image/jpeg',
+        size: 1024,
+      },
+    });
+    adminToken = generateAccessToken({ id: ADMIN_ID, role: 'admin' });
+    driverToken = generateAccessToken({ id: DRIVER_ID, role: 'driver' });
+  });
+
+  async function createPending(): Promise<string> {
+    const res = await ctx.agent
+      .post('/api/subscriptions')
+      .set('Authorization', `Bearer ${driverToken}`)
+      .send({ plan_id: plan.id, payment_method_id: method.id, screenshot_id: screenshot.id });
+    expect(res.status).toBe(201);
+    return res.body.subscription_id as string;
+  }
+
+  it('approves, credits balance, sets expiry and activates the plan', async () => {
+    const id = await createPending();
+
+    const res = await ctx.agent
+      .post(`/api/admin/subscriptions/${id}/approve`)
+      .set('Authorization', `Bearer ${adminToken}`);
+    expect(res.status).toBe(200);
+    expect(res.body.subscription_id).toBe(id);
+    expect(res.body.balance_added).toBe(15);
+
+    const sub = await ctx.prisma.driverSubscription.findUnique({ where: { id } });
+    expect(sub?.status).toBe('active');
+    expect(sub?.approvedAt).not.toBeNull();
+    expect(sub?.activatedAt).not.toBeNull();
+    expect(sub?.expiresAt).not.toBeNull();
+    expect(Number(sub?.balance)).toBe(15);
+
+    const user = await ctx.prisma.user.findUnique({ where: { id: DRIVER_ID } });
+    expect(Number(user?.totalBalance)).toBe(15);
+    expect(user?.isInDebt).toBe(false);
+  });
+
+  it('clears debt before adding positive balance', async () => {
+    await ctx.prisma.user.update({
+      where: { id: DRIVER_ID },
+      data: { totalBalance: -10, isInDebt: true },
+    });
+
+    const id = await createPending();
+    const res = await ctx.agent
+      .post(`/api/admin/subscriptions/${id}/approve`)
+      .set('Authorization', `Bearer ${adminToken}`);
+    expect(res.status).toBe(200);
+    expect(res.body.balance_added).toBe(15);
+
+    const user = await ctx.prisma.user.findUnique({ where: { id: DRIVER_ID } });
+    expect(Number(user?.totalBalance)).toBe(5);
+    expect(user?.isInDebt).toBe(false);
+  });
+
+  it('is first-action-wins: second approve returns 409 REQUEST_ALREADY_PROCESSED', async () => {
+    const id = await createPending();
+
+    const first = await ctx.agent
+      .post(`/api/admin/subscriptions/${id}/approve`)
+      .set('Authorization', `Bearer ${adminToken}`);
+    expect(first.status).toBe(200);
+
+    const second = await ctx.agent
+      .post(`/api/admin/subscriptions/${id}/approve`)
+      .set('Authorization', `Bearer ${adminToken}`);
+    expect(second.status).toBe(409);
+    expect(second.body.code).toBe('REQUEST_ALREADY_PROCESSED');
+  });
+
+  it('is blocked when the plan is deactivated (APPROVAL_BLOCKED)', async () => {
+    const id = await createPending();
+    await ctx.prisma.subscriptionPlan.update({ where: { id: plan.id }, data: { isActive: false } });
+
+    const res = await ctx.agent
+      .post(`/api/admin/subscriptions/${id}/approve`)
+      .set('Authorization', `Bearer ${adminToken}`);
+    expect(res.status).toBe(409);
+    expect(res.body.code).toBe('APPROVAL_BLOCKED');
+  });
+});
+
+describe('Admin subscriptions - rejection details', () => {
+  let ctx: TestContext;
+  let adminToken: string;
+  let driverToken: string;
+  let plan: { id: string };
+  let method: { id: string };
+  let screenshot: { id: number };
+
+  const ADMIN_ID = '550e8400-e29b-41d4-a716-446655440e01';
+  const DRIVER_ID = '550e8400-e29b-41d4-a716-446655440e02';
+
+  beforeAll(async () => {
+    ctx = await createTestApp();
+  });
+  afterAll(async () => {
+    await ctx.app.close();
+  });
+
+  beforeEach(async () => {
+    await resetTestState(ctx.prisma, ctx.redis);
+    await ctx.prisma.user.create({
+      data: {
+        id: ADMIN_ID,
+        fullName: 'Admin',
+        phone: '+962710000301',
+        countryCode: 'JO',
+        role: 'admin',
+        passwordHash: 'hashed',
+        isVerified: true,
+      },
+    });
+    await ctx.prisma.user.create({
+      data: {
+        id: DRIVER_ID,
+        fullName: 'Driver Three',
+        phone: '+962710000302',
+        countryCode: 'JO',
+        role: 'driver',
+        passwordHash: 'hashed',
+        isVerified: true,
+      },
+    });
+    await ctx.prisma.driverProfile.create({ data: { driverId: DRIVER_ID, nationalID: 'N5554443' } });
+    plan = await ctx.prisma.subscriptionPlan.create({
+      data: {
+        name: 'Basic',
+        periodDays: 30,
+        percentageCut: 8,
+        cost: 15,
+        features: [],
+        isFree: false,
+        isActive: true,
+      },
+    });
+    method = await ctx.prisma.paymentMethod.create({
+      data: {
+        name: 'Bank of Jordan',
+        accountNumber: 'JO94BOJX0000000000',
+        type: 'bank_account',
+        email: 'payments@boj.com',
+        isActive: true,
+      },
+    });
+    screenshot = await ctx.prisma.uploadedImage.create({
+      data: {
+        hash: `admin-reject-shot-${Date.now()}`,
+        url: 'https://res.cloudinary.com/x/screenshot.jpg',
+        filename: 'admin-subscription-screenshot.jpg',
+        mimetype: 'image/jpeg',
+        size: 1024,
+      },
+    });
+    adminToken = generateAccessToken({ id: ADMIN_ID, role: 'admin' });
+    driverToken = generateAccessToken({ id: DRIVER_ID, role: 'driver' });
+  });
+
+  async function createPending(): Promise<string> {
+    const res = await ctx.agent
+      .post('/api/subscriptions')
+      .set('Authorization', `Bearer ${driverToken}`)
+      .send({ plan_id: plan.id, payment_method_id: method.id, screenshot_id: screenshot.id });
+    expect(res.status).toBe(201);
+    return res.body.subscription_id as string;
+  }
+
+  it('rejects with a reason and records admin_notes', async () => {
+    const id = await createPending();
+
+    const res = await ctx.agent
+      .post(`/api/admin/subscriptions/${id}/reject`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ reason: 'Payment proof unclear' });
+    expect(res.status).toBe(200);
+    expect(res.body.subscription_id).toBe(id);
+
+    const sub = await ctx.prisma.driverSubscription.findUnique({ where: { id } });
+    expect(sub?.status).toBe('rejected');
+    expect(sub?.adminNotes).toBe('Payment proof unclear');
+  });
+
+  it('reject is first-action-wins after approval', async () => {
+    const id = await createPending();
+    await ctx.agent
+      .post(`/api/admin/subscriptions/${id}/approve`)
+      .set('Authorization', `Bearer ${adminToken}`);
+
+    const res = await ctx.agent
+      .post(`/api/admin/subscriptions/${id}/reject`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ reason: 'Too late' });
+    expect(res.status).toBe(409);
+    expect(res.body.code).toBe('REQUEST_ALREADY_PROCESSED');
+  });
+
+  it('reject requires a non-empty reason (422)', async () => {
+    const id = await createPending();
+    const res = await ctx.agent
+      .post(`/api/admin/subscriptions/${id}/reject`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ reason: '' });
+    expect(res.status).toBe(422);
+  });
+});

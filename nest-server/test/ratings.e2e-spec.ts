@@ -1,9 +1,8 @@
 // 1:1 port of Main Server/tests/integration/ratings.test.js and
-// tests/contract/ratings.contract.test.js (Wave 1.3). One deliberate deviation:
-// trips are created directly via Prisma instead of POST /api/trips (Wave 5),
-// since that endpoint is not ported yet. These tests re-run against the full
-// stack in Wave 8.
-import { randomUUID } from 'node:crypto';
+// tests/contract/ratings.contract.test.js (Wave 1.3, full-stack Wave 8).
+// Trips are created via POST /api/trips + seat-lock + POST /api/bookings like
+// the other specs (sos, trip-lifecycle); each booking gets a distinct
+// departure day so the 2h overlap guard never fires across tests.
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { resetTestState } from '../src/test/db.js';
 import { generateAccessToken } from '../src/test/jwt.js';
@@ -14,37 +13,51 @@ const PASSENGER_ID = '550e8400-e29b-41d4-a716-446655440002';
 const VEHICLE_ID = '550e8400-e29b-41d4-a716-446655440010';
 const OUTSIDER_ID = '550e8400-e29b-41d4-a716-446655440098';
 
-function makeRef(): string {
-  return 'MSR-' + randomUUID().slice(0, 7).toUpperCase();
+function getFutureDate(daysAhead = 1): string {
+  const d = new Date();
+  d.setDate(d.getDate() + daysAhead);
+  return d.toISOString().split('T')[0] as string;
 }
 
-async function createBooking(ctx: TestContext): Promise<{ id: string }> {
-  const departure = new Date();
-  departure.setDate(departure.getDate() + 5);
-  const trip = await ctx.prisma.trip.create({
-    data: {
-      driverId: DRIVER_ID,
-      vehicleId: VEHICLE_ID,
-      originCity: 'Amman',
-      destinationCity: 'Irbid',
-      departureTime: departure,
-      totalSeats: 4,
-      availableSeats: 3,
-      farePerSeat: 15.5,
-      status: 'published',
-    },
-  });
-  return ctx.prisma.booking.create({
-    data: {
-      tripId: trip.id,
-      passengerId: PASSENGER_ID,
-      seatNumber: 2,
-      seatsBooked: 1,
-      agreedFare: 15.5,
-      status: 'confirmed',
-      referenceCode: makeRef(),
-    },
-  });
+let tripSeq = 0;
+
+async function createBooking(
+  ctx: TestContext,
+  driverToken: string,
+  passengerToken: string,
+): Promise<{ id: string }> {
+  const daysAhead = 5 + tripSeq++;
+  const tripRes = await ctx.agent
+    .post('/api/trips')
+    .set('Authorization', `Bearer ${driverToken}`)
+    .send({
+      origin_city: 'Amman',
+      destination_city: 'Irbid',
+      departure_time: `${getFutureDate(daysAhead)}T14:00:00+03:00`,
+      type_of_trip: 'once',
+      fare_per_seat: '15.50',
+      seats: [
+        { seat_number: 1, type: 'driver' },
+        { seat_number: 2, type: 'available' },
+        { seat_number: 3, type: 'available' },
+        { seat_number: 4, type: 'unavailable' },
+      ],
+    });
+  expect(tripRes.status).toBe(201);
+  const tripId = tripRes.body.trip_id as string;
+
+  const lock = await ctx.agent
+    .post(`/api/trips/${tripId}/seats/lock`)
+    .set('Authorization', `Bearer ${passengerToken}`)
+    .send({ seat_number: 2 });
+  expect(lock.status).toBe(200);
+
+  const bookingRes = await ctx.agent
+    .post('/api/bookings')
+    .set('Authorization', `Bearer ${passengerToken}`)
+    .send({ trip_id: tripId, seat_numbers: [2], agreed_fare: '15.50' });
+  expect(bookingRes.status).toBe(201);
+  return { id: bookingRes.body.booking.id as string };
 }
 
 describe('US3 - Ratings', () => {
@@ -99,12 +112,44 @@ describe('US3 - Ratings', () => {
         isVerified: true,
       },
     });
+    const plan = await ctx.prisma.subscriptionPlan.create({
+      data: {
+        name: 'Basic',
+        periodDays: 30,
+        percentageCut: 8,
+        cost: 100,
+        features: [],
+        isFree: false,
+        isActive: true,
+      },
+    });
+    const now = new Date();
+    await ctx.prisma.driverSubscription.create({
+      data: {
+        driverId: DRIVER_ID,
+        planId: plan.id,
+        planName: plan.name,
+        planPeriodDays: plan.periodDays,
+        planPercentageCut: plan.percentageCut,
+        planCost: plan.cost,
+        balance: 100,
+        paymentMethod: { name: 'x', account_number: 'y', type: 'bank_account' },
+        status: 'active',
+        approvedAt: now,
+        activatedAt: now,
+        expiresAt: new Date(now.getTime() + 30 * 24 * 3600 * 1000),
+      },
+    });
+    await ctx.prisma.user.update({
+      where: { id: DRIVER_ID },
+      data: { totalBalance: 100, isInDebt: false },
+    });
     driverToken = generateAccessToken({ id: DRIVER_ID, role: 'driver' });
     passengerToken = generateAccessToken({ id: PASSENGER_ID, role: 'passenger' });
   });
 
   it('lets passenger rate driver and recompute avg_rating', async () => {
-    const booking = await createBooking(ctx);
+    const booking = await createBooking(ctx, driverToken, passengerToken);
 
     const res = await ctx.agent
       .post('/api/ratings')
@@ -130,7 +175,7 @@ describe('US3 - Ratings', () => {
   });
 
   it('is idempotent — second rating returns existing with already_rated true', async () => {
-    const booking = await createBooking(ctx);
+    const booking = await createBooking(ctx, driverToken, passengerToken);
 
     await ctx.agent
       .post('/api/ratings')
@@ -151,7 +196,7 @@ describe('US3 - Ratings', () => {
   });
 
   it('lets driver rate passenger', async () => {
-    const booking = await createBooking(ctx);
+    const booking = await createBooking(ctx, driverToken, passengerToken);
 
     const res = await ctx.agent
       .post('/api/ratings')
@@ -167,7 +212,7 @@ describe('US3 - Ratings', () => {
   });
 
   it('rejects negative late_minutes with 422', async () => {
-    const booking = await createBooking(ctx);
+    const booking = await createBooking(ctx, driverToken, passengerToken);
     const res = await ctx.agent
       .post('/api/ratings')
       .set('Authorization', `Bearer ${passengerToken}`)
@@ -176,7 +221,7 @@ describe('US3 - Ratings', () => {
   });
 
   it('rejects stars out of range with 422', async () => {
-    const booking = await createBooking(ctx);
+    const booking = await createBooking(ctx, driverToken, passengerToken);
     const res = await ctx.agent
       .post('/api/ratings')
       .set('Authorization', `Bearer ${passengerToken}`)
@@ -193,7 +238,7 @@ describe('US3 - Ratings', () => {
   });
 
   it('rejects a third party who is not part of the booking with 403', async () => {
-    const booking = await createBooking(ctx);
+    const booking = await createBooking(ctx, driverToken, passengerToken);
     await ctx.prisma.user.create({
       data: {
         id: OUTSIDER_ID,
@@ -219,7 +264,7 @@ describe('US3 - Ratings', () => {
   });
 
   it('GET /api/driver/ratings lists ratings received with rater_name and pagination', async () => {
-    const booking = await createBooking(ctx);
+    const booking = await createBooking(ctx, driverToken, passengerToken);
     await ctx.agent
       .post('/api/ratings')
       .set('Authorization', `Bearer ${passengerToken}`)
@@ -238,7 +283,7 @@ describe('US3 - Ratings', () => {
   });
 
   it('contract: rating envelope shape', async () => {
-    const booking = await createBooking(ctx);
+    const booking = await createBooking(ctx, driverToken, passengerToken);
     const res = await ctx.agent
       .post('/api/ratings')
       .set('Authorization', `Bearer ${passengerToken}`)
@@ -255,7 +300,7 @@ describe('US3 - Ratings', () => {
   });
 
   it('contract: GET /api/driver/ratings returns paginated received list', async () => {
-    const booking = await createBooking(ctx);
+    const booking = await createBooking(ctx, driverToken, passengerToken);
     await ctx.agent
       .post('/api/ratings')
       .set('Authorization', `Bearer ${passengerToken}`)

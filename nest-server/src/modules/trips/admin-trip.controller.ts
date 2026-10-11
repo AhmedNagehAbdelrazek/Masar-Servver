@@ -1,7 +1,8 @@
-import { Controller, Get, Param } from '@nestjs/common';
+import { Body, Controller, Get, Param, Put } from '@nestjs/common';
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import { Roles } from '../../common/decorators/roles.decorator.js';
 import type { AuthUser } from '../../common/guards/jwt-auth.guard.js';
+import { ModerateTripDto } from '../admin-moderation/dto/admin-moderation.dto.js';
 import { TripIdParam } from './dto/create-trip.dto.js';
 import { TripsService } from './trips.service.js';
 
@@ -27,5 +28,20 @@ export class AdminTripController {
     @CurrentUser() user?: AuthUser,
   ): Promise<Record<string, unknown>> {
     return this.trips.getTripActual(user?.id ?? '', user?.role ?? '', params.trip_id);
+  }
+
+  // Express parity: Routes/adminModerationRoutes.ts trip section
+  // (PUT /api/admin/trips/:trip_id, protect + admin only). Method-level
+  // @Roles('admin') overrides the class-level staff roles.
+  @Put(':trip_id')
+  @Roles('admin')
+  moderateTrip(
+    @Param() params: TripIdParam,
+    @Body() dto: ModerateTripDto,
+    @CurrentUser() user?: AuthUser,
+  ): Promise<{
+    trip: { id: string; status: string; is_blocked_by_balance: boolean; moderated: boolean };
+  }> {
+    return this.trips.moderateTrip(user?.id ?? '', params.trip_id, dto);
   }
 }

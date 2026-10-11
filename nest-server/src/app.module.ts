@@ -32,6 +32,8 @@ import { SubscriptionsModule } from './modules/subscriptions/subscriptions.modul
 import { SupportTicketsModule } from './modules/support-tickets/support-tickets.module.js';
 import { UploadModule } from './modules/upload/upload.module.js';
 import { AdminModule } from './modules/admin/admin.module.js';
+import { AdminDashboardModule } from './modules/admin-dashboard/admin-dashboard.module.js';
+import { AdminModerationModule } from './modules/admin-moderation/admin-moderation.module.js';
 
 @Module({
   imports: [
@@ -62,6 +64,8 @@ import { AdminModule } from './modules/admin/admin.module.js';
     SupportTicketsModule,
     UploadModule,
     AdminModule,
+    AdminDashboardModule,
+    AdminModerationModule,
   ],
   controllers: [AppController],
   providers: [AppService, AuditInterceptor, JwtAuthGuard, RolesGuard],

@@ -929,6 +929,38 @@ export class TripsService {
     return { trip: { id: tripId, status: 'cancelled', notified_passengers: notifiedPassengers } };
   }
 
+  // Port of moderateTrip in Main Server/Controllers/adminModerationController.ts
+  // (PUT /api/admin/trips/:trip_id, admin only). Audit tracking is covered by
+  // the global AuditInterceptor.
+  async moderateTrip(
+    adminId: string,
+    tripId: string,
+    data: { action: string; reason?: string },
+  ): Promise<{
+    trip: { id: string; status: string; is_blocked_by_balance: boolean; moderated: boolean };
+  }> {
+    const trip = await this.prisma.trip.findUnique({ where: { id: tripId } });
+    if (!trip) throw new NotFoundException({ message: 'TRIP_NOT_FOUND', code: 'TRIP_NOT_FOUND' });
+    const update =
+      data.action === 'restore'
+        ? { isModerated: false, moderationReason: null, moderatedBy: null, status: 'published' }
+        : {
+            isModerated: true,
+            moderationReason: data.reason ?? null,
+            moderatedBy: adminId,
+            ...(data.action === 'block' ? { status: 'cancelled' } : {}),
+          };
+    const updated = await this.prisma.trip.update({ where: { id: tripId }, data: update as never });
+    return {
+      trip: {
+        id: updated.id,
+        status: updated.status,
+        is_blocked_by_balance: updated.isBlockedByBalance,
+        moderated: updated.isModerated,
+      },
+    };
+  }
+
   async startTrip(
     driverId: string,
     tripId: string,
