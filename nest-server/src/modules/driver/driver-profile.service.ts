@@ -65,7 +65,8 @@ export class DriverProfileService {
     });
     if (!total) return 0;
     const onTime = await this.prisma.rating.count({
-      where: { rateeId, isVisible: { not: false }, wasLate: false },
+      // Express parity (!r.wasLate): NULL counts as on-time.
+      where: { rateeId, isVisible: { not: false }, NOT: { wasLate: true } },
     });
     return Math.round((onTime / total) * 100);
   }

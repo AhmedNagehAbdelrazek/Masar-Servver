@@ -10,7 +10,9 @@ import {
 import { buildPagination, parsePagination } from '../../common/utils/pagination.js';
 import { sanitizeMessage } from '../../common/utils/sanitize.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
-import { RealtimeGateway } from '../../realtime/realtime.gateway.js';
+import type { RealtimeGateway } from '../../realtime/realtime.gateway.js';
+import { RealtimeGateway as RealtimeGatewayToken } from '../../realtime/realtime.gateway.js';
+import { RealtimeMetricsService } from '../../realtime/realtime-metrics.service.js';
 
 export interface ChatUser {
   id: string;
@@ -60,8 +62,9 @@ function forbidden(message: string): ForbiddenException {
 export class ChatService {
   constructor(
     private readonly prisma: PrismaService,
-    @Inject(forwardRef(() => RealtimeGateway))
+    @Inject(forwardRef(() => RealtimeGatewayToken))
     private readonly realtime: RealtimeGateway,
+    private readonly metrics: RealtimeMetricsService,
   ) {}
 
   async getBookingChatContext(
@@ -146,6 +149,8 @@ export class ChatService {
       timestamp: Date.now(),
     };
     this.realtime.emitToRoom(`booking:${bookingId}`, 'chat:receive', out);
+    this.metrics.recordEvent('chat:receive');
+    this.metrics.recordDelivery();
     return { id: row.id, created_at: out.created_at };
   }
 
@@ -185,6 +190,8 @@ export class ChatService {
       timestamp: Date.now(),
     };
     this.realtime.emitToRoom(`support:${supportTicketId}`, 'chat:receive', out);
+    this.metrics.recordEvent('chat:receive');
+    this.metrics.recordDelivery();
     return { id: row.id, created_at: out.created_at };
   }
 
@@ -226,6 +233,7 @@ export class ChatService {
         read_at: readAt.toISOString(),
         timestamp: Date.now(),
       });
+      this.metrics.recordEvent('chat:read_ack');
       return { message_id: message.id };
     }
 
@@ -243,6 +251,7 @@ export class ChatService {
         read_at: readAt.toISOString(),
         timestamp: Date.now(),
       });
+      this.metrics.recordEvent('chat:read_ack');
       return { booking_id: bookingId };
     }
 
@@ -261,6 +270,7 @@ export class ChatService {
         read_at: readAt.toISOString(),
         timestamp: Date.now(),
       });
+      this.metrics.recordEvent('chat:read_ack');
       return { support_ticket_id: supportTicketId };
     }
 

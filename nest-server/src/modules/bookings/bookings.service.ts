@@ -4,6 +4,7 @@ import {
   Injectable,
   Logger,
   NotFoundException,
+  ServiceUnavailableException,
   UnprocessableEntityException,
 } from '@nestjs/common';
 import { maskPhone } from '../../common/utils/masking.js';
@@ -12,6 +13,7 @@ import { generateReferenceCode as generateRefCode } from '../../common/utils/ref
 import { seatNumbersFor } from '../../common/utils/seat-numbers.js';
 import { parseOptionalTimezoneAware } from '../../common/utils/time.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
+import { withSerializableRetry } from '../../prisma/transaction.js';
 import { RealtimeGateway } from '../../realtime/realtime.gateway.js';
 import { RedisService } from '../../redis/redis.service.js';
 import { getMapsConfig } from '../maps/maps.config.js';
@@ -428,9 +430,9 @@ export class BookingsService {
       const existing = await this.prisma.booking.findFirst({ where: { referenceCode: code } });
       if (!existing) return code;
     }
-    throw new UnprocessableEntityException({
+    throw new ServiceUnavailableException({
       message: 'COULD_NOT_GENERATE_A_UNIQUE_REFERENCE_CODE',
-      code: 'INTERNAL_ERROR',
+      code: 'COULD_NOT_GENERATE_A_UNIQUE_REFERENCE_CODE',
     });
   }
 
@@ -673,7 +675,7 @@ export class BookingsService {
 
     const referenceCode = await this.uniqueBookingCode();
 
-    const booking = await this.prisma.$transaction(async (tx) => {
+    const booking = await withSerializableRetry(this.prisma, async (tx) => {
       const freshTrip = await tx.trip.findUnique({ where: { id: trip.id } });
       if (!freshTrip || !['published', 'full'].includes(freshTrip.status)) {
         throw new ConflictException({ message: 'TRIP_NOT_BOOKABLE', code: 'TRIP_NOT_BOOKABLE' });
@@ -685,10 +687,15 @@ export class BookingsService {
           code: 'NOT_ENOUGH_AVAILABLE_SEATS_ON_THE_SELECTED_TRIP',
         });
       }
-      await tx.tripSeat.updateMany({
-        where: { tripId: trip.id, seatNumber: { in: lockedSeats } },
+      // Conditional claim: only available seats flip. A concurrent booking
+      // that already took one of these seats makes count mismatch → 409.
+      const claimed = await tx.tripSeat.updateMany({
+        where: { tripId: trip.id, seatNumber: { in: lockedSeats }, seatType: 'available' },
         data: { seatType: 'unavailable' },
       });
+      if (claimed.count !== lockedSeats.length) {
+        throw new ConflictException({ message: 'SEAT_ALREADY_BOOKED', code: 'SEAT_ALREADY_BOOKED' });
+      }
       const created = await tx.booking.create({
         data: {
           tripId: trip.id,
@@ -756,6 +763,7 @@ export class BookingsService {
           user as unknown as NotifyUser,
           'BOOKING_CONFIRMED_PASSENGER',
           {
+            channels: ['in_app', 'push'],
             vars: {
               reference_code: booking.referenceCode,
               origin: trip.originCity,
@@ -768,9 +776,12 @@ export class BookingsService {
           const driver = await this.prisma.user.findUnique({ where: { id: trip.driverId } });
           if (driver) {
             await this.notifications.sendToUser(driver as unknown as NotifyUser, 'BOOKING_CONFIRMED_DRIVER', {
+              channels: ['in_app', 'push'],
               vars: {
                 passenger: user.fullName,
                 seat_number: lockedSeats[0],
+                seat_numbers: lockedSeats,
+                seats: requestedSeats,
                 route: `${trip.originCity} - ${trip.destinationCity}`,
               },
               data: { trip_id: trip.id, booking_id: booking.id },
@@ -1092,9 +1103,12 @@ export class BookingsService {
       });
     }
 
-    const updated = await this.prisma.$transaction(async (tx) => {
-      const cancelled = await tx.booking.update({
-        where: { id: bookingId },
+    // Serializable + conditional claim: the pre-check above races a
+    // concurrent cancel (seats would be restored twice). A 0-row claim
+    // means the booking completed/cancelled under us → same 409 as Express.
+    const updated = await withSerializableRetry(this.prisma, async (tx) => {
+      const claimed = await tx.booking.updateMany({
+        where: { id: bookingId, status: { notIn: ['cancelled', 'completed'] } },
         data: {
           status: 'cancelled',
           cancellationReason: 'cancelled_by_passenger',
@@ -1102,6 +1116,13 @@ export class BookingsService {
           cancelledBy: passengerId,
         },
       });
+      if (claimed.count === 0) {
+        throw new ConflictException({
+          message: 'BOOKING_IS_ALREADY_COMPLETED_OR_CANCELLED',
+          code: 'BOOKING_IS_ALREADY_COMPLETED_OR_CANCELLED',
+        });
+      }
+      const cancelled = await tx.booking.findUniqueOrThrow({ where: { id: bookingId } });
       const freshTrip = await tx.trip.findUnique({ where: { id: booking.tripId } });
       if (freshTrip) {
         const availableSeats = Number(freshTrip.availableSeats) + Number(booking.seatsBooked);

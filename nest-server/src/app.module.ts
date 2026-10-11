@@ -1,8 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
-import { AppController } from './app.controller.js';
-import { AppService } from './app.service.js';
 import { AuditInterceptor } from './common/interceptors/audit.interceptor.js';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard.js';
 import { RolesGuard } from './common/guards/roles.guard.js';
@@ -31,7 +29,6 @@ import { PaymentMethodsModule } from './modules/payment-methods/payment-methods.
 import { SubscriptionsModule } from './modules/subscriptions/subscriptions.module.js';
 import { SupportTicketsModule } from './modules/support-tickets/support-tickets.module.js';
 import { UploadModule } from './modules/upload/upload.module.js';
-import { AdminModule } from './modules/admin/admin.module.js';
 import { AdminDashboardModule } from './modules/admin-dashboard/admin-dashboard.module.js';
 import { AdminModerationModule } from './modules/admin-moderation/admin-moderation.module.js';
 
@@ -63,11 +60,10 @@ import { AdminModerationModule } from './modules/admin-moderation/admin-moderati
     SubscriptionsModule,
     SupportTicketsModule,
     UploadModule,
-    AdminModule,
     AdminDashboardModule,
     AdminModerationModule,
   ],
-  controllers: [AppController],
-  providers: [AppService, AuditInterceptor, JwtAuthGuard, RolesGuard],
+  controllers: [],
+  providers: [AuditInterceptor, JwtAuthGuard, RolesGuard],
 })
 export class AppModule {}

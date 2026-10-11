@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { hasFreeTripsOffer, freeTripsLimit } from '../../common/utils/free-trips.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
+import { withSerializableRetry } from '../../prisma/transaction.js';
 import { BalanceService } from '../balance/balance.service.js';
 import { NotificationsService, type NotifyUser } from '../notifications/notifications.service.js';
 
@@ -109,10 +110,13 @@ export class SubscriptionsService {
     }
 
     if (plan.isFree) {
+      // One free activation per driver, ever: ANY prior free row blocks a
+      // re-subscribe (pending/active AND expired/cancelled/rejected), otherwise
+      // expiring the free row would bypass the one-time rule.
       const priorFree = await this.prisma.driverSubscription.findFirst({
         where: {
           driverId,
-          status: { in: ['pending_approval', 'active'] },
+          status: { in: ['pending_approval', 'active', 'expired', 'cancelled', 'rejected'] },
           plan: { isFree: true },
         },
       });
@@ -270,7 +274,7 @@ export class SubscriptionsService {
     subscriptionId: string,
     _actorId: string,
   ): Promise<{ message: string; subscription_id: string; balance_added: number }> {
-    const result = await this.prisma.$transaction(async (tx) => {
+    const result = await withSerializableRetry(this.prisma, async (tx) => {
       const sub = await tx.driverSubscription.findUnique({ where: { id: subscriptionId } });
       if (!sub) throw new NotFoundException({ message: 'SUBSCRIPTION_NOT_FOUND', code: 'SUBSCRIPTION_NOT_FOUND' });
       if (sub.status !== 'pending_approval') {
@@ -300,6 +304,7 @@ export class SubscriptionsService {
           id: { not: sub.id },
           status: 'active',
         },
+        orderBy: { createdAt: 'asc' },
       });
       if (existing) {
         const remaining = Number(existing.balance) || 0;
@@ -312,10 +317,15 @@ export class SubscriptionsService {
         merged = { id: existing.id, balance: remaining };
       }
 
-      await tx.driverSubscription.update({
-        where: { id: sub.id },
+      // Conditional claim: first-action-wins under concurrency. A concurrent
+      // approve that already flipped the row makes count 0 → 409.
+      const claimed = await tx.driverSubscription.updateMany({
+        where: { id: sub.id, status: 'pending_approval' },
         data: { status: 'active', approvedAt: now, activatedAt: now, expiresAt },
       });
+      if (claimed.count === 0) {
+        throw new ConflictException({ message: 'REQUEST_ALREADY_PROCESSED', code: 'REQUEST_ALREADY_PROCESSED' });
+      }
 
       const credit = await this.balance.creditOnApproval(
         {
@@ -335,6 +345,7 @@ export class SubscriptionsService {
         driverId: sub.driverId,
         expiresAt,
         merged,
+        blockingNotify: credit.blockingNotify,
       };
     });
 
@@ -349,6 +360,9 @@ export class SubscriptionsService {
       }
     } catch (err) {
       this.logger.warn(`approval notification failed: ${(err as Error).message}`);
+    }
+    if (result.blockingNotify) {
+      await this.balance.sendBlockingNotify(result.blockingNotify);
     }
 
     return {

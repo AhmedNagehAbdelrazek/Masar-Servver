@@ -23,7 +23,7 @@ export class WsJwtGuard implements CanActivate {
     const token =
       (client.handshake.auth?.token as string | undefined) ??
       (client.handshake.query?.token as string | undefined);
-    if (!token) throw new WsException({ code: 'AUTH_REQUIRED', message: 'Authentication required.' });
+    if (!token) throw new WsException({ code: 'AUTH_REQUIRED', message: 'AUTH_REQUIRED' });
     let decoded: { id?: string; role?: string; type?: string };
     try {
       decoded = await this.jwt.verifyAsync(token, {
@@ -33,22 +33,22 @@ export class WsJwtGuard implements CanActivate {
       const name = (err as Error)?.name;
       throw new WsException({
         code: name === 'TokenExpiredError' ? 'TOKEN_EXPIRED' : 'INVALID_TOKEN',
-        message: 'Invalid token.',
+        message: name === 'TokenExpiredError' ? 'AUTH_TOKEN_EXPIRED' : 'AUTH_INVALID_TOKEN',
       });
     }
     if (decoded.type !== 'access' || !decoded.id) {
-      throw new WsException({ code: 'INVALID_TOKEN_TYPE', message: 'Invalid token type.' });
+      throw new WsException({ code: 'INVALID_TOKEN_TYPE', message: 'INVALID_TOKEN_TYPE' });
     }
     if (await this.redis.getKey(`blacklist:${token}`)) {
-      throw new WsException({ code: 'TOKEN_REVOKED', message: 'Token revoked.' });
+      throw new WsException({ code: 'TOKEN_REVOKED', message: 'AUTH_TOKEN_REVOKED' });
     }
     const user = await this.prisma.user.findUnique({
       where: { id: decoded.id },
       select: { id: true, role: true, status: true },
     });
-    if (!user) throw new WsException({ code: 'USER_NOT_FOUND', message: 'User not found.' });
+    if (!user) throw new WsException({ code: 'USER_NOT_FOUND', message: 'USER_NOT_FOUND' });
     if (user.status === 'banned' || user.status === 'suspended') {
-      throw new WsException({ code: 'ACCOUNT_SUSPENDED', message: 'Account suspended.' });
+      throw new WsException({ code: 'ACCOUNT_SUSPENDED', message: 'ACCOUNT_HAS_BEEN_SUSPENDED' });
     }
     client.data.user = { id: user.id, role: user.role };
     return true;

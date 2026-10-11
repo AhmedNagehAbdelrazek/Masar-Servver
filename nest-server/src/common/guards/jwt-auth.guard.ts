@@ -23,7 +23,7 @@ export class JwtAuthGuard implements CanActivate {
     const req = context.switchToHttp().getRequest<Request & { user?: AuthUser }>();
     const header = req.headers.authorization;
     if (!header?.startsWith('Bearer ')) {
-      throw new UnauthorizedException({ message: 'No token provided.', code: 'AUTH_NO_TOKEN' });
+      throw new UnauthorizedException({ message: 'AUTH_NO_TOKEN', code: 'AUTH_NO_TOKEN' });
     }
     const token = header.slice('Bearer '.length).trim();
     let decoded: { id?: string; role?: string; type?: string };
@@ -34,16 +34,16 @@ export class JwtAuthGuard implements CanActivate {
     } catch (err) {
       const name = (err as Error)?.name;
       throw new UnauthorizedException({
-        message: name === 'TokenExpiredError' ? 'Token expired.' : 'Invalid token.',
+        message: name === 'TokenExpiredError' ? 'AUTH_TOKEN_EXPIRED' : 'AUTH_INVALID_TOKEN',
         code: name === 'TokenExpiredError' ? 'AUTH_TOKEN_EXPIRED' : 'AUTH_INVALID_TOKEN',
       });
     }
     if (!decoded || decoded.type !== 'access' || !decoded.id || !decoded.role) {
-      throw new UnauthorizedException({ message: 'Invalid token type.', code: 'AUTH_INVALID_TOKEN_TYPE' });
+      throw new UnauthorizedException({ message: 'AUTH_INVALID_TOKEN_TYPE', code: 'AUTH_INVALID_TOKEN_TYPE' });
     }
     const blacklisted = await this.redis.getKey(`blacklist:${token}`);
     if (blacklisted) {
-      throw new UnauthorizedException({ message: 'Token revoked.', code: 'AUTH_TOKEN_REVOKED' });
+      throw new UnauthorizedException({ message: 'AUTH_TOKEN_REVOKED', code: 'AUTH_TOKEN_REVOKED' });
     }
     req.user = { id: decoded.id, role: decoded.role };
     return true;

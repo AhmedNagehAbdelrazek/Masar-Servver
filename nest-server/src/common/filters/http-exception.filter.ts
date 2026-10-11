@@ -59,6 +59,17 @@ export class HttpExceptionFilter implements ExceptionFilter {
         return;
       }
       const message = typeof body === 'string' ? body : (body as { message?: unknown }).message;
+      // Express parity (app.ts 404 middleware): Nest's router throws a codeless
+      // `Cannot ${method} ${url}` NotFoundException for unknown routes. Render
+      // the Express envelope instead of the Nest default.
+      if (status === 404) {
+        res.status(404).json({
+          status: 'error',
+          message: `Route ${req.method} ${req.originalUrl} not found`,
+          code: 'ROUTE_NOT_FOUND',
+        });
+        return;
+      }
       res.status(status).json({
         status: 'error',
         message: Array.isArray(message) ? message.join(', ') : (message ?? 'Error'),

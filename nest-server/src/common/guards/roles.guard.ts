@@ -16,10 +16,10 @@ export class RolesGuard implements CanActivate {
     if (!allowed || allowed.length === 0) return true;
     const req = context.switchToHttp().getRequest<{ user?: AuthUser }>();
     if (!req.user) {
-      throw new UnauthorizedException({ message: 'Authentication required.', code: 'AUTH_REQUIRED' });
+      throw new UnauthorizedException({ message: 'AUTH_REQUIRED', code: 'AUTH_REQUIRED' });
     }
     if (!allowed.includes(req.user.role)) {
-      throw new ForbiddenException({ message: 'Insufficient role.', code: 'AUTH_INSUFFICIENT_ROLE' });
+      throw new ForbiddenException({ message: 'AUTH_INSUFFICIENT_ROLE', code: 'AUTH_INSUFFICIENT_ROLE' });
     }
     return true;
   }

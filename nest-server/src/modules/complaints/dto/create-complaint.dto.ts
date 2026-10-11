@@ -1,6 +1,7 @@
 import { Transform } from 'class-transformer';
 import {
   IsArray,
+  IsDefined,
   IsIn,
   IsNotEmpty,
   IsOptional,
@@ -25,6 +26,7 @@ export const COMPLAINT_CATEGORIES = [
 ] as const;
 
 export class CreateComplaintDto {
+  @IsDefined()
   @IsUUID()
   accused_id!: string;
 
@@ -32,11 +34,13 @@ export class CreateComplaintDto {
   @IsUUID()
   booking_id?: string;
 
+  @IsDefined()
   @IsString()
   @IsNotEmpty()
   @IsIn([...COMPLAINT_CATEGORIES])
   category!: (typeof COMPLAINT_CATEGORIES)[number];
 
+  @IsDefined()
   @IsString()
   @IsNotEmpty()
   @MaxLength(2000)

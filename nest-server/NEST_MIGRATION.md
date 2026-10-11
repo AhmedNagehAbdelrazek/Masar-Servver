@@ -209,6 +209,42 @@ Health: `GET /api/healthz`, `GET /api/health/realtime` (public). Swagger: `/docs
 - [x] Wave 8: ratings re-run against the full stack (trips via POST
   /api/trips + seat-lock + bookings) — 10/10.
 - Full gates: 39 files / 533 e2e + 34 unit green, `tsc --noEmit` clean.
+- [x] Fix wave (post-migration audit): socket gaps closed
+  (`notification:read/read_all` + count-on-connect, `enforcement:ack`,
+  `admin:ticket_assign/resolve` with staff gate + `admin`/`supportChat`
+  rate-limit keys, `force_disconnect` before disconnect, ISO `last_seen`
+  everywhere, structured handshake errors incl. `TOKEN_EXPIRED`,
+  `skipMiddlewares:false`, `RealtimeMetricsService` + live
+  `GET /health/realtime` snapshot, clear-and-reschedule offline timer).
+  Money races closed (`withSerializableRetry` serializable txns +
+  conditional claims on approve/complete/cancel/booking/seats, free-plan
+  history check across all statuses, atomic complete/cancel orchestration,
+  notify-after-commit, booking push channels + driver vars restored,
+  NULL `wasLate` counts on-time, deterministic renewal order, boolean
+  `active` filter). Guards + upload now throw catalog keys (AR verified);
+  9 missing catalog entries added; booking-code exhaustion is 503;
+  config failures fail fast at bootstrap; dead scaffolds
+  (`AppController`, `AdminModule`) removed; JSON 404 envelope;
+  `/dist` untracked via `.gitignore`; `seat_numbers` `@ArrayMinSize(1)`.
+- Prod-boot gotcha: ESM `design:paramtypes` evaluates eagerly — any
+  constructor type inside an import cycle TDZ-crashes `node dist/main`
+  (vitest masks it). Fixed with `import type` + `*Token` value aliases for
+  forwardRef in the realtime SCC (gateway/tracking/chat/sos/
+  notifications/presence/in-app-channel) and the trips SCC
+  (trips/trip-expiry). `node dist/main` boots past DI init.
+- `completeTrip` ordering: commission (with trip-blocking) runs BEFORE the
+  completed-claim inside the tx, matching Express — otherwise the completed
+  trip drops out of the blocking filter and `isBlockedByBalance` stays false.
+- Post-fix verification follow-ups: NULL `wasLate` counts on-time in all
+  three punctuality paths (driver-stats, driver-profile, ratings);
+  `cancelBooking` + plain `cancelTrip` use serializable retry with
+  conditional claims (`BOOKING_IS_ALREADY_COMPLETED_OR_CANCELLED` /
+  `ALREADY_CANCELLED` on 0-row claim); `ResolveComplaintDto` params have
+  `@IsDefined()`; `dist/` is fully untracked (index clean, ignored, rebuilt
+  by `nest build`); handshake `authError` reasons stay English by design
+  (wire message is the code, matching Express `socketAck.authError`).
+- Full gates after fixes: 40 files / 555 e2e + 36 unit green, `tsc` clean,
+  `node dist/main` boots past DI init.
 
 ## Notes / gotchas
 
@@ -220,3 +256,66 @@ Health: `GET /api/healthz`, `GET /api/health/realtime` (public). Swagger: `/docs
   (Sequelize `updatedAt: false`) — schema models this; do not add `@updatedAt`.
 - `REDIS_PORT` default is `6380` in this codebase (not the usual 6379).
 - `MAPS_MOCK=true` default — no provider calls until billing is enabled.
+- Hygiene pass (guards/catalog/404/scaffolds, spec 013 follow-up):
+  1. Guards throw catalog KEYS as `message` (codes unchanged): `JwtAuthGuard`
+     (`AUTH_NO_TOKEN`, `AUTH_TOKEN_EXPIRED`/`AUTH_INVALID_TOKEN`,
+     `AUTH_INVALID_TOKEN_TYPE`, `AUTH_TOKEN_REVOKED`), `RolesGuard`
+     (`AUTH_REQUIRED`, `AUTH_INSUFFICIENT_ROLE`), `WsJwtGuard` (messages now
+     `AUTH_REQUIRED`, `AUTH_TOKEN_EXPIRED`/`AUTH_INVALID_TOKEN`,
+     `INVALID_TOKEN_TYPE`, `AUTH_TOKEN_REVOKED`, `USER_NOT_FOUND`,
+     `ACCOUNT_HAS_BEEN_SUSPENDED`; WS `code` fields kept as-is). HTTP guard
+     errors now localize via `HttpExceptionFilter` (`?lang=ar` verified).
+  2. Catalog grew 9 entries (`messages/app.ts`, "Booking edits / tracking /
+     upload / rate limits"): `PICKUP_POINT_NOT_ON_TRIP` (Nest addition —
+     Express throws it via `ApiErrors.custom` with no catalog entry, wire
+     shows the raw key; EN/AR follows the `DROP_OFF_POINT_NOT_ON_TRIP`
+     pattern), `YOU_CAN_ONLY_EDIT_YOUR_OWN_BOOKINGS`,
+     `BOOKING_IS_NOT_CONFIRMED`, `PICKUP_EDIT_CUTOFF_PASSED`,
+     `LOCATION_POINT_TOO_OLD` (verbatim Express copies), `RATE_LIMITED`
+     (mirrors `socketAck.rateLimited()` default text), `INVALID_FILE_TYPE` /
+     `FILE_TOO_LARGE` (fallbacks so a bare code still localizes),
+     `PICKUP_STOP_ID_MUST_BE_A_VALID_UUID` (verbatim Express
+     `validation.ts`). Dead duplicates `PLATE_ALREADY_IN_USE` /
+     `PLATE_NUMBER_ALREADY_IN_USE` and `FILE_TOO_LARGE_10MB` kept as-is (no
+     dead-code deletion — both still referenced).
+  3. Upload parity: controller/service throw `NO_FILE_UPLOADED`/`BAD_REQUEST`,
+     `ONLY_JPEG_PNG_WEBP_AND_GIF_IMAGES_ARE_ALLOWED`/`INVALID_FILE_TYPE`
+     (matches `uploadMiddleware.ts` fileFilter), `FILE_TOO_LARGE_10MB`/
+     `FILE_TOO_LARGE` (matches `globalErrorHandler.ts` multer branch).
+  4. `uniqueBookingCode` exhaustion is now 503 `ServiceUnavailableException`
+     with message+code `COULD_NOT_GENERATE_A_UNIQUE_REFERENCE_CODE`
+     (deliberate deviation: Express `ApiErrors.serverError` → 500/
+     `INTERNAL_ERROR`). Twin copies in `ride-requests.service.ts` /
+     `support-tickets.service.ts` left untouched (out of scope).
+  5. Config fails at startup, not per-request: `UploadService.onModuleInit`
+     validates `UPLOAD_PROVIDER` (+ S3 env via `assertS3Configured`) and
+     `MapsClient.onModuleInit` runs `getMapsConfig()`, both with
+     `Logger.error` context before rethrowing. `S3Uploader` constructor keeps
+     its check via the shared assert (per-request safety net).
+  6. Deleted dead scaffolds `src/app.controller.ts` / `src/app.service.ts`
+     (Hello World) and the empty `src/modules/admin/` stub
+     (controller+service+module); `AppModule` no longer references
+     `AppService`/`AdminModule`. Real admin surface lives in
+     `admin-dashboard` / `admin-moderation` modules.
+  7. Unknown routes return the Express 404 envelope (`{status:'error',
+     message:'Route <METHOD> <url> not found', code:'ROUTE_NOT_FOUND'}`),
+     rendered in `HttpExceptionFilter` for codeless 404s (Nest's router 404
+     handler runs before any user middleware, so a post-init `app.use`
+     404 can never fire — first attempt reverted). Express uses the same raw
+     template (no catalog key), so no `?lang` localization here either.
+  8. `/dist` added to `nest-server/.gitignore`; tracked build output
+     unstaged via `git rm -r --cached dist` (709 files, worktree kept, build
+     regenerates). `node dist/main` boot fails on a pre-existing ESM
+     circular-import (`SosService` ↔ `RealtimeGateway`, fails identically on
+     pristine HEAD); e2e boot via vitest is unaffected.
+  9. `SosController.listSos` passes the real `@CurrentUser()` through to
+     `listAdmin` (was a hardcoded `{id:'', role:'admin'}`).
+  10. `CreateBookingDto.seat_numbers` gained `@ArrayMinSize(1)` (matches
+      Express `isArray({min:1})` + `exists`); complaint DTO required fields
+      (`accused_id`, `category`, `description`) gained `@IsDefined()` per
+      repo convention. `POST /favorites/routes` stays 201 — verified Express
+      `favoriteController.addFavoriteRoute` uses `successResponse(..., 201)`;
+      `POST /favorites/drivers` stays 200 (Express default). No deviation:
+      absent-field behavior already 422 on both sides (express-validator runs
+      non-optional chains on `undefined`; only the message text differs —
+      class-validator defaults vs catalog keys, documented in the i18n spec).

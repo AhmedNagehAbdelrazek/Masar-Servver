@@ -1,9 +1,9 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { createHash } from 'node:crypto';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { CloudinaryUploader } from './uploaders/cloudinary.uploader.js';
 import { LocalUploader } from './uploaders/local.uploader.js';
-import { S3Uploader } from './uploaders/s3.uploader.js';
+import { assertS3Configured, S3Uploader } from './uploaders/s3.uploader.js';
 import type { Uploader } from './uploaders/uploader.interface.js';
 
 export interface StoredFile {
@@ -24,22 +24,50 @@ export interface UploadResult {
 // Port of Main Server/Services/uploadService.ts: sha256 dedup via
 // UploadedImage.hash, provider dispatch via UPLOAD_PROVIDER.
 @Injectable()
-export class UploadService {
+export class UploadService implements OnModuleInit {
+  private readonly logger = new Logger(UploadService.name);
+
   constructor(private readonly prisma: PrismaService) {}
 
+  // Bootstrap-time validation: unknown providers or missing S3 env crash
+  // startup (with Logger context) instead of failing the first upload.
+  onModuleInit(): void {
+    this.assertProviderConfigured();
+  }
+
+  private providerName(): string {
+    return (process.env.UPLOAD_PROVIDER ?? 'cloudinary').toLowerCase();
+  }
+
+  private assertProviderConfigured(): void {
+    const provider = this.providerName();
+    if (provider === 's3') {
+      assertS3Configured(this.logger);
+      return;
+    }
+    if (provider !== 'local' && provider !== 'cloudinary') {
+      this.logger.error(
+        `Unknown upload provider "${provider}". Available: cloudinary, local, s3`,
+      );
+      throw new Error(
+        `Unknown upload provider "${provider}". Available: cloudinary, local, s3`,
+      );
+    }
+  }
+
   private uploader(): { uploader: Uploader; provider: string } {
-    const provider = (process.env.UPLOAD_PROVIDER ?? 'cloudinary').toLowerCase();
+    // Validated at bootstrap (onModuleInit); re-asserted here so a config
+    // change between init and first request still fails loud, not silent.
+    this.assertProviderConfigured();
+    const provider = this.providerName();
     if (provider === 'local') return { uploader: new LocalUploader(), provider };
     if (provider === 's3') return { uploader: new S3Uploader(), provider };
-    if (provider === 'cloudinary') return { uploader: new CloudinaryUploader(), provider };
-    throw new Error(
-      `Unknown upload provider "${provider}". Available: cloudinary, local, s3`,
-    );
+    return { uploader: new CloudinaryUploader(), provider };
   }
 
   async upload(file: StoredFile | undefined): Promise<UploadResult> {
     if (!file) {
-      throw new BadRequestException({ message: 'No file uploaded', code: 'BAD_REQUEST' });
+      throw new BadRequestException({ message: 'NO_FILE_UPLOADED', code: 'BAD_REQUEST' });
     }
     const hash = createHash('sha256').update(file.buffer).digest('hex');
     const existing = await this.prisma.uploadedImage.findUnique({ where: { hash } });

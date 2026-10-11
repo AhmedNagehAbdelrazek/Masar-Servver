@@ -23,11 +23,12 @@ export class PenaltyService {
 
   async listForDriver(
     userId: string,
-    filters: { active?: string; page?: unknown; limit?: unknown } = {},
+    filters: { active?: string | boolean; page?: unknown; limit?: unknown } = {},
   ): Promise<{ data: Record<string, unknown>[]; pagination: Record<string, unknown> }> {
     const { page, limit, offset } = parsePagination(filters);
     const where: Record<string, unknown> = { userId };
-    if (filters.active === 'true') {
+    // Accept boolean true as well: the query parser may yield a boolean.
+    if (filters.active === 'true' || filters.active === true) {
       const now = new Date();
       where.startsAt = { lte: now };
       where.OR = [{ endsAt: null }, { endsAt: { gte: now } }];

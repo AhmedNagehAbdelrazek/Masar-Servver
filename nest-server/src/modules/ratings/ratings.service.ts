@@ -182,7 +182,8 @@ export class RatingsService {
         where: visibleWhere,
         _count: { stars: true },
       }),
-      this.prisma.rating.count({ where: { ...visibleWhere, wasLate: false } }),
+      // Express parity (!r.wasLate): NULL counts as on-time.
+      this.prisma.rating.count({ where: { ...visibleWhere, NOT: { wasLate: true } } }),
       this.prisma.user.findUnique({ where: { id: rateeId }, select: { avgRating: true } }),
     ]);
 

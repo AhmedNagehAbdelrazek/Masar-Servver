@@ -1,5 +1,6 @@
 import { Transform, Type } from 'class-transformer';
 import {
+  ArrayMinSize,
   IsArray,
   IsDefined,
   IsIn,
@@ -28,6 +29,7 @@ export class CreateBookingDto {
 
   @IsDefined()
   @IsArray()
+  @ArrayMinSize(1)
   seat_numbers!: (number | string)[];
 
   @IsOptional()

@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import type { Prisma } from '../../generated/prisma/client.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
+import { withSerializableRetry } from '../../prisma/transaction.js';
 import { NotificationsService } from '../notifications/notifications.service.js';
 
 // Port of Main Server/Services/balanceService.ts — the single gateway for
@@ -12,6 +13,12 @@ export function round(n: unknown): number {
 }
 
 type Tx = Prisma.TransactionClient;
+
+export interface BlockingNotify {
+  driverId: string;
+  tripIds: string[];
+  type: 'TRIP_UNAVAILABLE' | 'TRIP_REPUBLISHED';
+}
 
 export interface SubscriptionRow {
   id: string;
@@ -84,12 +91,12 @@ export class BalanceService {
   async creditOnApproval(
     subscription: SubscriptionRow,
     { transaction, extraBalance = 0, mergedBalance = 0 }: { transaction?: Tx; actorId?: string | null; extraBalance?: number; mergedBalance?: number } = {},
-  ): Promise<{ balanceAdded: number; totalBalance: number; isInDebt: boolean }> {
+  ): Promise<{ balanceAdded: number; totalBalance: number; isInDebt: boolean; blockingNotify: BlockingNotify | null }> {
     const run = async (db: Tx | PrismaService) => {
       const subscriptionBalance = round(Number(subscription.planCost) + Number(extraBalance || 0));
       const totalDelta = round(subscriptionBalance - Number(mergedBalance || 0));
       const user = await db.user.findUnique({ where: { id: subscription.driverId } });
-      if (!user) return { balanceAdded: 0, totalBalance: 0, isInDebt: false };
+      if (!user) return { balanceAdded: 0, totalBalance: 0, isInDebt: false, blockingNotify: null };
       const newTotal = round(Number(user.totalBalance) + totalDelta);
       const isInDebt = newTotal < 0;
       await db.driverSubscription.update({
@@ -100,28 +107,37 @@ export class BalanceService {
         where: { id: subscription.driverId },
         data: { totalBalance: newTotal, isInDebt },
       });
-      if (!isInDebt) await this.syncTripBlocking(subscription.driverId, db as Tx);
-      return { balanceAdded: totalDelta, totalBalance: newTotal, isInDebt };
+      // When joining an outer money-flow transaction the blocking
+      // notification is deferred: the caller sends it after commit.
+      // When this method owns the transaction it is sent after commit below.
+      const blockingNotify = !isInDebt ? await this.applyTripBlocking(subscription.driverId, db as Tx) : null;
+      return { balanceAdded: totalDelta, totalBalance: newTotal, isInDebt, blockingNotify };
     };
     if (transaction) return run(transaction);
-    return this.prisma.$transaction((t) => run(t));
+    const out = await withSerializableRetry(this.prisma, (t) => run(t));
+    if (out.blockingNotify) await this.sendBlockingNotify(out.blockingNotify);
+    return out;
   }
 
-  async deductCommission({
-    driverId,
-    amount,
-  }: {
-    driverId: string;
-    amount: number;
-  }): Promise<{
+  async deductCommission(
+    {
+      driverId,
+      amount,
+    }: {
+      driverId: string;
+      amount: number;
+    },
+    transaction?: Tx,
+  ): Promise<{
     commission: number;
     planName: string | null;
     balanceAfter: number;
     isInDebt: boolean;
     shortfall: number;
     tripsBlocked: boolean;
+    blockingNotify: BlockingNotify | null;
   }> {
-    return this.prisma.$transaction(async (t) => {
+    const run = async (t: Tx | PrismaService) => {
       const activeSubs = await t.driverSubscription.findMany({
         where: BalanceService.activeWhere(driverId),
         orderBy: BalanceService.queueOrder(),
@@ -135,6 +151,7 @@ export class BalanceService {
           isInDebt: false,
           shortfall: round(amount),
           tripsBlocked: false,
+          blockingNotify: null,
         };
       }
       let remaining = round(amount);
@@ -158,8 +175,10 @@ export class BalanceService {
       await t.user.update({ where: { id: driverId }, data: { totalBalance: newTotal, isInDebt } });
 
       let tripsBlocked = false;
+      let blockingNotify: BlockingNotify | null = null;
       if (isInDebt) {
-        await this.syncTripBlocking(driverId, t);
+        // Deferred: the owner of the transaction sends this after commit.
+        blockingNotify = await this.applyTripBlocking(driverId, t as Tx);
         tripsBlocked = true;
       }
       return {
@@ -169,8 +188,13 @@ export class BalanceService {
         isInDebt,
         shortfall: remaining,
         tripsBlocked,
+        blockingNotify,
       };
-    });
+    };
+    if (transaction) return run(transaction);
+    const out = await withSerializableRetry(this.prisma, (t) => run(t));
+    if (out.blockingNotify) await this.sendBlockingNotify(out.blockingNotify);
+    return out;
   }
 
   async expireSubscription(
@@ -195,6 +219,48 @@ export class BalanceService {
     };
     if (tx) return run(tx);
     return this.prisma.$transaction((t) => run(t));
+  }
+
+  // Pure-DB half of syncTripBlocking: flips isBlockedByBalance and reports
+  // the notification to send, but never sends it (callers notify after the
+  // outermost commit so in-flight transactions are never announced).
+  private async applyTripBlocking(driverId: string, db: Tx): Promise<BlockingNotify | null> {
+    const activeCount = await db.driverSubscription.count({
+      where: BalanceService.activeWhere(driverId),
+    });
+    const user = await db.user.findUnique({ where: { id: driverId } });
+    if (!user) return null;
+    const blocked = user.isInDebt || activeCount === 0;
+    const trips = await db.trip.findMany({
+      where: {
+        driverId,
+        status: { in: ['published', 'full', 'in_progress', 'ongoing'] },
+      },
+      select: { id: true, isBlockedByBalance: true },
+    });
+    let changed = false;
+    for (const trip of trips) {
+      if (trip.isBlockedByBalance !== blocked) {
+        await db.trip.update({ where: { id: trip.id }, data: { isBlockedByBalance: blocked } });
+        changed = true;
+      }
+    }
+    if (!changed) return null;
+    return {
+      driverId,
+      tripIds: trips.map((tr) => tr.id),
+      type: blocked ? 'TRIP_UNAVAILABLE' : 'TRIP_REPUBLISHED',
+    };
+  }
+
+  async sendBlockingNotify(notify: BlockingNotify): Promise<void> {
+    try {
+      await this.notifications.notifyBookedPassengers(notify.tripIds, notify.type, {
+        data: { driver_id: notify.driverId },
+      });
+    } catch (err) {
+      this.logger.warn(`blocking notification failed: ${(err as Error).message}`);
+    }
   }
 
   async syncTripBlocking(

@@ -138,7 +138,7 @@ export class DriverService {
 
   getPenalties(
     userId: string,
-    filters: { active?: string; page?: unknown; limit?: unknown },
+    filters: { active?: string | boolean; page?: unknown; limit?: unknown },
   ): Promise<{ data: Record<string, unknown>[]; pagination: Record<string, unknown> }> {
     return this.penalties.listForDriver(userId, filters);
   }

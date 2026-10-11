@@ -1122,3 +1122,136 @@ describe('Admin subscriptions - rejection details', () => {
     expect(res.status).toBe(422);
   });
 });
+
+describe('Money-race hardening - free re-subscribe and double approve', () => {
+  let ctx: TestContext;
+  let adminToken: string;
+  let driverToken: string;
+  let plan: { id: string };
+  let freePlan: { id: string };
+  let method: { id: string };
+  let screenshot: { id: number };
+
+  const ADMIN_ID = '550e8400-e29b-41d4-a716-446655440f01';
+  const DRIVER_ID = '550e8400-e29b-41d4-a716-446655440f02';
+
+  beforeAll(async () => {
+    ctx = await createTestApp();
+  });
+  afterAll(async () => {
+    await ctx.app.close();
+  });
+
+  beforeEach(async () => {
+    await resetTestState(ctx.prisma, ctx.redis);
+    await ctx.prisma.user.create({
+      data: {
+        id: ADMIN_ID,
+        fullName: 'Admin',
+        phone: '+962720000301',
+        countryCode: 'JO',
+        role: 'admin',
+        passwordHash: 'hashed',
+        isVerified: true,
+      },
+    });
+    await ctx.prisma.user.create({
+      data: {
+        id: DRIVER_ID,
+        fullName: 'Race Driver',
+        phone: '+962720000302',
+        countryCode: 'JO',
+        role: 'driver',
+        passwordHash: 'hashed',
+        isVerified: true,
+      },
+    });
+    await ctx.prisma.driverProfile.create({ data: { driverId: DRIVER_ID, nationalID: 'N9998887' } });
+    plan = await ctx.prisma.subscriptionPlan.create({
+      data: {
+        name: 'Basic',
+        periodDays: 30,
+        percentageCut: 8,
+        cost: 15,
+        features: [],
+        isFree: false,
+        isActive: true,
+      },
+    });
+    freePlan = await ctx.prisma.subscriptionPlan.create({
+      data: {
+        name: 'Free Trial',
+        periodDays: 30,
+        percentageCut: 0,
+        cost: 0,
+        isFree: true,
+        freeOffer: { type: 'trips', value: 5 },
+        isActive: true,
+      },
+    });
+    method = await ctx.prisma.paymentMethod.create({
+      data: {
+        name: 'Bank of Jordan',
+        accountNumber: 'JO94BOJX0000000000',
+        type: 'bank_account',
+        email: 'payments@boj.com',
+        isActive: true,
+      },
+    });
+    screenshot = await ctx.prisma.uploadedImage.create({
+      data: {
+        hash: 'money-race-screenshot-hash',
+        url: 'https://res.cloudinary.com/x/screenshot.jpg',
+        filename: 'screenshot.jpg',
+        mimetype: 'image/jpeg',
+        size: 1024,
+      },
+    });
+    adminToken = generateAccessToken({ id: ADMIN_ID, role: 'admin' });
+    driverToken = generateAccessToken({ id: DRIVER_ID, role: 'driver' });
+  });
+
+  function submit(planId: string): ReturnType<TestContext['agent']['post']> {
+    return ctx.agent
+      .post('/api/subscriptions')
+      .set('Authorization', `Bearer ${driverToken}`)
+      .send({ plan_id: planId, payment_method_id: method.id, screenshot_id: screenshot.id });
+  }
+
+  async function approve(id: string): Promise<ReturnType<TestContext['agent']['post']>> {
+    return ctx.agent
+      .post(`/api/admin/subscriptions/${id}/approve`)
+      .set('Authorization', `Bearer ${adminToken}`);
+  }
+
+  it('blocks a second free subscribe after the first free row expired (422)', async () => {
+    const first = await submit(freePlan.id);
+    expect(first.status).toBe(201);
+
+    await ctx.prisma.driverSubscription.updateMany({
+      where: { driverId: DRIVER_ID },
+      data: { status: 'expired' },
+    });
+
+    const second = await submit(freePlan.id);
+    expect(second.status).toBe(422);
+    expect(second.body.code).toBe('FREE_PLAN_ALREADY_USED');
+  });
+
+  it('double approve conflicts and credits the balance exactly once', async () => {
+    const created = await submit(plan.id);
+    expect(created.status).toBe(201);
+    const id = created.body.subscription_id as string;
+
+    const firstApprove = await approve(id);
+    expect(firstApprove.status).toBe(200);
+    const balanceAdded = (firstApprove.body as { balance_added: number }).balance_added;
+
+    const secondApprove = await approve(id);
+    expect(secondApprove.status).toBe(409);
+    expect((secondApprove.body as { code: string }).code).toBe('REQUEST_ALREADY_PROCESSED');
+
+    const user = await ctx.prisma.user.findUnique({ where: { id: DRIVER_ID } });
+    expect(Number(user?.totalBalance)).toBe(balanceAdded);
+  });
+});

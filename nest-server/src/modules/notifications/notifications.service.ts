@@ -1,6 +1,7 @@
 import { ForbiddenException, forwardRef, Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service.js';
-import { RealtimeGateway } from '../../realtime/realtime.gateway.js';
+import type { RealtimeGateway } from '../../realtime/realtime.gateway.js';
+import { RealtimeGateway as RealtimeGatewayToken } from '../../realtime/realtime.gateway.js';
 import { InAppChannel } from './channels/in-app.channel.js';
 import { PushChannel } from './channels/push.channel.js';
 import { SmsChannel } from './channels/sms.channel.js';
@@ -30,7 +31,7 @@ export class NotificationsService {
 
   constructor(
     private readonly prisma: PrismaService,
-    @Inject(forwardRef(() => RealtimeGateway))
+    @Inject(forwardRef(() => RealtimeGatewayToken))
     private readonly realtime: RealtimeGateway,
     private readonly sms: SmsChannel,
     private readonly push: PushChannel,
@@ -181,15 +182,18 @@ export class NotificationsService {
   }
 
   async markRead(userId: string, notificationId: string): Promise<{ id: string; isRead: boolean }> {
+    if (!notificationId) {
+      throw new NotFoundException({ message: 'NOTIFICATION_NOT_FOUND', code: 'NOTIFICATION_NOT_FOUND' });
+    }
     const notification = await this.prisma.notification.findUnique({
       where: { id: notificationId },
     });
     if (!notification) {
-      throw new NotFoundException({ message: 'Notification not found', code: 'NOTIFICATION_NOT_FOUND' });
+      throw new NotFoundException({ message: 'NOTIFICATION_NOT_FOUND', code: 'NOTIFICATION_NOT_FOUND' });
     }
     if (notification.userId !== userId) {
       throw new ForbiddenException({
-        message: 'You can only mark your own notifications as read',
+        message: 'YOU_CAN_ONLY_MARK_YOUR_OWN_NOTIFICATIONS_AS_READ',
         code: 'FORBIDDEN',
       });
     }

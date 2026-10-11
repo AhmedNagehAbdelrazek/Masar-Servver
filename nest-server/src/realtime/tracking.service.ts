@@ -10,10 +10,13 @@ import {
 } from '@nestjs/common';
 import { GeoService } from '../modules/maps/geo.service.js';
 import { getMapsConfig } from '../modules/maps/maps.config.js';
-import { NotificationsService, type NotifyUser } from '../modules/notifications/notifications.service.js';
+import { NotificationsService as NotificationsServiceToken, type NotifyUser } from '../modules/notifications/notifications.service.js';
+import type { NotificationsService } from '../modules/notifications/notifications.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { RedisService } from '../redis/redis.service.js';
-import { RealtimeGateway } from './realtime.gateway.js';
+import type { RealtimeGateway } from './realtime.gateway.js';
+import { RealtimeGateway as RealtimeGatewayToken } from './realtime.gateway.js';
+import { RealtimeMetricsService } from './realtime-metrics.service.js';
 
 export interface TrackingUser {
   id: string;
@@ -49,10 +52,11 @@ export class TrackingService {
     // forwardRef: NotificationsService <-> RealtimeGateway <-> TrackingService
     // form a cycle; an eager type here evaluates to undefined depending on
     // module evaluation order (broke specs that import TripsModule first).
-    @Inject(forwardRef(() => NotificationsService))
+    @Inject(forwardRef(() => NotificationsServiceToken))
     private readonly notifications: NotificationsService,
-    @Inject(forwardRef(() => RealtimeGateway))
+    @Inject(forwardRef(() => RealtimeGatewayToken))
     private readonly realtime: RealtimeGateway,
+    private readonly metrics: RealtimeMetricsService,
   ) {}
 
   private async assertDriverOfActiveTrip(
@@ -169,6 +173,8 @@ export class TrackingService {
     const out = await this.buildUpdate(tripId, trip, { lat, lng, speed });
     try {
       this.realtime.emitToRoom(`trip:${tripId}`, 'tracking:update', out);
+      this.metrics.recordEvent('tracking:update');
+      this.metrics.recordDelivery();
     } catch {
       // best-effort
     }
@@ -353,6 +359,7 @@ export class TrackingService {
     };
     try {
       this.realtime.emitToRoom(`trip:${tripId}`, 'tracking:update', out);
+      this.metrics.recordEvent('tracking:start');
     } catch {
       // best-effort
     }
@@ -371,6 +378,7 @@ export class TrackingService {
     };
     try {
       this.realtime.emitToRoom(`trip:${tripId}`, 'tracking:update', out);
+      this.metrics.recordEvent('tracking:stop');
     } catch {
       // best-effort
     }

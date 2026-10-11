@@ -9,7 +9,9 @@ import {
 } from '@nestjs/common';
 import { buildPagination, parsePagination } from '../../common/utils/pagination.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
-import { RealtimeGateway } from '../../realtime/realtime.gateway.js';
+import type { RealtimeGateway } from '../../realtime/realtime.gateway.js';
+import { RealtimeGateway as RealtimeGatewayToken } from '../../realtime/realtime.gateway.js';
+import { RealtimeMetricsService } from '../../realtime/realtime-metrics.service.js';
 
 export interface SosUser {
   id: string;
@@ -63,8 +65,9 @@ function validationError(message: string): UnprocessableEntityException {
 export class SosService {
   constructor(
     private readonly prisma: PrismaService,
-    @Inject(forwardRef(() => RealtimeGateway))
+    @Inject(forwardRef(() => RealtimeGatewayToken))
     private readonly realtime: RealtimeGateway,
+    private readonly metrics: RealtimeMetricsService,
   ) {}
 
   async isTripMember(user: SosUser, tripId: string): Promise<boolean> {
@@ -182,6 +185,8 @@ export class SosService {
     });
     this.realtime.emitToRole('admin', 'sos:alert', payloadOut);
     this.realtime.emitToRole('admin', 'admin:sos_alert', payloadOut);
+    this.metrics.recordEvent('sos:alert');
+    this.metrics.recordDelivery();
     return { sos_event_id: event.id, reused: false };
   }
 
@@ -259,6 +264,7 @@ export class SosService {
     };
     this.realtime.emitToUser(event.userId, 'sos:resolved', out);
     this.realtime.emitToRole('admin', 'sos:resolved', out);
+    this.metrics.recordEvent('sos:resolved');
 
     const updated = (await this.prisma.sosEvent.findUnique({ where: { id: sosId } })) as unknown as SosRow;
     return { sos_event: serialize(updated) };
@@ -297,6 +303,7 @@ export class SosService {
         const payloadOut = await this.alertPayload(event);
         this.realtime.emitToRole('admin', 'sos:alert', payloadOut);
         this.realtime.emitToRole('admin', 'admin:sos_alert', payloadOut);
+        this.metrics.recordEvent('sos:realert');
       }
     }
     return { alerted, escalated };

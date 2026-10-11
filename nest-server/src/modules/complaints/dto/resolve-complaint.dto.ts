@@ -1,14 +1,16 @@
-import { IsIn, IsNotEmpty, IsOptional, IsString, IsUUID, MaxLength } from 'class-validator';
+import { IsDefined, IsIn, IsNotEmpty, IsOptional, IsString, IsUUID, MaxLength } from 'class-validator';
 
 // Port of resolveComplaintValidation. NOTE: "resolution required when
 // resolving" is cross-field (needs body.status), enforced in
 // ComplaintsService as 422 VALIDATION_ERROR — same envelope as Express.
 export class ComplaintIdParam {
+  @IsDefined()
   @IsUUID()
   complaint_id!: string;
 }
 
 export class ResolveComplaintDto {
+  @IsDefined()
   @IsString()
   @IsNotEmpty()
   @IsIn(['reviewing', 'resolved', 'dismissed'])

@@ -1,5 +1,6 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { createHash } from 'node:crypto';
+import { getMapsConfig } from './maps.config.js';
 
 // Port of Main Server/Services/mapsClient.ts: thin fetch wrapper over Google
 // Routes + Geocoding with mock corridor, retries, timeouts and usage counts.
@@ -51,9 +52,23 @@ function mapsError(status: number, code: string, message: string): Error & { sta
 }
 
 @Injectable()
-export class MapsClient {
+export class MapsClient implements OnModuleInit {
   private readonly logger = new Logger(MapsClient.name);
   readonly fetchCalls = { routes: 0, geocode: 0 };
+
+  // Bootstrap-time validation: a missing GOOGLE_MAPS_SERVER_API_KEY with
+  // MAPS_MOCK=false crashes startup (with Logger context) instead of failing
+  // the first route call inside getMapsConfig().
+  onModuleInit(): void {
+    try {
+      getMapsConfig();
+    } catch (err) {
+      this.logger.error(
+        `Maps misconfigured: ${(err as Error)?.message ?? err}. Set GOOGLE_MAPS_SERVER_API_KEY or keep MAPS_MOCK=true`,
+      );
+      throw err;
+    }
+  }
 
   private get mock(): boolean {
     return (process.env.MAPS_MOCK ?? 'true').toLowerCase() !== 'false';

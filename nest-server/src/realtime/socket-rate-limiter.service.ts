@@ -10,6 +10,10 @@ const LIMITS: Record<string, { max: number; windowSeconds: number }> = {
   sos: { max: 5, windowSeconds: 60 },
   typing: { max: 20, windowSeconds: 10 },
   read: { max: 60, windowSeconds: 10 },
+  // Ported from Main Server/Services/socketRateLimiter.ts. Without these
+  // keys the fallback ({ max: 30, windowSeconds: 60 }) would apply instead.
+  supportChat: { max: 10, windowSeconds: 10 },
+  admin: { max: 60, windowSeconds: 60 },
 };
 
 @Injectable()

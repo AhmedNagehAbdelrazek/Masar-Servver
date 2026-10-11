@@ -1,6 +1,9 @@
 import { Injectable } from '@nestjs/common';
+import type { Prisma } from '../../generated/prisma/client.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
-import { BalanceService, round } from '../balance/balance.service.js';
+import { BalanceService, round, type BlockingNotify } from '../balance/balance.service.js';
+
+type Tx = Prisma.TransactionClient;
 
 // Port of Main Server/Services/commissionService.ts.
 @Injectable()
@@ -35,8 +38,9 @@ export class CommissionService {
     };
   }
 
-  async getTotalFare(tripId: string): Promise<number> {
-    const bookings = await this.prisma.booking.findMany({
+  async getTotalFare(tripId: string, tx?: Tx): Promise<number> {
+    const db = tx ?? this.prisma;
+    const bookings = await db.booking.findMany({
       where: { tripId, status: { in: ['confirmed', 'completed'] } },
       select: { agreedFare: true },
     });
@@ -46,6 +50,7 @@ export class CommissionService {
   async deductCommission(
     trip: { id: string; driverId: string },
     actorId: string | null = null,
+    tx?: Tx,
   ): Promise<{
     commission: number;
     rate: number;
@@ -55,17 +60,21 @@ export class CommissionService {
     isInDebt: boolean;
     shortfall: number;
     tripsBlocked: boolean;
+    blockingNotify: BlockingNotify | null;
   }> {
-    const totalFare = await this.getTotalFare(trip.id);
-    const current = (await this.balance.findCurrentSubscription(trip.driverId)) as unknown as {
+    const totalFare = await this.getTotalFare(trip.id, tx);
+    const current = (await this.balance.findCurrentSubscription(trip.driverId, tx)) as unknown as {
       planPercentageCut: unknown;
     } | null;
     const rate = current ? Number(current.planPercentageCut) : 0;
     const commission = round(totalFare * (rate / 100));
-    const result = await this.balance.deductCommission({
-      driverId: trip.driverId,
-      amount: commission,
-    });
+    const result = await this.balance.deductCommission(
+      {
+        driverId: trip.driverId,
+        amount: commission,
+      },
+      tx,
+    );
     void actorId;
     return {
       commission,
@@ -76,6 +85,7 @@ export class CommissionService {
       isInDebt: result.isInDebt,
       shortfall: result.shortfall,
       tripsBlocked: result.tripsBlocked,
+      blockingNotify: result.blockingNotify,
     };
   }
 }

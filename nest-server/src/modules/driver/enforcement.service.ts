@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { RealtimeGateway } from '../../realtime/realtime.gateway.js';
+import { RealtimeMetricsService } from '../../realtime/realtime-metrics.service.js';
 
 // Port of Main Server/Services/enforcementService.ts: immediate session
 // revocation on suspension/ban. Best-effort, never throws into callers.
@@ -7,7 +8,10 @@ import { RealtimeGateway } from '../../realtime/realtime.gateway.js';
 export class EnforcementService {
   private readonly logger = new Logger(EnforcementService.name);
 
-  constructor(private readonly realtime: RealtimeGateway) {}
+  constructor(
+    private readonly realtime: RealtimeGateway,
+    private readonly metrics: RealtimeMetricsService,
+  ) {}
 
   revoke(
     userId: string,
@@ -20,6 +24,7 @@ export class EnforcementService {
       duration,
       effective_at: new Date().toISOString(),
     });
+    this.metrics.recordEvent('enforcement:revoke');
     void actorId;
     void this.realtime.disconnectUserSockets(userId).catch((err: Error) => {
       this.logger.warn(`[enforcement] disconnect failed: ${err.message}`);

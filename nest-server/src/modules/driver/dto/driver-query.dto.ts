@@ -4,8 +4,8 @@ import { IsDateString, IsIn, IsInt, IsOptional, Max, Min } from 'class-validator
 // Port of penaltyListValidation (driver list only).
 export class PenaltyListQuery {
   @IsOptional()
-  @IsIn(['true', 'false'])
-  active?: string;
+  @IsIn(['true', 'false', true, false])
+  active?: string | boolean;
 
   @IsOptional()
   @IsInt()

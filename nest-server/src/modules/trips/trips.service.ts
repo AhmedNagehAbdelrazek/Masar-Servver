@@ -21,7 +21,9 @@ import {
   parseJordanDayStart,
   parseTimezoneAware,
 } from '../../common/utils/time.js';
+import type { Prisma } from '../../generated/prisma/client.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
+import { withSerializableRetry } from '../../prisma/transaction.js';
 import { RealtimeGateway } from '../../realtime/realtime.gateway.js';
 import { NotificationsService } from '../notifications/notifications.service.js';
 import { CommissionService } from '../subscriptions/commission.service.js';
@@ -29,7 +31,8 @@ import { HomeService } from '../subscriptions/home.service.js';
 import { RecentSearchService } from '../subscriptions/recent-search.service.js';
 import { SeatLockService } from './seat-lock.service.js';
 import { TRIP_START_WINDOW_MS } from './trip.constants.js';
-import { TripExpiryService } from './trip-expiry.service.js';
+import type { TripExpiryService } from './trip-expiry.service.js';
+import { TripExpiryService as TripExpiryServiceToken } from './trip-expiry.service.js';
 import { getMapsConfig } from '../maps/maps.config.js';
 import { PickupService } from '../maps/pickup.service.js';
 import { RouteService } from '../maps/route.service.js';
@@ -105,7 +108,7 @@ export class TripsService {
     private readonly notifications: NotificationsService,
     private readonly home: HomeService,
     private readonly realtime: RealtimeGateway,
-    @Inject(forwardRef(() => TripExpiryService))
+    @Inject(forwardRef(() => TripExpiryServiceToken))
     private readonly expiry: TripExpiryService,
     private readonly routeService: RouteService,
     private readonly pickupService: PickupService,
@@ -892,26 +895,38 @@ export class TripsService {
       throw new ConflictException({ message: 'TRIP_IS_ALREADY_CANCELLED', code: 'ALREADY_CANCELLED' });
     }
 
+    // Serializable + conditional claim: closes the check-then-write race
+    // between the ALREADY_CANCELLED guard above and the flip below.
     const now = new Date();
-    await this.prisma.trip.update({ where: { id: tripId }, data: { status: 'cancelled' } });
-    // Notify BEFORE flipping bookings (notifyConfirmedPassengers only sees
-    // confirmed rows) — order mirrors Express.
     let notifiedPassengers = 0;
-    try {
-      notifiedPassengers = await this.notifications.notifyConfirmedPassengers([tripId], 'TRIP_CANCELLED', {
-        data: { trip_id: tripId },
+    await withSerializableRetry(this.prisma, async (tx) => {
+      const claimed = await tx.trip.updateMany({
+        where: { id: tripId, status: { notIn: ['cancelled', 'completed'] } },
+        data: { status: 'cancelled' },
       });
-    } catch {
-      // best-effort
-    }
-    await this.prisma.booking.updateMany({
-      where: { tripId, status: { in: ['confirmed', 'pending'] } },
-      data: {
-        status: 'cancelled',
-        cancellationReason: 'Trip cancelled by driver',
-        cancelledBy: driverId,
-        cancelledAt: now,
-      },
+      if (claimed.count === 0) {
+        throw new ConflictException({ message: 'TRIP_IS_ALREADY_CANCELLED', code: 'ALREADY_CANCELLED' });
+      }
+      // Notify BEFORE flipping bookings (notifyConfirmedPassengers only sees
+      // confirmed rows) — order mirrors Express. notifyConfirmedPassengers
+      // reads via the root client (see notify-after-commit note in
+      // balance.service.ts); kept inside the legacy order here.
+      try {
+        notifiedPassengers = await this.notifications.notifyConfirmedPassengers([tripId], 'TRIP_CANCELLED', {
+          data: { trip_id: tripId },
+        });
+      } catch {
+        // best-effort
+      }
+      await tx.booking.updateMany({
+        where: { tripId, status: { in: ['confirmed', 'pending'] } },
+        data: {
+          status: 'cancelled',
+          cancellationReason: 'Trip cancelled by driver',
+          cancelledBy: driverId,
+          cancelledAt: now,
+        },
+      });
     });
     const seats = await this.prisma.tripSeat.findMany({ where: { tripId }, select: { seatNumber: true } });
     for (const s of seats) {
@@ -1066,16 +1081,67 @@ export class TripsService {
         code: 'INVALID_TRIP_STATUS',
       });
     }
+    const originCity = trip.originCity;
+    const destinationCity = trip.destinationCity;
 
-    const result = await this.commission.deductCommission(
-      { id: trip.id, driverId: trip.driverId },
-      driverId,
-    );
-    const now = new Date();
-    await this.prisma.trip.update({
-      where: { id: tripId },
-      data: { status: 'completed', completedAt: now },
+    // ONE serializable transaction: conditional trip claim + commission
+    // deduction + booking finalization + free-trips increment. Everything
+    // observable (realtime/notifications/home) fires after commit.
+    const result = await withSerializableRetry(this.prisma, async (tx) => {
+      const now = new Date();
+      // Express order: commission (with its trip-blocking side effect, which
+      // covers the still-active trip) runs BEFORE the status flip to
+      // completed; the conditional claim below still guards double-complete
+      // (serializable retry re-runs into a 0-row claim → 422).
+      const commission = await this.commission.deductCommission(
+        { id: tripId, driverId: trip.driverId },
+        driverId,
+        tx,
+      );
+
+      const claimed = await tx.trip.updateMany({
+        where: { id: tripId, status: { in: ['in_progress', 'ongoing'] } },
+        data: { status: 'completed', completedAt: now },
+      });
+      if (claimed.count === 0) {
+        throw new UnprocessableEntityException({
+          message: 'TRIP_CANNOT_BE_COMPLETED_FROM_ITS_CURRENT_STATUS',
+          code: 'INVALID_TRIP_STATUS',
+        });
+      }
+
+      const confirmed = await tx.booking.findMany({
+        where: { tripId, status: 'confirmed' },
+        include: { passenger: { select: { id: true, phone: true, fcmToken: true, locale: true } } },
+      });
+      await tx.booking.updateMany({
+        where: { tripId, status: 'confirmed' },
+        data: { status: 'completed', paymentStatus: 'paid_cash', completedAt: now },
+      });
+
+      const freeSub = await tx.driverSubscription.findFirst({
+        where: {
+          driverId,
+          status: 'active',
+          expiresAt: { gt: new Date() },
+          plan: { isFree: true },
+        },
+      });
+      const offer = freeSub?.freeOffer as unknown as { type?: string } | null;
+      if (freeSub && offer?.type === 'trips') {
+        await tx.driverSubscription.update({
+          where: { id: freeSub.id },
+          data: { freeTripsUsed: { increment: 1 } },
+        });
+      }
+
+      return {
+        commission,
+        passengers: confirmed.map((b) => b.passenger),
+        blockingNotify: commission.blockingNotify,
+      };
     });
+
     // Actual-path compaction wires with Wave 5.5 (routeService).
     try {
       this.realtime.emitToRoom(`trip:${tripId}`, 'tracking:ended', {
@@ -1086,24 +1152,18 @@ export class TripsService {
       // best-effort
     }
 
-    const confirmed = await this.prisma.booking.findMany({
-      where: { tripId, status: 'confirmed' },
-      include: { passenger: { select: { id: true, phone: true, fcmToken: true, locale: true } } },
-    });
-    for (const booking of confirmed) {
-      await this.prisma.booking.update({
-        where: { id: booking.id },
-        data: { status: 'completed', paymentStatus: 'paid_cash', completedAt: now },
-      });
+    // DEVIATION (documented fix): the route var uses the `X → Y` arrow format
+    // from notifications.service.ts (notifyBookedPassengers/notifyConfirmedPassengers).
+    // Express used `X - Y` here; the arrow is the canonical format.
+    for (const passenger of result.passengers) {
       try {
-        const tripRow = await this.prisma.trip.findUnique({ where: { id: tripId } });
         await this.notifications.sendToUser(
-          booking.passenger as unknown as Parameters<NotificationsService['sendToUser']>[0],
+          passenger as unknown as Parameters<NotificationsService['sendToUser']>[0],
           'TRIP_COMPLETED_PROMPT',
           {
             channels: ['in_app'],
             vars: {
-              route: tripRow ? `${tripRow.originCity}-${tripRow.destinationCity}` : '',
+              route: `${originCity} → ${destinationCity}`,
             },
             data: { trip_id: tripId },
           },
@@ -1113,27 +1173,19 @@ export class TripsService {
       }
     }
 
-    try {
-      const freeSub = await this.prisma.driverSubscription.findFirst({
-        where: {
-          driverId,
-          status: 'active',
-          expiresAt: { gt: new Date() },
-          plan: { isFree: true },
-        },
-      });
-      const offer = freeSub?.freeOffer as unknown as { type?: string } | null;
-      if (freeSub && offer?.type === 'trips') {
-        await this.prisma.driverSubscription.update({
-          where: { id: freeSub.id },
-          data: { freeTripsUsed: { increment: 1 } },
-        });
+    if (result.blockingNotify) {
+      try {
+        await this.notifications.notifyBookedPassengers(
+          result.blockingNotify.tripIds,
+          result.blockingNotify.type,
+          { data: { driver_id: result.blockingNotify.driverId } },
+        );
+      } catch {
+        // best-effort
       }
-    } catch {
-      // best-effort
     }
 
-    if (result.isInDebt) {
+    if (result.commission.isInDebt) {
       try {
         const driver = await this.prisma.user.findUnique({ where: { id: driverId } });
         if (driver) {
@@ -1142,8 +1194,8 @@ export class TripsService {
             'DEBT',
             {
               channels: ['in_app', 'push'],
-              vars: { balance: result.balanceAfter.toFixed(2) },
-              data: { trip_id: tripId, commission: result.commission },
+              vars: { balance: result.commission.balanceAfter.toFixed(2) },
+              data: { trip_id: tripId, commission: result.commission.commission },
             },
           );
         }
@@ -1159,10 +1211,10 @@ export class TripsService {
     }
     return {
       trip_id: tripId,
-      commission: result.commission,
-      plan_name: result.planName,
-      balance_after: result.balanceAfter,
-      is_in_debt: result.isInDebt,
+      commission: result.commission.commission,
+      plan_name: result.commission.planName,
+      balance_after: result.commission.balanceAfter,
+      is_in_debt: result.commission.isInDebt,
     };
   }
 
@@ -1313,9 +1365,13 @@ export class TripsService {
     };
   }
 
-  private async countRecentCancellations(driverId: string): Promise<number> {
+  private async countRecentCancellations(
+    driverId: string,
+    tx?: Prisma.TransactionClient,
+  ): Promise<number> {
+    const db = tx ?? this.prisma;
     const monthAgo = new Date(Date.now() - 30 * 24 * 3600 * 1000);
-    return this.prisma.penalty.count({
+    return db.penalty.count({
       where: { userId: driverId, penaltyType: 'trip_cancellation', createdAt: { gte: monthAgo } },
     });
   }
@@ -1333,12 +1389,19 @@ export class TripsService {
   private async applyEscalation(
     penaltyId: string,
     driverId: string,
-  ): Promise<{ count: number; severity: string; suspensionDays: number | null }> {
-    const count = await this.countRecentCancellations(driverId);
+    tx?: Prisma.TransactionClient,
+  ): Promise<{
+    count: number;
+    severity: string;
+    suspensionDays: number | null;
+    penaltyNotify: { severityLabel: string; reason: string } | null;
+  }> {
+    const db = tx ?? this.prisma;
+    const count = await this.countRecentCancellations(driverId, tx);
     const { severity, suspensionDays } = this.getEscalationLevel(count);
-    const penalty = await this.prisma.penalty.findUnique({ where: { id: penaltyId } });
+    const penalty = await db.penalty.findUnique({ where: { id: penaltyId } });
     if (penalty && severity !== penalty.severity) {
-      await this.prisma.penalty.update({
+      await db.penalty.update({
         where: { id: penaltyId },
         data: {
           severity,
@@ -1346,43 +1409,29 @@ export class TripsService {
         },
       });
     }
+    // The PENALTY_ISSUED notification is returned, not sent: the caller
+    // sends it after the outermost commit.
     if (suspensionDays) {
-      await this.prisma.user.update({ where: { id: driverId }, data: { status: 'suspended' } });
-      try {
-        const driver = await this.prisma.user.findUnique({ where: { id: driverId } });
-        if (driver) {
-          await this.notifications.sendToUser(
-            driver as unknown as Parameters<NotificationsService['sendToUser']>[0],
-            'PENALTY_ISSUED',
-            {
-              channels: ['in_app', 'push'],
-              vars: { severity: `suspension (${suspensionDays} days)`, reason: 'Repeated trip cancellations' },
-              data: { penalty_id: penaltyId },
-            },
-          );
-        }
-      } catch {
-        // best-effort
-      }
-    } else if (severity === 'moderate') {
-      try {
-        const driver = await this.prisma.user.findUnique({ where: { id: driverId } });
-        if (driver) {
-          await this.notifications.sendToUser(
-            driver as unknown as Parameters<NotificationsService['sendToUser']>[0],
-            'PENALTY_ISSUED',
-            {
-              channels: ['in_app', 'push'],
-              vars: { severity: 'warning', reason: 'Repeated trip cancellations' },
-              data: { penalty_id: penaltyId },
-            },
-          );
-        }
-      } catch {
-        // best-effort
-      }
+      await db.user.update({ where: { id: driverId }, data: { status: 'suspended' } });
+      return {
+        count,
+        severity,
+        suspensionDays,
+        penaltyNotify: {
+          severityLabel: `suspension (${suspensionDays} days)`,
+          reason: 'Repeated trip cancellations',
+        },
+      };
     }
-    return { count, severity, suspensionDays };
+    if (severity === 'moderate') {
+      return {
+        count,
+        severity,
+        suspensionDays,
+        penaltyNotify: { severityLabel: 'warning', reason: 'Repeated trip cancellations' },
+      };
+    }
+    return { count, severity, suspensionDays, penaltyNotify: null };
   }
 
   async cancelTripWithPenalty(
@@ -1413,31 +1462,75 @@ export class TripsService {
     if (trip.status === 'cancelled') {
       throw new ConflictException({ message: 'TRIP_IS_ALREADY_CANCELLED', code: 'ALREADY_CANCELLED' });
     }
-    const confirmedCount = await this.prisma.booking.count({
+    const preConfirmedCount = await this.prisma.booking.count({
       where: { tripId, status: 'confirmed' },
     });
-    if (confirmedCount > 0) {
+    if (preConfirmedCount > 0) {
       throw new ConflictException({
         message: 'CANNOT_CANCEL_TRIP_THERE_ARE_CONFIRMED_BOOKINGS_PLEASE_CONTACT_SUPPORT',
         code: 'CANNOT_CANCEL_TRIP_THERE_ARE_CONFIRMED_BOOKINGS_PLEASE_CONTACT_SUPPORT',
       });
     }
 
-    await this.prisma.trip.update({ where: { id: tripId }, data: { status: 'cancelled' } });
-    const penalty = await this.prisma.penalty.create({
-      data: {
-        userId: driverId,
-        tripId,
-        type: 'warning',
-        penaltyType: 'trip_cancellation',
-        severity: 'minor',
-        reason,
-        details: note ?? null,
-        startsAt: new Date(),
-        issuedBy: driverId,
-      },
+    // ONE serializable transaction: conditional trip claim + penalty +
+    // escalation writes. Notifications fire after commit.
+    const outcome = await withSerializableRetry(this.prisma, async (tx) => {
+      const confirmedCount = await tx.booking.count({
+        where: { tripId, status: 'confirmed' },
+      });
+      if (confirmedCount > 0) {
+        throw new ConflictException({
+          message: 'CANNOT_CANCEL_TRIP_THERE_ARE_CONFIRMED_BOOKINGS_PLEASE_CONTACT_SUPPORT',
+          code: 'CANNOT_CANCEL_TRIP_THERE_ARE_CONFIRMED_BOOKINGS_PLEASE_CONTACT_SUPPORT',
+        });
+      }
+      const claimed = await tx.trip.updateMany({
+        where: { id: tripId, status: { in: ['published', 'full'] } },
+        data: { status: 'cancelled' },
+      });
+      if (claimed.count === 0) {
+        throw new ConflictException({
+          message: 'TRIP_IS_ALREADY_ONGOING_OR_COMPLETED_CANNOT_CANCEL',
+          code: 'TRIP_IS_ALREADY_ONGOING_OR_COMPLETED_CANNOT_CANCEL',
+        });
+      }
+      const penalty = await tx.penalty.create({
+        data: {
+          userId: driverId,
+          tripId,
+          type: 'warning',
+          penaltyType: 'trip_cancellation',
+          severity: 'minor',
+          reason,
+          details: note ?? null,
+          startsAt: new Date(),
+          issuedBy: driverId,
+        },
+      });
+      const escalation = await this.applyEscalation(penalty.id, driverId, tx);
+      return { penaltyId: penalty.id, escalation };
     });
-    const escalation = await this.applyEscalation(penalty.id, driverId);
+    if (outcome.escalation.penaltyNotify) {
+      try {
+        const driver = await this.prisma.user.findUnique({ where: { id: driverId } });
+        if (driver) {
+          await this.notifications.sendToUser(
+            driver as unknown as Parameters<NotificationsService['sendToUser']>[0],
+            'PENALTY_ISSUED',
+            {
+              channels: ['in_app', 'push'],
+              vars: {
+                severity: outcome.escalation.penaltyNotify.severityLabel,
+                reason: outcome.escalation.penaltyNotify.reason,
+              },
+              data: { penalty_id: outcome.penaltyId },
+            },
+          );
+        }
+      } catch {
+        // best-effort
+      }
+    }
     try {
       await this.notifications.notifyBookedPassengers([tripId], 'TRIP_CANCELLED', {
         data: { trip_id: tripId },
@@ -1454,8 +1547,8 @@ export class TripsService {
       message: 'TRIP_CANCELLED_SUCCESSFULLY',
       trip_id: tripId,
       status: 'cancelled',
-      penalty_id: penalty.id,
-      penalty_type: escalation.severity,
+      penalty_id: outcome.penaltyId,
+      penalty_type: outcome.escalation.severity,
     };
   }
 

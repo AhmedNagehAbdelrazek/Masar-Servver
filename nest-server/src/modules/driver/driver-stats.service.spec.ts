@@ -106,3 +106,38 @@ describe('DriverStatsService.recomputeForDriver', () => {
     expect(results.map((r) => r.driverId).sort()).toEqual(['driver-1', 'driver-2']);
   });
 });
+
+describe('DriverStatsService punctuality NULL handling (Express parity)', () => {
+  it('counts NULL wasLate as on-time via a NOT-true filter', async () => {
+    const ratingCount = vi.fn().mockResolvedValueOnce(3).mockResolvedValueOnce(2);
+    const prisma = {
+      trip: { count: vi.fn().mockResolvedValue(0), findMany: vi.fn().mockResolvedValue([]) },
+      rating: { count: ratingCount, findMany: vi.fn().mockResolvedValue([]) },
+      driverProfile: { upsert: vi.fn().mockResolvedValue({}) },
+    };
+    const service = new DriverStatsService(prisma as never);
+    const result = await service.recomputeForDriver('driver-1');
+
+    // 2 of 3 on time (one NULL + one false) -> 66.67, below the 90% bar.
+    expect(result.punctualityRate).toBe(66.67);
+    expect(result.professionalDriver).toBe(false);
+    expect(ratingCount).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({ where: expect.objectContaining({ NOT: { wasLate: true } }) }),
+    );
+  });
+
+  it('keeps the 20-trip / 90% professional threshold with NULLs on time', async () => {
+    const ratingCount = vi.fn().mockResolvedValueOnce(10).mockResolvedValueOnce(9);
+    const prisma = {
+      trip: { count: vi.fn().mockResolvedValue(20), findMany: vi.fn().mockResolvedValue([]) },
+      rating: { count: ratingCount, findMany: vi.fn().mockResolvedValue([]) },
+      driverProfile: { upsert: vi.fn().mockResolvedValue({}) },
+    };
+    const service = new DriverStatsService(prisma as never);
+    const result = await service.recomputeForDriver('driver-1');
+
+    expect(result.punctualityRate).toBe(90);
+    expect(result.professionalDriver).toBe(true);
+  });
+});

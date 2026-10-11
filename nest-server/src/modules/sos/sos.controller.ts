@@ -15,9 +15,9 @@ export class SosController {
   @Get()
   listSos(
     @Query() query: SosListQuery,
-    @CurrentUser() _user?: AuthUser,
+    @CurrentUser() user?: AuthUser,
   ): Promise<{ data: Record<string, unknown>[]; pagination: Record<string, unknown> }> {
-    return this.sos.listAdmin({ id: '', role: 'admin' }, {
+    return this.sos.listAdmin({ id: user?.id ?? '', role: user?.role ?? 'admin' }, {
       status: query.status,
       page: query.page,
       limit: query.limit,

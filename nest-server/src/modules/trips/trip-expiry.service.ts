@@ -4,7 +4,8 @@ import { NotificationsService } from '../notifications/notifications.service.js'
 import { HomeService } from '../subscriptions/home.service.js';
 import { SeatLockService } from './seat-lock.service.js';
 import { TRIP_DURATION_HOURS } from './trip.constants.js';
-import { TripsService } from './trips.service.js';
+import type { TripsService } from './trips.service.js';
+import { TripsService as TripsServiceToken } from './trips.service.js';
 
 export interface SweepResult {
   autoCompleted: string[];
@@ -26,7 +27,7 @@ export class TripExpiryService {
 
   constructor(
     private readonly prisma: PrismaService,
-    @Inject(forwardRef(() => TripsService))
+    @Inject(forwardRef(() => TripsServiceToken))
     private readonly trips: TripsService,
     private readonly seatLocks: SeatLockService,
     private readonly notifications: NotificationsService,

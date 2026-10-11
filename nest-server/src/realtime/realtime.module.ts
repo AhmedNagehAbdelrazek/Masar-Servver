@@ -5,6 +5,7 @@ import { NotificationsModule } from '../modules/notifications/notifications.modu
 import { SosModule } from '../modules/sos/sos.module.js';
 import { PresenceService } from './presence.service.js';
 import { RealtimeGateway } from './realtime.gateway.js';
+import { RealtimeMetricsService } from './realtime-metrics.service.js';
 import { SocketRateLimiter } from './socket-rate-limiter.service.js';
 import { TrackingService } from './tracking.service.js';
 
@@ -15,7 +16,7 @@ import { TrackingService } from './tracking.service.js';
     forwardRef(() => SosModule),
     MapsModule,
   ],
-  providers: [RealtimeGateway, TrackingService, PresenceService, SocketRateLimiter],
-  exports: [RealtimeGateway, TrackingService, PresenceService, SocketRateLimiter],
+  providers: [RealtimeGateway, TrackingService, PresenceService, SocketRateLimiter, RealtimeMetricsService],
+  exports: [RealtimeGateway, TrackingService, PresenceService, SocketRateLimiter, RealtimeMetricsService],
 })
 export class RealtimeModule {}

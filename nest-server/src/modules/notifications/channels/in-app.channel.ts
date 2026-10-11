@@ -1,6 +1,8 @@
 import { forwardRef, Inject, Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service.js';
-import { RealtimeGateway } from '../../../realtime/realtime.gateway.js';
+import type { RealtimeGateway } from '../../../realtime/realtime.gateway.js';
+import { RealtimeGateway as RealtimeGatewayToken } from '../../../realtime/realtime.gateway.js';
+import { RealtimeMetricsService } from '../../../realtime/realtime-metrics.service.js';
 
 // Port of Main Server/Services/notificationService/channels/inApp.ts:
 // persistence-before-broadcast, `notification:new` + refreshed
@@ -15,8 +17,9 @@ export class InAppChannel {
 
   constructor(
     private readonly prisma: PrismaService,
-    @Inject(forwardRef(() => RealtimeGateway))
+    @Inject(forwardRef(() => RealtimeGatewayToken))
     private readonly realtime: RealtimeGateway,
+    private readonly metrics: RealtimeMetricsService,
   ) {}
 
   async send(
@@ -54,6 +57,8 @@ export class InAppChannel {
         unread_count: unreadCount,
         timestamp: Date.now(),
       });
+      this.metrics.recordEvent('notification:new');
+      this.metrics.recordDelivery();
       return { id: notification.id };
     } catch (err) {
       this.logger.warn(`[notification] in_app failed: ${(err as Error).message}`);

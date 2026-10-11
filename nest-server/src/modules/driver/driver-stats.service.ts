@@ -23,9 +23,13 @@ export class DriverStatsService {
       where: { driverId, status: 'completed' },
     });
 
+    // Express parity: `!r.wasLate` counts NULL as on-time (only an explicit
+    // `true` is late). Keep the 20-trip / 90% professional threshold.
     const [total, onTime] = await Promise.all([
       this.prisma.rating.count({ where: { rateeId: driverId, isVisible: true } }),
-      this.prisma.rating.count({ where: { rateeId: driverId, isVisible: true, wasLate: false } }),
+      this.prisma.rating.count({
+        where: { rateeId: driverId, isVisible: true, NOT: { wasLate: true } },
+      }),
     ]);
 
     let punctualityRate: number | null = null;
