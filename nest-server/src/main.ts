@@ -6,8 +6,11 @@ import { createAdapter } from '@socket.io/redis-adapter';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
+import { execFileSync } from 'node:child_process';
 import { join } from 'node:path';
 import { AppModule } from './app.module.js';
+import { resolveDatabaseUrl } from './config/database-url.js';
+import { SeedService } from './seed/seed.service.js';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter.js';
 import { AuditInterceptor } from './common/interceptors/audit.interceptor.js';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor.js';
@@ -18,9 +21,34 @@ import { JwtAuthGuard } from './common/guards/jwt-auth.guard.js';
 import { RolesGuard } from './common/guards/roles.guard.js';
 import { RedisService } from './redis/redis.service.js';
 
+// The server always boots on the latest migration: `prisma migrate deploy`
+// runs before the app is created (skipped in test env and with
+// AUTO_MIGRATE=false). A migrate failure fails the boot loudly — starting
+// on a stale schema only produces confusing runtime errors.
+// NOTE: the prisma CLI is a devDependency; pruned production images should
+// run `prisma migrate deploy` in the entrypoint instead (same DATABASE_URL).
+function autoMigrate(logger: Logger): void {
+  if (process.env.NODE_ENV === 'test') return;
+  if (process.env.AUTO_MIGRATE === 'false') {
+    logger.log('AUTO_MIGRATE=false, skipping migrate deploy.');
+    return;
+  }
+  logger.log('Applying database migrations (prisma migrate deploy)...');
+  execFileSync('npx', ['prisma', 'migrate', 'deploy'], {
+    env: { ...process.env, DATABASE_URL: resolveDatabaseUrl() },
+    stdio: 'inherit',
+    shell: process.platform === 'win32',
+  });
+  logger.log('Migrations up to date.');
+}
+
 async function bootstrap(): Promise<void> {
-  const app = await NestFactory.create<NestExpressApplication>(AppModule, { bufferLogs: false });
   const logger = new Logger('Bootstrap');
+  autoMigrate(logger);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, { bufferLogs: false });
+
+  // Idempotent boot seed (admin + dev test accounts, existing rows untouched).
+  await app.get(SeedService).seed();
 
   // Mirrors Main Server/app.ts global chain: cors -> helmet -> audit -> morgan -> json.
   app.use(cors());

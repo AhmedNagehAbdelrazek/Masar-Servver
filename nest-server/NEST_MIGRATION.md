@@ -17,6 +17,17 @@ pnpm run start:dev
 
 Health: `GET /api/healthz`, `GET /api/health/realtime` (public). Swagger: `/docs`.
 
+## Dev database
+
+Nest needs its own Prisma-migrated database — do NOT point it at the
+Express/Sequelize-synced DB (`enum_*` types there differ from Prisma's
+`SosStatus`-style types and every enum query 42704s). Create once, migrate,
+point `.env` `DB_NAME` at it:
+```bash
+# psql: CREATE DATABASE app_db_nest;
+DATABASE_URL=postgresql://<user>:<pass>@<host>:<port>/app_db_nest npx prisma migrate deploy
+```
+
 ## Done
 
 - [x] Wave 0: test foundation — `app_db_test` + baseline migration applied,

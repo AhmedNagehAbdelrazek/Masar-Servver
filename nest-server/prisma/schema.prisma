@@ -12,7 +12,6 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
-
 // ---------- Enums (values from Main Server/config/constants.ts) ----------
 
 enum Role {

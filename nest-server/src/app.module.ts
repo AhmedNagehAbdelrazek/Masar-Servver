@@ -31,6 +31,7 @@ import { SupportTicketsModule } from './modules/support-tickets/support-tickets.
 import { UploadModule } from './modules/upload/upload.module.js';
 import { AdminDashboardModule } from './modules/admin-dashboard/admin-dashboard.module.js';
 import { AdminModerationModule } from './modules/admin-moderation/admin-moderation.module.js';
+import { SeedModule } from './seed/seed.module.js';
 
 @Module({
   imports: [
@@ -62,6 +63,7 @@ import { AdminModerationModule } from './modules/admin-moderation/admin-moderati
     UploadModule,
     AdminDashboardModule,
     AdminModerationModule,
+    SeedModule,
   ],
   controllers: [],
   providers: [AuditInterceptor, JwtAuthGuard, RolesGuard],

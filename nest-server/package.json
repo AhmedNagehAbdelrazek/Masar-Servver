@@ -24,6 +24,7 @@
     "prisma:migrate": "prisma migrate dev --name baseline",
     "prisma:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
+    "db:import": "node scripts/import-express-db.cjs",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
