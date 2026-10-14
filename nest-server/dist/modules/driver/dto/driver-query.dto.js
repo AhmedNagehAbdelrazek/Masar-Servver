@@ -1,0 +1,57 @@
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+import { Type } from 'class-transformer';
+import { IsDateString, IsIn, IsInt, IsOptional, Max, Min } from 'class-validator';
+export class PenaltyListQuery {
+    active;
+    page;
+    limit;
+}
+__decorate([
+    IsOptional(),
+    IsIn(['true', 'false', true, false]),
+    __metadata("design:type", Object)
+], PenaltyListQuery.prototype, "active", void 0);
+__decorate([
+    IsOptional(),
+    IsInt(),
+    Min(1),
+    Type(() => Number),
+    __metadata("design:type", Number)
+], PenaltyListQuery.prototype, "page", void 0);
+__decorate([
+    IsOptional(),
+    IsInt(),
+    Min(1),
+    Max(100),
+    Type(() => Number),
+    __metadata("design:type", Number)
+], PenaltyListQuery.prototype, "limit", void 0);
+export class EarningsQuery {
+    period;
+    from;
+    to;
+}
+__decorate([
+    IsOptional(),
+    IsIn(['day', 'week', 'month']),
+    __metadata("design:type", String)
+], EarningsQuery.prototype, "period", void 0);
+__decorate([
+    IsOptional(),
+    IsDateString(),
+    __metadata("design:type", String)
+], EarningsQuery.prototype, "from", void 0);
+__decorate([
+    IsOptional(),
+    IsDateString(),
+    __metadata("design:type", String)
+], EarningsQuery.prototype, "to", void 0);
+//# sourceMappingURL=driver-query.dto.js.map

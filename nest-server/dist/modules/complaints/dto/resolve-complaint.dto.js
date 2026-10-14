@@ -1,0 +1,36 @@
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+import { IsDefined, IsIn, IsNotEmpty, IsOptional, IsString, IsUUID, MaxLength } from 'class-validator';
+export class ComplaintIdParam {
+    complaint_id;
+}
+__decorate([
+    IsDefined(),
+    IsUUID(),
+    __metadata("design:type", String)
+], ComplaintIdParam.prototype, "complaint_id", void 0);
+export class ResolveComplaintDto {
+    status;
+    resolution;
+}
+__decorate([
+    IsDefined(),
+    IsString(),
+    IsNotEmpty(),
+    IsIn(['reviewing', 'resolved', 'dismissed']),
+    __metadata("design:type", String)
+], ResolveComplaintDto.prototype, "status", void 0);
+__decorate([
+    IsOptional(),
+    IsString(),
+    MaxLength(2000),
+    __metadata("design:type", String)
+], ResolveComplaintDto.prototype, "resolution", void 0);
+//# sourceMappingURL=resolve-complaint.dto.js.map
