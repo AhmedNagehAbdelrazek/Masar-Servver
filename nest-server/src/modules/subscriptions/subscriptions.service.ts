@@ -6,12 +6,15 @@ import {
   UnprocessableEntityException,
 } from '@nestjs/common';
 import { hasFreeTripsOffer, freeTripsLimit } from '../../common/utils/free-trips.js';
+import { maskPhone } from '../../common/utils/masking.js';
+import type { Prisma } from '../../generated/prisma/client.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { withSerializableRetry } from '../../prisma/transaction.js';
 import { BalanceService } from '../balance/balance.service.js';
 import { NotificationsService, type NotifyUser } from '../notifications/notifications.service.js';
 
 const DAY_MS = 24 * 3600 * 1000;
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function maskNationalID(nationalID: unknown): string | null {
   if (!nationalID) return null;
@@ -217,14 +220,46 @@ export class SubscriptionsService {
   }
 
   async listPending(
-    { status = 'pending_approval', sort = 'newest' }: { status?: string; sort?: string } = {},
+    filters: {
+      status?: string;
+      sort?: string;
+      search?: string;
+      plan_id?: string;
+      from?: string;
+      to?: string;
+    } = {},
   ): Promise<Record<string, unknown>[]> {
+    const { status = 'pending_approval', sort = 'newest', search, plan_id, from, to } = filters;
     const validStatuses = ['pending_approval', 'active', 'rejected', 'cancelled', 'expired'];
     if (!validStatuses.includes(status)) {
       throw validationError('INVALID_SUBSCRIPTION_STATUS_FILTER', 'INVALID_SUBSCRIPTION_STATUS_FILTER');
     }
+    const where: Prisma.DriverSubscriptionWhereInput = {
+      status: status as 'pending_approval' | 'active' | 'rejected' | 'cancelled' | 'expired',
+      ...(plan_id ? { planId: plan_id } : {}),
+    };
+    if (search) {
+      // Subscription ids are UUIDs (equals only) — contains applies to text.
+      where.AND = [
+        ...(Array.isArray(where.AND) ? where.AND : where.AND ? [where.AND] : []),
+        UUID_RE.test(search)
+          ? { id: search }
+          : {
+            OR: [
+              { driver: { fullName: { contains: search, mode: 'insensitive' } } },
+              { driver: { phone: { contains: search, mode: 'insensitive' } } },
+            ],
+          },
+      ];
+    }
+    if (from || to) {
+      const createdAt: Prisma.DateTimeFilter = {};
+      if (from) createdAt.gte = new Date(`${from}T00:00:00.000Z`);
+      if (to) createdAt.lte = new Date(`${to}T23:59:59.999Z`);
+      where.createdAt = createdAt;
+    }
     const rows = await this.prisma.driverSubscription.findMany({
-      where: { status: status as 'pending_approval' | 'active' | 'rejected' | 'cancelled' | 'expired' },
+      where,
       include: {
         driver: {
           select: {
@@ -268,6 +303,118 @@ export class SubscriptionsService {
         submitted_at: sub.createdAt,
       };
     });
+  }
+
+  // Figma 10831:13497 / 10840:37484 cards: إجمالي المشتركين (distinct
+  // drivers holding an active subscription) / النشطة / قيد المراجعة / المرفوضة.
+  async getStats(): Promise<Record<string, unknown>> {
+    const [drivers, active, pending, rejected] = await Promise.all([
+      this.prisma.driverSubscription.groupBy({ by: ['driverId'], where: { status: 'active' } }),
+      this.prisma.driverSubscription.count({ where: { status: 'active' } }),
+      this.prisma.driverSubscription.count({ where: { status: 'pending_approval' } }),
+      this.prisma.driverSubscription.count({ where: { status: 'rejected' } }),
+    ]);
+    return {
+      total_subscribers: drivers.length,
+      active_subscriptions: active,
+      pending_review: pending,
+      rejected: rejected,
+    };
+  }
+
+  // Figma 10846:39083 review dossier: driver block, chosen plan, transfer
+  // data + receipt, status/actions, submitted→decided history.
+  async getDetail(subscriptionId: string): Promise<Record<string, unknown>> {
+    const sub = await this.prisma.driverSubscription.findUnique({
+      where: { id: subscriptionId },
+      include: {
+        driver: {
+          select: {
+            id: true,
+            fullName: true,
+            phone: true,
+            status: true,
+            createdAt: true,
+            driverProfile: { select: { nationalID: true } },
+          },
+        },
+        plan: true,
+        screenshot: { select: { id: true, url: true } },
+      },
+    });
+    if (!sub) {
+      throw new NotFoundException({ message: 'SUBSCRIPTION_NOT_FOUND', code: 'SUBSCRIPTION_NOT_FOUND' });
+    }
+    const driver = sub.driver as unknown as {
+      id: string;
+      fullName: string | null;
+      phone: string | null;
+      status: string;
+      createdAt: Date;
+      driverProfile?: { nationalID: string | null } | null;
+    } | null;
+    const plan = sub.plan as unknown as {
+      id: string;
+      name: string;
+      periodDays: number;
+      percentageCut: unknown;
+      cost: unknown;
+      isActive: boolean;
+    } | null;
+    const screenshot = sub.screenshot as unknown as { id: number; url: string } | null;
+    const payment = sub.paymentMethod as unknown as Record<string, unknown> | null;
+    const history: Record<string, unknown>[] = [{ event: 'submitted', at: sub.createdAt }];
+    if (sub.status === 'active' && sub.activatedAt) {
+      history.push({ event: 'approved', at: sub.activatedAt, approved_at: sub.approvedAt });
+    } else if (sub.status === 'rejected') {
+      history.push({ event: 'rejected', at: sub.updatedAt, reason: sub.adminNotes });
+    } else if (sub.status !== 'pending_approval') {
+      history.push({ event: sub.status, at: sub.updatedAt });
+    }
+    return {
+      subscription: {
+        id: sub.id,
+        status: sub.status,
+        submitted_at: sub.createdAt,
+        approved_at: sub.approvedAt,
+        activated_at: sub.activatedAt,
+        expires_at: sub.expiresAt,
+        rejection_reason: sub.adminNotes,
+        balance: Number(sub.balance),
+        free_trips_used: sub.freeTripsUsed,
+      },
+      driver: driver
+        ? {
+          id: driver.id,
+          full_name: driver.fullName,
+          phone: maskPhone(driver.phone),
+          account_status: driver.status,
+          national_id_masked: maskNationalID(driver.driverProfile?.nationalID),
+          registered_at: driver.createdAt,
+        }
+        : null,
+      plan: plan
+        ? {
+          id: plan.id,
+          name: plan.name,
+          period_days: plan.periodDays,
+          percentage_cut: Number(plan.percentageCut),
+          cost: Number(plan.cost),
+          is_active: plan.isActive,
+        }
+        : {
+          name: sub.planName,
+          period_days: sub.planPeriodDays,
+          percentage_cut: Number(sub.planPercentageCut),
+          cost: Number(sub.planCost),
+        },
+      transfer: {
+        method: payment,
+        screenshot_id: sub.screenshotId,
+        screenshot_url: screenshot?.url ?? null,
+      },
+      history,
+    };
   }
 
   async approve(

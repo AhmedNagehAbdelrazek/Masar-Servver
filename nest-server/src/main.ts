@@ -60,7 +60,10 @@ async function bootstrap(): Promise<void> {
     prefix: '/uploads/',
   });
 
-  app.setGlobalPrefix('api', { exclude: ['/'] });
+  // API_PREFIX versions the public surface: nest-server serves v2
+  // (API_PREFIX=api/v2 in compose) while Express serves v1.
+  // Default keeps local/test paths (/api/...) untouched.
+  app.setGlobalPrefix(process.env.API_PREFIX ?? 'api', { exclude: ['/'] });
   app.useGlobalPipes(new ApiValidationPipe());
   app.useGlobalFilters(new HttpExceptionFilter());
   app.useGlobalInterceptors(

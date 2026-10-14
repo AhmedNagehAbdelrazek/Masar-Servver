@@ -29,7 +29,10 @@ function createApp(): Express {
     express.static(path.join(__dirname, 'uploads')),
   );
 
-  app.use('/api', apiRouter);
+  // API_BASE_PATH versions the public surface: Express serves v1
+  // (API_BASE_PATH=/api/v1 in compose) while nest-server serves v2.
+  // Default keeps legacy local/test paths untouched.
+  app.use(process.env.API_BASE_PATH || '/api', apiRouter);
 
   app.use((req: Request, res: Response): void => {
     res.status(404).json({

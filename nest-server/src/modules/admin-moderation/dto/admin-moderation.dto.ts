@@ -1,5 +1,6 @@
 import { Type } from 'class-transformer';
 import {
+  IsBoolean,
   IsDateString,
   IsIn,
   IsInt,
@@ -95,4 +96,8 @@ export class IssuePenaltyDto {
   @IsOptional()
   @IsDateString()
   ends_at?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  confirm_reviewed_log?: boolean;
 }

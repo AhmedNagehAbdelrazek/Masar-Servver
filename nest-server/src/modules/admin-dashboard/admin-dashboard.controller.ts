@@ -1,9 +1,10 @@
-import { Body, Controller, Get, HttpCode, Param, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Header, HttpCode, Param, Post, Query } from '@nestjs/common';
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import { Roles } from '../../common/decorators/roles.decorator.js';
 import type { AuthUser } from '../../common/guards/jwt-auth.guard.js';
 import { AdminDashboardService } from './admin-dashboard.service.js';
 import { AccountActionDto, RejectDocumentDto, SetDriverStatusDto } from './dto/admin-actions.dto.js';
+import { SendDriverNotificationDto } from './dto/driver-notification.dto.js';
 import {
   DriversListQuery,
   DriverTripsQuery,
@@ -60,6 +61,12 @@ export class AdminDashboardController {
     return this.dashboard.getDriverStats();
   }
 
+  @Get('drivers/export')
+  @Header('Content-Type', 'text/csv')
+  exportDrivers(@Query() query: DriversListQuery): Promise<string> {
+    return this.dashboard.exportDrivers(query);
+  }
+
   // ===== US3: Driver dossier =====
   @Get('drivers/:driver_id')
   getDriverHeader(@Param() params: DriverIdParam): Promise<Record<string, unknown>> {
@@ -103,6 +110,16 @@ export class AdminDashboardController {
   }
 
   // ===== US4: Actions (Express answers 200, Nest POST defaults to 201) =====
+  @Post('drivers/:driver_id/notifications')
+  @HttpCode(200)
+  sendDriverNotification(
+    @Param() params: DriverIdParam,
+    @Body() dto: SendDriverNotificationDto,
+    @CurrentUser() user?: AuthUser,
+  ): Promise<Record<string, unknown>> {
+    return this.dashboard.sendDriverNotification(user?.id ?? '', params.driver_id, dto);
+  }
+
   @Post('drivers/:driver_id/status')
   @HttpCode(200)
   setDriverStatus(

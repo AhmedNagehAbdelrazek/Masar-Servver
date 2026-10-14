@@ -52,6 +52,8 @@ services:
     environment:
       NODE_ENV: production
       PORT: 8000
+      # Express serves API v1; nest-server serves v2 on the same host ports scheme.
+      API_BASE_PATH: /api/v1
       DB_USERNAME: postgres
       DB_PASSWORD: postgres
       DB_NAME: app_db
@@ -71,13 +73,54 @@ services:
     volumes:
       - main_uploads:/app/uploads
     healthcheck:
-      test: ["CMD", "node", "-e", "require('http').get('http://127.0.0.1:8000/api/healthz', r => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
+      test: ["CMD", "node", "-e", "require('http').get('http://127.0.0.1:8000/api/v1/healthz', r => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 20s
 
+  nest-server:
+    build:
+      context: ./nest-server
+      dockerfile: Dockerfile
+    # Same secret source as main-server (JWT_SECRET, SEED_ADMIN_*, Cloudinary,
+    # SALT_ROUNDS stay identical so tokens/admin/seeds match). Connection and
+    # versioning settings are overridden below.
+    env_file:
+      - ./Main Server/.env
+    environment:
+      NODE_ENV: production
+      PORT: 8001
+      # Nest serves API v2.
+      API_PREFIX: api/v2
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/app_db
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      JWT_EXPIRY: 24h
+      SALT_ROUNDS: 12
+      MAPS_MOCK: "true"
+      # Express owns the schema (creates app_db + runs Sequelize migrations on
+      # boot). Nest must NOT run `prisma migrate deploy` against the shared DB.
+      AUTO_MIGRATE: "false"
+      AUDIT_COLLECTOR_URL: http://audit-collector:4000
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      main-server:
+        condition: service_healthy
+    volumes:
+      - nest_uploads:/app/uploads
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://127.0.0.1:8001/api/v2/healthz', r => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
 volumes:
   audit_pgdata:
   main_uploads:
+  nest_uploads:
   redis_data:

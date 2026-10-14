@@ -287,10 +287,14 @@ export class AdminDashboardService {
   // ===== US1: Global dashboard =====
 
   async getSummary(): Promise<Record<string, unknown>> {
+    const todayStart = new Date();
+    todayStart.setUTCHours(0, 0, 0, 0);
+    const tomorrowStart = new Date(todayStart.getTime() + 24 * 3600 * 1000);
     const [
       totalDrivers, activeDrivers, totalTrips, activeTrips, totalVehicles,
       pendingDocsCount, pendingDriversRows, unresolvedComplaints,
       topRouteRows, recentTripRows, latestComplaints,
+      bookingsToday, tripsToday, totalPassengers, pendingPayments, newRideRequests,
     ] = await Promise.all([
       this.prisma.user.count({ where: { role: 'driver' } }),
       this.prisma.user.count({ where: ACTIVE_BUCKET }),
@@ -324,6 +328,14 @@ export class AdminDashboardService {
         orderBy: { createdAt: 'desc' },
         take: 5,
       }),
+      // Figma 9524:10053 home cards (counts only — deltas are follow-up).
+      this.prisma.booking.count({ where: { createdAt: { gte: todayStart } } }),
+      this.prisma.trip.count({
+        where: { departureTime: { gte: todayStart, lt: tomorrowStart } },
+      }),
+      this.prisma.user.count({ where: { role: 'passenger' } }),
+      this.prisma.driverSubscription.count({ where: { status: 'pending_approval' } }),
+      this.prisma.rideRequest.count({ where: { status: 'open' } }),
     ]);
 
     const aggs = await this.tripPassengerAggregates(recentTripRows.map((t) => t.id));
@@ -337,6 +349,11 @@ export class AdminDashboardService {
         active_trips: activeTrips,
         total_vehicles: totalVehicles,
         pending_documents: pendingDocsCount,
+        bookings_today: bookingsToday,
+        trips_today: tripsToday,
+        total_passengers: totalPassengers,
+        pending_payments: pendingPayments,
+        new_ride_requests: newRideRequests,
       },
       alerts: [
         { type: 'pending_verification_documents', message: 'ALERT_PENDING_VERIFICATION_DOCUMENTS', count: pendingDocsCount },
@@ -532,6 +549,39 @@ export class AdminDashboardService {
       this.prisma.user.count({ where: PENDING_BUCKET }),
     ]);
     return { total_drivers: total, active_drivers: active, suspended_drivers: suspended, pending_drivers: pending };
+  }
+
+  // Figma 9695:33146 (تحميل التقرير): same filters as listDrivers, CSV with
+  // masked phones, capped at 5000 rows.
+  async exportDrivers(query: DriversListQuery): Promise<string> {
+    const where: Prisma.UserWhereInput = { ...(bucketWhereFor(query.status) || { role: 'driver' }) };
+    if (query.search) {
+      const term = query.search;
+      where.OR = [
+        { fullName: { contains: term, mode: 'insensitive' } },
+        { phone: { contains: term, mode: 'insensitive' } },
+      ];
+    }
+    if (query.registration_from || query.registration_to) {
+      const createdAt: Prisma.DateTimeFilter = {};
+      if (query.registration_from) createdAt.gte = new Date(`${query.registration_from}T00:00:00.000Z`);
+      if (query.registration_to) createdAt.lte = new Date(`${query.registration_to}T23:59:59.999Z`);
+      where.createdAt = createdAt;
+    }
+    const rows = await this.prisma.user.findMany({
+      where,
+      select: { id: true, fullName: true, phone: true, status: true, verificationStatus: true, createdAt: true },
+      orderBy: { createdAt: 'desc' },
+      take: 5000,
+    });
+    const esc = (v: unknown): string => `"${String(v ?? '').replace(/"/g, '""')}"`;
+    const lines = ['id,full_name,phone,account_status,created_at'];
+    for (const u of rows) {
+      lines.push(
+        [u.id, esc(u.fullName), esc(maskPhone(u.phone)), deriveAccountStatus({ status: u.status, verificationStatus: u.verificationStatus }), u.createdAt.toISOString()].join(','),
+      );
+    }
+    return lines.join('\n');
   }
 
   // ===== US3: Dossier tabs =====
@@ -845,8 +895,11 @@ export class AdminDashboardService {
         throw new ConflictException({ message: 'DRIVER_ALREADY_IN_STATE', code: 'DRIVER_ALREADY_IN_STATE' });
       }
       await this.prisma.user.update({ where: { id: driverId }, data: { status: 'active' } });
+      // Lifting (رفع إيقاف) closes every open enforcement — suspensions and
+      // bans alike (Figma 10004:22773 / 10012:23988). Previously only
+      // suspensions were closed, leaving the ban row open.
       await this.prisma.penalty.updateMany({
-        where: { userId: driverId, type: 'suspension', endsAt: null },
+        where: { userId: driverId, type: { in: ['suspension', 'ban'] }, endsAt: null },
         data: { endsAt: new Date() },
       });
     }
@@ -913,6 +966,36 @@ export class AdminDashboardService {
         decided_by: adminId,
         decided_at: review.decidedAt,
         ...(reason ? { reason } : {}),
+      },
+    };
+  }
+
+  // Figma 9928:23297 (إرسال إشعار للسائق): custom title/body + category chips.
+  // Stored as ADMIN_NOTICE (same pattern as the passenger notify endpoint) so
+  // template lookups are unaffected.
+  async sendDriverNotification(
+    adminId: string,
+    driverId: string,
+    dto: { title: string; body: string; type: string },
+  ): Promise<Record<string, unknown>> {
+    await this.getDriverOrThrow(driverId);
+    const notification = await this.prisma.notification.create({
+      data: {
+        userId: driverId,
+        type: 'ADMIN_NOTICE',
+        title: dto.title,
+        body: dto.body,
+        data: { category: dto.type, sent_by: adminId },
+        sentVia: ['in_app'],
+      },
+    });
+    return {
+      notification: {
+        id: notification.id,
+        user_id: notification.userId,
+        title: notification.title,
+        category: dto.type,
+        created_at: notification.createdAt,
       },
     };
   }

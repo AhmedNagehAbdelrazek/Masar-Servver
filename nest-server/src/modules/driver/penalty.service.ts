@@ -66,6 +66,7 @@ export class PenaltyService {
       details?: string | null;
       complaint_id?: string | null;
       ends_at?: string | null;
+      confirm_reviewed_log?: boolean | null;
     },
   ): Promise<{ penalty: Record<string, unknown> }> {
     const { user_id: userId, type, reason, details, complaint_id: complaintId, ends_at: endsAt } = payload;
@@ -100,6 +101,16 @@ export class PenaltyService {
         message: 'ENDS_AT_MUST_BE_IN_THE_FUTURE',
         code: 'VALIDATION_ERROR',
         details: [{ field: 'ends_at', message: 'ENDS_AT_MUST_BE_IN_THE_FUTURE' }],
+      });
+    }
+    // Figma ban modals (10012:23728 + passenger/complaint/conversation
+    // equivalents): أؤكد مراجعة سجل الحساب checkbox. Bans without an
+    // explicit confirmation are rejected.
+    if (type === 'ban' && payload.confirm_reviewed_log !== true) {
+      throw new UnprocessableEntityException({
+        message: 'CONFIRM_REVIEWED_LOG_REQUIRED',
+        code: 'VALIDATION_ERROR',
+        details: [{ field: 'confirm_reviewed_log', message: 'CONFIRM_REVIEWED_LOG_REQUIRED' }],
       });
     }
     const user = await this.prisma.user.findUnique({ where: { id: userId } });

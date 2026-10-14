@@ -21,6 +21,20 @@ export class AdminPlansController {
     return this.plans.listPlans().then((plans) => ({ plans }));
   }
 
+  // Static `free` routes before :plan_id (UuidPlanIdParam 422s otherwise).
+  @Get('free')
+  getFreePlan(): Promise<{ plan: Record<string, unknown> }> {
+    return this.plans.getFreePlan().then((plan) => ({ plan }));
+  }
+
+  @Put('free')
+  updateFreePlan(
+    @Body() dto: UpdatePlanDto,
+    @CurrentUser() user?: AuthUser,
+  ): Promise<{ plan: Record<string, unknown> }> {
+    return this.plans.updateFreePlan(dto, user?.id ?? '').then((plan) => ({ plan }));
+  }
+
   @Post()
   @HttpCode(201)
   createPlan(

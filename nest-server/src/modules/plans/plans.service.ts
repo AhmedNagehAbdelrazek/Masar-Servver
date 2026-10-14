@@ -120,7 +120,17 @@ export class PlansService {
 
   async listPlans(): Promise<Record<string, unknown>[]> {
     const plans = await this.prisma.subscriptionPlan.findMany({ orderBy: { createdAt: 'asc' } });
-    return plans.map((p) => toPlanDTO(p as unknown as PlanRow));
+    // Figma 10831:13497 plan cards show المشتركون per plan.
+    const counts = await this.prisma.driverSubscription.groupBy({
+      by: ['planId'],
+      where: { status: 'active' },
+      _count: { id: true },
+    });
+    const activeByPlan = new Map(counts.map((r) => [r.planId, r._count.id]));
+    return plans.map((p) => ({
+      ...toPlanDTO(p as unknown as PlanRow),
+      active_subscribers: activeByPlan.get(p.id) ?? 0,
+    }));
   }
 
   private async ensureSingleFreePlan(isFree: boolean, excludeId?: string): Promise<void> {
@@ -181,7 +191,8 @@ export class PlansService {
     const plan = await this.prisma.subscriptionPlan.findUnique({ where: { id: planId } });
     if (!plan) throw new NotFoundException({ message: 'Plan not found', code: 'PLAN_NOT_FOUND' });
     const isFree = data.is_free !== undefined ? Boolean(data.is_free) : plan.isFree;
-    await this.ensureSingleFreePlan(isFree, planId);
+    const willBeActive = data.is_active !== undefined ? Boolean(data.is_active) : plan.isActive;
+    if (isFree && willBeActive) await this.ensureSingleFreePlan(true, planId);
     const updated = await this.prisma.subscriptionPlan.update({
       where: { id: planId },
       data: {
@@ -192,6 +203,7 @@ export class PlansService {
         ...(data.status !== undefined ? { status: data.status } : {}),
         ...(data.features !== undefined ? { features: data.features } : {}),
         ...(data.is_free !== undefined ? { isFree } : {}),
+        ...(data.is_active !== undefined ? { isActive: willBeActive } : {}),
         ...(data.free_offer !== undefined
           ? {
               freeOffer: isFree
@@ -203,6 +215,26 @@ export class PlansService {
     });
     await this.invalidatePlansCache();
     return toPlanDTO(updated as unknown as PlanRow);
+  }
+
+  // Figma 10840:36658 (إدارة الباقة المجانية): single free-plan config.
+  // Update-only — 404 when no free plan exists (create one via POST /admin/plans).
+  async getFreePlan(): Promise<Record<string, unknown>> {
+    const plan = await this.prisma.subscriptionPlan.findFirst({
+      where: { isFree: true },
+      orderBy: { createdAt: 'asc' },
+    });
+    if (!plan) throw new NotFoundException({ message: 'FREE_PLAN_NOT_FOUND', code: 'FREE_PLAN_NOT_FOUND' });
+    return toPlanDTO(plan as unknown as PlanRow);
+  }
+
+  async updateFreePlan(data: UpdatePlanDto, actorId: string): Promise<Record<string, unknown>> {
+    const plan = await this.prisma.subscriptionPlan.findFirst({
+      where: { isFree: true },
+      orderBy: { createdAt: 'asc' },
+    });
+    if (!plan) throw new NotFoundException({ message: 'FREE_PLAN_NOT_FOUND', code: 'FREE_PLAN_NOT_FOUND' });
+    return this.updatePlan(plan.id, data, actorId);
   }
 
   async deactivatePlan(planId: string, _actorId: string): Promise<{ message: string }> {

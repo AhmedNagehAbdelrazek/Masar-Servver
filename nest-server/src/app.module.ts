@@ -31,6 +31,10 @@ import { SupportTicketsModule } from './modules/support-tickets/support-tickets.
 import { UploadModule } from './modules/upload/upload.module.js';
 import { AdminDashboardModule } from './modules/admin-dashboard/admin-dashboard.module.js';
 import { AdminModerationModule } from './modules/admin-moderation/admin-moderation.module.js';
+import { AdminPassengersModule } from './modules/admin-passengers/admin-passengers.module.js';
+import { AdminBookingsModule } from './modules/admin-bookings/admin-bookings.module.js';
+import { AdminRideRequestsModule } from './modules/admin-ride-requests/admin-ride-requests.module.js';
+import { AdminConversationsModule } from './modules/admin-conversations/admin-conversations.module.js';
 import { SeedModule } from './seed/seed.module.js';
 
 @Module({
@@ -63,6 +67,10 @@ import { SeedModule } from './seed/seed.module.js';
     UploadModule,
     AdminDashboardModule,
     AdminModerationModule,
+    AdminPassengersModule,
+    AdminBookingsModule,
+    AdminRideRequestsModule,
+    AdminConversationsModule,
     SeedModule,
   ],
   controllers: [],

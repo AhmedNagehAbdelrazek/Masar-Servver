@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { IsIn, IsInt, IsOptional, Max, Min } from 'class-validator';
+import { IsIn, IsInt, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
 import { COMPLAINT_CATEGORIES } from './create-complaint.dto.js';
 
 // Ports of driverComplaintListValidation + adminComplaintListValidation.
@@ -36,6 +36,11 @@ export class AdminComplaintListQuery {
   @IsOptional()
   @IsIn([...COMPLAINT_CATEGORIES])
   category?: (typeof COMPLAINT_CATEGORIES)[number];
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  search?: string;
 
   @IsOptional()
   @IsInt()
