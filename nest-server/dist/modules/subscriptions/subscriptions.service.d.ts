@@ -32,10 +32,16 @@ export declare class SubscriptionsService {
     }): Promise<SubscriptionRow>;
     getMySubscriptions(driverId: string): Promise<Record<string, unknown>[]>;
     getCurrentSubscription(driverId: string): Promise<Record<string, unknown>>;
-    listPending({ status, sort }?: {
+    listPending(filters?: {
         status?: string;
         sort?: string;
+        search?: string;
+        plan_id?: string;
+        from?: string;
+        to?: string;
     }): Promise<Record<string, unknown>[]>;
+    getStats(): Promise<Record<string, unknown>>;
+    getDetail(subscriptionId: string): Promise<Record<string, unknown>>;
     approve(subscriptionId: string, _actorId: string): Promise<{
         message: string;
         subscription_id: string;

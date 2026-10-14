@@ -53,7 +53,7 @@ export type TripStopMinAggregateOutputType = {
   lng: runtime.Decimal | null
   stopLat: runtime.Decimal | null
   stopLng: runtime.Decimal | null
-  stopType: $Enums.StopType | null
+  stopType: string | null
   estimatedArrival: Date | null
   createdAt: Date | null
 }
@@ -69,7 +69,7 @@ export type TripStopMaxAggregateOutputType = {
   lng: runtime.Decimal | null
   stopLat: runtime.Decimal | null
   stopLng: runtime.Decimal | null
-  stopType: $Enums.StopType | null
+  stopType: string | null
   estimatedArrival: Date | null
   createdAt: Date | null
 }
@@ -254,7 +254,7 @@ export type TripStopGroupByOutputType = {
   lng: runtime.Decimal | null
   stopLat: runtime.Decimal | null
   stopLng: runtime.Decimal | null
-  stopType: $Enums.StopType | null
+  stopType: string | null
   estimatedArrival: Date | null
   createdAt: Date
   _count: TripStopCountAggregateOutputType | null
@@ -293,7 +293,7 @@ export type TripStopWhereInput = {
   lng?: Prisma.DecimalNullableFilter<"TripStop"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   stopLat?: Prisma.DecimalNullableFilter<"TripStop"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   stopLng?: Prisma.DecimalNullableFilter<"TripStop"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
-  stopType?: Prisma.EnumStopTypeNullableFilter<"TripStop"> | $Enums.StopType | null
+  stopType?: Prisma.StringNullableFilter<"TripStop"> | string | null
   estimatedArrival?: Prisma.DateTimeNullableFilter<"TripStop"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"TripStop"> | Date | string
   trip?: Prisma.XOR<Prisma.TripScalarRelationFilter, Prisma.TripWhereInput>
@@ -331,7 +331,7 @@ export type TripStopWhereUniqueInput = Prisma.AtLeast<{
   lng?: Prisma.DecimalNullableFilter<"TripStop"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   stopLat?: Prisma.DecimalNullableFilter<"TripStop"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   stopLng?: Prisma.DecimalNullableFilter<"TripStop"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
-  stopType?: Prisma.EnumStopTypeNullableFilter<"TripStop"> | $Enums.StopType | null
+  stopType?: Prisma.StringNullableFilter<"TripStop"> | string | null
   estimatedArrival?: Prisma.DateTimeNullableFilter<"TripStop"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"TripStop"> | Date | string
   trip?: Prisma.XOR<Prisma.TripScalarRelationFilter, Prisma.TripWhereInput>
@@ -372,7 +372,7 @@ export type TripStopScalarWhereWithAggregatesInput = {
   lng?: Prisma.DecimalNullableWithAggregatesFilter<"TripStop"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   stopLat?: Prisma.DecimalNullableWithAggregatesFilter<"TripStop"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   stopLng?: Prisma.DecimalNullableWithAggregatesFilter<"TripStop"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
-  stopType?: Prisma.EnumStopTypeNullableWithAggregatesFilter<"TripStop"> | $Enums.StopType | null
+  stopType?: Prisma.StringNullableWithAggregatesFilter<"TripStop"> | string | null
   estimatedArrival?: Prisma.DateTimeNullableWithAggregatesFilter<"TripStop"> | Date | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"TripStop"> | Date | string
 }
@@ -387,7 +387,7 @@ export type TripStopCreateInput = {
   lng?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   stopLat?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   stopLng?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
-  stopType?: $Enums.StopType | null
+  stopType?: string | null
   estimatedArrival?: Date | string | null
   createdAt?: Date | string
   trip: Prisma.TripCreateNestedOneWithoutStopsInput
@@ -404,7 +404,7 @@ export type TripStopUncheckedCreateInput = {
   lng?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   stopLat?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   stopLng?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
-  stopType?: $Enums.StopType | null
+  stopType?: string | null
   estimatedArrival?: Date | string | null
   createdAt?: Date | string
 }
@@ -419,7 +419,7 @@ export type TripStopUpdateInput = {
   lng?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   stopLat?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   stopLng?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
-  stopType?: Prisma.NullableEnumStopTypeFieldUpdateOperationsInput | $Enums.StopType | null
+  stopType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   estimatedArrival?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   trip?: Prisma.TripUpdateOneRequiredWithoutStopsNestedInput
@@ -436,7 +436,7 @@ export type TripStopUncheckedUpdateInput = {
   lng?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   stopLat?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   stopLng?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
-  stopType?: Prisma.NullableEnumStopTypeFieldUpdateOperationsInput | $Enums.StopType | null
+  stopType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   estimatedArrival?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -452,7 +452,7 @@ export type TripStopCreateManyInput = {
   lng?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   stopLat?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   stopLng?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
-  stopType?: $Enums.StopType | null
+  stopType?: string | null
   estimatedArrival?: Date | string | null
   createdAt?: Date | string
 }
@@ -467,7 +467,7 @@ export type TripStopUpdateManyMutationInput = {
   lng?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   stopLat?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   stopLng?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
-  stopType?: Prisma.NullableEnumStopTypeFieldUpdateOperationsInput | $Enums.StopType | null
+  stopType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   estimatedArrival?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -483,7 +483,7 @@ export type TripStopUncheckedUpdateManyInput = {
   lng?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   stopLat?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   stopLng?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
-  stopType?: Prisma.NullableEnumStopTypeFieldUpdateOperationsInput | $Enums.StopType | null
+  stopType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   estimatedArrival?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -609,10 +609,6 @@ export type TripStopUncheckedUpdateManyWithoutTripNestedInput = {
   deleteMany?: Prisma.TripStopScalarWhereInput | Prisma.TripStopScalarWhereInput[]
 }
 
-export type NullableEnumStopTypeFieldUpdateOperationsInput = {
-  set?: $Enums.StopType | null
-}
-
 export type TripStopCreateWithoutTripInput = {
   id?: string
   stopOrder: number
@@ -623,7 +619,7 @@ export type TripStopCreateWithoutTripInput = {
   lng?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   stopLat?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   stopLng?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
-  stopType?: $Enums.StopType | null
+  stopType?: string | null
   estimatedArrival?: Date | string | null
   createdAt?: Date | string
 }
@@ -638,7 +634,7 @@ export type TripStopUncheckedCreateWithoutTripInput = {
   lng?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   stopLat?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   stopLng?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
-  stopType?: $Enums.StopType | null
+  stopType?: string | null
   estimatedArrival?: Date | string | null
   createdAt?: Date | string
 }
@@ -683,7 +679,7 @@ export type TripStopScalarWhereInput = {
   lng?: Prisma.DecimalNullableFilter<"TripStop"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   stopLat?: Prisma.DecimalNullableFilter<"TripStop"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   stopLng?: Prisma.DecimalNullableFilter<"TripStop"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
-  stopType?: Prisma.EnumStopTypeNullableFilter<"TripStop"> | $Enums.StopType | null
+  stopType?: Prisma.StringNullableFilter<"TripStop"> | string | null
   estimatedArrival?: Prisma.DateTimeNullableFilter<"TripStop"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"TripStop"> | Date | string
 }
@@ -698,7 +694,7 @@ export type TripStopCreateManyTripInput = {
   lng?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   stopLat?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   stopLng?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
-  stopType?: $Enums.StopType | null
+  stopType?: string | null
   estimatedArrival?: Date | string | null
   createdAt?: Date | string
 }
@@ -713,7 +709,7 @@ export type TripStopUpdateWithoutTripInput = {
   lng?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   stopLat?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   stopLng?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
-  stopType?: Prisma.NullableEnumStopTypeFieldUpdateOperationsInput | $Enums.StopType | null
+  stopType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   estimatedArrival?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -728,7 +724,7 @@ export type TripStopUncheckedUpdateWithoutTripInput = {
   lng?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   stopLat?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   stopLng?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
-  stopType?: Prisma.NullableEnumStopTypeFieldUpdateOperationsInput | $Enums.StopType | null
+  stopType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   estimatedArrival?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -743,7 +739,7 @@ export type TripStopUncheckedUpdateManyWithoutTripInput = {
   lng?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   stopLat?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   stopLng?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
-  stopType?: Prisma.NullableEnumStopTypeFieldUpdateOperationsInput | $Enums.StopType | null
+  stopType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   estimatedArrival?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -844,7 +840,7 @@ export type $TripStopPayload<ExtArgs extends runtime.Types.Extensions.InternalAr
     lng: runtime.Decimal | null
     stopLat: runtime.Decimal | null
     stopLng: runtime.Decimal | null
-    stopType: $Enums.StopType | null
+    stopType: string | null
     estimatedArrival: Date | null
     createdAt: Date
   }, ExtArgs["result"]["tripStop"]>
@@ -1281,7 +1277,7 @@ export interface TripStopFieldRefs {
   readonly lng: Prisma.FieldRef<"TripStop", 'Decimal'>
   readonly stopLat: Prisma.FieldRef<"TripStop", 'Decimal'>
   readonly stopLng: Prisma.FieldRef<"TripStop", 'Decimal'>
-  readonly stopType: Prisma.FieldRef<"TripStop", 'StopType'>
+  readonly stopType: Prisma.FieldRef<"TripStop", 'String'>
   readonly estimatedArrival: Prisma.FieldRef<"TripStop", 'DateTime'>
   readonly createdAt: Prisma.FieldRef<"TripStop", 'DateTime'>
 }

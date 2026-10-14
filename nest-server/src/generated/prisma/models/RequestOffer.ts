@@ -43,7 +43,7 @@ export type RequestOfferMinAggregateOutputType = {
   tripId: string | null
   offeredFare: runtime.Decimal | null
   message: string | null
-  status: $Enums.RequestOfferStatus | null
+  status: string | null
   agreedFare: runtime.Decimal | null
   bookingId: string | null
   createdAt: Date | null
@@ -57,7 +57,7 @@ export type RequestOfferMaxAggregateOutputType = {
   tripId: string | null
   offeredFare: runtime.Decimal | null
   message: string | null
-  status: $Enums.RequestOfferStatus | null
+  status: string | null
   agreedFare: runtime.Decimal | null
   bookingId: string | null
   createdAt: Date | null
@@ -226,7 +226,7 @@ export type RequestOfferGroupByOutputType = {
   tripId: string | null
   offeredFare: runtime.Decimal | null
   message: string | null
-  status: $Enums.RequestOfferStatus
+  status: string
   agreedFare: runtime.Decimal | null
   bookingId: string | null
   createdAt: Date
@@ -263,7 +263,7 @@ export type RequestOfferWhereInput = {
   tripId?: Prisma.UuidNullableFilter<"RequestOffer"> | string | null
   offeredFare?: Prisma.DecimalNullableFilter<"RequestOffer"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   message?: Prisma.StringNullableFilter<"RequestOffer"> | string | null
-  status?: Prisma.EnumRequestOfferStatusFilter<"RequestOffer"> | $Enums.RequestOfferStatus
+  status?: Prisma.StringFilter<"RequestOffer"> | string
   agreedFare?: Prisma.DecimalNullableFilter<"RequestOffer"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   bookingId?: Prisma.UuidNullableFilter<"RequestOffer"> | string | null
   createdAt?: Prisma.DateTimeFilter<"RequestOffer"> | Date | string
@@ -300,7 +300,7 @@ export type RequestOfferWhereUniqueInput = Prisma.AtLeast<{
   tripId?: Prisma.UuidNullableFilter<"RequestOffer"> | string | null
   offeredFare?: Prisma.DecimalNullableFilter<"RequestOffer"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   message?: Prisma.StringNullableFilter<"RequestOffer"> | string | null
-  status?: Prisma.EnumRequestOfferStatusFilter<"RequestOffer"> | $Enums.RequestOfferStatus
+  status?: Prisma.StringFilter<"RequestOffer"> | string
   agreedFare?: Prisma.DecimalNullableFilter<"RequestOffer"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   bookingId?: Prisma.UuidNullableFilter<"RequestOffer"> | string | null
   createdAt?: Prisma.DateTimeFilter<"RequestOffer"> | Date | string
@@ -339,7 +339,7 @@ export type RequestOfferScalarWhereWithAggregatesInput = {
   tripId?: Prisma.UuidNullableWithAggregatesFilter<"RequestOffer"> | string | null
   offeredFare?: Prisma.DecimalNullableWithAggregatesFilter<"RequestOffer"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   message?: Prisma.StringNullableWithAggregatesFilter<"RequestOffer"> | string | null
-  status?: Prisma.EnumRequestOfferStatusWithAggregatesFilter<"RequestOffer"> | $Enums.RequestOfferStatus
+  status?: Prisma.StringWithAggregatesFilter<"RequestOffer"> | string
   agreedFare?: Prisma.DecimalNullableWithAggregatesFilter<"RequestOffer"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   bookingId?: Prisma.UuidNullableWithAggregatesFilter<"RequestOffer"> | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"RequestOffer"> | Date | string
@@ -350,7 +350,7 @@ export type RequestOfferCreateInput = {
   id?: string
   offeredFare?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   message?: string | null
-  status?: $Enums.RequestOfferStatus
+  status?: string
   agreedFare?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   bookingId?: string | null
   createdAt?: Date | string
@@ -367,7 +367,7 @@ export type RequestOfferUncheckedCreateInput = {
   tripId?: string | null
   offeredFare?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   message?: string | null
-  status?: $Enums.RequestOfferStatus
+  status?: string
   agreedFare?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   bookingId?: string | null
   createdAt?: Date | string
@@ -378,7 +378,7 @@ export type RequestOfferUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   offeredFare?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   message?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  status?: Prisma.EnumRequestOfferStatusFieldUpdateOperationsInput | $Enums.RequestOfferStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   agreedFare?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   bookingId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -395,7 +395,7 @@ export type RequestOfferUncheckedUpdateInput = {
   tripId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   offeredFare?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   message?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  status?: Prisma.EnumRequestOfferStatusFieldUpdateOperationsInput | $Enums.RequestOfferStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   agreedFare?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   bookingId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -409,7 +409,7 @@ export type RequestOfferCreateManyInput = {
   tripId?: string | null
   offeredFare?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   message?: string | null
-  status?: $Enums.RequestOfferStatus
+  status?: string
   agreedFare?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   bookingId?: string | null
   createdAt?: Date | string
@@ -420,7 +420,7 @@ export type RequestOfferUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   offeredFare?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   message?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  status?: Prisma.EnumRequestOfferStatusFieldUpdateOperationsInput | $Enums.RequestOfferStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   agreedFare?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   bookingId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -434,7 +434,7 @@ export type RequestOfferUncheckedUpdateManyInput = {
   tripId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   offeredFare?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   message?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  status?: Prisma.EnumRequestOfferStatusFieldUpdateOperationsInput | $Enums.RequestOfferStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   agreedFare?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   bookingId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -629,15 +629,11 @@ export type RequestOfferUncheckedUpdateManyWithoutRequestNestedInput = {
   deleteMany?: Prisma.RequestOfferScalarWhereInput | Prisma.RequestOfferScalarWhereInput[]
 }
 
-export type EnumRequestOfferStatusFieldUpdateOperationsInput = {
-  set?: $Enums.RequestOfferStatus
-}
-
 export type RequestOfferCreateWithoutDriverInput = {
   id?: string
   offeredFare?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   message?: string | null
-  status?: $Enums.RequestOfferStatus
+  status?: string
   agreedFare?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   bookingId?: string | null
   createdAt?: Date | string
@@ -652,7 +648,7 @@ export type RequestOfferUncheckedCreateWithoutDriverInput = {
   tripId?: string | null
   offeredFare?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   message?: string | null
-  status?: $Enums.RequestOfferStatus
+  status?: string
   agreedFare?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   bookingId?: string | null
   createdAt?: Date | string
@@ -695,7 +691,7 @@ export type RequestOfferScalarWhereInput = {
   tripId?: Prisma.UuidNullableFilter<"RequestOffer"> | string | null
   offeredFare?: Prisma.DecimalNullableFilter<"RequestOffer"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   message?: Prisma.StringNullableFilter<"RequestOffer"> | string | null
-  status?: Prisma.EnumRequestOfferStatusFilter<"RequestOffer"> | $Enums.RequestOfferStatus
+  status?: Prisma.StringFilter<"RequestOffer"> | string
   agreedFare?: Prisma.DecimalNullableFilter<"RequestOffer"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   bookingId?: Prisma.UuidNullableFilter<"RequestOffer"> | string | null
   createdAt?: Prisma.DateTimeFilter<"RequestOffer"> | Date | string
@@ -706,7 +702,7 @@ export type RequestOfferCreateWithoutTripInput = {
   id?: string
   offeredFare?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   message?: string | null
-  status?: $Enums.RequestOfferStatus
+  status?: string
   agreedFare?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   bookingId?: string | null
   createdAt?: Date | string
@@ -721,7 +717,7 @@ export type RequestOfferUncheckedCreateWithoutTripInput = {
   driverId: string
   offeredFare?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   message?: string | null
-  status?: $Enums.RequestOfferStatus
+  status?: string
   agreedFare?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   bookingId?: string | null
   createdAt?: Date | string
@@ -758,7 +754,7 @@ export type RequestOfferCreateWithoutRequestInput = {
   id?: string
   offeredFare?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   message?: string | null
-  status?: $Enums.RequestOfferStatus
+  status?: string
   agreedFare?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   bookingId?: string | null
   createdAt?: Date | string
@@ -773,7 +769,7 @@ export type RequestOfferUncheckedCreateWithoutRequestInput = {
   tripId?: string | null
   offeredFare?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   message?: string | null
-  status?: $Enums.RequestOfferStatus
+  status?: string
   agreedFare?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   bookingId?: string | null
   createdAt?: Date | string
@@ -812,7 +808,7 @@ export type RequestOfferCreateManyDriverInput = {
   tripId?: string | null
   offeredFare?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   message?: string | null
-  status?: $Enums.RequestOfferStatus
+  status?: string
   agreedFare?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   bookingId?: string | null
   createdAt?: Date | string
@@ -823,7 +819,7 @@ export type RequestOfferUpdateWithoutDriverInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   offeredFare?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   message?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  status?: Prisma.EnumRequestOfferStatusFieldUpdateOperationsInput | $Enums.RequestOfferStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   agreedFare?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   bookingId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -838,7 +834,7 @@ export type RequestOfferUncheckedUpdateWithoutDriverInput = {
   tripId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   offeredFare?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   message?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  status?: Prisma.EnumRequestOfferStatusFieldUpdateOperationsInput | $Enums.RequestOfferStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   agreedFare?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   bookingId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -851,7 +847,7 @@ export type RequestOfferUncheckedUpdateManyWithoutDriverInput = {
   tripId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   offeredFare?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   message?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  status?: Prisma.EnumRequestOfferStatusFieldUpdateOperationsInput | $Enums.RequestOfferStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   agreedFare?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   bookingId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -864,7 +860,7 @@ export type RequestOfferCreateManyTripInput = {
   driverId: string
   offeredFare?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   message?: string | null
-  status?: $Enums.RequestOfferStatus
+  status?: string
   agreedFare?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   bookingId?: string | null
   createdAt?: Date | string
@@ -875,7 +871,7 @@ export type RequestOfferUpdateWithoutTripInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   offeredFare?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   message?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  status?: Prisma.EnumRequestOfferStatusFieldUpdateOperationsInput | $Enums.RequestOfferStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   agreedFare?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   bookingId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -890,7 +886,7 @@ export type RequestOfferUncheckedUpdateWithoutTripInput = {
   driverId?: Prisma.StringFieldUpdateOperationsInput | string
   offeredFare?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   message?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  status?: Prisma.EnumRequestOfferStatusFieldUpdateOperationsInput | $Enums.RequestOfferStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   agreedFare?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   bookingId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -903,7 +899,7 @@ export type RequestOfferUncheckedUpdateManyWithoutTripInput = {
   driverId?: Prisma.StringFieldUpdateOperationsInput | string
   offeredFare?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   message?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  status?: Prisma.EnumRequestOfferStatusFieldUpdateOperationsInput | $Enums.RequestOfferStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   agreedFare?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   bookingId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -916,7 +912,7 @@ export type RequestOfferCreateManyRequestInput = {
   tripId?: string | null
   offeredFare?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   message?: string | null
-  status?: $Enums.RequestOfferStatus
+  status?: string
   agreedFare?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   bookingId?: string | null
   createdAt?: Date | string
@@ -927,7 +923,7 @@ export type RequestOfferUpdateWithoutRequestInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   offeredFare?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   message?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  status?: Prisma.EnumRequestOfferStatusFieldUpdateOperationsInput | $Enums.RequestOfferStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   agreedFare?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   bookingId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -942,7 +938,7 @@ export type RequestOfferUncheckedUpdateWithoutRequestInput = {
   tripId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   offeredFare?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   message?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  status?: Prisma.EnumRequestOfferStatusFieldUpdateOperationsInput | $Enums.RequestOfferStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   agreedFare?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   bookingId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -955,7 +951,7 @@ export type RequestOfferUncheckedUpdateManyWithoutRequestInput = {
   tripId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   offeredFare?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   message?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  status?: Prisma.EnumRequestOfferStatusFieldUpdateOperationsInput | $Enums.RequestOfferStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   agreedFare?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   bookingId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1060,7 +1056,7 @@ export type $RequestOfferPayload<ExtArgs extends runtime.Types.Extensions.Intern
     tripId: string | null
     offeredFare: runtime.Decimal | null
     message: string | null
-    status: $Enums.RequestOfferStatus
+    status: string
     agreedFare: runtime.Decimal | null
     bookingId: string | null
     createdAt: Date
@@ -1497,7 +1493,7 @@ export interface RequestOfferFieldRefs {
   readonly tripId: Prisma.FieldRef<"RequestOffer", 'String'>
   readonly offeredFare: Prisma.FieldRef<"RequestOffer", 'Decimal'>
   readonly message: Prisma.FieldRef<"RequestOffer", 'String'>
-  readonly status: Prisma.FieldRef<"RequestOffer", 'RequestOfferStatus'>
+  readonly status: Prisma.FieldRef<"RequestOffer", 'String'>
   readonly agreedFare: Prisma.FieldRef<"RequestOffer", 'Decimal'>
   readonly bookingId: Prisma.FieldRef<"RequestOffer", 'String'>
   readonly createdAt: Prisma.FieldRef<"RequestOffer", 'DateTime'>

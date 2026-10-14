@@ -9,10 +9,12 @@ import { AdminComplaintsController } from './admin-complaints.controller.js';
 import { ComplaintsController } from './complaints.controller.js';
 import { ComplaintsService } from './complaints.service.js';
 import { DriverComplaintsController } from './driver-complaints.controller.js';
+import { DriverModule } from '../driver/driver.module.js';
 let ComplaintsModule = class ComplaintsModule {
 };
 ComplaintsModule = __decorate([
     Module({
+        imports: [DriverModule],
         controllers: [ComplaintsController, DriverComplaintsController, AdminComplaintsController],
         providers: [ComplaintsService],
         exports: [ComplaintsService],

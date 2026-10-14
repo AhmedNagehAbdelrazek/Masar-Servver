@@ -10,11 +10,13 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var SubscriptionsService_1;
 import { ConflictException, Injectable, Logger, NotFoundException, UnprocessableEntityException, } from '@nestjs/common';
 import { hasFreeTripsOffer, freeTripsLimit } from '../../common/utils/free-trips.js';
+import { maskPhone } from '../../common/utils/masking.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { withSerializableRetry } from '../../prisma/transaction.js';
 import { BalanceService } from '../balance/balance.service.js';
 import { NotificationsService } from '../notifications/notifications.service.js';
 const DAY_MS = 24 * 3600 * 1000;
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 function maskNationalID(nationalID) {
     if (!nationalID)
         return null;
@@ -167,13 +169,39 @@ let SubscriptionsService = SubscriptionsService_1 = class SubscriptionsService {
             isInDebt: user.isInDebt,
         });
     }
-    async listPending({ status = 'pending_approval', sort = 'newest' } = {}) {
+    async listPending(filters = {}) {
+        const { status = 'pending_approval', sort = 'newest', search, plan_id, from, to } = filters;
         const validStatuses = ['pending_approval', 'active', 'rejected', 'cancelled', 'expired'];
         if (!validStatuses.includes(status)) {
             throw validationError('INVALID_SUBSCRIPTION_STATUS_FILTER', 'INVALID_SUBSCRIPTION_STATUS_FILTER');
         }
+        const where = {
+            status: status,
+            ...(plan_id ? { planId: plan_id } : {}),
+        };
+        if (search) {
+            where.AND = [
+                ...(Array.isArray(where.AND) ? where.AND : where.AND ? [where.AND] : []),
+                UUID_RE.test(search)
+                    ? { id: search }
+                    : {
+                        OR: [
+                            { driver: { fullName: { contains: search, mode: 'insensitive' } } },
+                            { driver: { phone: { contains: search, mode: 'insensitive' } } },
+                        ],
+                    },
+            ];
+        }
+        if (from || to) {
+            const createdAt = {};
+            if (from)
+                createdAt.gte = new Date(`${from}T00:00:00.000Z`);
+            if (to)
+                createdAt.lte = new Date(`${to}T23:59:59.999Z`);
+            where.createdAt = createdAt;
+        }
         const rows = await this.prisma.driverSubscription.findMany({
-            where: { status: status },
+            where,
             include: {
                 driver: {
                     select: {
@@ -212,6 +240,100 @@ let SubscriptionsService = SubscriptionsService_1 = class SubscriptionsService {
                 submitted_at: sub.createdAt,
             };
         });
+    }
+    async getStats() {
+        const [drivers, active, pending, rejected] = await Promise.all([
+            this.prisma.driverSubscription.groupBy({ by: ['driverId'], where: { status: 'active' } }),
+            this.prisma.driverSubscription.count({ where: { status: 'active' } }),
+            this.prisma.driverSubscription.count({ where: { status: 'pending_approval' } }),
+            this.prisma.driverSubscription.count({ where: { status: 'rejected' } }),
+        ]);
+        return {
+            total_subscribers: drivers.length,
+            active_subscriptions: active,
+            pending_review: pending,
+            rejected: rejected,
+        };
+    }
+    async getDetail(subscriptionId) {
+        const sub = await this.prisma.driverSubscription.findUnique({
+            where: { id: subscriptionId },
+            include: {
+                driver: {
+                    select: {
+                        id: true,
+                        fullName: true,
+                        phone: true,
+                        status: true,
+                        createdAt: true,
+                        driverProfile: { select: { nationalID: true } },
+                    },
+                },
+                plan: true,
+                screenshot: { select: { id: true, url: true } },
+            },
+        });
+        if (!sub) {
+            throw new NotFoundException({ message: 'SUBSCRIPTION_NOT_FOUND', code: 'SUBSCRIPTION_NOT_FOUND' });
+        }
+        const driver = sub.driver;
+        const plan = sub.plan;
+        const screenshot = sub.screenshot;
+        const payment = sub.paymentMethod;
+        const history = [{ event: 'submitted', at: sub.createdAt }];
+        if (sub.status === 'active' && sub.activatedAt) {
+            history.push({ event: 'approved', at: sub.activatedAt, approved_at: sub.approvedAt });
+        }
+        else if (sub.status === 'rejected') {
+            history.push({ event: 'rejected', at: sub.updatedAt, reason: sub.adminNotes });
+        }
+        else if (sub.status !== 'pending_approval') {
+            history.push({ event: sub.status, at: sub.updatedAt });
+        }
+        return {
+            subscription: {
+                id: sub.id,
+                status: sub.status,
+                submitted_at: sub.createdAt,
+                approved_at: sub.approvedAt,
+                activated_at: sub.activatedAt,
+                expires_at: sub.expiresAt,
+                rejection_reason: sub.adminNotes,
+                balance: Number(sub.balance),
+                free_trips_used: sub.freeTripsUsed,
+            },
+            driver: driver
+                ? {
+                    id: driver.id,
+                    full_name: driver.fullName,
+                    phone: maskPhone(driver.phone),
+                    account_status: driver.status,
+                    national_id_masked: maskNationalID(driver.driverProfile?.nationalID),
+                    registered_at: driver.createdAt,
+                }
+                : null,
+            plan: plan
+                ? {
+                    id: plan.id,
+                    name: plan.name,
+                    period_days: plan.periodDays,
+                    percentage_cut: Number(plan.percentageCut),
+                    cost: Number(plan.cost),
+                    is_active: plan.isActive,
+                }
+                : {
+                    name: sub.planName,
+                    period_days: sub.planPeriodDays,
+                    percentage_cut: Number(sub.planPercentageCut),
+                    cost: Number(sub.planCost),
+                },
+            transfer: {
+                method: payment,
+                screenshot_id: sub.screenshotId,
+                screenshot_url: screenshot?.url ?? null,
+            },
+            history,
+        };
     }
     async approve(subscriptionId, _actorId) {
         const result = await withSerializableRetry(this.prisma, async (tx) => {

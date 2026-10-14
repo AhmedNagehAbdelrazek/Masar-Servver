@@ -1,5 +1,4 @@
 import type * as runtime from "@prisma/client/runtime/client";
-import type * as $Enums from "../enums.js";
 import type * as Prisma from "../internal/prismaNamespace.js";
 export type DeletionRequestModel = runtime.Types.Result.DefaultSelection<Prisma.$DeletionRequestPayload>;
 export type AggregateDeletionRequest = {
@@ -11,7 +10,7 @@ export type DeletionRequestMinAggregateOutputType = {
     id: string | null;
     userId: string | null;
     reason: string | null;
-    status: $Enums.DeletionStatus | null;
+    status: string | null;
     estimatedCompletion: Date | null;
     reviewNotes: string | null;
     reviewedBy: string | null;
@@ -22,7 +21,7 @@ export type DeletionRequestMaxAggregateOutputType = {
     id: string | null;
     userId: string | null;
     reason: string | null;
-    status: $Enums.DeletionStatus | null;
+    status: string | null;
     estimatedCompletion: Date | null;
     reviewNotes: string | null;
     reviewedBy: string | null;
@@ -103,7 +102,7 @@ export type DeletionRequestGroupByOutputType = {
     id: string;
     userId: string;
     reason: string | null;
-    status: $Enums.DeletionStatus;
+    status: string;
     estimatedCompletion: Date | null;
     reviewNotes: string | null;
     reviewedBy: string | null;
@@ -123,7 +122,7 @@ export type DeletionRequestWhereInput = {
     id?: Prisma.UuidFilter<"DeletionRequest"> | string;
     userId?: Prisma.UuidFilter<"DeletionRequest"> | string;
     reason?: Prisma.StringNullableFilter<"DeletionRequest"> | string | null;
-    status?: Prisma.EnumDeletionStatusFilter<"DeletionRequest"> | $Enums.DeletionStatus;
+    status?: Prisma.StringFilter<"DeletionRequest"> | string;
     estimatedCompletion?: Prisma.DateTimeNullableFilter<"DeletionRequest"> | Date | string | null;
     reviewNotes?: Prisma.StringNullableFilter<"DeletionRequest"> | string | null;
     reviewedBy?: Prisma.UuidNullableFilter<"DeletionRequest"> | string | null;
@@ -150,7 +149,7 @@ export type DeletionRequestWhereUniqueInput = Prisma.AtLeast<{
     NOT?: Prisma.DeletionRequestWhereInput | Prisma.DeletionRequestWhereInput[];
     userId?: Prisma.UuidFilter<"DeletionRequest"> | string;
     reason?: Prisma.StringNullableFilter<"DeletionRequest"> | string | null;
-    status?: Prisma.EnumDeletionStatusFilter<"DeletionRequest"> | $Enums.DeletionStatus;
+    status?: Prisma.StringFilter<"DeletionRequest"> | string;
     estimatedCompletion?: Prisma.DateTimeNullableFilter<"DeletionRequest"> | Date | string | null;
     reviewNotes?: Prisma.StringNullableFilter<"DeletionRequest"> | string | null;
     reviewedBy?: Prisma.UuidNullableFilter<"DeletionRequest"> | string | null;
@@ -179,7 +178,7 @@ export type DeletionRequestScalarWhereWithAggregatesInput = {
     id?: Prisma.UuidWithAggregatesFilter<"DeletionRequest"> | string;
     userId?: Prisma.UuidWithAggregatesFilter<"DeletionRequest"> | string;
     reason?: Prisma.StringNullableWithAggregatesFilter<"DeletionRequest"> | string | null;
-    status?: Prisma.EnumDeletionStatusWithAggregatesFilter<"DeletionRequest"> | $Enums.DeletionStatus;
+    status?: Prisma.StringWithAggregatesFilter<"DeletionRequest"> | string;
     estimatedCompletion?: Prisma.DateTimeNullableWithAggregatesFilter<"DeletionRequest"> | Date | string | null;
     reviewNotes?: Prisma.StringNullableWithAggregatesFilter<"DeletionRequest"> | string | null;
     reviewedBy?: Prisma.UuidNullableWithAggregatesFilter<"DeletionRequest"> | string | null;
@@ -189,7 +188,7 @@ export type DeletionRequestScalarWhereWithAggregatesInput = {
 export type DeletionRequestCreateInput = {
     id?: string;
     reason?: string | null;
-    status?: $Enums.DeletionStatus;
+    status?: string;
     estimatedCompletion?: Date | string | null;
     reviewNotes?: string | null;
     reviewedBy?: string | null;
@@ -201,7 +200,7 @@ export type DeletionRequestUncheckedCreateInput = {
     id?: string;
     userId: string;
     reason?: string | null;
-    status?: $Enums.DeletionStatus;
+    status?: string;
     estimatedCompletion?: Date | string | null;
     reviewNotes?: string | null;
     reviewedBy?: string | null;
@@ -211,7 +210,7 @@ export type DeletionRequestUncheckedCreateInput = {
 export type DeletionRequestUpdateInput = {
     id?: Prisma.StringFieldUpdateOperationsInput | string;
     reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-    status?: Prisma.EnumDeletionStatusFieldUpdateOperationsInput | $Enums.DeletionStatus;
+    status?: Prisma.StringFieldUpdateOperationsInput | string;
     estimatedCompletion?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
     reviewNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     reviewedBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
@@ -223,7 +222,7 @@ export type DeletionRequestUncheckedUpdateInput = {
     id?: Prisma.StringFieldUpdateOperationsInput | string;
     userId?: Prisma.StringFieldUpdateOperationsInput | string;
     reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-    status?: Prisma.EnumDeletionStatusFieldUpdateOperationsInput | $Enums.DeletionStatus;
+    status?: Prisma.StringFieldUpdateOperationsInput | string;
     estimatedCompletion?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
     reviewNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     reviewedBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
@@ -234,7 +233,7 @@ export type DeletionRequestCreateManyInput = {
     id?: string;
     userId: string;
     reason?: string | null;
-    status?: $Enums.DeletionStatus;
+    status?: string;
     estimatedCompletion?: Date | string | null;
     reviewNotes?: string | null;
     reviewedBy?: string | null;
@@ -244,7 +243,7 @@ export type DeletionRequestCreateManyInput = {
 export type DeletionRequestUpdateManyMutationInput = {
     id?: Prisma.StringFieldUpdateOperationsInput | string;
     reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-    status?: Prisma.EnumDeletionStatusFieldUpdateOperationsInput | $Enums.DeletionStatus;
+    status?: Prisma.StringFieldUpdateOperationsInput | string;
     estimatedCompletion?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
     reviewNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     reviewedBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
@@ -255,7 +254,7 @@ export type DeletionRequestUncheckedUpdateManyInput = {
     id?: Prisma.StringFieldUpdateOperationsInput | string;
     userId?: Prisma.StringFieldUpdateOperationsInput | string;
     reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-    status?: Prisma.EnumDeletionStatusFieldUpdateOperationsInput | $Enums.DeletionStatus;
+    status?: Prisma.StringFieldUpdateOperationsInput | string;
     estimatedCompletion?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
     reviewNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     reviewedBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
@@ -341,13 +340,10 @@ export type DeletionRequestUncheckedUpdateManyWithoutUserNestedInput = {
     updateMany?: Prisma.DeletionRequestUpdateManyWithWhereWithoutUserInput | Prisma.DeletionRequestUpdateManyWithWhereWithoutUserInput[];
     deleteMany?: Prisma.DeletionRequestScalarWhereInput | Prisma.DeletionRequestScalarWhereInput[];
 };
-export type EnumDeletionStatusFieldUpdateOperationsInput = {
-    set?: $Enums.DeletionStatus;
-};
 export type DeletionRequestCreateWithoutUserInput = {
     id?: string;
     reason?: string | null;
-    status?: $Enums.DeletionStatus;
+    status?: string;
     estimatedCompletion?: Date | string | null;
     reviewNotes?: string | null;
     reviewedBy?: string | null;
@@ -357,7 +353,7 @@ export type DeletionRequestCreateWithoutUserInput = {
 export type DeletionRequestUncheckedCreateWithoutUserInput = {
     id?: string;
     reason?: string | null;
-    status?: $Enums.DeletionStatus;
+    status?: string;
     estimatedCompletion?: Date | string | null;
     reviewNotes?: string | null;
     reviewedBy?: string | null;
@@ -392,7 +388,7 @@ export type DeletionRequestScalarWhereInput = {
     id?: Prisma.UuidFilter<"DeletionRequest"> | string;
     userId?: Prisma.UuidFilter<"DeletionRequest"> | string;
     reason?: Prisma.StringNullableFilter<"DeletionRequest"> | string | null;
-    status?: Prisma.EnumDeletionStatusFilter<"DeletionRequest"> | $Enums.DeletionStatus;
+    status?: Prisma.StringFilter<"DeletionRequest"> | string;
     estimatedCompletion?: Prisma.DateTimeNullableFilter<"DeletionRequest"> | Date | string | null;
     reviewNotes?: Prisma.StringNullableFilter<"DeletionRequest"> | string | null;
     reviewedBy?: Prisma.UuidNullableFilter<"DeletionRequest"> | string | null;
@@ -402,7 +398,7 @@ export type DeletionRequestScalarWhereInput = {
 export type DeletionRequestCreateManyUserInput = {
     id?: string;
     reason?: string | null;
-    status?: $Enums.DeletionStatus;
+    status?: string;
     estimatedCompletion?: Date | string | null;
     reviewNotes?: string | null;
     reviewedBy?: string | null;
@@ -412,7 +408,7 @@ export type DeletionRequestCreateManyUserInput = {
 export type DeletionRequestUpdateWithoutUserInput = {
     id?: Prisma.StringFieldUpdateOperationsInput | string;
     reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-    status?: Prisma.EnumDeletionStatusFieldUpdateOperationsInput | $Enums.DeletionStatus;
+    status?: Prisma.StringFieldUpdateOperationsInput | string;
     estimatedCompletion?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
     reviewNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     reviewedBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
@@ -422,7 +418,7 @@ export type DeletionRequestUpdateWithoutUserInput = {
 export type DeletionRequestUncheckedUpdateWithoutUserInput = {
     id?: Prisma.StringFieldUpdateOperationsInput | string;
     reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-    status?: Prisma.EnumDeletionStatusFieldUpdateOperationsInput | $Enums.DeletionStatus;
+    status?: Prisma.StringFieldUpdateOperationsInput | string;
     estimatedCompletion?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
     reviewNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     reviewedBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
@@ -432,7 +428,7 @@ export type DeletionRequestUncheckedUpdateWithoutUserInput = {
 export type DeletionRequestUncheckedUpdateManyWithoutUserInput = {
     id?: Prisma.StringFieldUpdateOperationsInput | string;
     reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-    status?: Prisma.EnumDeletionStatusFieldUpdateOperationsInput | $Enums.DeletionStatus;
+    status?: Prisma.StringFieldUpdateOperationsInput | string;
     estimatedCompletion?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
     reviewNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     reviewedBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
@@ -505,7 +501,7 @@ export type $DeletionRequestPayload<ExtArgs extends runtime.Types.Extensions.Int
         id: string;
         userId: string;
         reason: string | null;
-        status: $Enums.DeletionStatus;
+        status: string;
         estimatedCompletion: Date | null;
         reviewNotes: string | null;
         reviewedBy: string | null;
@@ -572,7 +568,7 @@ export interface DeletionRequestFieldRefs {
     readonly id: Prisma.FieldRef<"DeletionRequest", 'String'>;
     readonly userId: Prisma.FieldRef<"DeletionRequest", 'String'>;
     readonly reason: Prisma.FieldRef<"DeletionRequest", 'String'>;
-    readonly status: Prisma.FieldRef<"DeletionRequest", 'DeletionStatus'>;
+    readonly status: Prisma.FieldRef<"DeletionRequest", 'String'>;
     readonly estimatedCompletion: Prisma.FieldRef<"DeletionRequest", 'DateTime'>;
     readonly reviewNotes: Prisma.FieldRef<"DeletionRequest", 'String'>;
     readonly reviewedBy: Prisma.FieldRef<"DeletionRequest", 'String'>;

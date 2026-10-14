@@ -1,6 +1,7 @@
 import type { AuthUser } from '../../common/guards/jwt-auth.guard.js';
 import { AdminDashboardService } from './admin-dashboard.service.js';
 import { AccountActionDto, RejectDocumentDto, SetDriverStatusDto } from './dto/admin-actions.dto.js';
+import { SendDriverNotificationDto } from './dto/driver-notification.dto.js';
 import { DriversListQuery, DriverTripsQuery, RecentTripsQuery, ReservationsQuery } from './dto/dashboard-queries.dto.js';
 import { DocumentDecisionParams } from './dto/document-key.param.js';
 import { DriverIdParam } from './dto/driver-id.param.js';
@@ -14,6 +15,7 @@ export declare class AdminDashboardController {
     getLatestComplaints(query: RecentTripsQuery): Promise<Record<string, unknown>>;
     listDrivers(query: DriversListQuery): Promise<Record<string, unknown>>;
     getDriverStats(): Promise<Record<string, unknown>>;
+    exportDrivers(query: DriversListQuery): Promise<string>;
     getDriverHeader(params: DriverIdParam): Promise<Record<string, unknown>>;
     getDriverOverview(params: DriverIdParam): Promise<Record<string, unknown>>;
     listDriverTrips(params: DriverIdParam, query: DriverTripsQuery): Promise<Record<string, unknown>>;
@@ -21,6 +23,7 @@ export declare class AdminDashboardController {
     getAccountLog(params: DriverIdParam): Promise<Record<string, unknown>>;
     getCarDetails(params: DriverIdParam): Promise<Record<string, unknown>>;
     getDocuments(params: DriverIdParam): Promise<Record<string, unknown>>;
+    sendDriverNotification(params: DriverIdParam, dto: SendDriverNotificationDto, user?: AuthUser): Promise<Record<string, unknown>>;
     setDriverStatus(params: DriverIdParam, dto: SetDriverStatusDto, user?: AuthUser): Promise<Record<string, unknown>>;
     applyStandingAction(params: DriverIdParam, dto: AccountActionDto, user?: AuthUser): Promise<Record<string, unknown>>;
     approveDocument(params: DocumentDecisionParams, user?: AuthUser): Promise<Record<string, unknown>>;

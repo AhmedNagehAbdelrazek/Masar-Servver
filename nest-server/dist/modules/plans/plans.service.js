@@ -16,7 +16,8 @@ const PLANS_ACTIVE_KEY = 'plans:active';
 const PLANS_CACHE_TTL = 60;
 const DB_METHOD_TYPE = {
     bank_account: 'bank_account',
-    'e-wallet': 'e_wallet',
+    'e-wallet': 'e-wallet',
+    e_wallet: 'e-wallet',
     mobile_money: 'mobile_money',
 };
 const OUT_METHOD_TYPE = {
@@ -91,7 +92,16 @@ let PlansService = PlansService_1 = class PlansService {
     }
     async listPlans() {
         const plans = await this.prisma.subscriptionPlan.findMany({ orderBy: { createdAt: 'asc' } });
-        return plans.map((p) => toPlanDTO(p));
+        const counts = await this.prisma.driverSubscription.groupBy({
+            by: ['planId'],
+            where: { status: 'active' },
+            _count: { id: true },
+        });
+        const activeByPlan = new Map(counts.map((r) => [r.planId, r._count.id]));
+        return plans.map((p) => ({
+            ...toPlanDTO(p),
+            active_subscribers: activeByPlan.get(p.id) ?? 0,
+        }));
     }
     async ensureSingleFreePlan(isFree, excludeId) {
         if (!isFree)
@@ -150,7 +160,9 @@ let PlansService = PlansService_1 = class PlansService {
         if (!plan)
             throw new NotFoundException({ message: 'Plan not found', code: 'PLAN_NOT_FOUND' });
         const isFree = data.is_free !== undefined ? Boolean(data.is_free) : plan.isFree;
-        await this.ensureSingleFreePlan(isFree, planId);
+        const willBeActive = data.is_active !== undefined ? Boolean(data.is_active) : plan.isActive;
+        if (isFree && willBeActive)
+            await this.ensureSingleFreePlan(true, planId);
         const updated = await this.prisma.subscriptionPlan.update({
             where: { id: planId },
             data: {
@@ -161,6 +173,7 @@ let PlansService = PlansService_1 = class PlansService {
                 ...(data.status !== undefined ? { status: data.status } : {}),
                 ...(data.features !== undefined ? { features: data.features } : {}),
                 ...(data.is_free !== undefined ? { isFree } : {}),
+                ...(data.is_active !== undefined ? { isActive: willBeActive } : {}),
                 ...(data.free_offer !== undefined
                     ? {
                         freeOffer: isFree
@@ -172,6 +185,24 @@ let PlansService = PlansService_1 = class PlansService {
         });
         await this.invalidatePlansCache();
         return toPlanDTO(updated);
+    }
+    async getFreePlan() {
+        const plan = await this.prisma.subscriptionPlan.findFirst({
+            where: { isFree: true },
+            orderBy: { createdAt: 'asc' },
+        });
+        if (!plan)
+            throw new NotFoundException({ message: 'FREE_PLAN_NOT_FOUND', code: 'FREE_PLAN_NOT_FOUND' });
+        return toPlanDTO(plan);
+    }
+    async updateFreePlan(data, actorId) {
+        const plan = await this.prisma.subscriptionPlan.findFirst({
+            where: { isFree: true },
+            orderBy: { createdAt: 'asc' },
+        });
+        if (!plan)
+            throw new NotFoundException({ message: 'FREE_PLAN_NOT_FOUND', code: 'FREE_PLAN_NOT_FOUND' });
+        return this.updatePlan(plan.id, data, actorId);
     }
     async deactivatePlan(planId, _actorId) {
         const plan = await this.prisma.subscriptionPlan.findUnique({ where: { id: planId } });

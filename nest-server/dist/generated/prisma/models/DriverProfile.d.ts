@@ -1,5 +1,4 @@
 import type * as runtime from "@prisma/client/runtime/client";
-import type * as $Enums from "../enums.js";
 import type * as Prisma from "../internal/prismaNamespace.js";
 export type DriverProfileModel = runtime.Types.Result.DefaultSelection<Prisma.$DriverProfilePayload>;
 export type AggregateDriverProfile = {
@@ -43,7 +42,7 @@ export type DriverProfileMinAggregateOutputType = {
     idVerified: boolean | null;
     licenseNumber: string | null;
     licenseExpiry: Date | null;
-    subscriptionTier: $Enums.SubscriptionTier | null;
+    subscriptionTier: string | null;
     subscriptionExpiresAt: Date | null;
     totalTrips: number | null;
     totalEarnings: runtime.Decimal | null;
@@ -66,7 +65,7 @@ export type DriverProfileMaxAggregateOutputType = {
     idVerified: boolean | null;
     licenseNumber: string | null;
     licenseExpiry: Date | null;
-    subscriptionTier: $Enums.SubscriptionTier | null;
+    subscriptionTier: string | null;
     subscriptionExpiresAt: Date | null;
     totalTrips: number | null;
     totalEarnings: runtime.Decimal | null;
@@ -233,7 +232,7 @@ export type DriverProfileGroupByOutputType = {
     idVerified: boolean | null;
     licenseNumber: string | null;
     licenseExpiry: Date | null;
-    subscriptionTier: $Enums.SubscriptionTier | null;
+    subscriptionTier: string | null;
     subscriptionExpiresAt: Date | null;
     totalTrips: number | null;
     totalEarnings: runtime.Decimal | null;
@@ -267,7 +266,7 @@ export type DriverProfileWhereInput = {
     idVerified?: Prisma.BoolNullableFilter<"DriverProfile"> | boolean | null;
     licenseNumber?: Prisma.StringNullableFilter<"DriverProfile"> | string | null;
     licenseExpiry?: Prisma.DateTimeNullableFilter<"DriverProfile"> | Date | string | null;
-    subscriptionTier?: Prisma.EnumSubscriptionTierNullableFilter<"DriverProfile"> | $Enums.SubscriptionTier | null;
+    subscriptionTier?: Prisma.StringNullableFilter<"DriverProfile"> | string | null;
     subscriptionExpiresAt?: Prisma.DateTimeNullableFilter<"DriverProfile"> | Date | string | null;
     totalTrips?: Prisma.IntNullableFilter<"DriverProfile"> | number | null;
     totalEarnings?: Prisma.DecimalNullableFilter<"DriverProfile"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null;
@@ -318,7 +317,7 @@ export type DriverProfileWhereUniqueInput = Prisma.AtLeast<{
     idVerified?: Prisma.BoolNullableFilter<"DriverProfile"> | boolean | null;
     licenseNumber?: Prisma.StringNullableFilter<"DriverProfile"> | string | null;
     licenseExpiry?: Prisma.DateTimeNullableFilter<"DriverProfile"> | Date | string | null;
-    subscriptionTier?: Prisma.EnumSubscriptionTierNullableFilter<"DriverProfile"> | $Enums.SubscriptionTier | null;
+    subscriptionTier?: Prisma.StringNullableFilter<"DriverProfile"> | string | null;
     subscriptionExpiresAt?: Prisma.DateTimeNullableFilter<"DriverProfile"> | Date | string | null;
     totalTrips?: Prisma.IntNullableFilter<"DriverProfile"> | number | null;
     totalEarnings?: Prisma.DecimalNullableFilter<"DriverProfile"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null;
@@ -373,7 +372,7 @@ export type DriverProfileScalarWhereWithAggregatesInput = {
     idVerified?: Prisma.BoolNullableWithAggregatesFilter<"DriverProfile"> | boolean | null;
     licenseNumber?: Prisma.StringNullableWithAggregatesFilter<"DriverProfile"> | string | null;
     licenseExpiry?: Prisma.DateTimeNullableWithAggregatesFilter<"DriverProfile"> | Date | string | null;
-    subscriptionTier?: Prisma.EnumSubscriptionTierNullableWithAggregatesFilter<"DriverProfile"> | $Enums.SubscriptionTier | null;
+    subscriptionTier?: Prisma.StringNullableWithAggregatesFilter<"DriverProfile"> | string | null;
     subscriptionExpiresAt?: Prisma.DateTimeNullableWithAggregatesFilter<"DriverProfile"> | Date | string | null;
     totalTrips?: Prisma.IntNullableWithAggregatesFilter<"DriverProfile"> | number | null;
     totalEarnings?: Prisma.DecimalNullableWithAggregatesFilter<"DriverProfile"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null;
@@ -395,7 +394,7 @@ export type DriverProfileCreateInput = {
     idVerified?: boolean | null;
     licenseNumber?: string | null;
     licenseExpiry?: Date | string | null;
-    subscriptionTier?: $Enums.SubscriptionTier | null;
+    subscriptionTier?: string | null;
     subscriptionExpiresAt?: Date | string | null;
     totalTrips?: number | null;
     totalEarnings?: runtime.Decimal | runtime.DecimalJsLike | number | string | null;
@@ -419,7 +418,7 @@ export type DriverProfileUncheckedCreateInput = {
     idVerified?: boolean | null;
     licenseNumber?: string | null;
     licenseExpiry?: Date | string | null;
-    subscriptionTier?: $Enums.SubscriptionTier | null;
+    subscriptionTier?: string | null;
     subscriptionExpiresAt?: Date | string | null;
     totalTrips?: number | null;
     totalEarnings?: runtime.Decimal | runtime.DecimalJsLike | number | string | null;
@@ -441,7 +440,7 @@ export type DriverProfileUpdateInput = {
     idVerified?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null;
     licenseNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     licenseExpiry?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
-    subscriptionTier?: Prisma.NullableEnumSubscriptionTierFieldUpdateOperationsInput | $Enums.SubscriptionTier | null;
+    subscriptionTier?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     subscriptionExpiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
     totalTrips?: Prisma.NullableIntFieldUpdateOperationsInput | number | null;
     totalEarnings?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null;
@@ -465,7 +464,7 @@ export type DriverProfileUncheckedUpdateInput = {
     idVerified?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null;
     licenseNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     licenseExpiry?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
-    subscriptionTier?: Prisma.NullableEnumSubscriptionTierFieldUpdateOperationsInput | $Enums.SubscriptionTier | null;
+    subscriptionTier?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     subscriptionExpiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
     totalTrips?: Prisma.NullableIntFieldUpdateOperationsInput | number | null;
     totalEarnings?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null;
@@ -488,7 +487,7 @@ export type DriverProfileCreateManyInput = {
     idVerified?: boolean | null;
     licenseNumber?: string | null;
     licenseExpiry?: Date | string | null;
-    subscriptionTier?: $Enums.SubscriptionTier | null;
+    subscriptionTier?: string | null;
     subscriptionExpiresAt?: Date | string | null;
     totalTrips?: number | null;
     totalEarnings?: runtime.Decimal | runtime.DecimalJsLike | number | string | null;
@@ -510,7 +509,7 @@ export type DriverProfileUpdateManyMutationInput = {
     idVerified?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null;
     licenseNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     licenseExpiry?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
-    subscriptionTier?: Prisma.NullableEnumSubscriptionTierFieldUpdateOperationsInput | $Enums.SubscriptionTier | null;
+    subscriptionTier?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     subscriptionExpiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
     totalTrips?: Prisma.NullableIntFieldUpdateOperationsInput | number | null;
     totalEarnings?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null;
@@ -533,7 +532,7 @@ export type DriverProfileUncheckedUpdateManyInput = {
     idVerified?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null;
     licenseNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     licenseExpiry?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
-    subscriptionTier?: Prisma.NullableEnumSubscriptionTierFieldUpdateOperationsInput | $Enums.SubscriptionTier | null;
+    subscriptionTier?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     subscriptionExpiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
     totalTrips?: Prisma.NullableIntFieldUpdateOperationsInput | number | null;
     totalEarnings?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null;
@@ -677,9 +676,6 @@ export type NullableIntFieldUpdateOperationsInput = {
 export type NullableBoolFieldUpdateOperationsInput = {
     set?: boolean | null;
 };
-export type NullableEnumSubscriptionTierFieldUpdateOperationsInput = {
-    set?: $Enums.SubscriptionTier | null;
-};
 export type DriverProfileCreateWithoutDriverInput = {
     id?: string;
     userIdentificationFront?: number | null;
@@ -691,7 +687,7 @@ export type DriverProfileCreateWithoutDriverInput = {
     idVerified?: boolean | null;
     licenseNumber?: string | null;
     licenseExpiry?: Date | string | null;
-    subscriptionTier?: $Enums.SubscriptionTier | null;
+    subscriptionTier?: string | null;
     subscriptionExpiresAt?: Date | string | null;
     totalTrips?: number | null;
     totalEarnings?: runtime.Decimal | runtime.DecimalJsLike | number | string | null;
@@ -713,7 +709,7 @@ export type DriverProfileUncheckedCreateWithoutDriverInput = {
     idVerified?: boolean | null;
     licenseNumber?: string | null;
     licenseExpiry?: Date | string | null;
-    subscriptionTier?: $Enums.SubscriptionTier | null;
+    subscriptionTier?: string | null;
     subscriptionExpiresAt?: Date | string | null;
     totalTrips?: number | null;
     totalEarnings?: runtime.Decimal | runtime.DecimalJsLike | number | string | null;
@@ -748,7 +744,7 @@ export type DriverProfileUpdateWithoutDriverInput = {
     idVerified?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null;
     licenseNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     licenseExpiry?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
-    subscriptionTier?: Prisma.NullableEnumSubscriptionTierFieldUpdateOperationsInput | $Enums.SubscriptionTier | null;
+    subscriptionTier?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     subscriptionExpiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
     totalTrips?: Prisma.NullableIntFieldUpdateOperationsInput | number | null;
     totalEarnings?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null;
@@ -770,7 +766,7 @@ export type DriverProfileUncheckedUpdateWithoutDriverInput = {
     idVerified?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null;
     licenseNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     licenseExpiry?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
-    subscriptionTier?: Prisma.NullableEnumSubscriptionTierFieldUpdateOperationsInput | $Enums.SubscriptionTier | null;
+    subscriptionTier?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     subscriptionExpiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
     totalTrips?: Prisma.NullableIntFieldUpdateOperationsInput | number | null;
     totalEarnings?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null;
@@ -903,7 +899,7 @@ export type $DriverProfilePayload<ExtArgs extends runtime.Types.Extensions.Inter
         idVerified: boolean | null;
         licenseNumber: string | null;
         licenseExpiry: Date | null;
-        subscriptionTier: $Enums.SubscriptionTier | null;
+        subscriptionTier: string | null;
         subscriptionExpiresAt: Date | null;
         totalTrips: number | null;
         totalEarnings: runtime.Decimal | null;
@@ -982,7 +978,7 @@ export interface DriverProfileFieldRefs {
     readonly idVerified: Prisma.FieldRef<"DriverProfile", 'Boolean'>;
     readonly licenseNumber: Prisma.FieldRef<"DriverProfile", 'String'>;
     readonly licenseExpiry: Prisma.FieldRef<"DriverProfile", 'DateTime'>;
-    readonly subscriptionTier: Prisma.FieldRef<"DriverProfile", 'SubscriptionTier'>;
+    readonly subscriptionTier: Prisma.FieldRef<"DriverProfile", 'String'>;
     readonly subscriptionExpiresAt: Prisma.FieldRef<"DriverProfile", 'DateTime'>;
     readonly totalTrips: Prisma.FieldRef<"DriverProfile", 'Int'>;
     readonly totalEarnings: Prisma.FieldRef<"DriverProfile", 'Decimal'>;

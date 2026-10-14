@@ -28,7 +28,7 @@ export type DocumentReviewMinAggregateOutputType = {
   id: string | null
   driverId: string | null
   documentKey: string | null
-  decision: $Enums.DocumentDecision | null
+  decision: string | null
   reason: string | null
   decidedBy: string | null
   decidedAt: Date | null
@@ -40,7 +40,7 @@ export type DocumentReviewMaxAggregateOutputType = {
   id: string | null
   driverId: string | null
   documentKey: string | null
-  decision: $Enums.DocumentDecision | null
+  decision: string | null
   reason: string | null
   decidedBy: string | null
   decidedAt: Date | null
@@ -175,7 +175,7 @@ export type DocumentReviewGroupByOutputType = {
   id: string
   driverId: string
   documentKey: string
-  decision: $Enums.DocumentDecision
+  decision: string
   reason: string | null
   decidedBy: string | null
   decidedAt: Date
@@ -208,7 +208,7 @@ export type DocumentReviewWhereInput = {
   id?: Prisma.UuidFilter<"DocumentReview"> | string
   driverId?: Prisma.UuidFilter<"DocumentReview"> | string
   documentKey?: Prisma.StringFilter<"DocumentReview"> | string
-  decision?: Prisma.EnumDocumentDecisionFilter<"DocumentReview"> | $Enums.DocumentDecision
+  decision?: Prisma.StringFilter<"DocumentReview"> | string
   reason?: Prisma.StringNullableFilter<"DocumentReview"> | string | null
   decidedBy?: Prisma.UuidNullableFilter<"DocumentReview"> | string | null
   decidedAt?: Prisma.DateTimeFilter<"DocumentReview"> | Date | string
@@ -236,7 +236,7 @@ export type DocumentReviewWhereUniqueInput = Prisma.AtLeast<{
   NOT?: Prisma.DocumentReviewWhereInput | Prisma.DocumentReviewWhereInput[]
   driverId?: Prisma.UuidFilter<"DocumentReview"> | string
   documentKey?: Prisma.StringFilter<"DocumentReview"> | string
-  decision?: Prisma.EnumDocumentDecisionFilter<"DocumentReview"> | $Enums.DocumentDecision
+  decision?: Prisma.StringFilter<"DocumentReview"> | string
   reason?: Prisma.StringNullableFilter<"DocumentReview"> | string | null
   decidedBy?: Prisma.UuidNullableFilter<"DocumentReview"> | string | null
   decidedAt?: Prisma.DateTimeFilter<"DocumentReview"> | Date | string
@@ -266,7 +266,7 @@ export type DocumentReviewScalarWhereWithAggregatesInput = {
   id?: Prisma.UuidWithAggregatesFilter<"DocumentReview"> | string
   driverId?: Prisma.UuidWithAggregatesFilter<"DocumentReview"> | string
   documentKey?: Prisma.StringWithAggregatesFilter<"DocumentReview"> | string
-  decision?: Prisma.EnumDocumentDecisionWithAggregatesFilter<"DocumentReview"> | $Enums.DocumentDecision
+  decision?: Prisma.StringWithAggregatesFilter<"DocumentReview"> | string
   reason?: Prisma.StringNullableWithAggregatesFilter<"DocumentReview"> | string | null
   decidedBy?: Prisma.UuidNullableWithAggregatesFilter<"DocumentReview"> | string | null
   decidedAt?: Prisma.DateTimeWithAggregatesFilter<"DocumentReview"> | Date | string
@@ -278,7 +278,7 @@ export type DocumentReviewCreateInput = {
   id?: string
   driverId: string
   documentKey: string
-  decision: $Enums.DocumentDecision
+  decision: string
   reason?: string | null
   decidedBy?: string | null
   decidedAt?: Date | string
@@ -290,7 +290,7 @@ export type DocumentReviewUncheckedCreateInput = {
   id?: string
   driverId: string
   documentKey: string
-  decision: $Enums.DocumentDecision
+  decision: string
   reason?: string | null
   decidedBy?: string | null
   decidedAt?: Date | string
@@ -302,7 +302,7 @@ export type DocumentReviewUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   driverId?: Prisma.StringFieldUpdateOperationsInput | string
   documentKey?: Prisma.StringFieldUpdateOperationsInput | string
-  decision?: Prisma.EnumDocumentDecisionFieldUpdateOperationsInput | $Enums.DocumentDecision
+  decision?: Prisma.StringFieldUpdateOperationsInput | string
   reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   decidedBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   decidedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -314,7 +314,7 @@ export type DocumentReviewUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   driverId?: Prisma.StringFieldUpdateOperationsInput | string
   documentKey?: Prisma.StringFieldUpdateOperationsInput | string
-  decision?: Prisma.EnumDocumentDecisionFieldUpdateOperationsInput | $Enums.DocumentDecision
+  decision?: Prisma.StringFieldUpdateOperationsInput | string
   reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   decidedBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   decidedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -326,7 +326,7 @@ export type DocumentReviewCreateManyInput = {
   id?: string
   driverId: string
   documentKey: string
-  decision: $Enums.DocumentDecision
+  decision: string
   reason?: string | null
   decidedBy?: string | null
   decidedAt?: Date | string
@@ -338,7 +338,7 @@ export type DocumentReviewUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   driverId?: Prisma.StringFieldUpdateOperationsInput | string
   documentKey?: Prisma.StringFieldUpdateOperationsInput | string
-  decision?: Prisma.EnumDocumentDecisionFieldUpdateOperationsInput | $Enums.DocumentDecision
+  decision?: Prisma.StringFieldUpdateOperationsInput | string
   reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   decidedBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   decidedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -350,7 +350,7 @@ export type DocumentReviewUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   driverId?: Prisma.StringFieldUpdateOperationsInput | string
   documentKey?: Prisma.StringFieldUpdateOperationsInput | string
-  decision?: Prisma.EnumDocumentDecisionFieldUpdateOperationsInput | $Enums.DocumentDecision
+  decision?: Prisma.StringFieldUpdateOperationsInput | string
   reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   decidedBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   decidedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -397,10 +397,6 @@ export type DocumentReviewMinOrderByAggregateInput = {
   decidedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
-}
-
-export type EnumDocumentDecisionFieldUpdateOperationsInput = {
-  set?: $Enums.DocumentDecision
 }
 
 
@@ -462,7 +458,7 @@ export type $DocumentReviewPayload<ExtArgs extends runtime.Types.Extensions.Inte
     id: string
     driverId: string
     documentKey: string
-    decision: $Enums.DocumentDecision
+    decision: string
     reason: string | null
     decidedBy: string | null
     decidedAt: Date
@@ -894,7 +890,7 @@ export interface DocumentReviewFieldRefs {
   readonly id: Prisma.FieldRef<"DocumentReview", 'String'>
   readonly driverId: Prisma.FieldRef<"DocumentReview", 'String'>
   readonly documentKey: Prisma.FieldRef<"DocumentReview", 'String'>
-  readonly decision: Prisma.FieldRef<"DocumentReview", 'DocumentDecision'>
+  readonly decision: Prisma.FieldRef<"DocumentReview", 'String'>
   readonly reason: Prisma.FieldRef<"DocumentReview", 'String'>
   readonly decidedBy: Prisma.FieldRef<"DocumentReview", 'String'>
   readonly decidedAt: Prisma.FieldRef<"DocumentReview", 'DateTime'>

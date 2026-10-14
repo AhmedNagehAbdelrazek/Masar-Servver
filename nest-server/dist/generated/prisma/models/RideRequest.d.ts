@@ -1,5 +1,4 @@
 import type * as runtime from "@prisma/client/runtime/client";
-import type * as $Enums from "../enums.js";
 import type * as Prisma from "../internal/prismaNamespace.js";
 export type RideRequestModel = runtime.Types.Result.DefaultSelection<Prisma.$RideRequestPayload>;
 export type AggregateRideRequest = {
@@ -42,7 +41,7 @@ export type RideRequestMinAggregateOutputType = {
     maxBudget: runtime.Decimal | null;
     currency: string | null;
     note: string | null;
-    status: $Enums.RideRequestStatus | null;
+    status: string | null;
     expiresAt: Date | null;
     createdAt: Date | null;
     updatedAt: Date | null;
@@ -64,7 +63,7 @@ export type RideRequestMaxAggregateOutputType = {
     maxBudget: runtime.Decimal | null;
     currency: string | null;
     note: string | null;
-    status: $Enums.RideRequestStatus | null;
+    status: string | null;
     expiresAt: Date | null;
     createdAt: Date | null;
     updatedAt: Date | null;
@@ -223,7 +222,7 @@ export type RideRequestGroupByOutputType = {
     currency: string | null;
     attributesPreferred: runtime.JsonValue | null;
     note: string | null;
-    status: $Enums.RideRequestStatus;
+    status: string;
     expiresAt: Date;
     createdAt: Date;
     updatedAt: Date;
@@ -257,7 +256,7 @@ export type RideRequestWhereInput = {
     currency?: Prisma.StringNullableFilter<"RideRequest"> | string | null;
     attributesPreferred?: Prisma.JsonNullableFilter<"RideRequest">;
     note?: Prisma.StringNullableFilter<"RideRequest"> | string | null;
-    status?: Prisma.EnumRideRequestStatusFilter<"RideRequest"> | $Enums.RideRequestStatus;
+    status?: Prisma.StringFilter<"RideRequest"> | string;
     expiresAt?: Prisma.DateTimeFilter<"RideRequest"> | Date | string;
     createdAt?: Prisma.DateTimeFilter<"RideRequest"> | Date | string;
     updatedAt?: Prisma.DateTimeFilter<"RideRequest"> | Date | string;
@@ -310,7 +309,7 @@ export type RideRequestWhereUniqueInput = Prisma.AtLeast<{
     currency?: Prisma.StringNullableFilter<"RideRequest"> | string | null;
     attributesPreferred?: Prisma.JsonNullableFilter<"RideRequest">;
     note?: Prisma.StringNullableFilter<"RideRequest"> | string | null;
-    status?: Prisma.EnumRideRequestStatusFilter<"RideRequest"> | $Enums.RideRequestStatus;
+    status?: Prisma.StringFilter<"RideRequest"> | string;
     expiresAt?: Prisma.DateTimeFilter<"RideRequest"> | Date | string;
     createdAt?: Prisma.DateTimeFilter<"RideRequest"> | Date | string;
     updatedAt?: Prisma.DateTimeFilter<"RideRequest"> | Date | string;
@@ -366,7 +365,7 @@ export type RideRequestScalarWhereWithAggregatesInput = {
     currency?: Prisma.StringNullableWithAggregatesFilter<"RideRequest"> | string | null;
     attributesPreferred?: Prisma.JsonNullableWithAggregatesFilter<"RideRequest">;
     note?: Prisma.StringNullableWithAggregatesFilter<"RideRequest"> | string | null;
-    status?: Prisma.EnumRideRequestStatusWithAggregatesFilter<"RideRequest"> | $Enums.RideRequestStatus;
+    status?: Prisma.StringWithAggregatesFilter<"RideRequest"> | string;
     expiresAt?: Prisma.DateTimeWithAggregatesFilter<"RideRequest"> | Date | string;
     createdAt?: Prisma.DateTimeWithAggregatesFilter<"RideRequest"> | Date | string;
     updatedAt?: Prisma.DateTimeWithAggregatesFilter<"RideRequest"> | Date | string;
@@ -388,7 +387,7 @@ export type RideRequestCreateInput = {
     currency?: string | null;
     attributesPreferred?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
     note?: string | null;
-    status?: $Enums.RideRequestStatus;
+    status?: string;
     expiresAt: Date | string;
     createdAt?: Date | string;
     updatedAt?: Date | string;
@@ -413,7 +412,7 @@ export type RideRequestUncheckedCreateInput = {
     currency?: string | null;
     attributesPreferred?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
     note?: string | null;
-    status?: $Enums.RideRequestStatus;
+    status?: string;
     expiresAt: Date | string;
     createdAt?: Date | string;
     updatedAt?: Date | string;
@@ -436,7 +435,7 @@ export type RideRequestUpdateInput = {
     currency?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     attributesPreferred?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
     note?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-    status?: Prisma.EnumRideRequestStatusFieldUpdateOperationsInput | $Enums.RideRequestStatus;
+    status?: Prisma.StringFieldUpdateOperationsInput | string;
     expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
     createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
     updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
@@ -461,7 +460,7 @@ export type RideRequestUncheckedUpdateInput = {
     currency?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     attributesPreferred?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
     note?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-    status?: Prisma.EnumRideRequestStatusFieldUpdateOperationsInput | $Enums.RideRequestStatus;
+    status?: Prisma.StringFieldUpdateOperationsInput | string;
     expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
     createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
     updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
@@ -485,7 +484,7 @@ export type RideRequestCreateManyInput = {
     currency?: string | null;
     attributesPreferred?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
     note?: string | null;
-    status?: $Enums.RideRequestStatus;
+    status?: string;
     expiresAt: Date | string;
     createdAt?: Date | string;
     updatedAt?: Date | string;
@@ -507,7 +506,7 @@ export type RideRequestUpdateManyMutationInput = {
     currency?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     attributesPreferred?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
     note?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-    status?: Prisma.EnumRideRequestStatusFieldUpdateOperationsInput | $Enums.RideRequestStatus;
+    status?: Prisma.StringFieldUpdateOperationsInput | string;
     expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
     createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
     updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
@@ -530,7 +529,7 @@ export type RideRequestUncheckedUpdateManyInput = {
     currency?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     attributesPreferred?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
     note?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-    status?: Prisma.EnumRideRequestStatusFieldUpdateOperationsInput | $Enums.RideRequestStatus;
+    status?: Prisma.StringFieldUpdateOperationsInput | string;
     expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
     createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
     updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
@@ -668,9 +667,6 @@ export type RideRequestUncheckedUpdateManyWithoutPassengerNestedInput = {
     updateMany?: Prisma.RideRequestUpdateManyWithWhereWithoutPassengerInput | Prisma.RideRequestUpdateManyWithWhereWithoutPassengerInput[];
     deleteMany?: Prisma.RideRequestScalarWhereInput | Prisma.RideRequestScalarWhereInput[];
 };
-export type EnumRideRequestStatusFieldUpdateOperationsInput = {
-    set?: $Enums.RideRequestStatus;
-};
 export type RideRequestCreateNestedOneWithoutOffersInput = {
     create?: Prisma.XOR<Prisma.RideRequestCreateWithoutOffersInput, Prisma.RideRequestUncheckedCreateWithoutOffersInput>;
     connectOrCreate?: Prisma.RideRequestCreateOrConnectWithoutOffersInput;
@@ -700,7 +696,7 @@ export type RideRequestCreateWithoutPassengerInput = {
     currency?: string | null;
     attributesPreferred?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
     note?: string | null;
-    status?: $Enums.RideRequestStatus;
+    status?: string;
     expiresAt: Date | string;
     createdAt?: Date | string;
     updatedAt?: Date | string;
@@ -723,7 +719,7 @@ export type RideRequestUncheckedCreateWithoutPassengerInput = {
     currency?: string | null;
     attributesPreferred?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
     note?: string | null;
-    status?: $Enums.RideRequestStatus;
+    status?: string;
     expiresAt: Date | string;
     createdAt?: Date | string;
     updatedAt?: Date | string;
@@ -771,7 +767,7 @@ export type RideRequestScalarWhereInput = {
     currency?: Prisma.StringNullableFilter<"RideRequest"> | string | null;
     attributesPreferred?: Prisma.JsonNullableFilter<"RideRequest">;
     note?: Prisma.StringNullableFilter<"RideRequest"> | string | null;
-    status?: Prisma.EnumRideRequestStatusFilter<"RideRequest"> | $Enums.RideRequestStatus;
+    status?: Prisma.StringFilter<"RideRequest"> | string;
     expiresAt?: Prisma.DateTimeFilter<"RideRequest"> | Date | string;
     createdAt?: Prisma.DateTimeFilter<"RideRequest"> | Date | string;
     updatedAt?: Prisma.DateTimeFilter<"RideRequest"> | Date | string;
@@ -793,7 +789,7 @@ export type RideRequestCreateWithoutOffersInput = {
     currency?: string | null;
     attributesPreferred?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
     note?: string | null;
-    status?: $Enums.RideRequestStatus;
+    status?: string;
     expiresAt: Date | string;
     createdAt?: Date | string;
     updatedAt?: Date | string;
@@ -817,7 +813,7 @@ export type RideRequestUncheckedCreateWithoutOffersInput = {
     currency?: string | null;
     attributesPreferred?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
     note?: string | null;
-    status?: $Enums.RideRequestStatus;
+    status?: string;
     expiresAt: Date | string;
     createdAt?: Date | string;
     updatedAt?: Date | string;
@@ -852,7 +848,7 @@ export type RideRequestUpdateWithoutOffersInput = {
     currency?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     attributesPreferred?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
     note?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-    status?: Prisma.EnumRideRequestStatusFieldUpdateOperationsInput | $Enums.RideRequestStatus;
+    status?: Prisma.StringFieldUpdateOperationsInput | string;
     expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
     createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
     updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
@@ -876,7 +872,7 @@ export type RideRequestUncheckedUpdateWithoutOffersInput = {
     currency?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     attributesPreferred?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
     note?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-    status?: Prisma.EnumRideRequestStatusFieldUpdateOperationsInput | $Enums.RideRequestStatus;
+    status?: Prisma.StringFieldUpdateOperationsInput | string;
     expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
     createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
     updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
@@ -898,7 +894,7 @@ export type RideRequestCreateManyPassengerInput = {
     currency?: string | null;
     attributesPreferred?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
     note?: string | null;
-    status?: $Enums.RideRequestStatus;
+    status?: string;
     expiresAt: Date | string;
     createdAt?: Date | string;
     updatedAt?: Date | string;
@@ -920,7 +916,7 @@ export type RideRequestUpdateWithoutPassengerInput = {
     currency?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     attributesPreferred?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
     note?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-    status?: Prisma.EnumRideRequestStatusFieldUpdateOperationsInput | $Enums.RideRequestStatus;
+    status?: Prisma.StringFieldUpdateOperationsInput | string;
     expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
     createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
     updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
@@ -943,7 +939,7 @@ export type RideRequestUncheckedUpdateWithoutPassengerInput = {
     currency?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     attributesPreferred?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
     note?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-    status?: Prisma.EnumRideRequestStatusFieldUpdateOperationsInput | $Enums.RideRequestStatus;
+    status?: Prisma.StringFieldUpdateOperationsInput | string;
     expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
     createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
     updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
@@ -966,7 +962,7 @@ export type RideRequestUncheckedUpdateManyWithoutPassengerInput = {
     currency?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     attributesPreferred?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
     note?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-    status?: Prisma.EnumRideRequestStatusFieldUpdateOperationsInput | $Enums.RideRequestStatus;
+    status?: Prisma.StringFieldUpdateOperationsInput | string;
     expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
     createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
     updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
@@ -1116,7 +1112,7 @@ export type $RideRequestPayload<ExtArgs extends runtime.Types.Extensions.Interna
         currency: string | null;
         attributesPreferred: runtime.JsonValue | null;
         note: string | null;
-        status: $Enums.RideRequestStatus;
+        status: string;
         expiresAt: Date;
         createdAt: Date;
         updatedAt: Date;
@@ -1196,7 +1192,7 @@ export interface RideRequestFieldRefs {
     readonly currency: Prisma.FieldRef<"RideRequest", 'String'>;
     readonly attributesPreferred: Prisma.FieldRef<"RideRequest", 'Json'>;
     readonly note: Prisma.FieldRef<"RideRequest", 'String'>;
-    readonly status: Prisma.FieldRef<"RideRequest", 'RideRequestStatus'>;
+    readonly status: Prisma.FieldRef<"RideRequest", 'String'>;
     readonly expiresAt: Prisma.FieldRef<"RideRequest", 'DateTime'>;
     readonly createdAt: Prisma.FieldRef<"RideRequest", 'DateTime'>;
     readonly updatedAt: Prisma.FieldRef<"RideRequest", 'DateTime'>;

@@ -57,7 +57,14 @@ let JobsService = JobsService_1 = class JobsService {
         }
         this.running.add(name);
         try {
-            const result = await fn();
+            let result;
+            try {
+                result = await fn();
+            }
+            catch (err) {
+                this.logger.error(`[jobs] ${name} failed: ${err.message}`);
+                return undefined;
+            }
             try {
                 await this.redis.setKey(lastRunKey(name), new Date().toISOString(), LAST_RUN_TTL_SECONDS);
             }

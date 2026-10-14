@@ -20,6 +20,7 @@ export declare class PenaltyService {
         details?: string | null;
         complaint_id?: string | null;
         ends_at?: string | null;
+        confirm_reviewed_log?: boolean | null;
     }): Promise<{
         penalty: Record<string, unknown>;
     }>;

@@ -10,3 +10,13 @@ export declare class RejectSubscriptionDto {
 export declare class SubscriptionIdParam {
     subscription_id: string;
 }
+export declare class AdminSubscriptionListQuery {
+    search?: string;
+    status?: string;
+    plan_id?: string;
+    from?: string;
+    to?: string;
+    sort?: string;
+    page?: number;
+    limit?: number;
+}

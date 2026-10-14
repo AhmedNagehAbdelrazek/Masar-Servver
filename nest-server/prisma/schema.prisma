@@ -1,8 +1,16 @@
 // Prisma schema ported from Main Server/ Sequelize models + migrations 001-032.
 // Source of truth: Main Server/Models/*.ts with underscored:true and
 // global define { createdAt: 'createdat', updatedAt: 'updatedat' }.
-// Baseline migration: run `prisma migrate dev --name baseline` against a
-// staging copy, then `prisma migrate diff` vs production before first deploy.
+//
+// SHARED-DB STRATEGY: this server shares one Postgres database with the
+// Express/Sequelize server (Main Server/), which owns the schema via its own
+// migrations + `sequelize.sync({ force:false })` (Sequelize ENUM columns use
+// `enum_<table>_<column>` types). Prisma therefore declares every former
+// enum column as `String` and NEVER emits `CREATE TYPE` — native PG enums
+// would 42704 (`type "public.<Enum>" does not exist`) on a Sequelize-managed
+// DB. Allowed values live in Main Server/config/constants.ts and are enforced
+// at the service/DTO layer on both sides. Do NOT reintroduce `enum` blocks
+// without a coordinated cross-server migration.
 
 generator client {
   provider = "prisma-client"
@@ -12,200 +20,7 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
-// ---------- Enums (values from Main Server/config/constants.ts) ----------
-
-enum Role {
-  passenger
-  driver
-  admin
-  support
-  moderator
-}
-
-enum UserStatus {
-  active
-  warned
-  suspended
-  banned
-}
-
-enum Gender {
-  male
-  female
-}
-
-enum PreferredGender {
-  male
-  female
-  any
-}
-
-enum VehicleType {
-  sedan
-  suv
-  van
-  bus
-  hatchback
-}
-
-enum TripStatus {
-  published
-  full
-  in_progress
-  ongoing
-  completed
-  cancelled
-}
-
-enum SeatType {
-  driver
-  unavailable
-  available
-}
-
-enum GenderPreference {
-  all
-  women_only
-  men_only
-}
-
-enum BookingStatus {
-  pending
-  confirmed
-  cancelled
-  completed
-  no_show
-}
-
-enum PaymentStatus {
-  pending
-  paid_cash
-  paid_other
-  disputed
-}
-
-enum RideRequestStatus {
-  open
-  offered
-  accepted
-  expired
-  cancelled
-}
-
-enum RequestOfferStatus {
-  sent
-  accepted
-  declined
-  expired
-}
-
-enum ComplaintStatus {
-  open
-  reviewing
-  resolved
-  dismissed
-}
-
-enum PenaltyType {
-  warning
-  suspension
-  ban
-}
-
-enum TicketStatus {
-  open
-  in_progress
-  resolved
-  closed
-}
-
-enum TicketPriority {
-  low
-  medium
-  high
-  urgent
-}
-
-enum SubscriptionTier {
-  free
-  pro_monthly
-  pro_annual
-}
-
-enum StopType {
-  pickup
-  dropoff
-  both
-}
-
-enum SubscriptionStatus {
-  pending_approval
-  active
-  rejected
-  cancelled
-  expired
-}
-
-enum PaymentMethodType {
-  bank_account
-  e_wallet     @map("e-wallet")
-  mobile_money
-}
-
-enum VerificationStatus {
-  unverified
-  pending
-  rejected
-  approved
-}
-
-enum SosStatus {
-  pending
-  acknowledged
-  resolved
-  cancelled
-}
-
-enum DelayParty {
-  driver
-  passenger
-}
-
-enum AuditAction {
-  INSERT
-  UPDATE
-  DELETE
-}
-
-enum DocumentDecision {
-  approved
-  rejected
-}
-
-enum DeletionStatus {
-  pending
-  approved
-  rejected
-  cancelled
-}
-
-enum RouteStatus {
-  pending
-  ready
-  failed
-}
-
-enum PickupType {
-  stop
-  custom
-}
-
-enum PickupStatus {
-  pending
-  arrived
-  picked_up
-  missed
-}
+// ---------- Shared value sets (see header; stored as TEXT-compatible strings) ----------
 
 // ---------- Models ----------
 
@@ -216,13 +31,13 @@ model User {
   countryCode                 String?            @map("country_code") @db.VarChar(5)
   phone                       String             @unique @db.VarChar(20)
   email                       String?            @unique @db.VarChar(160)
-  role                        Role
-  gender                      Gender?            @default(male)
+  role                        String           @db.VarChar(20)
+  gender                      String?            @default("male") @db.VarChar(10)
   passwordHash                String             @map("password_hash") @db.VarChar(255)
   age                         Decimal?           @db.Decimal(3, 0)
   avatarUrl                   String?            @map("avatar_url") @db.Text
   isVerified                  Boolean            @default(false) @map("is_verified")
-  verificationStatus          VerificationStatus @default(unverified) @map("verification_status")
+  verificationStatus          String             @default("unverified") @map("verification_status") @db.VarChar(20)
   verificationSubmittedAt     DateTime?          @map("verification_submitted_at") @db.Timestamptz
   verificationRejectedAt      DateTime?          @map("verification_rejected_at") @db.Timestamptz
   verificationRejectionReason String?            @map("verification_rejection_reason") @db.Text
@@ -230,7 +45,7 @@ model User {
   avgRating                   Decimal            @default(0) @map("avg_rating") @db.Decimal(2, 1)
   strikes                     Int                @default(0) @map("strikes") @db.SmallInt
   locale                      String             @default("ar") @db.VarChar(5)
-  status                      UserStatus         @default(active)
+  status                      String             @default("active") @db.VarChar(20)
   fcmToken                    String?            @map("fcm_token") @db.Text
   lastLoginAt                 DateTime?          @map("last_login_at") @db.Timestamptz
   totalBalance                Decimal            @default(0) @map("total_balance") @db.Decimal(10, 2)
@@ -280,7 +95,7 @@ model DriverProfile {
   idVerified              Boolean?          @default(false) @map("id_verified")
   licenseNumber           String?           @map("license_number") @db.VarChar(50)
   licenseExpiry           DateTime?         @map("license_expiry") @db.Date
-  subscriptionTier        SubscriptionTier? @default(free) @map("subscription_tier")
+  subscriptionTier        String? @default("free") @map("subscription_tier") @db.VarChar(20)
   subscriptionExpiresAt   DateTime?         @map("subscription_expires_at") @db.Timestamptz
   totalTrips              Int?              @default(0) @map("total_trips")
   totalEarnings           Decimal?          @default(0) @map("total_earnings") @db.Decimal(12, 2)
@@ -301,7 +116,7 @@ model Vehicle {
   driverId                    String      @unique @map("driver_id") @db.Uuid
   manufacturer                String      @db.VarChar(80)
   model                       String      @db.VarChar(80)
-  vehicleType                 VehicleType @map("vehicle_type")
+  vehicleType                 String      @map("vehicle_type") @db.VarChar(20)
   modelYear                   Int?        @map("model_year") @db.SmallInt
   plateNumber                 String      @unique @map("plate_number") @db.VarChar(20)
   codeNumber                  String?     @map("code_number") @db.VarChar(20)
@@ -329,7 +144,7 @@ model Vehicle {
 model PassengerProfile {
   id                String           @id @default(uuid()) @db.Uuid
   passengerId       String           @unique @map("passenger_id") @db.Uuid
-  preferredGender   PreferredGender? @default(any) @map("preferred_gender")
+  preferredGender   String? @default("any") @map("preferred_gender") @db.VarChar(10)
   smokingPreference String?          @default("no_preference") @map("smoking_preference") @db.VarChar(30)
   savedRoutes       Json?            @default("[]") @map("saved_routes") @db.JsonB
   nationalID        String?          @map("national_id") @db.VarChar(30)
@@ -368,10 +183,10 @@ model Trip {
   recurrencePattern      Json?            @map("recurrence_pattern") @db.JsonB
   recurrenceDays         Int[]            @default([]) @map("recurrence_days")
   recurrenceEndDate      DateTime?        @map("recurrence_end_date") @db.Timestamptz
-  genderPreference       GenderPreference @default(all) @map("gender_preference")
+  genderPreference       String           @default("all") @map("gender_preference") @db.VarChar(20)
   driverInstructions     String[]         @default([]) @map("driver_instructions")
   additionalInstructions String?          @map("additional_instructions") @db.Text
-  status                 TripStatus       @default(published)
+  status                 String           @default("published") @db.VarChar(20)
   isFeatured             Boolean?         @default(false) @map("is_featured")
   featuredUntil          DateTime?        @map("featured_until") @db.Timestamptz
   isBlockedByBalance     Boolean          @default(false) @map("is_blocked_by_balance")
@@ -381,7 +196,7 @@ model Trip {
   routePolyline          String?          @map("route_polyline") @db.Text
   routeDistanceM         Int?             @map("route_distance_m")
   routeDurationS         Int?             @map("route_duration_s")
-  routeStatus            RouteStatus      @default(pending) @map("route_status")
+  routeStatus            String           @default("pending") @map("route_status") @db.VarChar(20)
   routeComputedAt        DateTime?        @map("route_computed_at") @db.Timestamptz
   routeVersion           Int              @default(0) @map("route_version")
   actualPathPolyline     String?          @map("actual_path_polyline") @db.Text
@@ -431,7 +246,7 @@ model TripStop {
   lng              Decimal?  @db.Decimal(11, 8)
   stopLat          Decimal?  @map("stop_lat") @db.Decimal(10, 8)
   stopLng          Decimal?  @map("stop_lng") @db.Decimal(11, 8)
-  stopType         StopType? @map("stop_type")
+  stopType         String? @map("stop_type") @db.VarChar(20)
   estimatedArrival DateTime? @map("estimated_arrival") @db.Timestamptz
   createdAt        DateTime  @default(now()) @map("createdat") @db.Timestamptz
 
@@ -446,7 +261,7 @@ model TripSeat {
   id           String   @id @default(uuid()) @db.Uuid
   tripId       String   @map("trip_id") @db.Uuid
   seatNumber   Int      @map("seat_number") @db.SmallInt
-  seatType     SeatType @map("seat_type")
+  seatType     String   @map("seat_type") @db.VarChar(20)
   wasAvailable Boolean  @default(false) @map("was_available")
   createdAt    DateTime @default(now()) @map("createdat") @db.Timestamptz
 
@@ -489,13 +304,13 @@ model Booking {
   pickupLat          Decimal?       @map("pickup_lat") @db.Decimal(10, 8)
   pickupLng          Decimal?       @map("pickup_lng") @db.Decimal(11, 8)
   pickupOrder        Int?           @map("pickup_order") @db.SmallInt
-  pickupType         PickupType?    @map("pickup_type")
+  pickupType         String?    @map("pickup_type") @db.VarChar(20)
   pickupStopId       String?        @map("pickup_stop_id") @db.Uuid
   pickupLabel        String?        @map("pickup_label") @db.Text
   pickupCity         String?        @map("pickup_city") @db.VarChar(100)
   pickupArea         String?        @map("pickup_area") @db.VarChar(120)
   detourSeconds      Int?           @map("detour_seconds")
-  pickupStatus       PickupStatus   @default(pending) @map("pickup_status")
+  pickupStatus       String       @default("pending") @map("pickup_status") @db.VarChar(20)
   arrivedAt          DateTime?      @map("arrived_at") @db.Timestamptz
   pickedUpAt         DateTime?      @map("picked_up_at") @db.Timestamptz
   dropoffPlace       String?        @map("dropoff_place") @db.VarChar(120)
@@ -503,12 +318,12 @@ model Booking {
   dropoffLng         Decimal?       @map("dropoff_lng") @db.Decimal(11, 8)
   dropoffDeadline    DateTime?      @map("dropoff_deadline") @db.Timestamptz
   dropoffOrder       Int?           @map("dropoff_order") @db.SmallInt
-  status             BookingStatus  @default(confirmed)
+  status             String       @default("confirmed") @db.VarChar(20)
   referenceCode      String         @unique @map("reference_code") @db.VarChar(12)
   cancellationReason String?        @map("cancellation_reason") @db.Text
   cancelledBy        String?        @map("cancelled_by") @db.Uuid
   cancelledAt        DateTime?      @map("cancelled_at") @db.Timestamptz
-  paymentStatus      PaymentStatus? @default(pending) @map("payment_status")
+  paymentStatus      String? @default("pending") @map("payment_status") @db.VarChar(20)
   completedAt        DateTime?      @map("completed_at") @db.Timestamptz
   createdAt          DateTime       @default(now()) @map("createdat") @db.Timestamptz
   updatedAt          DateTime       @default(now()) @updatedAt @map("updatedat") @db.Timestamptz
@@ -541,7 +356,7 @@ model RideRequest {
   currency            String?           @default("JOD") @db.VarChar(3)
   attributesPreferred Json?             @default("{}") @map("attributes_preferred") @db.JsonB
   note                String?           @db.Text
-  status              RideRequestStatus @default(open)
+  status              String            @default("open") @db.VarChar(20)
   expiresAt           DateTime          @map("expires_at") @db.Timestamptz
   createdAt           DateTime          @default(now()) @map("createdat") @db.Timestamptz
   updatedAt           DateTime          @default(now()) @updatedAt @map("updatedat") @db.Timestamptz
@@ -559,7 +374,7 @@ model RequestOffer {
   tripId      String?            @map("trip_id") @db.Uuid
   offeredFare Decimal?           @map("offered_fare") @db.Decimal(10, 2)
   message     String?            @db.Text
-  status      RequestOfferStatus @default(sent)
+  status      String       @default("sent") @db.VarChar(20)
   agreedFare  Decimal?           @map("agreed_fare") @db.Decimal(10, 2)
   bookingId   String?            @map("booking_id") @db.Uuid
   createdAt   DateTime           @default(now()) @map("createdat") @db.Timestamptz
@@ -595,7 +410,7 @@ model Rating {
 model DelayEvent {
   id           String     @id @default(uuid()) @db.Uuid
   bookingId    String     @map("booking_id") @db.Uuid
-  party        DelayParty
+  party        String   @db.VarChar(20)
   delayMinutes Int        @map("delay_minutes") @db.SmallInt
   reason       String?    @db.Text
   reportedBy   String     @map("reported_by") @db.Uuid
@@ -614,7 +429,7 @@ model Complaint {
   category     String          @db.VarChar(30)
   description  String          @db.Text
   evidenceUrls String[]        @default([]) @map("evidence_urls")
-  status       ComplaintStatus @default(open)
+  status       String          @default("open") @db.VarChar(20)
   resolution   String?         @db.Text
   resolvedBy   String?         @map("resolved_by") @db.Uuid
   resolvedAt   DateTime?       @map("resolved_at") @db.Timestamptz
@@ -633,7 +448,7 @@ model Penalty {
   userId           String      @map("user_id") @db.Uuid
   complaintId      String?     @map("complaint_id") @db.Uuid
   tripId           String?     @map("trip_id") @db.Uuid
-  type             PenaltyType
+  type             String      @db.VarChar(20)
   penaltyType      String      @default("general") @map("penalty_type") @db.VarChar(30)
   severity         String      @default("minor") @db.VarChar(15)
   reason           String      @db.Text
@@ -658,8 +473,8 @@ model SupportTicket {
   category        String          @db.VarChar(30)
   subject         String          @db.VarChar(255)
   description     String          @db.Text
-  priority        TicketPriority? @default(medium)
-  status          TicketStatus?   @default(open)
+  priority        String? @default("medium") @db.VarChar(10)
+  status          String?   @default("open") @db.VarChar(20)
   assignedTo      String?         @map("assigned_to") @db.Uuid
   referenceCode   String?         @unique @map("reference_code") @db.VarChar(12)
   bookingId       String?         @map("booking_id") @db.Uuid
@@ -719,7 +534,7 @@ model SosEvent {
   lat             Decimal   @db.Decimal(10, 8)
   lng             Decimal   @db.Decimal(11, 8)
   urgency         String    @default("high") @db.VarChar(20)
-  status          SosStatus @default(pending)
+  status          String @default("pending") @db.VarChar(20)
   escalationLevel Int       @default(0) @map("escalation_level") @db.SmallInt
   lastAlertAt     DateTime? @map("last_alert_at") @db.Timestamptz
   acknowledgedBy  String?   @map("acknowledged_by") @db.Uuid
@@ -817,7 +632,7 @@ model AuditLog {
   id          String      @id @default(uuid()) @db.Uuid
   tableName   String      @map("table_name") @db.VarChar(50)
   recordId    String      @map("record_id") @db.Uuid
-  action      AuditAction
+  action      String      @db.VarChar(10)
   oldData     Json?       @map("old_data") @db.JsonB
   newData     Json?       @map("new_data") @db.JsonB
   performedBy String?     @map("performed_by") @db.Uuid
@@ -860,7 +675,7 @@ model DriverSubscription {
   screenshotId      Int?               @map("screenshot_id")
   paymentMethod     Json               @map("payment_method") @db.JsonB
   adminNotes        String?            @map("admin_notes") @db.Text
-  status            SubscriptionStatus @default(pending_approval)
+  status            String       @default("pending_approval") @db.VarChar(30)
   approvedAt        DateTime?          @map("approved_at") @db.Timestamptz
   activatedAt       DateTime?          @map("activated_at") @db.Timestamptz
   expiresAt         DateTime?          @map("expires_at") @db.Timestamptz
@@ -898,7 +713,7 @@ model PaymentMethod {
   id            String            @id @default(uuid()) @db.Uuid
   name          String            @db.VarChar(100)
   accountNumber String            @map("account_number") @db.VarChar(50)
-  type          PaymentMethodType
+  type          String      @db.VarChar(20)
   email         String?           @db.VarChar(100)
   isActive      Boolean           @default(true) @map("is_active")
   createdAt     DateTime          @default(now()) @map("createdat") @db.Timestamptz
@@ -928,7 +743,7 @@ model DeletionRequest {
   id                  String         @id @default(uuid()) @db.Uuid
   userId              String         @map("user_id") @db.Uuid
   reason              String?        @db.Text
-  status              DeletionStatus @default(pending)
+  status              String         @default("pending") @db.VarChar(20)
   estimatedCompletion DateTime?      @map("estimated_completion") @db.Timestamptz
   reviewNotes         String?        @map("review_notes") @db.Text
   reviewedBy          String?        @map("reviewed_by") @db.Uuid
@@ -946,7 +761,7 @@ model DocumentReview {
   id          String           @id @default(uuid()) @db.Uuid
   driverId    String           @map("driver_id") @db.Uuid
   documentKey String           @map("document_key") @db.VarChar(40)
-  decision    DocumentDecision
+  decision    String      @db.VarChar(20)
   reason      String?          @db.Text
   decidedBy   String?          @map("decided_by") @db.Uuid
   decidedAt   DateTime         @default(now()) @map("decided_at") @db.Timestamptz
@@ -961,8 +776,8 @@ model DocumentReview {
 model VerificationStatusChange {
   id           String              @id @default(uuid()) @db.Uuid
   driverId     String              @map("driver_id") @db.Uuid
-  fromStatus   VerificationStatus? @map("from_status")
-  toStatus     VerificationStatus  @map("to_status")
+  fromStatus   String? @map("from_status") @db.VarChar(20)
+  toStatus     String  @map("to_status") @db.VarChar(20)
   reason       String?             @db.Text
   markedFields Json?               @map("marked_fields") @db.JsonB
   changedBy    String?             @map("changed_by") @db.Uuid

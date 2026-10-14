@@ -49,7 +49,16 @@ export class JobsService {
     }
     this.running.add(name);
     try {
-      const result = await fn();
+      let result: T;
+      try {
+        result = await fn();
+      } catch (err) {
+        // A failing job must never crash the process (cron handlers are
+        // fire-and-forget `void` calls — an unhandled rejection kills Node).
+        // Log and skip; the next tick retries.
+        this.logger.error(`[jobs] ${name} failed: ${(err as Error).message}`);
+        return undefined;
+      }
       try {
         await this.redis.setKey(lastRunKey(name), new Date().toISOString(), LAST_RUN_TTL_SECONDS);
       } catch (err) {

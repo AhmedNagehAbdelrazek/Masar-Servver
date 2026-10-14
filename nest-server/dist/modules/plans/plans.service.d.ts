@@ -15,6 +15,8 @@ export declare class PlansService {
     private invalidatePlansCache;
     createPlan(data: CreatePlanDto, _actorId: string): Promise<Record<string, unknown>>;
     updatePlan(planId: string, data: UpdatePlanDto, _actorId: string): Promise<Record<string, unknown>>;
+    getFreePlan(): Promise<Record<string, unknown>>;
+    updateFreePlan(data: UpdatePlanDto, actorId: string): Promise<Record<string, unknown>>;
     deactivatePlan(planId: string, _actorId: string): Promise<{
         message: string;
     }>;

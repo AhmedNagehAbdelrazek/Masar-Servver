@@ -1,5 +1,4 @@
 import type * as runtime from "@prisma/client/runtime/client";
-import type * as $Enums from "../enums.js";
 import type * as Prisma from "../internal/prismaNamespace.js";
 export type VehicleModel = runtime.Types.Result.DefaultSelection<Prisma.$VehiclePayload>;
 export type AggregateVehicle = {
@@ -30,7 +29,7 @@ export type VehicleMinAggregateOutputType = {
     driverId: string | null;
     manufacturer: string | null;
     model: string | null;
-    vehicleType: $Enums.VehicleType | null;
+    vehicleType: string | null;
     modelYear: number | null;
     plateNumber: string | null;
     codeNumber: string | null;
@@ -54,7 +53,7 @@ export type VehicleMaxAggregateOutputType = {
     driverId: string | null;
     manufacturer: string | null;
     model: string | null;
-    vehicleType: $Enums.VehicleType | null;
+    vehicleType: string | null;
     modelYear: number | null;
     plateNumber: string | null;
     codeNumber: string | null;
@@ -220,7 +219,7 @@ export type VehicleGroupByOutputType = {
     driverId: string;
     manufacturer: string;
     model: string;
-    vehicleType: $Enums.VehicleType;
+    vehicleType: string;
     modelYear: number | null;
     plateNumber: string;
     codeNumber: string | null;
@@ -255,7 +254,7 @@ export type VehicleWhereInput = {
     driverId?: Prisma.UuidFilter<"Vehicle"> | string;
     manufacturer?: Prisma.StringFilter<"Vehicle"> | string;
     model?: Prisma.StringFilter<"Vehicle"> | string;
-    vehicleType?: Prisma.EnumVehicleTypeFilter<"Vehicle"> | $Enums.VehicleType;
+    vehicleType?: Prisma.StringFilter<"Vehicle"> | string;
     modelYear?: Prisma.IntNullableFilter<"Vehicle"> | number | null;
     plateNumber?: Prisma.StringFilter<"Vehicle"> | string;
     codeNumber?: Prisma.StringNullableFilter<"Vehicle"> | string | null;
@@ -311,7 +310,7 @@ export type VehicleWhereUniqueInput = Prisma.AtLeast<{
     NOT?: Prisma.VehicleWhereInput | Prisma.VehicleWhereInput[];
     manufacturer?: Prisma.StringFilter<"Vehicle"> | string;
     model?: Prisma.StringFilter<"Vehicle"> | string;
-    vehicleType?: Prisma.EnumVehicleTypeFilter<"Vehicle"> | $Enums.VehicleType;
+    vehicleType?: Prisma.StringFilter<"Vehicle"> | string;
     modelYear?: Prisma.IntNullableFilter<"Vehicle"> | number | null;
     codeNumber?: Prisma.StringNullableFilter<"Vehicle"> | string | null;
     color?: Prisma.StringNullableFilter<"Vehicle"> | string | null;
@@ -368,7 +367,7 @@ export type VehicleScalarWhereWithAggregatesInput = {
     driverId?: Prisma.UuidWithAggregatesFilter<"Vehicle"> | string;
     manufacturer?: Prisma.StringWithAggregatesFilter<"Vehicle"> | string;
     model?: Prisma.StringWithAggregatesFilter<"Vehicle"> | string;
-    vehicleType?: Prisma.EnumVehicleTypeWithAggregatesFilter<"Vehicle"> | $Enums.VehicleType;
+    vehicleType?: Prisma.StringWithAggregatesFilter<"Vehicle"> | string;
     modelYear?: Prisma.IntNullableWithAggregatesFilter<"Vehicle"> | number | null;
     plateNumber?: Prisma.StringWithAggregatesFilter<"Vehicle"> | string;
     codeNumber?: Prisma.StringNullableWithAggregatesFilter<"Vehicle"> | string | null;
@@ -391,7 +390,7 @@ export type VehicleCreateInput = {
     id?: string;
     manufacturer: string;
     model: string;
-    vehicleType: $Enums.VehicleType;
+    vehicleType: string;
     modelYear?: number | null;
     plateNumber: string;
     codeNumber?: string | null;
@@ -417,7 +416,7 @@ export type VehicleUncheckedCreateInput = {
     driverId: string;
     manufacturer: string;
     model: string;
-    vehicleType: $Enums.VehicleType;
+    vehicleType: string;
     modelYear?: number | null;
     plateNumber: string;
     codeNumber?: string | null;
@@ -441,7 +440,7 @@ export type VehicleUpdateInput = {
     id?: Prisma.StringFieldUpdateOperationsInput | string;
     manufacturer?: Prisma.StringFieldUpdateOperationsInput | string;
     model?: Prisma.StringFieldUpdateOperationsInput | string;
-    vehicleType?: Prisma.EnumVehicleTypeFieldUpdateOperationsInput | $Enums.VehicleType;
+    vehicleType?: Prisma.StringFieldUpdateOperationsInput | string;
     modelYear?: Prisma.NullableIntFieldUpdateOperationsInput | number | null;
     plateNumber?: Prisma.StringFieldUpdateOperationsInput | string;
     codeNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
@@ -467,7 +466,7 @@ export type VehicleUncheckedUpdateInput = {
     driverId?: Prisma.StringFieldUpdateOperationsInput | string;
     manufacturer?: Prisma.StringFieldUpdateOperationsInput | string;
     model?: Prisma.StringFieldUpdateOperationsInput | string;
-    vehicleType?: Prisma.EnumVehicleTypeFieldUpdateOperationsInput | $Enums.VehicleType;
+    vehicleType?: Prisma.StringFieldUpdateOperationsInput | string;
     modelYear?: Prisma.NullableIntFieldUpdateOperationsInput | number | null;
     plateNumber?: Prisma.StringFieldUpdateOperationsInput | string;
     codeNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
@@ -492,7 +491,7 @@ export type VehicleCreateManyInput = {
     driverId: string;
     manufacturer: string;
     model: string;
-    vehicleType: $Enums.VehicleType;
+    vehicleType: string;
     modelYear?: number | null;
     plateNumber: string;
     codeNumber?: string | null;
@@ -515,7 +514,7 @@ export type VehicleUpdateManyMutationInput = {
     id?: Prisma.StringFieldUpdateOperationsInput | string;
     manufacturer?: Prisma.StringFieldUpdateOperationsInput | string;
     model?: Prisma.StringFieldUpdateOperationsInput | string;
-    vehicleType?: Prisma.EnumVehicleTypeFieldUpdateOperationsInput | $Enums.VehicleType;
+    vehicleType?: Prisma.StringFieldUpdateOperationsInput | string;
     modelYear?: Prisma.NullableIntFieldUpdateOperationsInput | number | null;
     plateNumber?: Prisma.StringFieldUpdateOperationsInput | string;
     codeNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
@@ -539,7 +538,7 @@ export type VehicleUncheckedUpdateManyInput = {
     driverId?: Prisma.StringFieldUpdateOperationsInput | string;
     manufacturer?: Prisma.StringFieldUpdateOperationsInput | string;
     model?: Prisma.StringFieldUpdateOperationsInput | string;
-    vehicleType?: Prisma.EnumVehicleTypeFieldUpdateOperationsInput | $Enums.VehicleType;
+    vehicleType?: Prisma.StringFieldUpdateOperationsInput | string;
     modelYear?: Prisma.NullableIntFieldUpdateOperationsInput | number | null;
     plateNumber?: Prisma.StringFieldUpdateOperationsInput | string;
     codeNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
@@ -682,9 +681,6 @@ export type VehicleUncheckedUpdateOneWithoutDriverNestedInput = {
     connect?: Prisma.VehicleWhereUniqueInput;
     update?: Prisma.XOR<Prisma.XOR<Prisma.VehicleUpdateToOneWithWhereWithoutDriverInput, Prisma.VehicleUpdateWithoutDriverInput>, Prisma.VehicleUncheckedUpdateWithoutDriverInput>;
 };
-export type EnumVehicleTypeFieldUpdateOperationsInput = {
-    set?: $Enums.VehicleType;
-};
 export type VehicleCreateNestedOneWithoutTripsInput = {
     create?: Prisma.XOR<Prisma.VehicleCreateWithoutTripsInput, Prisma.VehicleUncheckedCreateWithoutTripsInput>;
     connectOrCreate?: Prisma.VehicleCreateOrConnectWithoutTripsInput;
@@ -701,7 +697,7 @@ export type VehicleCreateWithoutDriverInput = {
     id?: string;
     manufacturer: string;
     model: string;
-    vehicleType: $Enums.VehicleType;
+    vehicleType: string;
     modelYear?: number | null;
     plateNumber: string;
     codeNumber?: string | null;
@@ -725,7 +721,7 @@ export type VehicleUncheckedCreateWithoutDriverInput = {
     id?: string;
     manufacturer: string;
     model: string;
-    vehicleType: $Enums.VehicleType;
+    vehicleType: string;
     modelYear?: number | null;
     plateNumber: string;
     codeNumber?: string | null;
@@ -762,7 +758,7 @@ export type VehicleUpdateWithoutDriverInput = {
     id?: Prisma.StringFieldUpdateOperationsInput | string;
     manufacturer?: Prisma.StringFieldUpdateOperationsInput | string;
     model?: Prisma.StringFieldUpdateOperationsInput | string;
-    vehicleType?: Prisma.EnumVehicleTypeFieldUpdateOperationsInput | $Enums.VehicleType;
+    vehicleType?: Prisma.StringFieldUpdateOperationsInput | string;
     modelYear?: Prisma.NullableIntFieldUpdateOperationsInput | number | null;
     plateNumber?: Prisma.StringFieldUpdateOperationsInput | string;
     codeNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
@@ -786,7 +782,7 @@ export type VehicleUncheckedUpdateWithoutDriverInput = {
     id?: Prisma.StringFieldUpdateOperationsInput | string;
     manufacturer?: Prisma.StringFieldUpdateOperationsInput | string;
     model?: Prisma.StringFieldUpdateOperationsInput | string;
-    vehicleType?: Prisma.EnumVehicleTypeFieldUpdateOperationsInput | $Enums.VehicleType;
+    vehicleType?: Prisma.StringFieldUpdateOperationsInput | string;
     modelYear?: Prisma.NullableIntFieldUpdateOperationsInput | number | null;
     plateNumber?: Prisma.StringFieldUpdateOperationsInput | string;
     codeNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
@@ -810,7 +806,7 @@ export type VehicleCreateWithoutTripsInput = {
     id?: string;
     manufacturer: string;
     model: string;
-    vehicleType: $Enums.VehicleType;
+    vehicleType: string;
     modelYear?: number | null;
     plateNumber: string;
     codeNumber?: string | null;
@@ -835,7 +831,7 @@ export type VehicleUncheckedCreateWithoutTripsInput = {
     driverId: string;
     manufacturer: string;
     model: string;
-    vehicleType: $Enums.VehicleType;
+    vehicleType: string;
     modelYear?: number | null;
     plateNumber: string;
     codeNumber?: string | null;
@@ -871,7 +867,7 @@ export type VehicleUpdateWithoutTripsInput = {
     id?: Prisma.StringFieldUpdateOperationsInput | string;
     manufacturer?: Prisma.StringFieldUpdateOperationsInput | string;
     model?: Prisma.StringFieldUpdateOperationsInput | string;
-    vehicleType?: Prisma.EnumVehicleTypeFieldUpdateOperationsInput | $Enums.VehicleType;
+    vehicleType?: Prisma.StringFieldUpdateOperationsInput | string;
     modelYear?: Prisma.NullableIntFieldUpdateOperationsInput | number | null;
     plateNumber?: Prisma.StringFieldUpdateOperationsInput | string;
     codeNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
@@ -896,7 +892,7 @@ export type VehicleUncheckedUpdateWithoutTripsInput = {
     driverId?: Prisma.StringFieldUpdateOperationsInput | string;
     manufacturer?: Prisma.StringFieldUpdateOperationsInput | string;
     model?: Prisma.StringFieldUpdateOperationsInput | string;
-    vehicleType?: Prisma.EnumVehicleTypeFieldUpdateOperationsInput | $Enums.VehicleType;
+    vehicleType?: Prisma.StringFieldUpdateOperationsInput | string;
     modelYear?: Prisma.NullableIntFieldUpdateOperationsInput | number | null;
     plateNumber?: Prisma.StringFieldUpdateOperationsInput | string;
     codeNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
@@ -1051,7 +1047,7 @@ export type $VehiclePayload<ExtArgs extends runtime.Types.Extensions.InternalArg
         driverId: string;
         manufacturer: string;
         model: string;
-        vehicleType: $Enums.VehicleType;
+        vehicleType: string;
         modelYear: number | null;
         plateNumber: string;
         codeNumber: string | null;
@@ -1132,7 +1128,7 @@ export interface VehicleFieldRefs {
     readonly driverId: Prisma.FieldRef<"Vehicle", 'String'>;
     readonly manufacturer: Prisma.FieldRef<"Vehicle", 'String'>;
     readonly model: Prisma.FieldRef<"Vehicle", 'String'>;
-    readonly vehicleType: Prisma.FieldRef<"Vehicle", 'VehicleType'>;
+    readonly vehicleType: Prisma.FieldRef<"Vehicle", 'String'>;
     readonly modelYear: Prisma.FieldRef<"Vehicle", 'Int'>;
     readonly plateNumber: Prisma.FieldRef<"Vehicle", 'String'>;
     readonly codeNumber: Prisma.FieldRef<"Vehicle", 'String'>;

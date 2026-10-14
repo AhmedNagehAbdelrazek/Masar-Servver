@@ -9,6 +9,7 @@ export declare class DriverComplaintListQuery {
 export declare class AdminComplaintListQuery {
     status?: (typeof COMPLAINT_STATUSES)[number];
     category?: (typeof COMPLAINT_CATEGORIES)[number];
+    search?: string;
     page?: number;
     limit?: number;
 }

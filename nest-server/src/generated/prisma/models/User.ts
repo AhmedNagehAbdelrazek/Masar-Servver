@@ -47,20 +47,20 @@ export type UserMinAggregateOutputType = {
   countryCode: string | null
   phone: string | null
   email: string | null
-  role: $Enums.Role | null
-  gender: $Enums.Gender | null
+  role: string | null
+  gender: string | null
   passwordHash: string | null
   age: runtime.Decimal | null
   avatarUrl: string | null
   isVerified: boolean | null
-  verificationStatus: $Enums.VerificationStatus | null
+  verificationStatus: string | null
   verificationSubmittedAt: Date | null
   verificationRejectedAt: Date | null
   verificationRejectionReason: string | null
   avgRating: runtime.Decimal | null
   strikes: number | null
   locale: string | null
-  status: $Enums.UserStatus | null
+  status: string | null
   fcmToken: string | null
   lastLoginAt: Date | null
   totalBalance: runtime.Decimal | null
@@ -76,20 +76,20 @@ export type UserMaxAggregateOutputType = {
   countryCode: string | null
   phone: string | null
   email: string | null
-  role: $Enums.Role | null
-  gender: $Enums.Gender | null
+  role: string | null
+  gender: string | null
   passwordHash: string | null
   age: runtime.Decimal | null
   avatarUrl: string | null
   isVerified: boolean | null
-  verificationStatus: $Enums.VerificationStatus | null
+  verificationStatus: string | null
   verificationSubmittedAt: Date | null
   verificationRejectedAt: Date | null
   verificationRejectionReason: string | null
   avgRating: runtime.Decimal | null
   strikes: number | null
   locale: string | null
-  status: $Enums.UserStatus | null
+  status: string | null
   fcmToken: string | null
   lastLoginAt: Date | null
   totalBalance: runtime.Decimal | null
@@ -326,13 +326,13 @@ export type UserGroupByOutputType = {
   countryCode: string | null
   phone: string
   email: string | null
-  role: $Enums.Role
-  gender: $Enums.Gender | null
+  role: string
+  gender: string | null
   passwordHash: string
   age: runtime.Decimal | null
   avatarUrl: string | null
   isVerified: boolean
-  verificationStatus: $Enums.VerificationStatus
+  verificationStatus: string
   verificationSubmittedAt: Date | null
   verificationRejectedAt: Date | null
   verificationRejectionReason: string | null
@@ -340,7 +340,7 @@ export type UserGroupByOutputType = {
   avgRating: runtime.Decimal
   strikes: number
   locale: string
-  status: $Enums.UserStatus
+  status: string
   fcmToken: string | null
   lastLoginAt: Date | null
   totalBalance: runtime.Decimal
@@ -379,13 +379,13 @@ export type UserWhereInput = {
   countryCode?: Prisma.StringNullableFilter<"User"> | string | null
   phone?: Prisma.StringFilter<"User"> | string
   email?: Prisma.StringNullableFilter<"User"> | string | null
-  role?: Prisma.EnumRoleFilter<"User"> | $Enums.Role
-  gender?: Prisma.EnumGenderNullableFilter<"User"> | $Enums.Gender | null
+  role?: Prisma.StringFilter<"User"> | string
+  gender?: Prisma.StringNullableFilter<"User"> | string | null
   passwordHash?: Prisma.StringFilter<"User"> | string
   age?: Prisma.DecimalNullableFilter<"User"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: Prisma.StringNullableFilter<"User"> | string | null
   isVerified?: Prisma.BoolFilter<"User"> | boolean
-  verificationStatus?: Prisma.EnumVerificationStatusFilter<"User"> | $Enums.VerificationStatus
+  verificationStatus?: Prisma.StringFilter<"User"> | string
   verificationSubmittedAt?: Prisma.DateTimeNullableFilter<"User"> | Date | string | null
   verificationRejectedAt?: Prisma.DateTimeNullableFilter<"User"> | Date | string | null
   verificationRejectionReason?: Prisma.StringNullableFilter<"User"> | string | null
@@ -393,7 +393,7 @@ export type UserWhereInput = {
   avgRating?: Prisma.DecimalFilter<"User"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: Prisma.IntFilter<"User"> | number
   locale?: Prisma.StringFilter<"User"> | string
-  status?: Prisma.EnumUserStatusFilter<"User"> | $Enums.UserStatus
+  status?: Prisma.StringFilter<"User"> | string
   fcmToken?: Prisma.StringNullableFilter<"User"> | string | null
   lastLoginAt?: Prisma.DateTimeNullableFilter<"User"> | Date | string | null
   totalBalance?: Prisma.DecimalFilter<"User"> | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -494,13 +494,13 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
   fullName?: Prisma.StringNullableFilter<"User"> | string | null
   displayName?: Prisma.StringNullableFilter<"User"> | string | null
   countryCode?: Prisma.StringNullableFilter<"User"> | string | null
-  role?: Prisma.EnumRoleFilter<"User"> | $Enums.Role
-  gender?: Prisma.EnumGenderNullableFilter<"User"> | $Enums.Gender | null
+  role?: Prisma.StringFilter<"User"> | string
+  gender?: Prisma.StringNullableFilter<"User"> | string | null
   passwordHash?: Prisma.StringFilter<"User"> | string
   age?: Prisma.DecimalNullableFilter<"User"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: Prisma.StringNullableFilter<"User"> | string | null
   isVerified?: Prisma.BoolFilter<"User"> | boolean
-  verificationStatus?: Prisma.EnumVerificationStatusFilter<"User"> | $Enums.VerificationStatus
+  verificationStatus?: Prisma.StringFilter<"User"> | string
   verificationSubmittedAt?: Prisma.DateTimeNullableFilter<"User"> | Date | string | null
   verificationRejectedAt?: Prisma.DateTimeNullableFilter<"User"> | Date | string | null
   verificationRejectionReason?: Prisma.StringNullableFilter<"User"> | string | null
@@ -508,7 +508,7 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
   avgRating?: Prisma.DecimalFilter<"User"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: Prisma.IntFilter<"User"> | number
   locale?: Prisma.StringFilter<"User"> | string
-  status?: Prisma.EnumUserStatusFilter<"User"> | $Enums.UserStatus
+  status?: Prisma.StringFilter<"User"> | string
   fcmToken?: Prisma.StringNullableFilter<"User"> | string | null
   lastLoginAt?: Prisma.DateTimeNullableFilter<"User"> | Date | string | null
   totalBalance?: Prisma.DecimalFilter<"User"> | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -588,13 +588,13 @@ export type UserScalarWhereWithAggregatesInput = {
   countryCode?: Prisma.StringNullableWithAggregatesFilter<"User"> | string | null
   phone?: Prisma.StringWithAggregatesFilter<"User"> | string
   email?: Prisma.StringNullableWithAggregatesFilter<"User"> | string | null
-  role?: Prisma.EnumRoleWithAggregatesFilter<"User"> | $Enums.Role
-  gender?: Prisma.EnumGenderNullableWithAggregatesFilter<"User"> | $Enums.Gender | null
+  role?: Prisma.StringWithAggregatesFilter<"User"> | string
+  gender?: Prisma.StringNullableWithAggregatesFilter<"User"> | string | null
   passwordHash?: Prisma.StringWithAggregatesFilter<"User"> | string
   age?: Prisma.DecimalNullableWithAggregatesFilter<"User"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: Prisma.StringNullableWithAggregatesFilter<"User"> | string | null
   isVerified?: Prisma.BoolWithAggregatesFilter<"User"> | boolean
-  verificationStatus?: Prisma.EnumVerificationStatusWithAggregatesFilter<"User"> | $Enums.VerificationStatus
+  verificationStatus?: Prisma.StringWithAggregatesFilter<"User"> | string
   verificationSubmittedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"User"> | Date | string | null
   verificationRejectedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"User"> | Date | string | null
   verificationRejectionReason?: Prisma.StringNullableWithAggregatesFilter<"User"> | string | null
@@ -602,7 +602,7 @@ export type UserScalarWhereWithAggregatesInput = {
   avgRating?: Prisma.DecimalWithAggregatesFilter<"User"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: Prisma.IntWithAggregatesFilter<"User"> | number
   locale?: Prisma.StringWithAggregatesFilter<"User"> | string
-  status?: Prisma.EnumUserStatusWithAggregatesFilter<"User"> | $Enums.UserStatus
+  status?: Prisma.StringWithAggregatesFilter<"User"> | string
   fcmToken?: Prisma.StringNullableWithAggregatesFilter<"User"> | string | null
   lastLoginAt?: Prisma.DateTimeNullableWithAggregatesFilter<"User"> | Date | string | null
   totalBalance?: Prisma.DecimalWithAggregatesFilter<"User"> | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -618,13 +618,13 @@ export type UserCreateInput = {
   countryCode?: string | null
   phone: string
   email?: string | null
-  role: $Enums.Role
-  gender?: $Enums.Gender | null
+  role: string
+  gender?: string | null
   passwordHash: string
   age?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: string | null
   isVerified?: boolean
-  verificationStatus?: $Enums.VerificationStatus
+  verificationStatus?: string
   verificationSubmittedAt?: Date | string | null
   verificationRejectedAt?: Date | string | null
   verificationRejectionReason?: string | null
@@ -632,7 +632,7 @@ export type UserCreateInput = {
   avgRating?: runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: number
   locale?: string
-  status?: $Enums.UserStatus
+  status?: string
   fcmToken?: string | null
   lastLoginAt?: Date | string | null
   totalBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -674,13 +674,13 @@ export type UserUncheckedCreateInput = {
   countryCode?: string | null
   phone: string
   email?: string | null
-  role: $Enums.Role
-  gender?: $Enums.Gender | null
+  role: string
+  gender?: string | null
   passwordHash: string
   age?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: string | null
   isVerified?: boolean
-  verificationStatus?: $Enums.VerificationStatus
+  verificationStatus?: string
   verificationSubmittedAt?: Date | string | null
   verificationRejectedAt?: Date | string | null
   verificationRejectionReason?: string | null
@@ -688,7 +688,7 @@ export type UserUncheckedCreateInput = {
   avgRating?: runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: number
   locale?: string
-  status?: $Enums.UserStatus
+  status?: string
   fcmToken?: string | null
   lastLoginAt?: Date | string | null
   totalBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -730,13 +730,13 @@ export type UserUpdateInput = {
   countryCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
-  gender?: Prisma.NullableEnumGenderFieldUpdateOperationsInput | $Enums.Gender | null
+  role?: Prisma.StringFieldUpdateOperationsInput | string
+  gender?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   age?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  verificationStatus?: Prisma.EnumVerificationStatusFieldUpdateOperationsInput | $Enums.VerificationStatus
+  verificationStatus?: Prisma.StringFieldUpdateOperationsInput | string
   verificationSubmittedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -744,7 +744,7 @@ export type UserUpdateInput = {
   avgRating?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: Prisma.IntFieldUpdateOperationsInput | number
   locale?: Prisma.StringFieldUpdateOperationsInput | string
-  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   fcmToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   totalBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -786,13 +786,13 @@ export type UserUncheckedUpdateInput = {
   countryCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
-  gender?: Prisma.NullableEnumGenderFieldUpdateOperationsInput | $Enums.Gender | null
+  role?: Prisma.StringFieldUpdateOperationsInput | string
+  gender?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   age?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  verificationStatus?: Prisma.EnumVerificationStatusFieldUpdateOperationsInput | $Enums.VerificationStatus
+  verificationStatus?: Prisma.StringFieldUpdateOperationsInput | string
   verificationSubmittedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -800,7 +800,7 @@ export type UserUncheckedUpdateInput = {
   avgRating?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: Prisma.IntFieldUpdateOperationsInput | number
   locale?: Prisma.StringFieldUpdateOperationsInput | string
-  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   fcmToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   totalBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -842,13 +842,13 @@ export type UserCreateManyInput = {
   countryCode?: string | null
   phone: string
   email?: string | null
-  role: $Enums.Role
-  gender?: $Enums.Gender | null
+  role: string
+  gender?: string | null
   passwordHash: string
   age?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: string | null
   isVerified?: boolean
-  verificationStatus?: $Enums.VerificationStatus
+  verificationStatus?: string
   verificationSubmittedAt?: Date | string | null
   verificationRejectedAt?: Date | string | null
   verificationRejectionReason?: string | null
@@ -856,7 +856,7 @@ export type UserCreateManyInput = {
   avgRating?: runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: number
   locale?: string
-  status?: $Enums.UserStatus
+  status?: string
   fcmToken?: string | null
   lastLoginAt?: Date | string | null
   totalBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -872,13 +872,13 @@ export type UserUpdateManyMutationInput = {
   countryCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
-  gender?: Prisma.NullableEnumGenderFieldUpdateOperationsInput | $Enums.Gender | null
+  role?: Prisma.StringFieldUpdateOperationsInput | string
+  gender?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   age?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  verificationStatus?: Prisma.EnumVerificationStatusFieldUpdateOperationsInput | $Enums.VerificationStatus
+  verificationStatus?: Prisma.StringFieldUpdateOperationsInput | string
   verificationSubmittedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -886,7 +886,7 @@ export type UserUpdateManyMutationInput = {
   avgRating?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: Prisma.IntFieldUpdateOperationsInput | number
   locale?: Prisma.StringFieldUpdateOperationsInput | string
-  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   fcmToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   totalBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -902,13 +902,13 @@ export type UserUncheckedUpdateManyInput = {
   countryCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
-  gender?: Prisma.NullableEnumGenderFieldUpdateOperationsInput | $Enums.Gender | null
+  role?: Prisma.StringFieldUpdateOperationsInput | string
+  gender?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   age?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  verificationStatus?: Prisma.EnumVerificationStatusFieldUpdateOperationsInput | $Enums.VerificationStatus
+  verificationStatus?: Prisma.StringFieldUpdateOperationsInput | string
   verificationSubmittedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -916,7 +916,7 @@ export type UserUncheckedUpdateManyInput = {
   avgRating?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: Prisma.IntFieldUpdateOperationsInput | number
   locale?: Prisma.StringFieldUpdateOperationsInput | string
-  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   fcmToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   totalBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -1045,14 +1045,6 @@ export type NullableStringFieldUpdateOperationsInput = {
   set?: string | null
 }
 
-export type EnumRoleFieldUpdateOperationsInput = {
-  set?: $Enums.Role
-}
-
-export type NullableEnumGenderFieldUpdateOperationsInput = {
-  set?: $Enums.Gender | null
-}
-
 export type NullableDecimalFieldUpdateOperationsInput = {
   set?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   increment?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -1063,10 +1055,6 @@ export type NullableDecimalFieldUpdateOperationsInput = {
 
 export type BoolFieldUpdateOperationsInput = {
   set?: boolean
-}
-
-export type EnumVerificationStatusFieldUpdateOperationsInput = {
-  set?: $Enums.VerificationStatus
 }
 
 export type NullableDateTimeFieldUpdateOperationsInput = {
@@ -1087,10 +1075,6 @@ export type IntFieldUpdateOperationsInput = {
   decrement?: number
   multiply?: number
   divide?: number
-}
-
-export type EnumUserStatusFieldUpdateOperationsInput = {
-  set?: $Enums.UserStatus
 }
 
 export type DateTimeFieldUpdateOperationsInput = {
@@ -1470,13 +1454,13 @@ export type UserCreateWithoutDriverProfileInput = {
   countryCode?: string | null
   phone: string
   email?: string | null
-  role: $Enums.Role
-  gender?: $Enums.Gender | null
+  role: string
+  gender?: string | null
   passwordHash: string
   age?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: string | null
   isVerified?: boolean
-  verificationStatus?: $Enums.VerificationStatus
+  verificationStatus?: string
   verificationSubmittedAt?: Date | string | null
   verificationRejectedAt?: Date | string | null
   verificationRejectionReason?: string | null
@@ -1484,7 +1468,7 @@ export type UserCreateWithoutDriverProfileInput = {
   avgRating?: runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: number
   locale?: string
-  status?: $Enums.UserStatus
+  status?: string
   fcmToken?: string | null
   lastLoginAt?: Date | string | null
   totalBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -1525,13 +1509,13 @@ export type UserUncheckedCreateWithoutDriverProfileInput = {
   countryCode?: string | null
   phone: string
   email?: string | null
-  role: $Enums.Role
-  gender?: $Enums.Gender | null
+  role: string
+  gender?: string | null
   passwordHash: string
   age?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: string | null
   isVerified?: boolean
-  verificationStatus?: $Enums.VerificationStatus
+  verificationStatus?: string
   verificationSubmittedAt?: Date | string | null
   verificationRejectedAt?: Date | string | null
   verificationRejectionReason?: string | null
@@ -1539,7 +1523,7 @@ export type UserUncheckedCreateWithoutDriverProfileInput = {
   avgRating?: runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: number
   locale?: string
-  status?: $Enums.UserStatus
+  status?: string
   fcmToken?: string | null
   lastLoginAt?: Date | string | null
   totalBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -1596,13 +1580,13 @@ export type UserUpdateWithoutDriverProfileInput = {
   countryCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
-  gender?: Prisma.NullableEnumGenderFieldUpdateOperationsInput | $Enums.Gender | null
+  role?: Prisma.StringFieldUpdateOperationsInput | string
+  gender?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   age?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  verificationStatus?: Prisma.EnumVerificationStatusFieldUpdateOperationsInput | $Enums.VerificationStatus
+  verificationStatus?: Prisma.StringFieldUpdateOperationsInput | string
   verificationSubmittedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1610,7 +1594,7 @@ export type UserUpdateWithoutDriverProfileInput = {
   avgRating?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: Prisma.IntFieldUpdateOperationsInput | number
   locale?: Prisma.StringFieldUpdateOperationsInput | string
-  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   fcmToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   totalBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -1651,13 +1635,13 @@ export type UserUncheckedUpdateWithoutDriverProfileInput = {
   countryCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
-  gender?: Prisma.NullableEnumGenderFieldUpdateOperationsInput | $Enums.Gender | null
+  role?: Prisma.StringFieldUpdateOperationsInput | string
+  gender?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   age?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  verificationStatus?: Prisma.EnumVerificationStatusFieldUpdateOperationsInput | $Enums.VerificationStatus
+  verificationStatus?: Prisma.StringFieldUpdateOperationsInput | string
   verificationSubmittedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1665,7 +1649,7 @@ export type UserUncheckedUpdateWithoutDriverProfileInput = {
   avgRating?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: Prisma.IntFieldUpdateOperationsInput | number
   locale?: Prisma.StringFieldUpdateOperationsInput | string
-  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   fcmToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   totalBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -1706,13 +1690,13 @@ export type UserCreateWithoutVehicleInput = {
   countryCode?: string | null
   phone: string
   email?: string | null
-  role: $Enums.Role
-  gender?: $Enums.Gender | null
+  role: string
+  gender?: string | null
   passwordHash: string
   age?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: string | null
   isVerified?: boolean
-  verificationStatus?: $Enums.VerificationStatus
+  verificationStatus?: string
   verificationSubmittedAt?: Date | string | null
   verificationRejectedAt?: Date | string | null
   verificationRejectionReason?: string | null
@@ -1720,7 +1704,7 @@ export type UserCreateWithoutVehicleInput = {
   avgRating?: runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: number
   locale?: string
-  status?: $Enums.UserStatus
+  status?: string
   fcmToken?: string | null
   lastLoginAt?: Date | string | null
   totalBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -1761,13 +1745,13 @@ export type UserUncheckedCreateWithoutVehicleInput = {
   countryCode?: string | null
   phone: string
   email?: string | null
-  role: $Enums.Role
-  gender?: $Enums.Gender | null
+  role: string
+  gender?: string | null
   passwordHash: string
   age?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: string | null
   isVerified?: boolean
-  verificationStatus?: $Enums.VerificationStatus
+  verificationStatus?: string
   verificationSubmittedAt?: Date | string | null
   verificationRejectedAt?: Date | string | null
   verificationRejectionReason?: string | null
@@ -1775,7 +1759,7 @@ export type UserUncheckedCreateWithoutVehicleInput = {
   avgRating?: runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: number
   locale?: string
-  status?: $Enums.UserStatus
+  status?: string
   fcmToken?: string | null
   lastLoginAt?: Date | string | null
   totalBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -1832,13 +1816,13 @@ export type UserUpdateWithoutVehicleInput = {
   countryCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
-  gender?: Prisma.NullableEnumGenderFieldUpdateOperationsInput | $Enums.Gender | null
+  role?: Prisma.StringFieldUpdateOperationsInput | string
+  gender?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   age?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  verificationStatus?: Prisma.EnumVerificationStatusFieldUpdateOperationsInput | $Enums.VerificationStatus
+  verificationStatus?: Prisma.StringFieldUpdateOperationsInput | string
   verificationSubmittedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1846,7 +1830,7 @@ export type UserUpdateWithoutVehicleInput = {
   avgRating?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: Prisma.IntFieldUpdateOperationsInput | number
   locale?: Prisma.StringFieldUpdateOperationsInput | string
-  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   fcmToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   totalBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -1887,13 +1871,13 @@ export type UserUncheckedUpdateWithoutVehicleInput = {
   countryCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
-  gender?: Prisma.NullableEnumGenderFieldUpdateOperationsInput | $Enums.Gender | null
+  role?: Prisma.StringFieldUpdateOperationsInput | string
+  gender?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   age?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  verificationStatus?: Prisma.EnumVerificationStatusFieldUpdateOperationsInput | $Enums.VerificationStatus
+  verificationStatus?: Prisma.StringFieldUpdateOperationsInput | string
   verificationSubmittedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1901,7 +1885,7 @@ export type UserUncheckedUpdateWithoutVehicleInput = {
   avgRating?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: Prisma.IntFieldUpdateOperationsInput | number
   locale?: Prisma.StringFieldUpdateOperationsInput | string
-  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   fcmToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   totalBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -1942,13 +1926,13 @@ export type UserCreateWithoutPassengerProfileInput = {
   countryCode?: string | null
   phone: string
   email?: string | null
-  role: $Enums.Role
-  gender?: $Enums.Gender | null
+  role: string
+  gender?: string | null
   passwordHash: string
   age?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: string | null
   isVerified?: boolean
-  verificationStatus?: $Enums.VerificationStatus
+  verificationStatus?: string
   verificationSubmittedAt?: Date | string | null
   verificationRejectedAt?: Date | string | null
   verificationRejectionReason?: string | null
@@ -1956,7 +1940,7 @@ export type UserCreateWithoutPassengerProfileInput = {
   avgRating?: runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: number
   locale?: string
-  status?: $Enums.UserStatus
+  status?: string
   fcmToken?: string | null
   lastLoginAt?: Date | string | null
   totalBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -1997,13 +1981,13 @@ export type UserUncheckedCreateWithoutPassengerProfileInput = {
   countryCode?: string | null
   phone: string
   email?: string | null
-  role: $Enums.Role
-  gender?: $Enums.Gender | null
+  role: string
+  gender?: string | null
   passwordHash: string
   age?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: string | null
   isVerified?: boolean
-  verificationStatus?: $Enums.VerificationStatus
+  verificationStatus?: string
   verificationSubmittedAt?: Date | string | null
   verificationRejectedAt?: Date | string | null
   verificationRejectionReason?: string | null
@@ -2011,7 +1995,7 @@ export type UserUncheckedCreateWithoutPassengerProfileInput = {
   avgRating?: runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: number
   locale?: string
-  status?: $Enums.UserStatus
+  status?: string
   fcmToken?: string | null
   lastLoginAt?: Date | string | null
   totalBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -2068,13 +2052,13 @@ export type UserUpdateWithoutPassengerProfileInput = {
   countryCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
-  gender?: Prisma.NullableEnumGenderFieldUpdateOperationsInput | $Enums.Gender | null
+  role?: Prisma.StringFieldUpdateOperationsInput | string
+  gender?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   age?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  verificationStatus?: Prisma.EnumVerificationStatusFieldUpdateOperationsInput | $Enums.VerificationStatus
+  verificationStatus?: Prisma.StringFieldUpdateOperationsInput | string
   verificationSubmittedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2082,7 +2066,7 @@ export type UserUpdateWithoutPassengerProfileInput = {
   avgRating?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: Prisma.IntFieldUpdateOperationsInput | number
   locale?: Prisma.StringFieldUpdateOperationsInput | string
-  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   fcmToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   totalBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -2123,13 +2107,13 @@ export type UserUncheckedUpdateWithoutPassengerProfileInput = {
   countryCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
-  gender?: Prisma.NullableEnumGenderFieldUpdateOperationsInput | $Enums.Gender | null
+  role?: Prisma.StringFieldUpdateOperationsInput | string
+  gender?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   age?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  verificationStatus?: Prisma.EnumVerificationStatusFieldUpdateOperationsInput | $Enums.VerificationStatus
+  verificationStatus?: Prisma.StringFieldUpdateOperationsInput | string
   verificationSubmittedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2137,7 +2121,7 @@ export type UserUncheckedUpdateWithoutPassengerProfileInput = {
   avgRating?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: Prisma.IntFieldUpdateOperationsInput | number
   locale?: Prisma.StringFieldUpdateOperationsInput | string
-  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   fcmToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   totalBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -2178,13 +2162,13 @@ export type UserCreateWithoutTripsInput = {
   countryCode?: string | null
   phone: string
   email?: string | null
-  role: $Enums.Role
-  gender?: $Enums.Gender | null
+  role: string
+  gender?: string | null
   passwordHash: string
   age?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: string | null
   isVerified?: boolean
-  verificationStatus?: $Enums.VerificationStatus
+  verificationStatus?: string
   verificationSubmittedAt?: Date | string | null
   verificationRejectedAt?: Date | string | null
   verificationRejectionReason?: string | null
@@ -2192,7 +2176,7 @@ export type UserCreateWithoutTripsInput = {
   avgRating?: runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: number
   locale?: string
-  status?: $Enums.UserStatus
+  status?: string
   fcmToken?: string | null
   lastLoginAt?: Date | string | null
   totalBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -2233,13 +2217,13 @@ export type UserUncheckedCreateWithoutTripsInput = {
   countryCode?: string | null
   phone: string
   email?: string | null
-  role: $Enums.Role
-  gender?: $Enums.Gender | null
+  role: string
+  gender?: string | null
   passwordHash: string
   age?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: string | null
   isVerified?: boolean
-  verificationStatus?: $Enums.VerificationStatus
+  verificationStatus?: string
   verificationSubmittedAt?: Date | string | null
   verificationRejectedAt?: Date | string | null
   verificationRejectionReason?: string | null
@@ -2247,7 +2231,7 @@ export type UserUncheckedCreateWithoutTripsInput = {
   avgRating?: runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: number
   locale?: string
-  status?: $Enums.UserStatus
+  status?: string
   fcmToken?: string | null
   lastLoginAt?: Date | string | null
   totalBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -2304,13 +2288,13 @@ export type UserUpdateWithoutTripsInput = {
   countryCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
-  gender?: Prisma.NullableEnumGenderFieldUpdateOperationsInput | $Enums.Gender | null
+  role?: Prisma.StringFieldUpdateOperationsInput | string
+  gender?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   age?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  verificationStatus?: Prisma.EnumVerificationStatusFieldUpdateOperationsInput | $Enums.VerificationStatus
+  verificationStatus?: Prisma.StringFieldUpdateOperationsInput | string
   verificationSubmittedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2318,7 +2302,7 @@ export type UserUpdateWithoutTripsInput = {
   avgRating?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: Prisma.IntFieldUpdateOperationsInput | number
   locale?: Prisma.StringFieldUpdateOperationsInput | string
-  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   fcmToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   totalBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -2359,13 +2343,13 @@ export type UserUncheckedUpdateWithoutTripsInput = {
   countryCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
-  gender?: Prisma.NullableEnumGenderFieldUpdateOperationsInput | $Enums.Gender | null
+  role?: Prisma.StringFieldUpdateOperationsInput | string
+  gender?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   age?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  verificationStatus?: Prisma.EnumVerificationStatusFieldUpdateOperationsInput | $Enums.VerificationStatus
+  verificationStatus?: Prisma.StringFieldUpdateOperationsInput | string
   verificationSubmittedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2373,7 +2357,7 @@ export type UserUncheckedUpdateWithoutTripsInput = {
   avgRating?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: Prisma.IntFieldUpdateOperationsInput | number
   locale?: Prisma.StringFieldUpdateOperationsInput | string
-  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   fcmToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   totalBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -2414,13 +2398,13 @@ export type UserCreateWithoutTripLocationsInput = {
   countryCode?: string | null
   phone: string
   email?: string | null
-  role: $Enums.Role
-  gender?: $Enums.Gender | null
+  role: string
+  gender?: string | null
   passwordHash: string
   age?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: string | null
   isVerified?: boolean
-  verificationStatus?: $Enums.VerificationStatus
+  verificationStatus?: string
   verificationSubmittedAt?: Date | string | null
   verificationRejectedAt?: Date | string | null
   verificationRejectionReason?: string | null
@@ -2428,7 +2412,7 @@ export type UserCreateWithoutTripLocationsInput = {
   avgRating?: runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: number
   locale?: string
-  status?: $Enums.UserStatus
+  status?: string
   fcmToken?: string | null
   lastLoginAt?: Date | string | null
   totalBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -2469,13 +2453,13 @@ export type UserUncheckedCreateWithoutTripLocationsInput = {
   countryCode?: string | null
   phone: string
   email?: string | null
-  role: $Enums.Role
-  gender?: $Enums.Gender | null
+  role: string
+  gender?: string | null
   passwordHash: string
   age?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: string | null
   isVerified?: boolean
-  verificationStatus?: $Enums.VerificationStatus
+  verificationStatus?: string
   verificationSubmittedAt?: Date | string | null
   verificationRejectedAt?: Date | string | null
   verificationRejectionReason?: string | null
@@ -2483,7 +2467,7 @@ export type UserUncheckedCreateWithoutTripLocationsInput = {
   avgRating?: runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: number
   locale?: string
-  status?: $Enums.UserStatus
+  status?: string
   fcmToken?: string | null
   lastLoginAt?: Date | string | null
   totalBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -2540,13 +2524,13 @@ export type UserUpdateWithoutTripLocationsInput = {
   countryCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
-  gender?: Prisma.NullableEnumGenderFieldUpdateOperationsInput | $Enums.Gender | null
+  role?: Prisma.StringFieldUpdateOperationsInput | string
+  gender?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   age?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  verificationStatus?: Prisma.EnumVerificationStatusFieldUpdateOperationsInput | $Enums.VerificationStatus
+  verificationStatus?: Prisma.StringFieldUpdateOperationsInput | string
   verificationSubmittedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2554,7 +2538,7 @@ export type UserUpdateWithoutTripLocationsInput = {
   avgRating?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: Prisma.IntFieldUpdateOperationsInput | number
   locale?: Prisma.StringFieldUpdateOperationsInput | string
-  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   fcmToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   totalBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -2595,13 +2579,13 @@ export type UserUncheckedUpdateWithoutTripLocationsInput = {
   countryCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
-  gender?: Prisma.NullableEnumGenderFieldUpdateOperationsInput | $Enums.Gender | null
+  role?: Prisma.StringFieldUpdateOperationsInput | string
+  gender?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   age?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  verificationStatus?: Prisma.EnumVerificationStatusFieldUpdateOperationsInput | $Enums.VerificationStatus
+  verificationStatus?: Prisma.StringFieldUpdateOperationsInput | string
   verificationSubmittedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2609,7 +2593,7 @@ export type UserUncheckedUpdateWithoutTripLocationsInput = {
   avgRating?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: Prisma.IntFieldUpdateOperationsInput | number
   locale?: Prisma.StringFieldUpdateOperationsInput | string
-  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   fcmToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   totalBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -2650,13 +2634,13 @@ export type UserCreateWithoutBookingsInput = {
   countryCode?: string | null
   phone: string
   email?: string | null
-  role: $Enums.Role
-  gender?: $Enums.Gender | null
+  role: string
+  gender?: string | null
   passwordHash: string
   age?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: string | null
   isVerified?: boolean
-  verificationStatus?: $Enums.VerificationStatus
+  verificationStatus?: string
   verificationSubmittedAt?: Date | string | null
   verificationRejectedAt?: Date | string | null
   verificationRejectionReason?: string | null
@@ -2664,7 +2648,7 @@ export type UserCreateWithoutBookingsInput = {
   avgRating?: runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: number
   locale?: string
-  status?: $Enums.UserStatus
+  status?: string
   fcmToken?: string | null
   lastLoginAt?: Date | string | null
   totalBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -2705,13 +2689,13 @@ export type UserUncheckedCreateWithoutBookingsInput = {
   countryCode?: string | null
   phone: string
   email?: string | null
-  role: $Enums.Role
-  gender?: $Enums.Gender | null
+  role: string
+  gender?: string | null
   passwordHash: string
   age?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: string | null
   isVerified?: boolean
-  verificationStatus?: $Enums.VerificationStatus
+  verificationStatus?: string
   verificationSubmittedAt?: Date | string | null
   verificationRejectedAt?: Date | string | null
   verificationRejectionReason?: string | null
@@ -2719,7 +2703,7 @@ export type UserUncheckedCreateWithoutBookingsInput = {
   avgRating?: runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: number
   locale?: string
-  status?: $Enums.UserStatus
+  status?: string
   fcmToken?: string | null
   lastLoginAt?: Date | string | null
   totalBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -2776,13 +2760,13 @@ export type UserUpdateWithoutBookingsInput = {
   countryCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
-  gender?: Prisma.NullableEnumGenderFieldUpdateOperationsInput | $Enums.Gender | null
+  role?: Prisma.StringFieldUpdateOperationsInput | string
+  gender?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   age?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  verificationStatus?: Prisma.EnumVerificationStatusFieldUpdateOperationsInput | $Enums.VerificationStatus
+  verificationStatus?: Prisma.StringFieldUpdateOperationsInput | string
   verificationSubmittedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2790,7 +2774,7 @@ export type UserUpdateWithoutBookingsInput = {
   avgRating?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: Prisma.IntFieldUpdateOperationsInput | number
   locale?: Prisma.StringFieldUpdateOperationsInput | string
-  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   fcmToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   totalBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -2831,13 +2815,13 @@ export type UserUncheckedUpdateWithoutBookingsInput = {
   countryCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
-  gender?: Prisma.NullableEnumGenderFieldUpdateOperationsInput | $Enums.Gender | null
+  role?: Prisma.StringFieldUpdateOperationsInput | string
+  gender?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   age?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  verificationStatus?: Prisma.EnumVerificationStatusFieldUpdateOperationsInput | $Enums.VerificationStatus
+  verificationStatus?: Prisma.StringFieldUpdateOperationsInput | string
   verificationSubmittedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2845,7 +2829,7 @@ export type UserUncheckedUpdateWithoutBookingsInput = {
   avgRating?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: Prisma.IntFieldUpdateOperationsInput | number
   locale?: Prisma.StringFieldUpdateOperationsInput | string
-  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   fcmToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   totalBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -2886,13 +2870,13 @@ export type UserCreateWithoutRideRequestsInput = {
   countryCode?: string | null
   phone: string
   email?: string | null
-  role: $Enums.Role
-  gender?: $Enums.Gender | null
+  role: string
+  gender?: string | null
   passwordHash: string
   age?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: string | null
   isVerified?: boolean
-  verificationStatus?: $Enums.VerificationStatus
+  verificationStatus?: string
   verificationSubmittedAt?: Date | string | null
   verificationRejectedAt?: Date | string | null
   verificationRejectionReason?: string | null
@@ -2900,7 +2884,7 @@ export type UserCreateWithoutRideRequestsInput = {
   avgRating?: runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: number
   locale?: string
-  status?: $Enums.UserStatus
+  status?: string
   fcmToken?: string | null
   lastLoginAt?: Date | string | null
   totalBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -2941,13 +2925,13 @@ export type UserUncheckedCreateWithoutRideRequestsInput = {
   countryCode?: string | null
   phone: string
   email?: string | null
-  role: $Enums.Role
-  gender?: $Enums.Gender | null
+  role: string
+  gender?: string | null
   passwordHash: string
   age?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: string | null
   isVerified?: boolean
-  verificationStatus?: $Enums.VerificationStatus
+  verificationStatus?: string
   verificationSubmittedAt?: Date | string | null
   verificationRejectedAt?: Date | string | null
   verificationRejectionReason?: string | null
@@ -2955,7 +2939,7 @@ export type UserUncheckedCreateWithoutRideRequestsInput = {
   avgRating?: runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: number
   locale?: string
-  status?: $Enums.UserStatus
+  status?: string
   fcmToken?: string | null
   lastLoginAt?: Date | string | null
   totalBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -3012,13 +2996,13 @@ export type UserUpdateWithoutRideRequestsInput = {
   countryCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
-  gender?: Prisma.NullableEnumGenderFieldUpdateOperationsInput | $Enums.Gender | null
+  role?: Prisma.StringFieldUpdateOperationsInput | string
+  gender?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   age?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  verificationStatus?: Prisma.EnumVerificationStatusFieldUpdateOperationsInput | $Enums.VerificationStatus
+  verificationStatus?: Prisma.StringFieldUpdateOperationsInput | string
   verificationSubmittedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -3026,7 +3010,7 @@ export type UserUpdateWithoutRideRequestsInput = {
   avgRating?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: Prisma.IntFieldUpdateOperationsInput | number
   locale?: Prisma.StringFieldUpdateOperationsInput | string
-  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   fcmToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   totalBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -3067,13 +3051,13 @@ export type UserUncheckedUpdateWithoutRideRequestsInput = {
   countryCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
-  gender?: Prisma.NullableEnumGenderFieldUpdateOperationsInput | $Enums.Gender | null
+  role?: Prisma.StringFieldUpdateOperationsInput | string
+  gender?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   age?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  verificationStatus?: Prisma.EnumVerificationStatusFieldUpdateOperationsInput | $Enums.VerificationStatus
+  verificationStatus?: Prisma.StringFieldUpdateOperationsInput | string
   verificationSubmittedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -3081,7 +3065,7 @@ export type UserUncheckedUpdateWithoutRideRequestsInput = {
   avgRating?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: Prisma.IntFieldUpdateOperationsInput | number
   locale?: Prisma.StringFieldUpdateOperationsInput | string
-  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   fcmToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   totalBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -3122,13 +3106,13 @@ export type UserCreateWithoutRequestOffersInput = {
   countryCode?: string | null
   phone: string
   email?: string | null
-  role: $Enums.Role
-  gender?: $Enums.Gender | null
+  role: string
+  gender?: string | null
   passwordHash: string
   age?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: string | null
   isVerified?: boolean
-  verificationStatus?: $Enums.VerificationStatus
+  verificationStatus?: string
   verificationSubmittedAt?: Date | string | null
   verificationRejectedAt?: Date | string | null
   verificationRejectionReason?: string | null
@@ -3136,7 +3120,7 @@ export type UserCreateWithoutRequestOffersInput = {
   avgRating?: runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: number
   locale?: string
-  status?: $Enums.UserStatus
+  status?: string
   fcmToken?: string | null
   lastLoginAt?: Date | string | null
   totalBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -3177,13 +3161,13 @@ export type UserUncheckedCreateWithoutRequestOffersInput = {
   countryCode?: string | null
   phone: string
   email?: string | null
-  role: $Enums.Role
-  gender?: $Enums.Gender | null
+  role: string
+  gender?: string | null
   passwordHash: string
   age?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: string | null
   isVerified?: boolean
-  verificationStatus?: $Enums.VerificationStatus
+  verificationStatus?: string
   verificationSubmittedAt?: Date | string | null
   verificationRejectedAt?: Date | string | null
   verificationRejectionReason?: string | null
@@ -3191,7 +3175,7 @@ export type UserUncheckedCreateWithoutRequestOffersInput = {
   avgRating?: runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: number
   locale?: string
-  status?: $Enums.UserStatus
+  status?: string
   fcmToken?: string | null
   lastLoginAt?: Date | string | null
   totalBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -3248,13 +3232,13 @@ export type UserUpdateWithoutRequestOffersInput = {
   countryCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
-  gender?: Prisma.NullableEnumGenderFieldUpdateOperationsInput | $Enums.Gender | null
+  role?: Prisma.StringFieldUpdateOperationsInput | string
+  gender?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   age?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  verificationStatus?: Prisma.EnumVerificationStatusFieldUpdateOperationsInput | $Enums.VerificationStatus
+  verificationStatus?: Prisma.StringFieldUpdateOperationsInput | string
   verificationSubmittedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -3262,7 +3246,7 @@ export type UserUpdateWithoutRequestOffersInput = {
   avgRating?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: Prisma.IntFieldUpdateOperationsInput | number
   locale?: Prisma.StringFieldUpdateOperationsInput | string
-  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   fcmToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   totalBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -3303,13 +3287,13 @@ export type UserUncheckedUpdateWithoutRequestOffersInput = {
   countryCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
-  gender?: Prisma.NullableEnumGenderFieldUpdateOperationsInput | $Enums.Gender | null
+  role?: Prisma.StringFieldUpdateOperationsInput | string
+  gender?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   age?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  verificationStatus?: Prisma.EnumVerificationStatusFieldUpdateOperationsInput | $Enums.VerificationStatus
+  verificationStatus?: Prisma.StringFieldUpdateOperationsInput | string
   verificationSubmittedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -3317,7 +3301,7 @@ export type UserUncheckedUpdateWithoutRequestOffersInput = {
   avgRating?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: Prisma.IntFieldUpdateOperationsInput | number
   locale?: Prisma.StringFieldUpdateOperationsInput | string
-  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   fcmToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   totalBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -3358,13 +3342,13 @@ export type UserCreateWithoutRatingsGivenInput = {
   countryCode?: string | null
   phone: string
   email?: string | null
-  role: $Enums.Role
-  gender?: $Enums.Gender | null
+  role: string
+  gender?: string | null
   passwordHash: string
   age?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: string | null
   isVerified?: boolean
-  verificationStatus?: $Enums.VerificationStatus
+  verificationStatus?: string
   verificationSubmittedAt?: Date | string | null
   verificationRejectedAt?: Date | string | null
   verificationRejectionReason?: string | null
@@ -3372,7 +3356,7 @@ export type UserCreateWithoutRatingsGivenInput = {
   avgRating?: runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: number
   locale?: string
-  status?: $Enums.UserStatus
+  status?: string
   fcmToken?: string | null
   lastLoginAt?: Date | string | null
   totalBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -3413,13 +3397,13 @@ export type UserUncheckedCreateWithoutRatingsGivenInput = {
   countryCode?: string | null
   phone: string
   email?: string | null
-  role: $Enums.Role
-  gender?: $Enums.Gender | null
+  role: string
+  gender?: string | null
   passwordHash: string
   age?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: string | null
   isVerified?: boolean
-  verificationStatus?: $Enums.VerificationStatus
+  verificationStatus?: string
   verificationSubmittedAt?: Date | string | null
   verificationRejectedAt?: Date | string | null
   verificationRejectionReason?: string | null
@@ -3427,7 +3411,7 @@ export type UserUncheckedCreateWithoutRatingsGivenInput = {
   avgRating?: runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: number
   locale?: string
-  status?: $Enums.UserStatus
+  status?: string
   fcmToken?: string | null
   lastLoginAt?: Date | string | null
   totalBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -3473,13 +3457,13 @@ export type UserCreateWithoutRatingsReceivedInput = {
   countryCode?: string | null
   phone: string
   email?: string | null
-  role: $Enums.Role
-  gender?: $Enums.Gender | null
+  role: string
+  gender?: string | null
   passwordHash: string
   age?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: string | null
   isVerified?: boolean
-  verificationStatus?: $Enums.VerificationStatus
+  verificationStatus?: string
   verificationSubmittedAt?: Date | string | null
   verificationRejectedAt?: Date | string | null
   verificationRejectionReason?: string | null
@@ -3487,7 +3471,7 @@ export type UserCreateWithoutRatingsReceivedInput = {
   avgRating?: runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: number
   locale?: string
-  status?: $Enums.UserStatus
+  status?: string
   fcmToken?: string | null
   lastLoginAt?: Date | string | null
   totalBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -3528,13 +3512,13 @@ export type UserUncheckedCreateWithoutRatingsReceivedInput = {
   countryCode?: string | null
   phone: string
   email?: string | null
-  role: $Enums.Role
-  gender?: $Enums.Gender | null
+  role: string
+  gender?: string | null
   passwordHash: string
   age?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: string | null
   isVerified?: boolean
-  verificationStatus?: $Enums.VerificationStatus
+  verificationStatus?: string
   verificationSubmittedAt?: Date | string | null
   verificationRejectedAt?: Date | string | null
   verificationRejectionReason?: string | null
@@ -3542,7 +3526,7 @@ export type UserUncheckedCreateWithoutRatingsReceivedInput = {
   avgRating?: runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: number
   locale?: string
-  status?: $Enums.UserStatus
+  status?: string
   fcmToken?: string | null
   lastLoginAt?: Date | string | null
   totalBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -3599,13 +3583,13 @@ export type UserUpdateWithoutRatingsGivenInput = {
   countryCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
-  gender?: Prisma.NullableEnumGenderFieldUpdateOperationsInput | $Enums.Gender | null
+  role?: Prisma.StringFieldUpdateOperationsInput | string
+  gender?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   age?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  verificationStatus?: Prisma.EnumVerificationStatusFieldUpdateOperationsInput | $Enums.VerificationStatus
+  verificationStatus?: Prisma.StringFieldUpdateOperationsInput | string
   verificationSubmittedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -3613,7 +3597,7 @@ export type UserUpdateWithoutRatingsGivenInput = {
   avgRating?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: Prisma.IntFieldUpdateOperationsInput | number
   locale?: Prisma.StringFieldUpdateOperationsInput | string
-  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   fcmToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   totalBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -3654,13 +3638,13 @@ export type UserUncheckedUpdateWithoutRatingsGivenInput = {
   countryCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
-  gender?: Prisma.NullableEnumGenderFieldUpdateOperationsInput | $Enums.Gender | null
+  role?: Prisma.StringFieldUpdateOperationsInput | string
+  gender?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   age?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  verificationStatus?: Prisma.EnumVerificationStatusFieldUpdateOperationsInput | $Enums.VerificationStatus
+  verificationStatus?: Prisma.StringFieldUpdateOperationsInput | string
   verificationSubmittedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -3668,7 +3652,7 @@ export type UserUncheckedUpdateWithoutRatingsGivenInput = {
   avgRating?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: Prisma.IntFieldUpdateOperationsInput | number
   locale?: Prisma.StringFieldUpdateOperationsInput | string
-  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   fcmToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   totalBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -3720,13 +3704,13 @@ export type UserUpdateWithoutRatingsReceivedInput = {
   countryCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
-  gender?: Prisma.NullableEnumGenderFieldUpdateOperationsInput | $Enums.Gender | null
+  role?: Prisma.StringFieldUpdateOperationsInput | string
+  gender?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   age?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  verificationStatus?: Prisma.EnumVerificationStatusFieldUpdateOperationsInput | $Enums.VerificationStatus
+  verificationStatus?: Prisma.StringFieldUpdateOperationsInput | string
   verificationSubmittedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -3734,7 +3718,7 @@ export type UserUpdateWithoutRatingsReceivedInput = {
   avgRating?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: Prisma.IntFieldUpdateOperationsInput | number
   locale?: Prisma.StringFieldUpdateOperationsInput | string
-  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   fcmToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   totalBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -3775,13 +3759,13 @@ export type UserUncheckedUpdateWithoutRatingsReceivedInput = {
   countryCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
-  gender?: Prisma.NullableEnumGenderFieldUpdateOperationsInput | $Enums.Gender | null
+  role?: Prisma.StringFieldUpdateOperationsInput | string
+  gender?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   age?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  verificationStatus?: Prisma.EnumVerificationStatusFieldUpdateOperationsInput | $Enums.VerificationStatus
+  verificationStatus?: Prisma.StringFieldUpdateOperationsInput | string
   verificationSubmittedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -3789,7 +3773,7 @@ export type UserUncheckedUpdateWithoutRatingsReceivedInput = {
   avgRating?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: Prisma.IntFieldUpdateOperationsInput | number
   locale?: Prisma.StringFieldUpdateOperationsInput | string
-  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   fcmToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   totalBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -3830,13 +3814,13 @@ export type UserCreateWithoutComplaintsReportedInput = {
   countryCode?: string | null
   phone: string
   email?: string | null
-  role: $Enums.Role
-  gender?: $Enums.Gender | null
+  role: string
+  gender?: string | null
   passwordHash: string
   age?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: string | null
   isVerified?: boolean
-  verificationStatus?: $Enums.VerificationStatus
+  verificationStatus?: string
   verificationSubmittedAt?: Date | string | null
   verificationRejectedAt?: Date | string | null
   verificationRejectionReason?: string | null
@@ -3844,7 +3828,7 @@ export type UserCreateWithoutComplaintsReportedInput = {
   avgRating?: runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: number
   locale?: string
-  status?: $Enums.UserStatus
+  status?: string
   fcmToken?: string | null
   lastLoginAt?: Date | string | null
   totalBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -3885,13 +3869,13 @@ export type UserUncheckedCreateWithoutComplaintsReportedInput = {
   countryCode?: string | null
   phone: string
   email?: string | null
-  role: $Enums.Role
-  gender?: $Enums.Gender | null
+  role: string
+  gender?: string | null
   passwordHash: string
   age?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: string | null
   isVerified?: boolean
-  verificationStatus?: $Enums.VerificationStatus
+  verificationStatus?: string
   verificationSubmittedAt?: Date | string | null
   verificationRejectedAt?: Date | string | null
   verificationRejectionReason?: string | null
@@ -3899,7 +3883,7 @@ export type UserUncheckedCreateWithoutComplaintsReportedInput = {
   avgRating?: runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: number
   locale?: string
-  status?: $Enums.UserStatus
+  status?: string
   fcmToken?: string | null
   lastLoginAt?: Date | string | null
   totalBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -3945,13 +3929,13 @@ export type UserCreateWithoutComplaintsAccusedInput = {
   countryCode?: string | null
   phone: string
   email?: string | null
-  role: $Enums.Role
-  gender?: $Enums.Gender | null
+  role: string
+  gender?: string | null
   passwordHash: string
   age?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: string | null
   isVerified?: boolean
-  verificationStatus?: $Enums.VerificationStatus
+  verificationStatus?: string
   verificationSubmittedAt?: Date | string | null
   verificationRejectedAt?: Date | string | null
   verificationRejectionReason?: string | null
@@ -3959,7 +3943,7 @@ export type UserCreateWithoutComplaintsAccusedInput = {
   avgRating?: runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: number
   locale?: string
-  status?: $Enums.UserStatus
+  status?: string
   fcmToken?: string | null
   lastLoginAt?: Date | string | null
   totalBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -4000,13 +3984,13 @@ export type UserUncheckedCreateWithoutComplaintsAccusedInput = {
   countryCode?: string | null
   phone: string
   email?: string | null
-  role: $Enums.Role
-  gender?: $Enums.Gender | null
+  role: string
+  gender?: string | null
   passwordHash: string
   age?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: string | null
   isVerified?: boolean
-  verificationStatus?: $Enums.VerificationStatus
+  verificationStatus?: string
   verificationSubmittedAt?: Date | string | null
   verificationRejectedAt?: Date | string | null
   verificationRejectionReason?: string | null
@@ -4014,7 +3998,7 @@ export type UserUncheckedCreateWithoutComplaintsAccusedInput = {
   avgRating?: runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: number
   locale?: string
-  status?: $Enums.UserStatus
+  status?: string
   fcmToken?: string | null
   lastLoginAt?: Date | string | null
   totalBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -4071,13 +4055,13 @@ export type UserUpdateWithoutComplaintsReportedInput = {
   countryCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
-  gender?: Prisma.NullableEnumGenderFieldUpdateOperationsInput | $Enums.Gender | null
+  role?: Prisma.StringFieldUpdateOperationsInput | string
+  gender?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   age?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  verificationStatus?: Prisma.EnumVerificationStatusFieldUpdateOperationsInput | $Enums.VerificationStatus
+  verificationStatus?: Prisma.StringFieldUpdateOperationsInput | string
   verificationSubmittedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -4085,7 +4069,7 @@ export type UserUpdateWithoutComplaintsReportedInput = {
   avgRating?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: Prisma.IntFieldUpdateOperationsInput | number
   locale?: Prisma.StringFieldUpdateOperationsInput | string
-  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   fcmToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   totalBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -4126,13 +4110,13 @@ export type UserUncheckedUpdateWithoutComplaintsReportedInput = {
   countryCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
-  gender?: Prisma.NullableEnumGenderFieldUpdateOperationsInput | $Enums.Gender | null
+  role?: Prisma.StringFieldUpdateOperationsInput | string
+  gender?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   age?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  verificationStatus?: Prisma.EnumVerificationStatusFieldUpdateOperationsInput | $Enums.VerificationStatus
+  verificationStatus?: Prisma.StringFieldUpdateOperationsInput | string
   verificationSubmittedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -4140,7 +4124,7 @@ export type UserUncheckedUpdateWithoutComplaintsReportedInput = {
   avgRating?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: Prisma.IntFieldUpdateOperationsInput | number
   locale?: Prisma.StringFieldUpdateOperationsInput | string
-  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   fcmToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   totalBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -4192,13 +4176,13 @@ export type UserUpdateWithoutComplaintsAccusedInput = {
   countryCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
-  gender?: Prisma.NullableEnumGenderFieldUpdateOperationsInput | $Enums.Gender | null
+  role?: Prisma.StringFieldUpdateOperationsInput | string
+  gender?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   age?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  verificationStatus?: Prisma.EnumVerificationStatusFieldUpdateOperationsInput | $Enums.VerificationStatus
+  verificationStatus?: Prisma.StringFieldUpdateOperationsInput | string
   verificationSubmittedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -4206,7 +4190,7 @@ export type UserUpdateWithoutComplaintsAccusedInput = {
   avgRating?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: Prisma.IntFieldUpdateOperationsInput | number
   locale?: Prisma.StringFieldUpdateOperationsInput | string
-  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   fcmToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   totalBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -4247,13 +4231,13 @@ export type UserUncheckedUpdateWithoutComplaintsAccusedInput = {
   countryCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
-  gender?: Prisma.NullableEnumGenderFieldUpdateOperationsInput | $Enums.Gender | null
+  role?: Prisma.StringFieldUpdateOperationsInput | string
+  gender?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   age?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  verificationStatus?: Prisma.EnumVerificationStatusFieldUpdateOperationsInput | $Enums.VerificationStatus
+  verificationStatus?: Prisma.StringFieldUpdateOperationsInput | string
   verificationSubmittedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -4261,7 +4245,7 @@ export type UserUncheckedUpdateWithoutComplaintsAccusedInput = {
   avgRating?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: Prisma.IntFieldUpdateOperationsInput | number
   locale?: Prisma.StringFieldUpdateOperationsInput | string
-  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   fcmToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   totalBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -4302,13 +4286,13 @@ export type UserCreateWithoutPenaltiesInput = {
   countryCode?: string | null
   phone: string
   email?: string | null
-  role: $Enums.Role
-  gender?: $Enums.Gender | null
+  role: string
+  gender?: string | null
   passwordHash: string
   age?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: string | null
   isVerified?: boolean
-  verificationStatus?: $Enums.VerificationStatus
+  verificationStatus?: string
   verificationSubmittedAt?: Date | string | null
   verificationRejectedAt?: Date | string | null
   verificationRejectionReason?: string | null
@@ -4316,7 +4300,7 @@ export type UserCreateWithoutPenaltiesInput = {
   avgRating?: runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: number
   locale?: string
-  status?: $Enums.UserStatus
+  status?: string
   fcmToken?: string | null
   lastLoginAt?: Date | string | null
   totalBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -4357,13 +4341,13 @@ export type UserUncheckedCreateWithoutPenaltiesInput = {
   countryCode?: string | null
   phone: string
   email?: string | null
-  role: $Enums.Role
-  gender?: $Enums.Gender | null
+  role: string
+  gender?: string | null
   passwordHash: string
   age?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: string | null
   isVerified?: boolean
-  verificationStatus?: $Enums.VerificationStatus
+  verificationStatus?: string
   verificationSubmittedAt?: Date | string | null
   verificationRejectedAt?: Date | string | null
   verificationRejectionReason?: string | null
@@ -4371,7 +4355,7 @@ export type UserUncheckedCreateWithoutPenaltiesInput = {
   avgRating?: runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: number
   locale?: string
-  status?: $Enums.UserStatus
+  status?: string
   fcmToken?: string | null
   lastLoginAt?: Date | string | null
   totalBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -4428,13 +4412,13 @@ export type UserUpdateWithoutPenaltiesInput = {
   countryCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
-  gender?: Prisma.NullableEnumGenderFieldUpdateOperationsInput | $Enums.Gender | null
+  role?: Prisma.StringFieldUpdateOperationsInput | string
+  gender?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   age?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  verificationStatus?: Prisma.EnumVerificationStatusFieldUpdateOperationsInput | $Enums.VerificationStatus
+  verificationStatus?: Prisma.StringFieldUpdateOperationsInput | string
   verificationSubmittedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -4442,7 +4426,7 @@ export type UserUpdateWithoutPenaltiesInput = {
   avgRating?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: Prisma.IntFieldUpdateOperationsInput | number
   locale?: Prisma.StringFieldUpdateOperationsInput | string
-  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   fcmToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   totalBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -4483,13 +4467,13 @@ export type UserUncheckedUpdateWithoutPenaltiesInput = {
   countryCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
-  gender?: Prisma.NullableEnumGenderFieldUpdateOperationsInput | $Enums.Gender | null
+  role?: Prisma.StringFieldUpdateOperationsInput | string
+  gender?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   age?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  verificationStatus?: Prisma.EnumVerificationStatusFieldUpdateOperationsInput | $Enums.VerificationStatus
+  verificationStatus?: Prisma.StringFieldUpdateOperationsInput | string
   verificationSubmittedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -4497,7 +4481,7 @@ export type UserUncheckedUpdateWithoutPenaltiesInput = {
   avgRating?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: Prisma.IntFieldUpdateOperationsInput | number
   locale?: Prisma.StringFieldUpdateOperationsInput | string
-  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   fcmToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   totalBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -4538,13 +4522,13 @@ export type UserCreateWithoutSupportTicketsInput = {
   countryCode?: string | null
   phone: string
   email?: string | null
-  role: $Enums.Role
-  gender?: $Enums.Gender | null
+  role: string
+  gender?: string | null
   passwordHash: string
   age?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: string | null
   isVerified?: boolean
-  verificationStatus?: $Enums.VerificationStatus
+  verificationStatus?: string
   verificationSubmittedAt?: Date | string | null
   verificationRejectedAt?: Date | string | null
   verificationRejectionReason?: string | null
@@ -4552,7 +4536,7 @@ export type UserCreateWithoutSupportTicketsInput = {
   avgRating?: runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: number
   locale?: string
-  status?: $Enums.UserStatus
+  status?: string
   fcmToken?: string | null
   lastLoginAt?: Date | string | null
   totalBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -4593,13 +4577,13 @@ export type UserUncheckedCreateWithoutSupportTicketsInput = {
   countryCode?: string | null
   phone: string
   email?: string | null
-  role: $Enums.Role
-  gender?: $Enums.Gender | null
+  role: string
+  gender?: string | null
   passwordHash: string
   age?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: string | null
   isVerified?: boolean
-  verificationStatus?: $Enums.VerificationStatus
+  verificationStatus?: string
   verificationSubmittedAt?: Date | string | null
   verificationRejectedAt?: Date | string | null
   verificationRejectionReason?: string | null
@@ -4607,7 +4591,7 @@ export type UserUncheckedCreateWithoutSupportTicketsInput = {
   avgRating?: runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: number
   locale?: string
-  status?: $Enums.UserStatus
+  status?: string
   fcmToken?: string | null
   lastLoginAt?: Date | string | null
   totalBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -4664,13 +4648,13 @@ export type UserUpdateWithoutSupportTicketsInput = {
   countryCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
-  gender?: Prisma.NullableEnumGenderFieldUpdateOperationsInput | $Enums.Gender | null
+  role?: Prisma.StringFieldUpdateOperationsInput | string
+  gender?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   age?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  verificationStatus?: Prisma.EnumVerificationStatusFieldUpdateOperationsInput | $Enums.VerificationStatus
+  verificationStatus?: Prisma.StringFieldUpdateOperationsInput | string
   verificationSubmittedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -4678,7 +4662,7 @@ export type UserUpdateWithoutSupportTicketsInput = {
   avgRating?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: Prisma.IntFieldUpdateOperationsInput | number
   locale?: Prisma.StringFieldUpdateOperationsInput | string
-  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   fcmToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   totalBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -4719,13 +4703,13 @@ export type UserUncheckedUpdateWithoutSupportTicketsInput = {
   countryCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
-  gender?: Prisma.NullableEnumGenderFieldUpdateOperationsInput | $Enums.Gender | null
+  role?: Prisma.StringFieldUpdateOperationsInput | string
+  gender?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   age?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  verificationStatus?: Prisma.EnumVerificationStatusFieldUpdateOperationsInput | $Enums.VerificationStatus
+  verificationStatus?: Prisma.StringFieldUpdateOperationsInput | string
   verificationSubmittedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -4733,7 +4717,7 @@ export type UserUncheckedUpdateWithoutSupportTicketsInput = {
   avgRating?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: Prisma.IntFieldUpdateOperationsInput | number
   locale?: Prisma.StringFieldUpdateOperationsInput | string
-  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   fcmToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   totalBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -4774,13 +4758,13 @@ export type UserCreateWithoutSentMessagesInput = {
   countryCode?: string | null
   phone: string
   email?: string | null
-  role: $Enums.Role
-  gender?: $Enums.Gender | null
+  role: string
+  gender?: string | null
   passwordHash: string
   age?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: string | null
   isVerified?: boolean
-  verificationStatus?: $Enums.VerificationStatus
+  verificationStatus?: string
   verificationSubmittedAt?: Date | string | null
   verificationRejectedAt?: Date | string | null
   verificationRejectionReason?: string | null
@@ -4788,7 +4772,7 @@ export type UserCreateWithoutSentMessagesInput = {
   avgRating?: runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: number
   locale?: string
-  status?: $Enums.UserStatus
+  status?: string
   fcmToken?: string | null
   lastLoginAt?: Date | string | null
   totalBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -4829,13 +4813,13 @@ export type UserUncheckedCreateWithoutSentMessagesInput = {
   countryCode?: string | null
   phone: string
   email?: string | null
-  role: $Enums.Role
-  gender?: $Enums.Gender | null
+  role: string
+  gender?: string | null
   passwordHash: string
   age?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: string | null
   isVerified?: boolean
-  verificationStatus?: $Enums.VerificationStatus
+  verificationStatus?: string
   verificationSubmittedAt?: Date | string | null
   verificationRejectedAt?: Date | string | null
   verificationRejectionReason?: string | null
@@ -4843,7 +4827,7 @@ export type UserUncheckedCreateWithoutSentMessagesInput = {
   avgRating?: runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: number
   locale?: string
-  status?: $Enums.UserStatus
+  status?: string
   fcmToken?: string | null
   lastLoginAt?: Date | string | null
   totalBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -4889,13 +4873,13 @@ export type UserCreateWithoutReceivedMessagesInput = {
   countryCode?: string | null
   phone: string
   email?: string | null
-  role: $Enums.Role
-  gender?: $Enums.Gender | null
+  role: string
+  gender?: string | null
   passwordHash: string
   age?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: string | null
   isVerified?: boolean
-  verificationStatus?: $Enums.VerificationStatus
+  verificationStatus?: string
   verificationSubmittedAt?: Date | string | null
   verificationRejectedAt?: Date | string | null
   verificationRejectionReason?: string | null
@@ -4903,7 +4887,7 @@ export type UserCreateWithoutReceivedMessagesInput = {
   avgRating?: runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: number
   locale?: string
-  status?: $Enums.UserStatus
+  status?: string
   fcmToken?: string | null
   lastLoginAt?: Date | string | null
   totalBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -4944,13 +4928,13 @@ export type UserUncheckedCreateWithoutReceivedMessagesInput = {
   countryCode?: string | null
   phone: string
   email?: string | null
-  role: $Enums.Role
-  gender?: $Enums.Gender | null
+  role: string
+  gender?: string | null
   passwordHash: string
   age?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: string | null
   isVerified?: boolean
-  verificationStatus?: $Enums.VerificationStatus
+  verificationStatus?: string
   verificationSubmittedAt?: Date | string | null
   verificationRejectedAt?: Date | string | null
   verificationRejectionReason?: string | null
@@ -4958,7 +4942,7 @@ export type UserUncheckedCreateWithoutReceivedMessagesInput = {
   avgRating?: runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: number
   locale?: string
-  status?: $Enums.UserStatus
+  status?: string
   fcmToken?: string | null
   lastLoginAt?: Date | string | null
   totalBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -5015,13 +4999,13 @@ export type UserUpdateWithoutSentMessagesInput = {
   countryCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
-  gender?: Prisma.NullableEnumGenderFieldUpdateOperationsInput | $Enums.Gender | null
+  role?: Prisma.StringFieldUpdateOperationsInput | string
+  gender?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   age?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  verificationStatus?: Prisma.EnumVerificationStatusFieldUpdateOperationsInput | $Enums.VerificationStatus
+  verificationStatus?: Prisma.StringFieldUpdateOperationsInput | string
   verificationSubmittedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -5029,7 +5013,7 @@ export type UserUpdateWithoutSentMessagesInput = {
   avgRating?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: Prisma.IntFieldUpdateOperationsInput | number
   locale?: Prisma.StringFieldUpdateOperationsInput | string
-  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   fcmToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   totalBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -5070,13 +5054,13 @@ export type UserUncheckedUpdateWithoutSentMessagesInput = {
   countryCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
-  gender?: Prisma.NullableEnumGenderFieldUpdateOperationsInput | $Enums.Gender | null
+  role?: Prisma.StringFieldUpdateOperationsInput | string
+  gender?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   age?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  verificationStatus?: Prisma.EnumVerificationStatusFieldUpdateOperationsInput | $Enums.VerificationStatus
+  verificationStatus?: Prisma.StringFieldUpdateOperationsInput | string
   verificationSubmittedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -5084,7 +5068,7 @@ export type UserUncheckedUpdateWithoutSentMessagesInput = {
   avgRating?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: Prisma.IntFieldUpdateOperationsInput | number
   locale?: Prisma.StringFieldUpdateOperationsInput | string
-  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   fcmToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   totalBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -5136,13 +5120,13 @@ export type UserUpdateWithoutReceivedMessagesInput = {
   countryCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
-  gender?: Prisma.NullableEnumGenderFieldUpdateOperationsInput | $Enums.Gender | null
+  role?: Prisma.StringFieldUpdateOperationsInput | string
+  gender?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   age?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  verificationStatus?: Prisma.EnumVerificationStatusFieldUpdateOperationsInput | $Enums.VerificationStatus
+  verificationStatus?: Prisma.StringFieldUpdateOperationsInput | string
   verificationSubmittedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -5150,7 +5134,7 @@ export type UserUpdateWithoutReceivedMessagesInput = {
   avgRating?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: Prisma.IntFieldUpdateOperationsInput | number
   locale?: Prisma.StringFieldUpdateOperationsInput | string
-  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   fcmToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   totalBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -5191,13 +5175,13 @@ export type UserUncheckedUpdateWithoutReceivedMessagesInput = {
   countryCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
-  gender?: Prisma.NullableEnumGenderFieldUpdateOperationsInput | $Enums.Gender | null
+  role?: Prisma.StringFieldUpdateOperationsInput | string
+  gender?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   age?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  verificationStatus?: Prisma.EnumVerificationStatusFieldUpdateOperationsInput | $Enums.VerificationStatus
+  verificationStatus?: Prisma.StringFieldUpdateOperationsInput | string
   verificationSubmittedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -5205,7 +5189,7 @@ export type UserUncheckedUpdateWithoutReceivedMessagesInput = {
   avgRating?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: Prisma.IntFieldUpdateOperationsInput | number
   locale?: Prisma.StringFieldUpdateOperationsInput | string
-  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   fcmToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   totalBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -5246,13 +5230,13 @@ export type UserCreateWithoutSosEventsInput = {
   countryCode?: string | null
   phone: string
   email?: string | null
-  role: $Enums.Role
-  gender?: $Enums.Gender | null
+  role: string
+  gender?: string | null
   passwordHash: string
   age?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: string | null
   isVerified?: boolean
-  verificationStatus?: $Enums.VerificationStatus
+  verificationStatus?: string
   verificationSubmittedAt?: Date | string | null
   verificationRejectedAt?: Date | string | null
   verificationRejectionReason?: string | null
@@ -5260,7 +5244,7 @@ export type UserCreateWithoutSosEventsInput = {
   avgRating?: runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: number
   locale?: string
-  status?: $Enums.UserStatus
+  status?: string
   fcmToken?: string | null
   lastLoginAt?: Date | string | null
   totalBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -5301,13 +5285,13 @@ export type UserUncheckedCreateWithoutSosEventsInput = {
   countryCode?: string | null
   phone: string
   email?: string | null
-  role: $Enums.Role
-  gender?: $Enums.Gender | null
+  role: string
+  gender?: string | null
   passwordHash: string
   age?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: string | null
   isVerified?: boolean
-  verificationStatus?: $Enums.VerificationStatus
+  verificationStatus?: string
   verificationSubmittedAt?: Date | string | null
   verificationRejectedAt?: Date | string | null
   verificationRejectionReason?: string | null
@@ -5315,7 +5299,7 @@ export type UserUncheckedCreateWithoutSosEventsInput = {
   avgRating?: runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: number
   locale?: string
-  status?: $Enums.UserStatus
+  status?: string
   fcmToken?: string | null
   lastLoginAt?: Date | string | null
   totalBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -5372,13 +5356,13 @@ export type UserUpdateWithoutSosEventsInput = {
   countryCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
-  gender?: Prisma.NullableEnumGenderFieldUpdateOperationsInput | $Enums.Gender | null
+  role?: Prisma.StringFieldUpdateOperationsInput | string
+  gender?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   age?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  verificationStatus?: Prisma.EnumVerificationStatusFieldUpdateOperationsInput | $Enums.VerificationStatus
+  verificationStatus?: Prisma.StringFieldUpdateOperationsInput | string
   verificationSubmittedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -5386,7 +5370,7 @@ export type UserUpdateWithoutSosEventsInput = {
   avgRating?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: Prisma.IntFieldUpdateOperationsInput | number
   locale?: Prisma.StringFieldUpdateOperationsInput | string
-  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   fcmToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   totalBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -5427,13 +5411,13 @@ export type UserUncheckedUpdateWithoutSosEventsInput = {
   countryCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
-  gender?: Prisma.NullableEnumGenderFieldUpdateOperationsInput | $Enums.Gender | null
+  role?: Prisma.StringFieldUpdateOperationsInput | string
+  gender?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   age?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  verificationStatus?: Prisma.EnumVerificationStatusFieldUpdateOperationsInput | $Enums.VerificationStatus
+  verificationStatus?: Prisma.StringFieldUpdateOperationsInput | string
   verificationSubmittedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -5441,7 +5425,7 @@ export type UserUncheckedUpdateWithoutSosEventsInput = {
   avgRating?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: Prisma.IntFieldUpdateOperationsInput | number
   locale?: Prisma.StringFieldUpdateOperationsInput | string
-  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   fcmToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   totalBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -5482,13 +5466,13 @@ export type UserCreateWithoutNotificationsInput = {
   countryCode?: string | null
   phone: string
   email?: string | null
-  role: $Enums.Role
-  gender?: $Enums.Gender | null
+  role: string
+  gender?: string | null
   passwordHash: string
   age?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: string | null
   isVerified?: boolean
-  verificationStatus?: $Enums.VerificationStatus
+  verificationStatus?: string
   verificationSubmittedAt?: Date | string | null
   verificationRejectedAt?: Date | string | null
   verificationRejectionReason?: string | null
@@ -5496,7 +5480,7 @@ export type UserCreateWithoutNotificationsInput = {
   avgRating?: runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: number
   locale?: string
-  status?: $Enums.UserStatus
+  status?: string
   fcmToken?: string | null
   lastLoginAt?: Date | string | null
   totalBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -5537,13 +5521,13 @@ export type UserUncheckedCreateWithoutNotificationsInput = {
   countryCode?: string | null
   phone: string
   email?: string | null
-  role: $Enums.Role
-  gender?: $Enums.Gender | null
+  role: string
+  gender?: string | null
   passwordHash: string
   age?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: string | null
   isVerified?: boolean
-  verificationStatus?: $Enums.VerificationStatus
+  verificationStatus?: string
   verificationSubmittedAt?: Date | string | null
   verificationRejectedAt?: Date | string | null
   verificationRejectionReason?: string | null
@@ -5551,7 +5535,7 @@ export type UserUncheckedCreateWithoutNotificationsInput = {
   avgRating?: runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: number
   locale?: string
-  status?: $Enums.UserStatus
+  status?: string
   fcmToken?: string | null
   lastLoginAt?: Date | string | null
   totalBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -5608,13 +5592,13 @@ export type UserUpdateWithoutNotificationsInput = {
   countryCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
-  gender?: Prisma.NullableEnumGenderFieldUpdateOperationsInput | $Enums.Gender | null
+  role?: Prisma.StringFieldUpdateOperationsInput | string
+  gender?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   age?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  verificationStatus?: Prisma.EnumVerificationStatusFieldUpdateOperationsInput | $Enums.VerificationStatus
+  verificationStatus?: Prisma.StringFieldUpdateOperationsInput | string
   verificationSubmittedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -5622,7 +5606,7 @@ export type UserUpdateWithoutNotificationsInput = {
   avgRating?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: Prisma.IntFieldUpdateOperationsInput | number
   locale?: Prisma.StringFieldUpdateOperationsInput | string
-  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   fcmToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   totalBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -5663,13 +5647,13 @@ export type UserUncheckedUpdateWithoutNotificationsInput = {
   countryCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
-  gender?: Prisma.NullableEnumGenderFieldUpdateOperationsInput | $Enums.Gender | null
+  role?: Prisma.StringFieldUpdateOperationsInput | string
+  gender?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   age?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  verificationStatus?: Prisma.EnumVerificationStatusFieldUpdateOperationsInput | $Enums.VerificationStatus
+  verificationStatus?: Prisma.StringFieldUpdateOperationsInput | string
   verificationSubmittedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -5677,7 +5661,7 @@ export type UserUncheckedUpdateWithoutNotificationsInput = {
   avgRating?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: Prisma.IntFieldUpdateOperationsInput | number
   locale?: Prisma.StringFieldUpdateOperationsInput | string
-  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   fcmToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   totalBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -5718,13 +5702,13 @@ export type UserCreateWithoutNotificationSettingsInput = {
   countryCode?: string | null
   phone: string
   email?: string | null
-  role: $Enums.Role
-  gender?: $Enums.Gender | null
+  role: string
+  gender?: string | null
   passwordHash: string
   age?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: string | null
   isVerified?: boolean
-  verificationStatus?: $Enums.VerificationStatus
+  verificationStatus?: string
   verificationSubmittedAt?: Date | string | null
   verificationRejectedAt?: Date | string | null
   verificationRejectionReason?: string | null
@@ -5732,7 +5716,7 @@ export type UserCreateWithoutNotificationSettingsInput = {
   avgRating?: runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: number
   locale?: string
-  status?: $Enums.UserStatus
+  status?: string
   fcmToken?: string | null
   lastLoginAt?: Date | string | null
   totalBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -5773,13 +5757,13 @@ export type UserUncheckedCreateWithoutNotificationSettingsInput = {
   countryCode?: string | null
   phone: string
   email?: string | null
-  role: $Enums.Role
-  gender?: $Enums.Gender | null
+  role: string
+  gender?: string | null
   passwordHash: string
   age?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: string | null
   isVerified?: boolean
-  verificationStatus?: $Enums.VerificationStatus
+  verificationStatus?: string
   verificationSubmittedAt?: Date | string | null
   verificationRejectedAt?: Date | string | null
   verificationRejectionReason?: string | null
@@ -5787,7 +5771,7 @@ export type UserUncheckedCreateWithoutNotificationSettingsInput = {
   avgRating?: runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: number
   locale?: string
-  status?: $Enums.UserStatus
+  status?: string
   fcmToken?: string | null
   lastLoginAt?: Date | string | null
   totalBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -5844,13 +5828,13 @@ export type UserUpdateWithoutNotificationSettingsInput = {
   countryCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
-  gender?: Prisma.NullableEnumGenderFieldUpdateOperationsInput | $Enums.Gender | null
+  role?: Prisma.StringFieldUpdateOperationsInput | string
+  gender?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   age?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  verificationStatus?: Prisma.EnumVerificationStatusFieldUpdateOperationsInput | $Enums.VerificationStatus
+  verificationStatus?: Prisma.StringFieldUpdateOperationsInput | string
   verificationSubmittedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -5858,7 +5842,7 @@ export type UserUpdateWithoutNotificationSettingsInput = {
   avgRating?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: Prisma.IntFieldUpdateOperationsInput | number
   locale?: Prisma.StringFieldUpdateOperationsInput | string
-  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   fcmToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   totalBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -5899,13 +5883,13 @@ export type UserUncheckedUpdateWithoutNotificationSettingsInput = {
   countryCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
-  gender?: Prisma.NullableEnumGenderFieldUpdateOperationsInput | $Enums.Gender | null
+  role?: Prisma.StringFieldUpdateOperationsInput | string
+  gender?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   age?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  verificationStatus?: Prisma.EnumVerificationStatusFieldUpdateOperationsInput | $Enums.VerificationStatus
+  verificationStatus?: Prisma.StringFieldUpdateOperationsInput | string
   verificationSubmittedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -5913,7 +5897,7 @@ export type UserUncheckedUpdateWithoutNotificationSettingsInput = {
   avgRating?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: Prisma.IntFieldUpdateOperationsInput | number
   locale?: Prisma.StringFieldUpdateOperationsInput | string
-  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   fcmToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   totalBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -5954,13 +5938,13 @@ export type UserCreateWithoutFavoriteDriversInput = {
   countryCode?: string | null
   phone: string
   email?: string | null
-  role: $Enums.Role
-  gender?: $Enums.Gender | null
+  role: string
+  gender?: string | null
   passwordHash: string
   age?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: string | null
   isVerified?: boolean
-  verificationStatus?: $Enums.VerificationStatus
+  verificationStatus?: string
   verificationSubmittedAt?: Date | string | null
   verificationRejectedAt?: Date | string | null
   verificationRejectionReason?: string | null
@@ -5968,7 +5952,7 @@ export type UserCreateWithoutFavoriteDriversInput = {
   avgRating?: runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: number
   locale?: string
-  status?: $Enums.UserStatus
+  status?: string
   fcmToken?: string | null
   lastLoginAt?: Date | string | null
   totalBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -6009,13 +5993,13 @@ export type UserUncheckedCreateWithoutFavoriteDriversInput = {
   countryCode?: string | null
   phone: string
   email?: string | null
-  role: $Enums.Role
-  gender?: $Enums.Gender | null
+  role: string
+  gender?: string | null
   passwordHash: string
   age?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: string | null
   isVerified?: boolean
-  verificationStatus?: $Enums.VerificationStatus
+  verificationStatus?: string
   verificationSubmittedAt?: Date | string | null
   verificationRejectedAt?: Date | string | null
   verificationRejectionReason?: string | null
@@ -6023,7 +6007,7 @@ export type UserUncheckedCreateWithoutFavoriteDriversInput = {
   avgRating?: runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: number
   locale?: string
-  status?: $Enums.UserStatus
+  status?: string
   fcmToken?: string | null
   lastLoginAt?: Date | string | null
   totalBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -6069,13 +6053,13 @@ export type UserCreateWithoutFavoritedByInput = {
   countryCode?: string | null
   phone: string
   email?: string | null
-  role: $Enums.Role
-  gender?: $Enums.Gender | null
+  role: string
+  gender?: string | null
   passwordHash: string
   age?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: string | null
   isVerified?: boolean
-  verificationStatus?: $Enums.VerificationStatus
+  verificationStatus?: string
   verificationSubmittedAt?: Date | string | null
   verificationRejectedAt?: Date | string | null
   verificationRejectionReason?: string | null
@@ -6083,7 +6067,7 @@ export type UserCreateWithoutFavoritedByInput = {
   avgRating?: runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: number
   locale?: string
-  status?: $Enums.UserStatus
+  status?: string
   fcmToken?: string | null
   lastLoginAt?: Date | string | null
   totalBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -6124,13 +6108,13 @@ export type UserUncheckedCreateWithoutFavoritedByInput = {
   countryCode?: string | null
   phone: string
   email?: string | null
-  role: $Enums.Role
-  gender?: $Enums.Gender | null
+  role: string
+  gender?: string | null
   passwordHash: string
   age?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: string | null
   isVerified?: boolean
-  verificationStatus?: $Enums.VerificationStatus
+  verificationStatus?: string
   verificationSubmittedAt?: Date | string | null
   verificationRejectedAt?: Date | string | null
   verificationRejectionReason?: string | null
@@ -6138,7 +6122,7 @@ export type UserUncheckedCreateWithoutFavoritedByInput = {
   avgRating?: runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: number
   locale?: string
-  status?: $Enums.UserStatus
+  status?: string
   fcmToken?: string | null
   lastLoginAt?: Date | string | null
   totalBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -6195,13 +6179,13 @@ export type UserUpdateWithoutFavoriteDriversInput = {
   countryCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
-  gender?: Prisma.NullableEnumGenderFieldUpdateOperationsInput | $Enums.Gender | null
+  role?: Prisma.StringFieldUpdateOperationsInput | string
+  gender?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   age?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  verificationStatus?: Prisma.EnumVerificationStatusFieldUpdateOperationsInput | $Enums.VerificationStatus
+  verificationStatus?: Prisma.StringFieldUpdateOperationsInput | string
   verificationSubmittedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -6209,7 +6193,7 @@ export type UserUpdateWithoutFavoriteDriversInput = {
   avgRating?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: Prisma.IntFieldUpdateOperationsInput | number
   locale?: Prisma.StringFieldUpdateOperationsInput | string
-  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   fcmToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   totalBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -6250,13 +6234,13 @@ export type UserUncheckedUpdateWithoutFavoriteDriversInput = {
   countryCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
-  gender?: Prisma.NullableEnumGenderFieldUpdateOperationsInput | $Enums.Gender | null
+  role?: Prisma.StringFieldUpdateOperationsInput | string
+  gender?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   age?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  verificationStatus?: Prisma.EnumVerificationStatusFieldUpdateOperationsInput | $Enums.VerificationStatus
+  verificationStatus?: Prisma.StringFieldUpdateOperationsInput | string
   verificationSubmittedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -6264,7 +6248,7 @@ export type UserUncheckedUpdateWithoutFavoriteDriversInput = {
   avgRating?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: Prisma.IntFieldUpdateOperationsInput | number
   locale?: Prisma.StringFieldUpdateOperationsInput | string
-  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   fcmToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   totalBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -6316,13 +6300,13 @@ export type UserUpdateWithoutFavoritedByInput = {
   countryCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
-  gender?: Prisma.NullableEnumGenderFieldUpdateOperationsInput | $Enums.Gender | null
+  role?: Prisma.StringFieldUpdateOperationsInput | string
+  gender?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   age?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  verificationStatus?: Prisma.EnumVerificationStatusFieldUpdateOperationsInput | $Enums.VerificationStatus
+  verificationStatus?: Prisma.StringFieldUpdateOperationsInput | string
   verificationSubmittedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -6330,7 +6314,7 @@ export type UserUpdateWithoutFavoritedByInput = {
   avgRating?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: Prisma.IntFieldUpdateOperationsInput | number
   locale?: Prisma.StringFieldUpdateOperationsInput | string
-  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   fcmToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   totalBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -6371,13 +6355,13 @@ export type UserUncheckedUpdateWithoutFavoritedByInput = {
   countryCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
-  gender?: Prisma.NullableEnumGenderFieldUpdateOperationsInput | $Enums.Gender | null
+  role?: Prisma.StringFieldUpdateOperationsInput | string
+  gender?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   age?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  verificationStatus?: Prisma.EnumVerificationStatusFieldUpdateOperationsInput | $Enums.VerificationStatus
+  verificationStatus?: Prisma.StringFieldUpdateOperationsInput | string
   verificationSubmittedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -6385,7 +6369,7 @@ export type UserUncheckedUpdateWithoutFavoritedByInput = {
   avgRating?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: Prisma.IntFieldUpdateOperationsInput | number
   locale?: Prisma.StringFieldUpdateOperationsInput | string
-  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   fcmToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   totalBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -6426,13 +6410,13 @@ export type UserCreateWithoutFavoriteRoutesInput = {
   countryCode?: string | null
   phone: string
   email?: string | null
-  role: $Enums.Role
-  gender?: $Enums.Gender | null
+  role: string
+  gender?: string | null
   passwordHash: string
   age?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: string | null
   isVerified?: boolean
-  verificationStatus?: $Enums.VerificationStatus
+  verificationStatus?: string
   verificationSubmittedAt?: Date | string | null
   verificationRejectedAt?: Date | string | null
   verificationRejectionReason?: string | null
@@ -6440,7 +6424,7 @@ export type UserCreateWithoutFavoriteRoutesInput = {
   avgRating?: runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: number
   locale?: string
-  status?: $Enums.UserStatus
+  status?: string
   fcmToken?: string | null
   lastLoginAt?: Date | string | null
   totalBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -6481,13 +6465,13 @@ export type UserUncheckedCreateWithoutFavoriteRoutesInput = {
   countryCode?: string | null
   phone: string
   email?: string | null
-  role: $Enums.Role
-  gender?: $Enums.Gender | null
+  role: string
+  gender?: string | null
   passwordHash: string
   age?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: string | null
   isVerified?: boolean
-  verificationStatus?: $Enums.VerificationStatus
+  verificationStatus?: string
   verificationSubmittedAt?: Date | string | null
   verificationRejectedAt?: Date | string | null
   verificationRejectionReason?: string | null
@@ -6495,7 +6479,7 @@ export type UserUncheckedCreateWithoutFavoriteRoutesInput = {
   avgRating?: runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: number
   locale?: string
-  status?: $Enums.UserStatus
+  status?: string
   fcmToken?: string | null
   lastLoginAt?: Date | string | null
   totalBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -6552,13 +6536,13 @@ export type UserUpdateWithoutFavoriteRoutesInput = {
   countryCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
-  gender?: Prisma.NullableEnumGenderFieldUpdateOperationsInput | $Enums.Gender | null
+  role?: Prisma.StringFieldUpdateOperationsInput | string
+  gender?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   age?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  verificationStatus?: Prisma.EnumVerificationStatusFieldUpdateOperationsInput | $Enums.VerificationStatus
+  verificationStatus?: Prisma.StringFieldUpdateOperationsInput | string
   verificationSubmittedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -6566,7 +6550,7 @@ export type UserUpdateWithoutFavoriteRoutesInput = {
   avgRating?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: Prisma.IntFieldUpdateOperationsInput | number
   locale?: Prisma.StringFieldUpdateOperationsInput | string
-  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   fcmToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   totalBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -6607,13 +6591,13 @@ export type UserUncheckedUpdateWithoutFavoriteRoutesInput = {
   countryCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
-  gender?: Prisma.NullableEnumGenderFieldUpdateOperationsInput | $Enums.Gender | null
+  role?: Prisma.StringFieldUpdateOperationsInput | string
+  gender?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   age?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  verificationStatus?: Prisma.EnumVerificationStatusFieldUpdateOperationsInput | $Enums.VerificationStatus
+  verificationStatus?: Prisma.StringFieldUpdateOperationsInput | string
   verificationSubmittedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -6621,7 +6605,7 @@ export type UserUncheckedUpdateWithoutFavoriteRoutesInput = {
   avgRating?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: Prisma.IntFieldUpdateOperationsInput | number
   locale?: Prisma.StringFieldUpdateOperationsInput | string
-  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   fcmToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   totalBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -6662,13 +6646,13 @@ export type UserCreateWithoutRecentSearchesInput = {
   countryCode?: string | null
   phone: string
   email?: string | null
-  role: $Enums.Role
-  gender?: $Enums.Gender | null
+  role: string
+  gender?: string | null
   passwordHash: string
   age?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: string | null
   isVerified?: boolean
-  verificationStatus?: $Enums.VerificationStatus
+  verificationStatus?: string
   verificationSubmittedAt?: Date | string | null
   verificationRejectedAt?: Date | string | null
   verificationRejectionReason?: string | null
@@ -6676,7 +6660,7 @@ export type UserCreateWithoutRecentSearchesInput = {
   avgRating?: runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: number
   locale?: string
-  status?: $Enums.UserStatus
+  status?: string
   fcmToken?: string | null
   lastLoginAt?: Date | string | null
   totalBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -6717,13 +6701,13 @@ export type UserUncheckedCreateWithoutRecentSearchesInput = {
   countryCode?: string | null
   phone: string
   email?: string | null
-  role: $Enums.Role
-  gender?: $Enums.Gender | null
+  role: string
+  gender?: string | null
   passwordHash: string
   age?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: string | null
   isVerified?: boolean
-  verificationStatus?: $Enums.VerificationStatus
+  verificationStatus?: string
   verificationSubmittedAt?: Date | string | null
   verificationRejectedAt?: Date | string | null
   verificationRejectionReason?: string | null
@@ -6731,7 +6715,7 @@ export type UserUncheckedCreateWithoutRecentSearchesInput = {
   avgRating?: runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: number
   locale?: string
-  status?: $Enums.UserStatus
+  status?: string
   fcmToken?: string | null
   lastLoginAt?: Date | string | null
   totalBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -6788,13 +6772,13 @@ export type UserUpdateWithoutRecentSearchesInput = {
   countryCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
-  gender?: Prisma.NullableEnumGenderFieldUpdateOperationsInput | $Enums.Gender | null
+  role?: Prisma.StringFieldUpdateOperationsInput | string
+  gender?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   age?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  verificationStatus?: Prisma.EnumVerificationStatusFieldUpdateOperationsInput | $Enums.VerificationStatus
+  verificationStatus?: Prisma.StringFieldUpdateOperationsInput | string
   verificationSubmittedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -6802,7 +6786,7 @@ export type UserUpdateWithoutRecentSearchesInput = {
   avgRating?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: Prisma.IntFieldUpdateOperationsInput | number
   locale?: Prisma.StringFieldUpdateOperationsInput | string
-  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   fcmToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   totalBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -6843,13 +6827,13 @@ export type UserUncheckedUpdateWithoutRecentSearchesInput = {
   countryCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
-  gender?: Prisma.NullableEnumGenderFieldUpdateOperationsInput | $Enums.Gender | null
+  role?: Prisma.StringFieldUpdateOperationsInput | string
+  gender?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   age?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  verificationStatus?: Prisma.EnumVerificationStatusFieldUpdateOperationsInput | $Enums.VerificationStatus
+  verificationStatus?: Prisma.StringFieldUpdateOperationsInput | string
   verificationSubmittedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -6857,7 +6841,7 @@ export type UserUncheckedUpdateWithoutRecentSearchesInput = {
   avgRating?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: Prisma.IntFieldUpdateOperationsInput | number
   locale?: Prisma.StringFieldUpdateOperationsInput | string
-  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   fcmToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   totalBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -6898,13 +6882,13 @@ export type UserCreateWithoutDriverSubscriptionsInput = {
   countryCode?: string | null
   phone: string
   email?: string | null
-  role: $Enums.Role
-  gender?: $Enums.Gender | null
+  role: string
+  gender?: string | null
   passwordHash: string
   age?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: string | null
   isVerified?: boolean
-  verificationStatus?: $Enums.VerificationStatus
+  verificationStatus?: string
   verificationSubmittedAt?: Date | string | null
   verificationRejectedAt?: Date | string | null
   verificationRejectionReason?: string | null
@@ -6912,7 +6896,7 @@ export type UserCreateWithoutDriverSubscriptionsInput = {
   avgRating?: runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: number
   locale?: string
-  status?: $Enums.UserStatus
+  status?: string
   fcmToken?: string | null
   lastLoginAt?: Date | string | null
   totalBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -6953,13 +6937,13 @@ export type UserUncheckedCreateWithoutDriverSubscriptionsInput = {
   countryCode?: string | null
   phone: string
   email?: string | null
-  role: $Enums.Role
-  gender?: $Enums.Gender | null
+  role: string
+  gender?: string | null
   passwordHash: string
   age?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: string | null
   isVerified?: boolean
-  verificationStatus?: $Enums.VerificationStatus
+  verificationStatus?: string
   verificationSubmittedAt?: Date | string | null
   verificationRejectedAt?: Date | string | null
   verificationRejectionReason?: string | null
@@ -6967,7 +6951,7 @@ export type UserUncheckedCreateWithoutDriverSubscriptionsInput = {
   avgRating?: runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: number
   locale?: string
-  status?: $Enums.UserStatus
+  status?: string
   fcmToken?: string | null
   lastLoginAt?: Date | string | null
   totalBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -7024,13 +7008,13 @@ export type UserUpdateWithoutDriverSubscriptionsInput = {
   countryCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
-  gender?: Prisma.NullableEnumGenderFieldUpdateOperationsInput | $Enums.Gender | null
+  role?: Prisma.StringFieldUpdateOperationsInput | string
+  gender?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   age?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  verificationStatus?: Prisma.EnumVerificationStatusFieldUpdateOperationsInput | $Enums.VerificationStatus
+  verificationStatus?: Prisma.StringFieldUpdateOperationsInput | string
   verificationSubmittedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -7038,7 +7022,7 @@ export type UserUpdateWithoutDriverSubscriptionsInput = {
   avgRating?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: Prisma.IntFieldUpdateOperationsInput | number
   locale?: Prisma.StringFieldUpdateOperationsInput | string
-  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   fcmToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   totalBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -7079,13 +7063,13 @@ export type UserUncheckedUpdateWithoutDriverSubscriptionsInput = {
   countryCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
-  gender?: Prisma.NullableEnumGenderFieldUpdateOperationsInput | $Enums.Gender | null
+  role?: Prisma.StringFieldUpdateOperationsInput | string
+  gender?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   age?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  verificationStatus?: Prisma.EnumVerificationStatusFieldUpdateOperationsInput | $Enums.VerificationStatus
+  verificationStatus?: Prisma.StringFieldUpdateOperationsInput | string
   verificationSubmittedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -7093,7 +7077,7 @@ export type UserUncheckedUpdateWithoutDriverSubscriptionsInput = {
   avgRating?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: Prisma.IntFieldUpdateOperationsInput | number
   locale?: Prisma.StringFieldUpdateOperationsInput | string
-  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   fcmToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   totalBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -7134,13 +7118,13 @@ export type UserCreateWithoutDeletionRequestsInput = {
   countryCode?: string | null
   phone: string
   email?: string | null
-  role: $Enums.Role
-  gender?: $Enums.Gender | null
+  role: string
+  gender?: string | null
   passwordHash: string
   age?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: string | null
   isVerified?: boolean
-  verificationStatus?: $Enums.VerificationStatus
+  verificationStatus?: string
   verificationSubmittedAt?: Date | string | null
   verificationRejectedAt?: Date | string | null
   verificationRejectionReason?: string | null
@@ -7148,7 +7132,7 @@ export type UserCreateWithoutDeletionRequestsInput = {
   avgRating?: runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: number
   locale?: string
-  status?: $Enums.UserStatus
+  status?: string
   fcmToken?: string | null
   lastLoginAt?: Date | string | null
   totalBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -7189,13 +7173,13 @@ export type UserUncheckedCreateWithoutDeletionRequestsInput = {
   countryCode?: string | null
   phone: string
   email?: string | null
-  role: $Enums.Role
-  gender?: $Enums.Gender | null
+  role: string
+  gender?: string | null
   passwordHash: string
   age?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: string | null
   isVerified?: boolean
-  verificationStatus?: $Enums.VerificationStatus
+  verificationStatus?: string
   verificationSubmittedAt?: Date | string | null
   verificationRejectedAt?: Date | string | null
   verificationRejectionReason?: string | null
@@ -7203,7 +7187,7 @@ export type UserUncheckedCreateWithoutDeletionRequestsInput = {
   avgRating?: runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: number
   locale?: string
-  status?: $Enums.UserStatus
+  status?: string
   fcmToken?: string | null
   lastLoginAt?: Date | string | null
   totalBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -7260,13 +7244,13 @@ export type UserUpdateWithoutDeletionRequestsInput = {
   countryCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
-  gender?: Prisma.NullableEnumGenderFieldUpdateOperationsInput | $Enums.Gender | null
+  role?: Prisma.StringFieldUpdateOperationsInput | string
+  gender?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   age?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  verificationStatus?: Prisma.EnumVerificationStatusFieldUpdateOperationsInput | $Enums.VerificationStatus
+  verificationStatus?: Prisma.StringFieldUpdateOperationsInput | string
   verificationSubmittedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -7274,7 +7258,7 @@ export type UserUpdateWithoutDeletionRequestsInput = {
   avgRating?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: Prisma.IntFieldUpdateOperationsInput | number
   locale?: Prisma.StringFieldUpdateOperationsInput | string
-  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   fcmToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   totalBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -7315,13 +7299,13 @@ export type UserUncheckedUpdateWithoutDeletionRequestsInput = {
   countryCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
-  gender?: Prisma.NullableEnumGenderFieldUpdateOperationsInput | $Enums.Gender | null
+  role?: Prisma.StringFieldUpdateOperationsInput | string
+  gender?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   age?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  verificationStatus?: Prisma.EnumVerificationStatusFieldUpdateOperationsInput | $Enums.VerificationStatus
+  verificationStatus?: Prisma.StringFieldUpdateOperationsInput | string
   verificationSubmittedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -7329,7 +7313,7 @@ export type UserUncheckedUpdateWithoutDeletionRequestsInput = {
   avgRating?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: Prisma.IntFieldUpdateOperationsInput | number
   locale?: Prisma.StringFieldUpdateOperationsInput | string
-  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   fcmToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   totalBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -7370,13 +7354,13 @@ export type UserCreateWithoutVerificationChangesInput = {
   countryCode?: string | null
   phone: string
   email?: string | null
-  role: $Enums.Role
-  gender?: $Enums.Gender | null
+  role: string
+  gender?: string | null
   passwordHash: string
   age?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: string | null
   isVerified?: boolean
-  verificationStatus?: $Enums.VerificationStatus
+  verificationStatus?: string
   verificationSubmittedAt?: Date | string | null
   verificationRejectedAt?: Date | string | null
   verificationRejectionReason?: string | null
@@ -7384,7 +7368,7 @@ export type UserCreateWithoutVerificationChangesInput = {
   avgRating?: runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: number
   locale?: string
-  status?: $Enums.UserStatus
+  status?: string
   fcmToken?: string | null
   lastLoginAt?: Date | string | null
   totalBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -7425,13 +7409,13 @@ export type UserUncheckedCreateWithoutVerificationChangesInput = {
   countryCode?: string | null
   phone: string
   email?: string | null
-  role: $Enums.Role
-  gender?: $Enums.Gender | null
+  role: string
+  gender?: string | null
   passwordHash: string
   age?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: string | null
   isVerified?: boolean
-  verificationStatus?: $Enums.VerificationStatus
+  verificationStatus?: string
   verificationSubmittedAt?: Date | string | null
   verificationRejectedAt?: Date | string | null
   verificationRejectionReason?: string | null
@@ -7439,7 +7423,7 @@ export type UserUncheckedCreateWithoutVerificationChangesInput = {
   avgRating?: runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: number
   locale?: string
-  status?: $Enums.UserStatus
+  status?: string
   fcmToken?: string | null
   lastLoginAt?: Date | string | null
   totalBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -7496,13 +7480,13 @@ export type UserUpdateWithoutVerificationChangesInput = {
   countryCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
-  gender?: Prisma.NullableEnumGenderFieldUpdateOperationsInput | $Enums.Gender | null
+  role?: Prisma.StringFieldUpdateOperationsInput | string
+  gender?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   age?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  verificationStatus?: Prisma.EnumVerificationStatusFieldUpdateOperationsInput | $Enums.VerificationStatus
+  verificationStatus?: Prisma.StringFieldUpdateOperationsInput | string
   verificationSubmittedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -7510,7 +7494,7 @@ export type UserUpdateWithoutVerificationChangesInput = {
   avgRating?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: Prisma.IntFieldUpdateOperationsInput | number
   locale?: Prisma.StringFieldUpdateOperationsInput | string
-  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   fcmToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   totalBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -7551,13 +7535,13 @@ export type UserUncheckedUpdateWithoutVerificationChangesInput = {
   countryCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
-  gender?: Prisma.NullableEnumGenderFieldUpdateOperationsInput | $Enums.Gender | null
+  role?: Prisma.StringFieldUpdateOperationsInput | string
+  gender?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   age?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  verificationStatus?: Prisma.EnumVerificationStatusFieldUpdateOperationsInput | $Enums.VerificationStatus
+  verificationStatus?: Prisma.StringFieldUpdateOperationsInput | string
   verificationSubmittedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   verificationRejectionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -7565,7 +7549,7 @@ export type UserUncheckedUpdateWithoutVerificationChangesInput = {
   avgRating?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   strikes?: Prisma.IntFieldUpdateOperationsInput | number
   locale?: Prisma.StringFieldUpdateOperationsInput | string
-  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   fcmToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   totalBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -8045,13 +8029,13 @@ export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     countryCode: string | null
     phone: string
     email: string | null
-    role: $Enums.Role
-    gender: $Enums.Gender | null
+    role: string
+    gender: string | null
     passwordHash: string
     age: runtime.Decimal | null
     avatarUrl: string | null
     isVerified: boolean
-    verificationStatus: $Enums.VerificationStatus
+    verificationStatus: string
     verificationSubmittedAt: Date | null
     verificationRejectedAt: Date | null
     verificationRejectionReason: string | null
@@ -8059,7 +8043,7 @@ export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     avgRating: runtime.Decimal
     strikes: number
     locale: string
-    status: $Enums.UserStatus
+    status: string
     fcmToken: string | null
     lastLoginAt: Date | null
     totalBalance: runtime.Decimal
@@ -8521,13 +8505,13 @@ export interface UserFieldRefs {
   readonly countryCode: Prisma.FieldRef<"User", 'String'>
   readonly phone: Prisma.FieldRef<"User", 'String'>
   readonly email: Prisma.FieldRef<"User", 'String'>
-  readonly role: Prisma.FieldRef<"User", 'Role'>
-  readonly gender: Prisma.FieldRef<"User", 'Gender'>
+  readonly role: Prisma.FieldRef<"User", 'String'>
+  readonly gender: Prisma.FieldRef<"User", 'String'>
   readonly passwordHash: Prisma.FieldRef<"User", 'String'>
   readonly age: Prisma.FieldRef<"User", 'Decimal'>
   readonly avatarUrl: Prisma.FieldRef<"User", 'String'>
   readonly isVerified: Prisma.FieldRef<"User", 'Boolean'>
-  readonly verificationStatus: Prisma.FieldRef<"User", 'VerificationStatus'>
+  readonly verificationStatus: Prisma.FieldRef<"User", 'String'>
   readonly verificationSubmittedAt: Prisma.FieldRef<"User", 'DateTime'>
   readonly verificationRejectedAt: Prisma.FieldRef<"User", 'DateTime'>
   readonly verificationRejectionReason: Prisma.FieldRef<"User", 'String'>
@@ -8535,7 +8519,7 @@ export interface UserFieldRefs {
   readonly avgRating: Prisma.FieldRef<"User", 'Decimal'>
   readonly strikes: Prisma.FieldRef<"User", 'Int'>
   readonly locale: Prisma.FieldRef<"User", 'String'>
-  readonly status: Prisma.FieldRef<"User", 'UserStatus'>
+  readonly status: Prisma.FieldRef<"User", 'String'>
   readonly fcmToken: Prisma.FieldRef<"User", 'String'>
   readonly lastLoginAt: Prisma.FieldRef<"User", 'DateTime'>
   readonly totalBalance: Prisma.FieldRef<"User", 'Decimal'>

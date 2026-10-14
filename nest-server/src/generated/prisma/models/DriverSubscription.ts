@@ -55,7 +55,7 @@ export type DriverSubscriptionMinAggregateOutputType = {
   balance: runtime.Decimal | null
   screenshotId: number | null
   adminNotes: string | null
-  status: $Enums.SubscriptionStatus | null
+  status: string | null
   approvedAt: Date | null
   activatedAt: Date | null
   expiresAt: Date | null
@@ -75,7 +75,7 @@ export type DriverSubscriptionMaxAggregateOutputType = {
   balance: runtime.Decimal | null
   screenshotId: number | null
   adminNotes: string | null
-  status: $Enums.SubscriptionStatus | null
+  status: string | null
   approvedAt: Date | null
   activatedAt: Date | null
   expiresAt: Date | null
@@ -287,7 +287,7 @@ export type DriverSubscriptionGroupByOutputType = {
   screenshotId: number | null
   paymentMethod: runtime.JsonValue
   adminNotes: string | null
-  status: $Enums.SubscriptionStatus
+  status: string
   approvedAt: Date | null
   activatedAt: Date | null
   expiresAt: Date | null
@@ -332,7 +332,7 @@ export type DriverSubscriptionWhereInput = {
   screenshotId?: Prisma.IntNullableFilter<"DriverSubscription"> | number | null
   paymentMethod?: Prisma.JsonFilter<"DriverSubscription">
   adminNotes?: Prisma.StringNullableFilter<"DriverSubscription"> | string | null
-  status?: Prisma.EnumSubscriptionStatusFilter<"DriverSubscription"> | $Enums.SubscriptionStatus
+  status?: Prisma.StringFilter<"DriverSubscription"> | string
   approvedAt?: Prisma.DateTimeNullableFilter<"DriverSubscription"> | Date | string | null
   activatedAt?: Prisma.DateTimeNullableFilter<"DriverSubscription"> | Date | string | null
   expiresAt?: Prisma.DateTimeNullableFilter<"DriverSubscription"> | Date | string | null
@@ -385,7 +385,7 @@ export type DriverSubscriptionWhereUniqueInput = Prisma.AtLeast<{
   screenshotId?: Prisma.IntNullableFilter<"DriverSubscription"> | number | null
   paymentMethod?: Prisma.JsonFilter<"DriverSubscription">
   adminNotes?: Prisma.StringNullableFilter<"DriverSubscription"> | string | null
-  status?: Prisma.EnumSubscriptionStatusFilter<"DriverSubscription"> | $Enums.SubscriptionStatus
+  status?: Prisma.StringFilter<"DriverSubscription"> | string
   approvedAt?: Prisma.DateTimeNullableFilter<"DriverSubscription"> | Date | string | null
   activatedAt?: Prisma.DateTimeNullableFilter<"DriverSubscription"> | Date | string | null
   expiresAt?: Prisma.DateTimeNullableFilter<"DriverSubscription"> | Date | string | null
@@ -440,7 +440,7 @@ export type DriverSubscriptionScalarWhereWithAggregatesInput = {
   screenshotId?: Prisma.IntNullableWithAggregatesFilter<"DriverSubscription"> | number | null
   paymentMethod?: Prisma.JsonWithAggregatesFilter<"DriverSubscription">
   adminNotes?: Prisma.StringNullableWithAggregatesFilter<"DriverSubscription"> | string | null
-  status?: Prisma.EnumSubscriptionStatusWithAggregatesFilter<"DriverSubscription"> | $Enums.SubscriptionStatus
+  status?: Prisma.StringWithAggregatesFilter<"DriverSubscription"> | string
   approvedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"DriverSubscription"> | Date | string | null
   activatedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"DriverSubscription"> | Date | string | null
   expiresAt?: Prisma.DateTimeNullableWithAggregatesFilter<"DriverSubscription"> | Date | string | null
@@ -459,7 +459,7 @@ export type DriverSubscriptionCreateInput = {
   balance?: runtime.Decimal | runtime.DecimalJsLike | number | string
   paymentMethod: Prisma.JsonNullValueInput | runtime.InputJsonValue
   adminNotes?: string | null
-  status?: $Enums.SubscriptionStatus
+  status?: string
   approvedAt?: Date | string | null
   activatedAt?: Date | string | null
   expiresAt?: Date | string | null
@@ -484,7 +484,7 @@ export type DriverSubscriptionUncheckedCreateInput = {
   screenshotId?: number | null
   paymentMethod: Prisma.JsonNullValueInput | runtime.InputJsonValue
   adminNotes?: string | null
-  status?: $Enums.SubscriptionStatus
+  status?: string
   approvedAt?: Date | string | null
   activatedAt?: Date | string | null
   expiresAt?: Date | string | null
@@ -503,7 +503,7 @@ export type DriverSubscriptionUpdateInput = {
   balance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   paymentMethod?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   adminNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  status?: Prisma.EnumSubscriptionStatusFieldUpdateOperationsInput | $Enums.SubscriptionStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   approvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   activatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   expiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -528,7 +528,7 @@ export type DriverSubscriptionUncheckedUpdateInput = {
   screenshotId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   paymentMethod?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   adminNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  status?: Prisma.EnumSubscriptionStatusFieldUpdateOperationsInput | $Enums.SubscriptionStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   approvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   activatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   expiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -550,7 +550,7 @@ export type DriverSubscriptionCreateManyInput = {
   screenshotId?: number | null
   paymentMethod: Prisma.JsonNullValueInput | runtime.InputJsonValue
   adminNotes?: string | null
-  status?: $Enums.SubscriptionStatus
+  status?: string
   approvedAt?: Date | string | null
   activatedAt?: Date | string | null
   expiresAt?: Date | string | null
@@ -569,7 +569,7 @@ export type DriverSubscriptionUpdateManyMutationInput = {
   balance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   paymentMethod?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   adminNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  status?: Prisma.EnumSubscriptionStatusFieldUpdateOperationsInput | $Enums.SubscriptionStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   approvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   activatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   expiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -591,7 +591,7 @@ export type DriverSubscriptionUncheckedUpdateManyInput = {
   screenshotId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   paymentMethod?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   adminNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  status?: Prisma.EnumSubscriptionStatusFieldUpdateOperationsInput | $Enums.SubscriptionStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   approvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   activatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   expiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -775,10 +775,6 @@ export type DriverSubscriptionUncheckedUpdateManyWithoutPlanNestedInput = {
   deleteMany?: Prisma.DriverSubscriptionScalarWhereInput | Prisma.DriverSubscriptionScalarWhereInput[]
 }
 
-export type EnumSubscriptionStatusFieldUpdateOperationsInput = {
-  set?: $Enums.SubscriptionStatus
-}
-
 export type DriverSubscriptionCreateNestedManyWithoutScreenshotInput = {
   create?: Prisma.XOR<Prisma.DriverSubscriptionCreateWithoutScreenshotInput, Prisma.DriverSubscriptionUncheckedCreateWithoutScreenshotInput> | Prisma.DriverSubscriptionCreateWithoutScreenshotInput[] | Prisma.DriverSubscriptionUncheckedCreateWithoutScreenshotInput[]
   connectOrCreate?: Prisma.DriverSubscriptionCreateOrConnectWithoutScreenshotInput | Prisma.DriverSubscriptionCreateOrConnectWithoutScreenshotInput[]
@@ -830,7 +826,7 @@ export type DriverSubscriptionCreateWithoutDriverInput = {
   balance?: runtime.Decimal | runtime.DecimalJsLike | number | string
   paymentMethod: Prisma.JsonNullValueInput | runtime.InputJsonValue
   adminNotes?: string | null
-  status?: $Enums.SubscriptionStatus
+  status?: string
   approvedAt?: Date | string | null
   activatedAt?: Date | string | null
   expiresAt?: Date | string | null
@@ -853,7 +849,7 @@ export type DriverSubscriptionUncheckedCreateWithoutDriverInput = {
   screenshotId?: number | null
   paymentMethod: Prisma.JsonNullValueInput | runtime.InputJsonValue
   adminNotes?: string | null
-  status?: $Enums.SubscriptionStatus
+  status?: string
   approvedAt?: Date | string | null
   activatedAt?: Date | string | null
   expiresAt?: Date | string | null
@@ -904,7 +900,7 @@ export type DriverSubscriptionScalarWhereInput = {
   screenshotId?: Prisma.IntNullableFilter<"DriverSubscription"> | number | null
   paymentMethod?: Prisma.JsonFilter<"DriverSubscription">
   adminNotes?: Prisma.StringNullableFilter<"DriverSubscription"> | string | null
-  status?: Prisma.EnumSubscriptionStatusFilter<"DriverSubscription"> | $Enums.SubscriptionStatus
+  status?: Prisma.StringFilter<"DriverSubscription"> | string
   approvedAt?: Prisma.DateTimeNullableFilter<"DriverSubscription"> | Date | string | null
   activatedAt?: Prisma.DateTimeNullableFilter<"DriverSubscription"> | Date | string | null
   expiresAt?: Prisma.DateTimeNullableFilter<"DriverSubscription"> | Date | string | null
@@ -923,7 +919,7 @@ export type DriverSubscriptionCreateWithoutPlanInput = {
   balance?: runtime.Decimal | runtime.DecimalJsLike | number | string
   paymentMethod: Prisma.JsonNullValueInput | runtime.InputJsonValue
   adminNotes?: string | null
-  status?: $Enums.SubscriptionStatus
+  status?: string
   approvedAt?: Date | string | null
   activatedAt?: Date | string | null
   expiresAt?: Date | string | null
@@ -946,7 +942,7 @@ export type DriverSubscriptionUncheckedCreateWithoutPlanInput = {
   screenshotId?: number | null
   paymentMethod: Prisma.JsonNullValueInput | runtime.InputJsonValue
   adminNotes?: string | null
-  status?: $Enums.SubscriptionStatus
+  status?: string
   approvedAt?: Date | string | null
   activatedAt?: Date | string | null
   expiresAt?: Date | string | null
@@ -991,7 +987,7 @@ export type DriverSubscriptionCreateWithoutScreenshotInput = {
   balance?: runtime.Decimal | runtime.DecimalJsLike | number | string
   paymentMethod: Prisma.JsonNullValueInput | runtime.InputJsonValue
   adminNotes?: string | null
-  status?: $Enums.SubscriptionStatus
+  status?: string
   approvedAt?: Date | string | null
   activatedAt?: Date | string | null
   expiresAt?: Date | string | null
@@ -1014,7 +1010,7 @@ export type DriverSubscriptionUncheckedCreateWithoutScreenshotInput = {
   balance?: runtime.Decimal | runtime.DecimalJsLike | number | string
   paymentMethod: Prisma.JsonNullValueInput | runtime.InputJsonValue
   adminNotes?: string | null
-  status?: $Enums.SubscriptionStatus
+  status?: string
   approvedAt?: Date | string | null
   activatedAt?: Date | string | null
   expiresAt?: Date | string | null
@@ -1061,7 +1057,7 @@ export type DriverSubscriptionCreateManyDriverInput = {
   screenshotId?: number | null
   paymentMethod: Prisma.JsonNullValueInput | runtime.InputJsonValue
   adminNotes?: string | null
-  status?: $Enums.SubscriptionStatus
+  status?: string
   approvedAt?: Date | string | null
   activatedAt?: Date | string | null
   expiresAt?: Date | string | null
@@ -1080,7 +1076,7 @@ export type DriverSubscriptionUpdateWithoutDriverInput = {
   balance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   paymentMethod?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   adminNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  status?: Prisma.EnumSubscriptionStatusFieldUpdateOperationsInput | $Enums.SubscriptionStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   approvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   activatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   expiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1103,7 +1099,7 @@ export type DriverSubscriptionUncheckedUpdateWithoutDriverInput = {
   screenshotId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   paymentMethod?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   adminNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  status?: Prisma.EnumSubscriptionStatusFieldUpdateOperationsInput | $Enums.SubscriptionStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   approvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   activatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   expiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1124,7 +1120,7 @@ export type DriverSubscriptionUncheckedUpdateManyWithoutDriverInput = {
   screenshotId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   paymentMethod?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   adminNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  status?: Prisma.EnumSubscriptionStatusFieldUpdateOperationsInput | $Enums.SubscriptionStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   approvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   activatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   expiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1145,7 +1141,7 @@ export type DriverSubscriptionCreateManyPlanInput = {
   screenshotId?: number | null
   paymentMethod: Prisma.JsonNullValueInput | runtime.InputJsonValue
   adminNotes?: string | null
-  status?: $Enums.SubscriptionStatus
+  status?: string
   approvedAt?: Date | string | null
   activatedAt?: Date | string | null
   expiresAt?: Date | string | null
@@ -1164,7 +1160,7 @@ export type DriverSubscriptionUpdateWithoutPlanInput = {
   balance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   paymentMethod?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   adminNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  status?: Prisma.EnumSubscriptionStatusFieldUpdateOperationsInput | $Enums.SubscriptionStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   approvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   activatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   expiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1187,7 +1183,7 @@ export type DriverSubscriptionUncheckedUpdateWithoutPlanInput = {
   screenshotId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   paymentMethod?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   adminNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  status?: Prisma.EnumSubscriptionStatusFieldUpdateOperationsInput | $Enums.SubscriptionStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   approvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   activatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   expiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1208,7 +1204,7 @@ export type DriverSubscriptionUncheckedUpdateManyWithoutPlanInput = {
   screenshotId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   paymentMethod?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   adminNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  status?: Prisma.EnumSubscriptionStatusFieldUpdateOperationsInput | $Enums.SubscriptionStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   approvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   activatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   expiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1229,7 +1225,7 @@ export type DriverSubscriptionCreateManyScreenshotInput = {
   balance?: runtime.Decimal | runtime.DecimalJsLike | number | string
   paymentMethod: Prisma.JsonNullValueInput | runtime.InputJsonValue
   adminNotes?: string | null
-  status?: $Enums.SubscriptionStatus
+  status?: string
   approvedAt?: Date | string | null
   activatedAt?: Date | string | null
   expiresAt?: Date | string | null
@@ -1248,7 +1244,7 @@ export type DriverSubscriptionUpdateWithoutScreenshotInput = {
   balance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   paymentMethod?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   adminNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  status?: Prisma.EnumSubscriptionStatusFieldUpdateOperationsInput | $Enums.SubscriptionStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   approvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   activatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   expiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1271,7 +1267,7 @@ export type DriverSubscriptionUncheckedUpdateWithoutScreenshotInput = {
   balance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   paymentMethod?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   adminNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  status?: Prisma.EnumSubscriptionStatusFieldUpdateOperationsInput | $Enums.SubscriptionStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   approvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   activatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   expiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1292,7 +1288,7 @@ export type DriverSubscriptionUncheckedUpdateManyWithoutScreenshotInput = {
   balance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   paymentMethod?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   adminNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  status?: Prisma.EnumSubscriptionStatusFieldUpdateOperationsInput | $Enums.SubscriptionStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   approvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   activatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   expiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1437,7 +1433,7 @@ export type $DriverSubscriptionPayload<ExtArgs extends runtime.Types.Extensions.
     screenshotId: number | null
     paymentMethod: runtime.JsonValue
     adminNotes: string | null
-    status: $Enums.SubscriptionStatus
+    status: string
     approvedAt: Date | null
     activatedAt: Date | null
     expiresAt: Date | null
@@ -1882,7 +1878,7 @@ export interface DriverSubscriptionFieldRefs {
   readonly screenshotId: Prisma.FieldRef<"DriverSubscription", 'Int'>
   readonly paymentMethod: Prisma.FieldRef<"DriverSubscription", 'Json'>
   readonly adminNotes: Prisma.FieldRef<"DriverSubscription", 'String'>
-  readonly status: Prisma.FieldRef<"DriverSubscription", 'SubscriptionStatus'>
+  readonly status: Prisma.FieldRef<"DriverSubscription", 'String'>
   readonly approvedAt: Prisma.FieldRef<"DriverSubscription", 'DateTime'>
   readonly activatedAt: Prisma.FieldRef<"DriverSubscription", 'DateTime'>
   readonly expiresAt: Prisma.FieldRef<"DriverSubscription", 'DateTime'>

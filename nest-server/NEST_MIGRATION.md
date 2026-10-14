@@ -17,16 +17,29 @@ pnpm run start:dev
 
 Health: `GET /api/healthz`, `GET /api/health/realtime` (public). Swagger: `/docs`.
 
-## Dev database
+## Dev database (shared with Express)
 
-Nest needs its own Prisma-migrated database — do NOT point it at the
-Express/Sequelize-synced DB (`enum_*` types there differ from Prisma's
-`SosStatus`-style types and every enum query 42704s). Create once, migrate,
-point `.env` `DB_NAME` at it:
-```bash
-# psql: CREATE DATABASE app_db_nest;
-DATABASE_URL=postgresql://<user>:<pass>@<host>:<port>/app_db_nest npx prisma migrate deploy
-```
+Both servers run against ONE Postgres database. The Express/Sequelize server
+owns the schema (its migrations + `sequelize.sync({ force:false })`); the Nest
+Prisma schema deliberately declares every value set as `String` and creates
+NO native enum types, so Prisma never emits `CAST(... AS "SosStatus")` and
+works on Sequelize-managed columns (`enum_<table>_<column>` types coerce the
+text params).
+
+- Point `.env` `DATABASE_URL` at the shared DB. No separate `app_db_nest`.
+- Nest never runs `prisma migrate dev` against the shared DB. The checked-in
+  migrations are informational/convergence-only:
+  - `20261009193443_baseline` — historical Prisma-native-enum baseline (do NOT
+    apply to a Sequelize-managed DB; it would create conflicting `"SosStatus"`-style types).
+  - `20261014120000_shared_db_strings` — one-time convergence: converts all
+    enum columns to VARCHAR and drops the baseline types. Safe on both
+    Sequelize-managed and baseline-migrated DBs; apply once via
+    `prisma migrate deploy` (or the raw SQL) in a low-traffic window.
+- Fresh local DB for Nest-only development: `prisma migrate deploy` applies
+  baseline then the convergence migration, ending on VARCHAR columns that
+  Sequelize also accepts.
+- Rule: never reintroduce Prisma `enum` blocks without a coordinated
+  cross-server migration (it 42704s the other server's queries).
 
 ## Done
 

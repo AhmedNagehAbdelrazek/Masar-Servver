@@ -38,7 +38,7 @@ export type TripSeatMinAggregateOutputType = {
   id: string | null
   tripId: string | null
   seatNumber: number | null
-  seatType: $Enums.SeatType | null
+  seatType: string | null
   wasAvailable: boolean | null
   createdAt: Date | null
 }
@@ -47,7 +47,7 @@ export type TripSeatMaxAggregateOutputType = {
   id: string | null
   tripId: string | null
   seatNumber: number | null
-  seatType: $Enums.SeatType | null
+  seatType: string | null
   wasAvailable: boolean | null
   createdAt: Date | null
 }
@@ -189,7 +189,7 @@ export type TripSeatGroupByOutputType = {
   id: string
   tripId: string
   seatNumber: number
-  seatType: $Enums.SeatType
+  seatType: string
   wasAvailable: boolean
   createdAt: Date
   _count: TripSeatCountAggregateOutputType | null
@@ -221,7 +221,7 @@ export type TripSeatWhereInput = {
   id?: Prisma.UuidFilter<"TripSeat"> | string
   tripId?: Prisma.UuidFilter<"TripSeat"> | string
   seatNumber?: Prisma.IntFilter<"TripSeat"> | number
-  seatType?: Prisma.EnumSeatTypeFilter<"TripSeat"> | $Enums.SeatType
+  seatType?: Prisma.StringFilter<"TripSeat"> | string
   wasAvailable?: Prisma.BoolFilter<"TripSeat"> | boolean
   createdAt?: Prisma.DateTimeFilter<"TripSeat"> | Date | string
   trip?: Prisma.XOR<Prisma.TripScalarRelationFilter, Prisma.TripWhereInput>
@@ -245,7 +245,7 @@ export type TripSeatWhereUniqueInput = Prisma.AtLeast<{
   NOT?: Prisma.TripSeatWhereInput | Prisma.TripSeatWhereInput[]
   tripId?: Prisma.UuidFilter<"TripSeat"> | string
   seatNumber?: Prisma.IntFilter<"TripSeat"> | number
-  seatType?: Prisma.EnumSeatTypeFilter<"TripSeat"> | $Enums.SeatType
+  seatType?: Prisma.StringFilter<"TripSeat"> | string
   wasAvailable?: Prisma.BoolFilter<"TripSeat"> | boolean
   createdAt?: Prisma.DateTimeFilter<"TripSeat"> | Date | string
   trip?: Prisma.XOR<Prisma.TripScalarRelationFilter, Prisma.TripWhereInput>
@@ -272,7 +272,7 @@ export type TripSeatScalarWhereWithAggregatesInput = {
   id?: Prisma.UuidWithAggregatesFilter<"TripSeat"> | string
   tripId?: Prisma.UuidWithAggregatesFilter<"TripSeat"> | string
   seatNumber?: Prisma.IntWithAggregatesFilter<"TripSeat"> | number
-  seatType?: Prisma.EnumSeatTypeWithAggregatesFilter<"TripSeat"> | $Enums.SeatType
+  seatType?: Prisma.StringWithAggregatesFilter<"TripSeat"> | string
   wasAvailable?: Prisma.BoolWithAggregatesFilter<"TripSeat"> | boolean
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"TripSeat"> | Date | string
 }
@@ -280,7 +280,7 @@ export type TripSeatScalarWhereWithAggregatesInput = {
 export type TripSeatCreateInput = {
   id?: string
   seatNumber: number
-  seatType: $Enums.SeatType
+  seatType: string
   wasAvailable?: boolean
   createdAt?: Date | string
   trip: Prisma.TripCreateNestedOneWithoutSeatsInput
@@ -290,7 +290,7 @@ export type TripSeatUncheckedCreateInput = {
   id?: string
   tripId: string
   seatNumber: number
-  seatType: $Enums.SeatType
+  seatType: string
   wasAvailable?: boolean
   createdAt?: Date | string
 }
@@ -298,7 +298,7 @@ export type TripSeatUncheckedCreateInput = {
 export type TripSeatUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   seatNumber?: Prisma.IntFieldUpdateOperationsInput | number
-  seatType?: Prisma.EnumSeatTypeFieldUpdateOperationsInput | $Enums.SeatType
+  seatType?: Prisma.StringFieldUpdateOperationsInput | string
   wasAvailable?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   trip?: Prisma.TripUpdateOneRequiredWithoutSeatsNestedInput
@@ -308,7 +308,7 @@ export type TripSeatUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   tripId?: Prisma.StringFieldUpdateOperationsInput | string
   seatNumber?: Prisma.IntFieldUpdateOperationsInput | number
-  seatType?: Prisma.EnumSeatTypeFieldUpdateOperationsInput | $Enums.SeatType
+  seatType?: Prisma.StringFieldUpdateOperationsInput | string
   wasAvailable?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -317,7 +317,7 @@ export type TripSeatCreateManyInput = {
   id?: string
   tripId: string
   seatNumber: number
-  seatType: $Enums.SeatType
+  seatType: string
   wasAvailable?: boolean
   createdAt?: Date | string
 }
@@ -325,7 +325,7 @@ export type TripSeatCreateManyInput = {
 export type TripSeatUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   seatNumber?: Prisma.IntFieldUpdateOperationsInput | number
-  seatType?: Prisma.EnumSeatTypeFieldUpdateOperationsInput | $Enums.SeatType
+  seatType?: Prisma.StringFieldUpdateOperationsInput | string
   wasAvailable?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -334,7 +334,7 @@ export type TripSeatUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   tripId?: Prisma.StringFieldUpdateOperationsInput | string
   seatNumber?: Prisma.IntFieldUpdateOperationsInput | number
-  seatType?: Prisma.EnumSeatTypeFieldUpdateOperationsInput | $Enums.SeatType
+  seatType?: Prisma.StringFieldUpdateOperationsInput | string
   wasAvailable?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -431,14 +431,10 @@ export type TripSeatUncheckedUpdateManyWithoutTripNestedInput = {
   deleteMany?: Prisma.TripSeatScalarWhereInput | Prisma.TripSeatScalarWhereInput[]
 }
 
-export type EnumSeatTypeFieldUpdateOperationsInput = {
-  set?: $Enums.SeatType
-}
-
 export type TripSeatCreateWithoutTripInput = {
   id?: string
   seatNumber: number
-  seatType: $Enums.SeatType
+  seatType: string
   wasAvailable?: boolean
   createdAt?: Date | string
 }
@@ -446,7 +442,7 @@ export type TripSeatCreateWithoutTripInput = {
 export type TripSeatUncheckedCreateWithoutTripInput = {
   id?: string
   seatNumber: number
-  seatType: $Enums.SeatType
+  seatType: string
   wasAvailable?: boolean
   createdAt?: Date | string
 }
@@ -484,7 +480,7 @@ export type TripSeatScalarWhereInput = {
   id?: Prisma.UuidFilter<"TripSeat"> | string
   tripId?: Prisma.UuidFilter<"TripSeat"> | string
   seatNumber?: Prisma.IntFilter<"TripSeat"> | number
-  seatType?: Prisma.EnumSeatTypeFilter<"TripSeat"> | $Enums.SeatType
+  seatType?: Prisma.StringFilter<"TripSeat"> | string
   wasAvailable?: Prisma.BoolFilter<"TripSeat"> | boolean
   createdAt?: Prisma.DateTimeFilter<"TripSeat"> | Date | string
 }
@@ -492,7 +488,7 @@ export type TripSeatScalarWhereInput = {
 export type TripSeatCreateManyTripInput = {
   id?: string
   seatNumber: number
-  seatType: $Enums.SeatType
+  seatType: string
   wasAvailable?: boolean
   createdAt?: Date | string
 }
@@ -500,7 +496,7 @@ export type TripSeatCreateManyTripInput = {
 export type TripSeatUpdateWithoutTripInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   seatNumber?: Prisma.IntFieldUpdateOperationsInput | number
-  seatType?: Prisma.EnumSeatTypeFieldUpdateOperationsInput | $Enums.SeatType
+  seatType?: Prisma.StringFieldUpdateOperationsInput | string
   wasAvailable?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -508,7 +504,7 @@ export type TripSeatUpdateWithoutTripInput = {
 export type TripSeatUncheckedUpdateWithoutTripInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   seatNumber?: Prisma.IntFieldUpdateOperationsInput | number
-  seatType?: Prisma.EnumSeatTypeFieldUpdateOperationsInput | $Enums.SeatType
+  seatType?: Prisma.StringFieldUpdateOperationsInput | string
   wasAvailable?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -516,7 +512,7 @@ export type TripSeatUncheckedUpdateWithoutTripInput = {
 export type TripSeatUncheckedUpdateManyWithoutTripInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   seatNumber?: Prisma.IntFieldUpdateOperationsInput | number
-  seatType?: Prisma.EnumSeatTypeFieldUpdateOperationsInput | $Enums.SeatType
+  seatType?: Prisma.StringFieldUpdateOperationsInput | string
   wasAvailable?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -582,7 +578,7 @@ export type $TripSeatPayload<ExtArgs extends runtime.Types.Extensions.InternalAr
     id: string
     tripId: string
     seatNumber: number
-    seatType: $Enums.SeatType
+    seatType: string
     wasAvailable: boolean
     createdAt: Date
   }, ExtArgs["result"]["tripSeat"]>
@@ -1012,7 +1008,7 @@ export interface TripSeatFieldRefs {
   readonly id: Prisma.FieldRef<"TripSeat", 'String'>
   readonly tripId: Prisma.FieldRef<"TripSeat", 'String'>
   readonly seatNumber: Prisma.FieldRef<"TripSeat", 'Int'>
-  readonly seatType: Prisma.FieldRef<"TripSeat", 'SeatType'>
+  readonly seatType: Prisma.FieldRef<"TripSeat", 'String'>
   readonly wasAvailable: Prisma.FieldRef<"TripSeat", 'Boolean'>
   readonly createdAt: Prisma.FieldRef<"TripSeat", 'DateTime'>
 }

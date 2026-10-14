@@ -22,4 +22,5 @@ export declare class IssuePenaltyDto {
     complaint_id?: string;
     details?: string;
     ends_at?: string;
+    confirm_reviewed_log?: boolean;
 }

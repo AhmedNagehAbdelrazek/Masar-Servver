@@ -83,9 +83,9 @@ export type TripMinAggregateOutputType = {
   currency: string | null
   isRecurring: boolean | null
   recurrenceEndDate: Date | null
-  genderPreference: $Enums.GenderPreference | null
+  genderPreference: string | null
   additionalInstructions: string | null
-  status: $Enums.TripStatus | null
+  status: string | null
   isFeatured: boolean | null
   featuredUntil: Date | null
   isBlockedByBalance: boolean | null
@@ -95,7 +95,7 @@ export type TripMinAggregateOutputType = {
   routePolyline: string | null
   routeDistanceM: number | null
   routeDurationS: number | null
-  routeStatus: $Enums.RouteStatus | null
+  routeStatus: string | null
   routeComputedAt: Date | null
   routeVersion: number | null
   actualPathPolyline: string | null
@@ -130,9 +130,9 @@ export type TripMaxAggregateOutputType = {
   currency: string | null
   isRecurring: boolean | null
   recurrenceEndDate: Date | null
-  genderPreference: $Enums.GenderPreference | null
+  genderPreference: string | null
   additionalInstructions: string | null
-  status: $Enums.TripStatus | null
+  status: string | null
   isFeatured: boolean | null
   featuredUntil: Date | null
   isBlockedByBalance: boolean | null
@@ -142,7 +142,7 @@ export type TripMaxAggregateOutputType = {
   routePolyline: string | null
   routeDistanceM: number | null
   routeDurationS: number | null
-  routeStatus: $Enums.RouteStatus | null
+  routeStatus: string | null
   routeComputedAt: Date | null
   routeVersion: number | null
   actualPathPolyline: string | null
@@ -496,10 +496,10 @@ export type TripGroupByOutputType = {
   recurrencePattern: runtime.JsonValue | null
   recurrenceDays: number[]
   recurrenceEndDate: Date | null
-  genderPreference: $Enums.GenderPreference
+  genderPreference: string
   driverInstructions: string[]
   additionalInstructions: string | null
-  status: $Enums.TripStatus
+  status: string
   isFeatured: boolean | null
   featuredUntil: Date | null
   isBlockedByBalance: boolean
@@ -509,7 +509,7 @@ export type TripGroupByOutputType = {
   routePolyline: string | null
   routeDistanceM: number | null
   routeDurationS: number | null
-  routeStatus: $Enums.RouteStatus
+  routeStatus: string
   routeComputedAt: Date | null
   routeVersion: number
   actualPathPolyline: string | null
@@ -569,10 +569,10 @@ export type TripWhereInput = {
   recurrencePattern?: Prisma.JsonNullableFilter<"Trip">
   recurrenceDays?: Prisma.IntNullableListFilter<"Trip">
   recurrenceEndDate?: Prisma.DateTimeNullableFilter<"Trip"> | Date | string | null
-  genderPreference?: Prisma.EnumGenderPreferenceFilter<"Trip"> | $Enums.GenderPreference
+  genderPreference?: Prisma.StringFilter<"Trip"> | string
   driverInstructions?: Prisma.StringNullableListFilter<"Trip">
   additionalInstructions?: Prisma.StringNullableFilter<"Trip"> | string | null
-  status?: Prisma.EnumTripStatusFilter<"Trip"> | $Enums.TripStatus
+  status?: Prisma.StringFilter<"Trip"> | string
   isFeatured?: Prisma.BoolNullableFilter<"Trip"> | boolean | null
   featuredUntil?: Prisma.DateTimeNullableFilter<"Trip"> | Date | string | null
   isBlockedByBalance?: Prisma.BoolFilter<"Trip"> | boolean
@@ -582,7 +582,7 @@ export type TripWhereInput = {
   routePolyline?: Prisma.StringNullableFilter<"Trip"> | string | null
   routeDistanceM?: Prisma.IntNullableFilter<"Trip"> | number | null
   routeDurationS?: Prisma.IntNullableFilter<"Trip"> | number | null
-  routeStatus?: Prisma.EnumRouteStatusFilter<"Trip"> | $Enums.RouteStatus
+  routeStatus?: Prisma.StringFilter<"Trip"> | string
   routeComputedAt?: Prisma.DateTimeNullableFilter<"Trip"> | Date | string | null
   routeVersion?: Prisma.IntFilter<"Trip"> | number
   actualPathPolyline?: Prisma.StringNullableFilter<"Trip"> | string | null
@@ -690,10 +690,10 @@ export type TripWhereUniqueInput = Prisma.AtLeast<{
   recurrencePattern?: Prisma.JsonNullableFilter<"Trip">
   recurrenceDays?: Prisma.IntNullableListFilter<"Trip">
   recurrenceEndDate?: Prisma.DateTimeNullableFilter<"Trip"> | Date | string | null
-  genderPreference?: Prisma.EnumGenderPreferenceFilter<"Trip"> | $Enums.GenderPreference
+  genderPreference?: Prisma.StringFilter<"Trip"> | string
   driverInstructions?: Prisma.StringNullableListFilter<"Trip">
   additionalInstructions?: Prisma.StringNullableFilter<"Trip"> | string | null
-  status?: Prisma.EnumTripStatusFilter<"Trip"> | $Enums.TripStatus
+  status?: Prisma.StringFilter<"Trip"> | string
   isFeatured?: Prisma.BoolNullableFilter<"Trip"> | boolean | null
   featuredUntil?: Prisma.DateTimeNullableFilter<"Trip"> | Date | string | null
   isBlockedByBalance?: Prisma.BoolFilter<"Trip"> | boolean
@@ -703,7 +703,7 @@ export type TripWhereUniqueInput = Prisma.AtLeast<{
   routePolyline?: Prisma.StringNullableFilter<"Trip"> | string | null
   routeDistanceM?: Prisma.IntNullableFilter<"Trip"> | number | null
   routeDurationS?: Prisma.IntNullableFilter<"Trip"> | number | null
-  routeStatus?: Prisma.EnumRouteStatusFilter<"Trip"> | $Enums.RouteStatus
+  routeStatus?: Prisma.StringFilter<"Trip"> | string
   routeComputedAt?: Prisma.DateTimeNullableFilter<"Trip"> | Date | string | null
   routeVersion?: Prisma.IntFilter<"Trip"> | number
   actualPathPolyline?: Prisma.StringNullableFilter<"Trip"> | string | null
@@ -807,10 +807,10 @@ export type TripScalarWhereWithAggregatesInput = {
   recurrencePattern?: Prisma.JsonNullableWithAggregatesFilter<"Trip">
   recurrenceDays?: Prisma.IntNullableListFilter<"Trip">
   recurrenceEndDate?: Prisma.DateTimeNullableWithAggregatesFilter<"Trip"> | Date | string | null
-  genderPreference?: Prisma.EnumGenderPreferenceWithAggregatesFilter<"Trip"> | $Enums.GenderPreference
+  genderPreference?: Prisma.StringWithAggregatesFilter<"Trip"> | string
   driverInstructions?: Prisma.StringNullableListFilter<"Trip">
   additionalInstructions?: Prisma.StringNullableWithAggregatesFilter<"Trip"> | string | null
-  status?: Prisma.EnumTripStatusWithAggregatesFilter<"Trip"> | $Enums.TripStatus
+  status?: Prisma.StringWithAggregatesFilter<"Trip"> | string
   isFeatured?: Prisma.BoolNullableWithAggregatesFilter<"Trip"> | boolean | null
   featuredUntil?: Prisma.DateTimeNullableWithAggregatesFilter<"Trip"> | Date | string | null
   isBlockedByBalance?: Prisma.BoolWithAggregatesFilter<"Trip"> | boolean
@@ -820,7 +820,7 @@ export type TripScalarWhereWithAggregatesInput = {
   routePolyline?: Prisma.StringNullableWithAggregatesFilter<"Trip"> | string | null
   routeDistanceM?: Prisma.IntNullableWithAggregatesFilter<"Trip"> | number | null
   routeDurationS?: Prisma.IntNullableWithAggregatesFilter<"Trip"> | number | null
-  routeStatus?: Prisma.EnumRouteStatusWithAggregatesFilter<"Trip"> | $Enums.RouteStatus
+  routeStatus?: Prisma.StringWithAggregatesFilter<"Trip"> | string
   routeComputedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Trip"> | Date | string | null
   routeVersion?: Prisma.IntWithAggregatesFilter<"Trip"> | number
   actualPathPolyline?: Prisma.StringNullableWithAggregatesFilter<"Trip"> | string | null
@@ -855,10 +855,10 @@ export type TripCreateInput = {
   recurrencePattern?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   recurrenceDays?: Prisma.TripCreaterecurrenceDaysInput | number[]
   recurrenceEndDate?: Date | string | null
-  genderPreference?: $Enums.GenderPreference
+  genderPreference?: string
   driverInstructions?: Prisma.TripCreatedriverInstructionsInput | string[]
   additionalInstructions?: string | null
-  status?: $Enums.TripStatus
+  status?: string
   isFeatured?: boolean | null
   featuredUntil?: Date | string | null
   isBlockedByBalance?: boolean
@@ -868,7 +868,7 @@ export type TripCreateInput = {
   routePolyline?: string | null
   routeDistanceM?: number | null
   routeDurationS?: number | null
-  routeStatus?: $Enums.RouteStatus
+  routeStatus?: string
   routeComputedAt?: Date | string | null
   routeVersion?: number
   actualPathPolyline?: string | null
@@ -914,10 +914,10 @@ export type TripUncheckedCreateInput = {
   recurrencePattern?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   recurrenceDays?: Prisma.TripCreaterecurrenceDaysInput | number[]
   recurrenceEndDate?: Date | string | null
-  genderPreference?: $Enums.GenderPreference
+  genderPreference?: string
   driverInstructions?: Prisma.TripCreatedriverInstructionsInput | string[]
   additionalInstructions?: string | null
-  status?: $Enums.TripStatus
+  status?: string
   isFeatured?: boolean | null
   featuredUntil?: Date | string | null
   isBlockedByBalance?: boolean
@@ -927,7 +927,7 @@ export type TripUncheckedCreateInput = {
   routePolyline?: string | null
   routeDistanceM?: number | null
   routeDurationS?: number | null
-  routeStatus?: $Enums.RouteStatus
+  routeStatus?: string
   routeComputedAt?: Date | string | null
   routeVersion?: number
   actualPathPolyline?: string | null
@@ -969,10 +969,10 @@ export type TripUpdateInput = {
   recurrencePattern?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   recurrenceDays?: Prisma.TripUpdaterecurrenceDaysInput | number[]
   recurrenceEndDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  genderPreference?: Prisma.EnumGenderPreferenceFieldUpdateOperationsInput | $Enums.GenderPreference
+  genderPreference?: Prisma.StringFieldUpdateOperationsInput | string
   driverInstructions?: Prisma.TripUpdatedriverInstructionsInput | string[]
   additionalInstructions?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  status?: Prisma.EnumTripStatusFieldUpdateOperationsInput | $Enums.TripStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   isFeatured?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   featuredUntil?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isBlockedByBalance?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -982,7 +982,7 @@ export type TripUpdateInput = {
   routePolyline?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   routeDistanceM?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   routeDurationS?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  routeStatus?: Prisma.EnumRouteStatusFieldUpdateOperationsInput | $Enums.RouteStatus
+  routeStatus?: Prisma.StringFieldUpdateOperationsInput | string
   routeComputedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   routeVersion?: Prisma.IntFieldUpdateOperationsInput | number
   actualPathPolyline?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1028,10 +1028,10 @@ export type TripUncheckedUpdateInput = {
   recurrencePattern?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   recurrenceDays?: Prisma.TripUpdaterecurrenceDaysInput | number[]
   recurrenceEndDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  genderPreference?: Prisma.EnumGenderPreferenceFieldUpdateOperationsInput | $Enums.GenderPreference
+  genderPreference?: Prisma.StringFieldUpdateOperationsInput | string
   driverInstructions?: Prisma.TripUpdatedriverInstructionsInput | string[]
   additionalInstructions?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  status?: Prisma.EnumTripStatusFieldUpdateOperationsInput | $Enums.TripStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   isFeatured?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   featuredUntil?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isBlockedByBalance?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -1041,7 +1041,7 @@ export type TripUncheckedUpdateInput = {
   routePolyline?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   routeDistanceM?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   routeDurationS?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  routeStatus?: Prisma.EnumRouteStatusFieldUpdateOperationsInput | $Enums.RouteStatus
+  routeStatus?: Prisma.StringFieldUpdateOperationsInput | string
   routeComputedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   routeVersion?: Prisma.IntFieldUpdateOperationsInput | number
   actualPathPolyline?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1085,10 +1085,10 @@ export type TripCreateManyInput = {
   recurrencePattern?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   recurrenceDays?: Prisma.TripCreaterecurrenceDaysInput | number[]
   recurrenceEndDate?: Date | string | null
-  genderPreference?: $Enums.GenderPreference
+  genderPreference?: string
   driverInstructions?: Prisma.TripCreatedriverInstructionsInput | string[]
   additionalInstructions?: string | null
-  status?: $Enums.TripStatus
+  status?: string
   isFeatured?: boolean | null
   featuredUntil?: Date | string | null
   isBlockedByBalance?: boolean
@@ -1098,7 +1098,7 @@ export type TripCreateManyInput = {
   routePolyline?: string | null
   routeDistanceM?: number | null
   routeDurationS?: number | null
-  routeStatus?: $Enums.RouteStatus
+  routeStatus?: string
   routeComputedAt?: Date | string | null
   routeVersion?: number
   actualPathPolyline?: string | null
@@ -1133,10 +1133,10 @@ export type TripUpdateManyMutationInput = {
   recurrencePattern?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   recurrenceDays?: Prisma.TripUpdaterecurrenceDaysInput | number[]
   recurrenceEndDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  genderPreference?: Prisma.EnumGenderPreferenceFieldUpdateOperationsInput | $Enums.GenderPreference
+  genderPreference?: Prisma.StringFieldUpdateOperationsInput | string
   driverInstructions?: Prisma.TripUpdatedriverInstructionsInput | string[]
   additionalInstructions?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  status?: Prisma.EnumTripStatusFieldUpdateOperationsInput | $Enums.TripStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   isFeatured?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   featuredUntil?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isBlockedByBalance?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -1146,7 +1146,7 @@ export type TripUpdateManyMutationInput = {
   routePolyline?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   routeDistanceM?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   routeDurationS?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  routeStatus?: Prisma.EnumRouteStatusFieldUpdateOperationsInput | $Enums.RouteStatus
+  routeStatus?: Prisma.StringFieldUpdateOperationsInput | string
   routeComputedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   routeVersion?: Prisma.IntFieldUpdateOperationsInput | number
   actualPathPolyline?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1183,10 +1183,10 @@ export type TripUncheckedUpdateManyInput = {
   recurrencePattern?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   recurrenceDays?: Prisma.TripUpdaterecurrenceDaysInput | number[]
   recurrenceEndDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  genderPreference?: Prisma.EnumGenderPreferenceFieldUpdateOperationsInput | $Enums.GenderPreference
+  genderPreference?: Prisma.StringFieldUpdateOperationsInput | string
   driverInstructions?: Prisma.TripUpdatedriverInstructionsInput | string[]
   additionalInstructions?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  status?: Prisma.EnumTripStatusFieldUpdateOperationsInput | $Enums.TripStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   isFeatured?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   featuredUntil?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isBlockedByBalance?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -1196,7 +1196,7 @@ export type TripUncheckedUpdateManyInput = {
   routePolyline?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   routeDistanceM?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   routeDurationS?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  routeStatus?: Prisma.EnumRouteStatusFieldUpdateOperationsInput | $Enums.RouteStatus
+  routeStatus?: Prisma.StringFieldUpdateOperationsInput | string
   routeComputedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   routeVersion?: Prisma.IntFieldUpdateOperationsInput | number
   actualPathPolyline?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1519,21 +1519,9 @@ export type TripUpdaterecurrenceDaysInput = {
   push?: number | number[]
 }
 
-export type EnumGenderPreferenceFieldUpdateOperationsInput = {
-  set?: $Enums.GenderPreference
-}
-
 export type TripUpdatedriverInstructionsInput = {
   set?: string[]
   push?: string | string[]
-}
-
-export type EnumTripStatusFieldUpdateOperationsInput = {
-  set?: $Enums.TripStatus
-}
-
-export type EnumRouteStatusFieldUpdateOperationsInput = {
-  set?: $Enums.RouteStatus
 }
 
 export type TripCreateNestedOneWithoutAttributesInput = {
@@ -1659,10 +1647,10 @@ export type TripCreateWithoutDriverInput = {
   recurrencePattern?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   recurrenceDays?: Prisma.TripCreaterecurrenceDaysInput | number[]
   recurrenceEndDate?: Date | string | null
-  genderPreference?: $Enums.GenderPreference
+  genderPreference?: string
   driverInstructions?: Prisma.TripCreatedriverInstructionsInput | string[]
   additionalInstructions?: string | null
-  status?: $Enums.TripStatus
+  status?: string
   isFeatured?: boolean | null
   featuredUntil?: Date | string | null
   isBlockedByBalance?: boolean
@@ -1672,7 +1660,7 @@ export type TripCreateWithoutDriverInput = {
   routePolyline?: string | null
   routeDistanceM?: number | null
   routeDurationS?: number | null
-  routeStatus?: $Enums.RouteStatus
+  routeStatus?: string
   routeComputedAt?: Date | string | null
   routeVersion?: number
   actualPathPolyline?: string | null
@@ -1716,10 +1704,10 @@ export type TripUncheckedCreateWithoutDriverInput = {
   recurrencePattern?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   recurrenceDays?: Prisma.TripCreaterecurrenceDaysInput | number[]
   recurrenceEndDate?: Date | string | null
-  genderPreference?: $Enums.GenderPreference
+  genderPreference?: string
   driverInstructions?: Prisma.TripCreatedriverInstructionsInput | string[]
   additionalInstructions?: string | null
-  status?: $Enums.TripStatus
+  status?: string
   isFeatured?: boolean | null
   featuredUntil?: Date | string | null
   isBlockedByBalance?: boolean
@@ -1729,7 +1717,7 @@ export type TripUncheckedCreateWithoutDriverInput = {
   routePolyline?: string | null
   routeDistanceM?: number | null
   routeDurationS?: number | null
-  routeStatus?: $Enums.RouteStatus
+  routeStatus?: string
   routeComputedAt?: Date | string | null
   routeVersion?: number
   actualPathPolyline?: string | null
@@ -1802,10 +1790,10 @@ export type TripScalarWhereInput = {
   recurrencePattern?: Prisma.JsonNullableFilter<"Trip">
   recurrenceDays?: Prisma.IntNullableListFilter<"Trip">
   recurrenceEndDate?: Prisma.DateTimeNullableFilter<"Trip"> | Date | string | null
-  genderPreference?: Prisma.EnumGenderPreferenceFilter<"Trip"> | $Enums.GenderPreference
+  genderPreference?: Prisma.StringFilter<"Trip"> | string
   driverInstructions?: Prisma.StringNullableListFilter<"Trip">
   additionalInstructions?: Prisma.StringNullableFilter<"Trip"> | string | null
-  status?: Prisma.EnumTripStatusFilter<"Trip"> | $Enums.TripStatus
+  status?: Prisma.StringFilter<"Trip"> | string
   isFeatured?: Prisma.BoolNullableFilter<"Trip"> | boolean | null
   featuredUntil?: Prisma.DateTimeNullableFilter<"Trip"> | Date | string | null
   isBlockedByBalance?: Prisma.BoolFilter<"Trip"> | boolean
@@ -1815,7 +1803,7 @@ export type TripScalarWhereInput = {
   routePolyline?: Prisma.StringNullableFilter<"Trip"> | string | null
   routeDistanceM?: Prisma.IntNullableFilter<"Trip"> | number | null
   routeDurationS?: Prisma.IntNullableFilter<"Trip"> | number | null
-  routeStatus?: Prisma.EnumRouteStatusFilter<"Trip"> | $Enums.RouteStatus
+  routeStatus?: Prisma.StringFilter<"Trip"> | string
   routeComputedAt?: Prisma.DateTimeNullableFilter<"Trip"> | Date | string | null
   routeVersion?: Prisma.IntFilter<"Trip"> | number
   actualPathPolyline?: Prisma.StringNullableFilter<"Trip"> | string | null
@@ -1850,10 +1838,10 @@ export type TripCreateWithoutVehicleInput = {
   recurrencePattern?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   recurrenceDays?: Prisma.TripCreaterecurrenceDaysInput | number[]
   recurrenceEndDate?: Date | string | null
-  genderPreference?: $Enums.GenderPreference
+  genderPreference?: string
   driverInstructions?: Prisma.TripCreatedriverInstructionsInput | string[]
   additionalInstructions?: string | null
-  status?: $Enums.TripStatus
+  status?: string
   isFeatured?: boolean | null
   featuredUntil?: Date | string | null
   isBlockedByBalance?: boolean
@@ -1863,7 +1851,7 @@ export type TripCreateWithoutVehicleInput = {
   routePolyline?: string | null
   routeDistanceM?: number | null
   routeDurationS?: number | null
-  routeStatus?: $Enums.RouteStatus
+  routeStatus?: string
   routeComputedAt?: Date | string | null
   routeVersion?: number
   actualPathPolyline?: string | null
@@ -1907,10 +1895,10 @@ export type TripUncheckedCreateWithoutVehicleInput = {
   recurrencePattern?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   recurrenceDays?: Prisma.TripCreaterecurrenceDaysInput | number[]
   recurrenceEndDate?: Date | string | null
-  genderPreference?: $Enums.GenderPreference
+  genderPreference?: string
   driverInstructions?: Prisma.TripCreatedriverInstructionsInput | string[]
   additionalInstructions?: string | null
-  status?: $Enums.TripStatus
+  status?: string
   isFeatured?: boolean | null
   featuredUntil?: Date | string | null
   isBlockedByBalance?: boolean
@@ -1920,7 +1908,7 @@ export type TripUncheckedCreateWithoutVehicleInput = {
   routePolyline?: string | null
   routeDistanceM?: number | null
   routeDurationS?: number | null
-  routeStatus?: $Enums.RouteStatus
+  routeStatus?: string
   routeComputedAt?: Date | string | null
   routeVersion?: number
   actualPathPolyline?: string | null
@@ -1988,10 +1976,10 @@ export type TripCreateWithoutAttributesInput = {
   recurrencePattern?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   recurrenceDays?: Prisma.TripCreaterecurrenceDaysInput | number[]
   recurrenceEndDate?: Date | string | null
-  genderPreference?: $Enums.GenderPreference
+  genderPreference?: string
   driverInstructions?: Prisma.TripCreatedriverInstructionsInput | string[]
   additionalInstructions?: string | null
-  status?: $Enums.TripStatus
+  status?: string
   isFeatured?: boolean | null
   featuredUntil?: Date | string | null
   isBlockedByBalance?: boolean
@@ -2001,7 +1989,7 @@ export type TripCreateWithoutAttributesInput = {
   routePolyline?: string | null
   routeDistanceM?: number | null
   routeDurationS?: number | null
-  routeStatus?: $Enums.RouteStatus
+  routeStatus?: string
   routeComputedAt?: Date | string | null
   routeVersion?: number
   actualPathPolyline?: string | null
@@ -2046,10 +2034,10 @@ export type TripUncheckedCreateWithoutAttributesInput = {
   recurrencePattern?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   recurrenceDays?: Prisma.TripCreaterecurrenceDaysInput | number[]
   recurrenceEndDate?: Date | string | null
-  genderPreference?: $Enums.GenderPreference
+  genderPreference?: string
   driverInstructions?: Prisma.TripCreatedriverInstructionsInput | string[]
   additionalInstructions?: string | null
-  status?: $Enums.TripStatus
+  status?: string
   isFeatured?: boolean | null
   featuredUntil?: Date | string | null
   isBlockedByBalance?: boolean
@@ -2059,7 +2047,7 @@ export type TripUncheckedCreateWithoutAttributesInput = {
   routePolyline?: string | null
   routeDistanceM?: number | null
   routeDurationS?: number | null
-  routeStatus?: $Enums.RouteStatus
+  routeStatus?: string
   routeComputedAt?: Date | string | null
   routeVersion?: number
   actualPathPolyline?: string | null
@@ -2116,10 +2104,10 @@ export type TripUpdateWithoutAttributesInput = {
   recurrencePattern?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   recurrenceDays?: Prisma.TripUpdaterecurrenceDaysInput | number[]
   recurrenceEndDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  genderPreference?: Prisma.EnumGenderPreferenceFieldUpdateOperationsInput | $Enums.GenderPreference
+  genderPreference?: Prisma.StringFieldUpdateOperationsInput | string
   driverInstructions?: Prisma.TripUpdatedriverInstructionsInput | string[]
   additionalInstructions?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  status?: Prisma.EnumTripStatusFieldUpdateOperationsInput | $Enums.TripStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   isFeatured?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   featuredUntil?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isBlockedByBalance?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -2129,7 +2117,7 @@ export type TripUpdateWithoutAttributesInput = {
   routePolyline?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   routeDistanceM?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   routeDurationS?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  routeStatus?: Prisma.EnumRouteStatusFieldUpdateOperationsInput | $Enums.RouteStatus
+  routeStatus?: Prisma.StringFieldUpdateOperationsInput | string
   routeComputedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   routeVersion?: Prisma.IntFieldUpdateOperationsInput | number
   actualPathPolyline?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2174,10 +2162,10 @@ export type TripUncheckedUpdateWithoutAttributesInput = {
   recurrencePattern?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   recurrenceDays?: Prisma.TripUpdaterecurrenceDaysInput | number[]
   recurrenceEndDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  genderPreference?: Prisma.EnumGenderPreferenceFieldUpdateOperationsInput | $Enums.GenderPreference
+  genderPreference?: Prisma.StringFieldUpdateOperationsInput | string
   driverInstructions?: Prisma.TripUpdatedriverInstructionsInput | string[]
   additionalInstructions?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  status?: Prisma.EnumTripStatusFieldUpdateOperationsInput | $Enums.TripStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   isFeatured?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   featuredUntil?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isBlockedByBalance?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -2187,7 +2175,7 @@ export type TripUncheckedUpdateWithoutAttributesInput = {
   routePolyline?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   routeDistanceM?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   routeDurationS?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  routeStatus?: Prisma.EnumRouteStatusFieldUpdateOperationsInput | $Enums.RouteStatus
+  routeStatus?: Prisma.StringFieldUpdateOperationsInput | string
   routeComputedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   routeVersion?: Prisma.IntFieldUpdateOperationsInput | number
   actualPathPolyline?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2228,10 +2216,10 @@ export type TripCreateWithoutStopsInput = {
   recurrencePattern?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   recurrenceDays?: Prisma.TripCreaterecurrenceDaysInput | number[]
   recurrenceEndDate?: Date | string | null
-  genderPreference?: $Enums.GenderPreference
+  genderPreference?: string
   driverInstructions?: Prisma.TripCreatedriverInstructionsInput | string[]
   additionalInstructions?: string | null
-  status?: $Enums.TripStatus
+  status?: string
   isFeatured?: boolean | null
   featuredUntil?: Date | string | null
   isBlockedByBalance?: boolean
@@ -2241,7 +2229,7 @@ export type TripCreateWithoutStopsInput = {
   routePolyline?: string | null
   routeDistanceM?: number | null
   routeDurationS?: number | null
-  routeStatus?: $Enums.RouteStatus
+  routeStatus?: string
   routeComputedAt?: Date | string | null
   routeVersion?: number
   actualPathPolyline?: string | null
@@ -2286,10 +2274,10 @@ export type TripUncheckedCreateWithoutStopsInput = {
   recurrencePattern?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   recurrenceDays?: Prisma.TripCreaterecurrenceDaysInput | number[]
   recurrenceEndDate?: Date | string | null
-  genderPreference?: $Enums.GenderPreference
+  genderPreference?: string
   driverInstructions?: Prisma.TripCreatedriverInstructionsInput | string[]
   additionalInstructions?: string | null
-  status?: $Enums.TripStatus
+  status?: string
   isFeatured?: boolean | null
   featuredUntil?: Date | string | null
   isBlockedByBalance?: boolean
@@ -2299,7 +2287,7 @@ export type TripUncheckedCreateWithoutStopsInput = {
   routePolyline?: string | null
   routeDistanceM?: number | null
   routeDurationS?: number | null
-  routeStatus?: $Enums.RouteStatus
+  routeStatus?: string
   routeComputedAt?: Date | string | null
   routeVersion?: number
   actualPathPolyline?: string | null
@@ -2356,10 +2344,10 @@ export type TripUpdateWithoutStopsInput = {
   recurrencePattern?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   recurrenceDays?: Prisma.TripUpdaterecurrenceDaysInput | number[]
   recurrenceEndDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  genderPreference?: Prisma.EnumGenderPreferenceFieldUpdateOperationsInput | $Enums.GenderPreference
+  genderPreference?: Prisma.StringFieldUpdateOperationsInput | string
   driverInstructions?: Prisma.TripUpdatedriverInstructionsInput | string[]
   additionalInstructions?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  status?: Prisma.EnumTripStatusFieldUpdateOperationsInput | $Enums.TripStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   isFeatured?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   featuredUntil?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isBlockedByBalance?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -2369,7 +2357,7 @@ export type TripUpdateWithoutStopsInput = {
   routePolyline?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   routeDistanceM?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   routeDurationS?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  routeStatus?: Prisma.EnumRouteStatusFieldUpdateOperationsInput | $Enums.RouteStatus
+  routeStatus?: Prisma.StringFieldUpdateOperationsInput | string
   routeComputedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   routeVersion?: Prisma.IntFieldUpdateOperationsInput | number
   actualPathPolyline?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2414,10 +2402,10 @@ export type TripUncheckedUpdateWithoutStopsInput = {
   recurrencePattern?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   recurrenceDays?: Prisma.TripUpdaterecurrenceDaysInput | number[]
   recurrenceEndDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  genderPreference?: Prisma.EnumGenderPreferenceFieldUpdateOperationsInput | $Enums.GenderPreference
+  genderPreference?: Prisma.StringFieldUpdateOperationsInput | string
   driverInstructions?: Prisma.TripUpdatedriverInstructionsInput | string[]
   additionalInstructions?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  status?: Prisma.EnumTripStatusFieldUpdateOperationsInput | $Enums.TripStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   isFeatured?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   featuredUntil?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isBlockedByBalance?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -2427,7 +2415,7 @@ export type TripUncheckedUpdateWithoutStopsInput = {
   routePolyline?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   routeDistanceM?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   routeDurationS?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  routeStatus?: Prisma.EnumRouteStatusFieldUpdateOperationsInput | $Enums.RouteStatus
+  routeStatus?: Prisma.StringFieldUpdateOperationsInput | string
   routeComputedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   routeVersion?: Prisma.IntFieldUpdateOperationsInput | number
   actualPathPolyline?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2468,10 +2456,10 @@ export type TripCreateWithoutSeatsInput = {
   recurrencePattern?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   recurrenceDays?: Prisma.TripCreaterecurrenceDaysInput | number[]
   recurrenceEndDate?: Date | string | null
-  genderPreference?: $Enums.GenderPreference
+  genderPreference?: string
   driverInstructions?: Prisma.TripCreatedriverInstructionsInput | string[]
   additionalInstructions?: string | null
-  status?: $Enums.TripStatus
+  status?: string
   isFeatured?: boolean | null
   featuredUntil?: Date | string | null
   isBlockedByBalance?: boolean
@@ -2481,7 +2469,7 @@ export type TripCreateWithoutSeatsInput = {
   routePolyline?: string | null
   routeDistanceM?: number | null
   routeDurationS?: number | null
-  routeStatus?: $Enums.RouteStatus
+  routeStatus?: string
   routeComputedAt?: Date | string | null
   routeVersion?: number
   actualPathPolyline?: string | null
@@ -2526,10 +2514,10 @@ export type TripUncheckedCreateWithoutSeatsInput = {
   recurrencePattern?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   recurrenceDays?: Prisma.TripCreaterecurrenceDaysInput | number[]
   recurrenceEndDate?: Date | string | null
-  genderPreference?: $Enums.GenderPreference
+  genderPreference?: string
   driverInstructions?: Prisma.TripCreatedriverInstructionsInput | string[]
   additionalInstructions?: string | null
-  status?: $Enums.TripStatus
+  status?: string
   isFeatured?: boolean | null
   featuredUntil?: Date | string | null
   isBlockedByBalance?: boolean
@@ -2539,7 +2527,7 @@ export type TripUncheckedCreateWithoutSeatsInput = {
   routePolyline?: string | null
   routeDistanceM?: number | null
   routeDurationS?: number | null
-  routeStatus?: $Enums.RouteStatus
+  routeStatus?: string
   routeComputedAt?: Date | string | null
   routeVersion?: number
   actualPathPolyline?: string | null
@@ -2596,10 +2584,10 @@ export type TripUpdateWithoutSeatsInput = {
   recurrencePattern?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   recurrenceDays?: Prisma.TripUpdaterecurrenceDaysInput | number[]
   recurrenceEndDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  genderPreference?: Prisma.EnumGenderPreferenceFieldUpdateOperationsInput | $Enums.GenderPreference
+  genderPreference?: Prisma.StringFieldUpdateOperationsInput | string
   driverInstructions?: Prisma.TripUpdatedriverInstructionsInput | string[]
   additionalInstructions?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  status?: Prisma.EnumTripStatusFieldUpdateOperationsInput | $Enums.TripStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   isFeatured?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   featuredUntil?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isBlockedByBalance?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -2609,7 +2597,7 @@ export type TripUpdateWithoutSeatsInput = {
   routePolyline?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   routeDistanceM?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   routeDurationS?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  routeStatus?: Prisma.EnumRouteStatusFieldUpdateOperationsInput | $Enums.RouteStatus
+  routeStatus?: Prisma.StringFieldUpdateOperationsInput | string
   routeComputedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   routeVersion?: Prisma.IntFieldUpdateOperationsInput | number
   actualPathPolyline?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2654,10 +2642,10 @@ export type TripUncheckedUpdateWithoutSeatsInput = {
   recurrencePattern?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   recurrenceDays?: Prisma.TripUpdaterecurrenceDaysInput | number[]
   recurrenceEndDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  genderPreference?: Prisma.EnumGenderPreferenceFieldUpdateOperationsInput | $Enums.GenderPreference
+  genderPreference?: Prisma.StringFieldUpdateOperationsInput | string
   driverInstructions?: Prisma.TripUpdatedriverInstructionsInput | string[]
   additionalInstructions?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  status?: Prisma.EnumTripStatusFieldUpdateOperationsInput | $Enums.TripStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   isFeatured?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   featuredUntil?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isBlockedByBalance?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -2667,7 +2655,7 @@ export type TripUncheckedUpdateWithoutSeatsInput = {
   routePolyline?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   routeDistanceM?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   routeDurationS?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  routeStatus?: Prisma.EnumRouteStatusFieldUpdateOperationsInput | $Enums.RouteStatus
+  routeStatus?: Prisma.StringFieldUpdateOperationsInput | string
   routeComputedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   routeVersion?: Prisma.IntFieldUpdateOperationsInput | number
   actualPathPolyline?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2708,10 +2696,10 @@ export type TripCreateWithoutLocationsInput = {
   recurrencePattern?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   recurrenceDays?: Prisma.TripCreaterecurrenceDaysInput | number[]
   recurrenceEndDate?: Date | string | null
-  genderPreference?: $Enums.GenderPreference
+  genderPreference?: string
   driverInstructions?: Prisma.TripCreatedriverInstructionsInput | string[]
   additionalInstructions?: string | null
-  status?: $Enums.TripStatus
+  status?: string
   isFeatured?: boolean | null
   featuredUntil?: Date | string | null
   isBlockedByBalance?: boolean
@@ -2721,7 +2709,7 @@ export type TripCreateWithoutLocationsInput = {
   routePolyline?: string | null
   routeDistanceM?: number | null
   routeDurationS?: number | null
-  routeStatus?: $Enums.RouteStatus
+  routeStatus?: string
   routeComputedAt?: Date | string | null
   routeVersion?: number
   actualPathPolyline?: string | null
@@ -2766,10 +2754,10 @@ export type TripUncheckedCreateWithoutLocationsInput = {
   recurrencePattern?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   recurrenceDays?: Prisma.TripCreaterecurrenceDaysInput | number[]
   recurrenceEndDate?: Date | string | null
-  genderPreference?: $Enums.GenderPreference
+  genderPreference?: string
   driverInstructions?: Prisma.TripCreatedriverInstructionsInput | string[]
   additionalInstructions?: string | null
-  status?: $Enums.TripStatus
+  status?: string
   isFeatured?: boolean | null
   featuredUntil?: Date | string | null
   isBlockedByBalance?: boolean
@@ -2779,7 +2767,7 @@ export type TripUncheckedCreateWithoutLocationsInput = {
   routePolyline?: string | null
   routeDistanceM?: number | null
   routeDurationS?: number | null
-  routeStatus?: $Enums.RouteStatus
+  routeStatus?: string
   routeComputedAt?: Date | string | null
   routeVersion?: number
   actualPathPolyline?: string | null
@@ -2836,10 +2824,10 @@ export type TripUpdateWithoutLocationsInput = {
   recurrencePattern?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   recurrenceDays?: Prisma.TripUpdaterecurrenceDaysInput | number[]
   recurrenceEndDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  genderPreference?: Prisma.EnumGenderPreferenceFieldUpdateOperationsInput | $Enums.GenderPreference
+  genderPreference?: Prisma.StringFieldUpdateOperationsInput | string
   driverInstructions?: Prisma.TripUpdatedriverInstructionsInput | string[]
   additionalInstructions?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  status?: Prisma.EnumTripStatusFieldUpdateOperationsInput | $Enums.TripStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   isFeatured?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   featuredUntil?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isBlockedByBalance?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -2849,7 +2837,7 @@ export type TripUpdateWithoutLocationsInput = {
   routePolyline?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   routeDistanceM?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   routeDurationS?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  routeStatus?: Prisma.EnumRouteStatusFieldUpdateOperationsInput | $Enums.RouteStatus
+  routeStatus?: Prisma.StringFieldUpdateOperationsInput | string
   routeComputedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   routeVersion?: Prisma.IntFieldUpdateOperationsInput | number
   actualPathPolyline?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2894,10 +2882,10 @@ export type TripUncheckedUpdateWithoutLocationsInput = {
   recurrencePattern?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   recurrenceDays?: Prisma.TripUpdaterecurrenceDaysInput | number[]
   recurrenceEndDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  genderPreference?: Prisma.EnumGenderPreferenceFieldUpdateOperationsInput | $Enums.GenderPreference
+  genderPreference?: Prisma.StringFieldUpdateOperationsInput | string
   driverInstructions?: Prisma.TripUpdatedriverInstructionsInput | string[]
   additionalInstructions?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  status?: Prisma.EnumTripStatusFieldUpdateOperationsInput | $Enums.TripStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   isFeatured?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   featuredUntil?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isBlockedByBalance?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -2907,7 +2895,7 @@ export type TripUncheckedUpdateWithoutLocationsInput = {
   routePolyline?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   routeDistanceM?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   routeDurationS?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  routeStatus?: Prisma.EnumRouteStatusFieldUpdateOperationsInput | $Enums.RouteStatus
+  routeStatus?: Prisma.StringFieldUpdateOperationsInput | string
   routeComputedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   routeVersion?: Prisma.IntFieldUpdateOperationsInput | number
   actualPathPolyline?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2948,10 +2936,10 @@ export type TripCreateWithoutBookingsInput = {
   recurrencePattern?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   recurrenceDays?: Prisma.TripCreaterecurrenceDaysInput | number[]
   recurrenceEndDate?: Date | string | null
-  genderPreference?: $Enums.GenderPreference
+  genderPreference?: string
   driverInstructions?: Prisma.TripCreatedriverInstructionsInput | string[]
   additionalInstructions?: string | null
-  status?: $Enums.TripStatus
+  status?: string
   isFeatured?: boolean | null
   featuredUntil?: Date | string | null
   isBlockedByBalance?: boolean
@@ -2961,7 +2949,7 @@ export type TripCreateWithoutBookingsInput = {
   routePolyline?: string | null
   routeDistanceM?: number | null
   routeDurationS?: number | null
-  routeStatus?: $Enums.RouteStatus
+  routeStatus?: string
   routeComputedAt?: Date | string | null
   routeVersion?: number
   actualPathPolyline?: string | null
@@ -3006,10 +2994,10 @@ export type TripUncheckedCreateWithoutBookingsInput = {
   recurrencePattern?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   recurrenceDays?: Prisma.TripCreaterecurrenceDaysInput | number[]
   recurrenceEndDate?: Date | string | null
-  genderPreference?: $Enums.GenderPreference
+  genderPreference?: string
   driverInstructions?: Prisma.TripCreatedriverInstructionsInput | string[]
   additionalInstructions?: string | null
-  status?: $Enums.TripStatus
+  status?: string
   isFeatured?: boolean | null
   featuredUntil?: Date | string | null
   isBlockedByBalance?: boolean
@@ -3019,7 +3007,7 @@ export type TripUncheckedCreateWithoutBookingsInput = {
   routePolyline?: string | null
   routeDistanceM?: number | null
   routeDurationS?: number | null
-  routeStatus?: $Enums.RouteStatus
+  routeStatus?: string
   routeComputedAt?: Date | string | null
   routeVersion?: number
   actualPathPolyline?: string | null
@@ -3076,10 +3064,10 @@ export type TripUpdateWithoutBookingsInput = {
   recurrencePattern?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   recurrenceDays?: Prisma.TripUpdaterecurrenceDaysInput | number[]
   recurrenceEndDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  genderPreference?: Prisma.EnumGenderPreferenceFieldUpdateOperationsInput | $Enums.GenderPreference
+  genderPreference?: Prisma.StringFieldUpdateOperationsInput | string
   driverInstructions?: Prisma.TripUpdatedriverInstructionsInput | string[]
   additionalInstructions?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  status?: Prisma.EnumTripStatusFieldUpdateOperationsInput | $Enums.TripStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   isFeatured?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   featuredUntil?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isBlockedByBalance?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -3089,7 +3077,7 @@ export type TripUpdateWithoutBookingsInput = {
   routePolyline?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   routeDistanceM?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   routeDurationS?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  routeStatus?: Prisma.EnumRouteStatusFieldUpdateOperationsInput | $Enums.RouteStatus
+  routeStatus?: Prisma.StringFieldUpdateOperationsInput | string
   routeComputedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   routeVersion?: Prisma.IntFieldUpdateOperationsInput | number
   actualPathPolyline?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -3134,10 +3122,10 @@ export type TripUncheckedUpdateWithoutBookingsInput = {
   recurrencePattern?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   recurrenceDays?: Prisma.TripUpdaterecurrenceDaysInput | number[]
   recurrenceEndDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  genderPreference?: Prisma.EnumGenderPreferenceFieldUpdateOperationsInput | $Enums.GenderPreference
+  genderPreference?: Prisma.StringFieldUpdateOperationsInput | string
   driverInstructions?: Prisma.TripUpdatedriverInstructionsInput | string[]
   additionalInstructions?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  status?: Prisma.EnumTripStatusFieldUpdateOperationsInput | $Enums.TripStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   isFeatured?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   featuredUntil?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isBlockedByBalance?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -3147,7 +3135,7 @@ export type TripUncheckedUpdateWithoutBookingsInput = {
   routePolyline?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   routeDistanceM?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   routeDurationS?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  routeStatus?: Prisma.EnumRouteStatusFieldUpdateOperationsInput | $Enums.RouteStatus
+  routeStatus?: Prisma.StringFieldUpdateOperationsInput | string
   routeComputedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   routeVersion?: Prisma.IntFieldUpdateOperationsInput | number
   actualPathPolyline?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -3188,10 +3176,10 @@ export type TripCreateWithoutOffersInput = {
   recurrencePattern?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   recurrenceDays?: Prisma.TripCreaterecurrenceDaysInput | number[]
   recurrenceEndDate?: Date | string | null
-  genderPreference?: $Enums.GenderPreference
+  genderPreference?: string
   driverInstructions?: Prisma.TripCreatedriverInstructionsInput | string[]
   additionalInstructions?: string | null
-  status?: $Enums.TripStatus
+  status?: string
   isFeatured?: boolean | null
   featuredUntil?: Date | string | null
   isBlockedByBalance?: boolean
@@ -3201,7 +3189,7 @@ export type TripCreateWithoutOffersInput = {
   routePolyline?: string | null
   routeDistanceM?: number | null
   routeDurationS?: number | null
-  routeStatus?: $Enums.RouteStatus
+  routeStatus?: string
   routeComputedAt?: Date | string | null
   routeVersion?: number
   actualPathPolyline?: string | null
@@ -3246,10 +3234,10 @@ export type TripUncheckedCreateWithoutOffersInput = {
   recurrencePattern?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   recurrenceDays?: Prisma.TripCreaterecurrenceDaysInput | number[]
   recurrenceEndDate?: Date | string | null
-  genderPreference?: $Enums.GenderPreference
+  genderPreference?: string
   driverInstructions?: Prisma.TripCreatedriverInstructionsInput | string[]
   additionalInstructions?: string | null
-  status?: $Enums.TripStatus
+  status?: string
   isFeatured?: boolean | null
   featuredUntil?: Date | string | null
   isBlockedByBalance?: boolean
@@ -3259,7 +3247,7 @@ export type TripUncheckedCreateWithoutOffersInput = {
   routePolyline?: string | null
   routeDistanceM?: number | null
   routeDurationS?: number | null
-  routeStatus?: $Enums.RouteStatus
+  routeStatus?: string
   routeComputedAt?: Date | string | null
   routeVersion?: number
   actualPathPolyline?: string | null
@@ -3316,10 +3304,10 @@ export type TripUpdateWithoutOffersInput = {
   recurrencePattern?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   recurrenceDays?: Prisma.TripUpdaterecurrenceDaysInput | number[]
   recurrenceEndDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  genderPreference?: Prisma.EnumGenderPreferenceFieldUpdateOperationsInput | $Enums.GenderPreference
+  genderPreference?: Prisma.StringFieldUpdateOperationsInput | string
   driverInstructions?: Prisma.TripUpdatedriverInstructionsInput | string[]
   additionalInstructions?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  status?: Prisma.EnumTripStatusFieldUpdateOperationsInput | $Enums.TripStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   isFeatured?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   featuredUntil?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isBlockedByBalance?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -3329,7 +3317,7 @@ export type TripUpdateWithoutOffersInput = {
   routePolyline?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   routeDistanceM?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   routeDurationS?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  routeStatus?: Prisma.EnumRouteStatusFieldUpdateOperationsInput | $Enums.RouteStatus
+  routeStatus?: Prisma.StringFieldUpdateOperationsInput | string
   routeComputedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   routeVersion?: Prisma.IntFieldUpdateOperationsInput | number
   actualPathPolyline?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -3374,10 +3362,10 @@ export type TripUncheckedUpdateWithoutOffersInput = {
   recurrencePattern?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   recurrenceDays?: Prisma.TripUpdaterecurrenceDaysInput | number[]
   recurrenceEndDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  genderPreference?: Prisma.EnumGenderPreferenceFieldUpdateOperationsInput | $Enums.GenderPreference
+  genderPreference?: Prisma.StringFieldUpdateOperationsInput | string
   driverInstructions?: Prisma.TripUpdatedriverInstructionsInput | string[]
   additionalInstructions?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  status?: Prisma.EnumTripStatusFieldUpdateOperationsInput | $Enums.TripStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   isFeatured?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   featuredUntil?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isBlockedByBalance?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -3387,7 +3375,7 @@ export type TripUncheckedUpdateWithoutOffersInput = {
   routePolyline?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   routeDistanceM?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   routeDurationS?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  routeStatus?: Prisma.EnumRouteStatusFieldUpdateOperationsInput | $Enums.RouteStatus
+  routeStatus?: Prisma.StringFieldUpdateOperationsInput | string
   routeComputedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   routeVersion?: Prisma.IntFieldUpdateOperationsInput | number
   actualPathPolyline?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -3428,10 +3416,10 @@ export type TripCreateWithoutSosEventsInput = {
   recurrencePattern?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   recurrenceDays?: Prisma.TripCreaterecurrenceDaysInput | number[]
   recurrenceEndDate?: Date | string | null
-  genderPreference?: $Enums.GenderPreference
+  genderPreference?: string
   driverInstructions?: Prisma.TripCreatedriverInstructionsInput | string[]
   additionalInstructions?: string | null
-  status?: $Enums.TripStatus
+  status?: string
   isFeatured?: boolean | null
   featuredUntil?: Date | string | null
   isBlockedByBalance?: boolean
@@ -3441,7 +3429,7 @@ export type TripCreateWithoutSosEventsInput = {
   routePolyline?: string | null
   routeDistanceM?: number | null
   routeDurationS?: number | null
-  routeStatus?: $Enums.RouteStatus
+  routeStatus?: string
   routeComputedAt?: Date | string | null
   routeVersion?: number
   actualPathPolyline?: string | null
@@ -3486,10 +3474,10 @@ export type TripUncheckedCreateWithoutSosEventsInput = {
   recurrencePattern?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   recurrenceDays?: Prisma.TripCreaterecurrenceDaysInput | number[]
   recurrenceEndDate?: Date | string | null
-  genderPreference?: $Enums.GenderPreference
+  genderPreference?: string
   driverInstructions?: Prisma.TripCreatedriverInstructionsInput | string[]
   additionalInstructions?: string | null
-  status?: $Enums.TripStatus
+  status?: string
   isFeatured?: boolean | null
   featuredUntil?: Date | string | null
   isBlockedByBalance?: boolean
@@ -3499,7 +3487,7 @@ export type TripUncheckedCreateWithoutSosEventsInput = {
   routePolyline?: string | null
   routeDistanceM?: number | null
   routeDurationS?: number | null
-  routeStatus?: $Enums.RouteStatus
+  routeStatus?: string
   routeComputedAt?: Date | string | null
   routeVersion?: number
   actualPathPolyline?: string | null
@@ -3556,10 +3544,10 @@ export type TripUpdateWithoutSosEventsInput = {
   recurrencePattern?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   recurrenceDays?: Prisma.TripUpdaterecurrenceDaysInput | number[]
   recurrenceEndDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  genderPreference?: Prisma.EnumGenderPreferenceFieldUpdateOperationsInput | $Enums.GenderPreference
+  genderPreference?: Prisma.StringFieldUpdateOperationsInput | string
   driverInstructions?: Prisma.TripUpdatedriverInstructionsInput | string[]
   additionalInstructions?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  status?: Prisma.EnumTripStatusFieldUpdateOperationsInput | $Enums.TripStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   isFeatured?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   featuredUntil?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isBlockedByBalance?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -3569,7 +3557,7 @@ export type TripUpdateWithoutSosEventsInput = {
   routePolyline?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   routeDistanceM?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   routeDurationS?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  routeStatus?: Prisma.EnumRouteStatusFieldUpdateOperationsInput | $Enums.RouteStatus
+  routeStatus?: Prisma.StringFieldUpdateOperationsInput | string
   routeComputedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   routeVersion?: Prisma.IntFieldUpdateOperationsInput | number
   actualPathPolyline?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -3614,10 +3602,10 @@ export type TripUncheckedUpdateWithoutSosEventsInput = {
   recurrencePattern?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   recurrenceDays?: Prisma.TripUpdaterecurrenceDaysInput | number[]
   recurrenceEndDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  genderPreference?: Prisma.EnumGenderPreferenceFieldUpdateOperationsInput | $Enums.GenderPreference
+  genderPreference?: Prisma.StringFieldUpdateOperationsInput | string
   driverInstructions?: Prisma.TripUpdatedriverInstructionsInput | string[]
   additionalInstructions?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  status?: Prisma.EnumTripStatusFieldUpdateOperationsInput | $Enums.TripStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   isFeatured?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   featuredUntil?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isBlockedByBalance?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -3627,7 +3615,7 @@ export type TripUncheckedUpdateWithoutSosEventsInput = {
   routePolyline?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   routeDistanceM?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   routeDurationS?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  routeStatus?: Prisma.EnumRouteStatusFieldUpdateOperationsInput | $Enums.RouteStatus
+  routeStatus?: Prisma.StringFieldUpdateOperationsInput | string
   routeComputedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   routeVersion?: Prisma.IntFieldUpdateOperationsInput | number
   actualPathPolyline?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -3669,10 +3657,10 @@ export type TripCreateManyDriverInput = {
   recurrencePattern?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   recurrenceDays?: Prisma.TripCreaterecurrenceDaysInput | number[]
   recurrenceEndDate?: Date | string | null
-  genderPreference?: $Enums.GenderPreference
+  genderPreference?: string
   driverInstructions?: Prisma.TripCreatedriverInstructionsInput | string[]
   additionalInstructions?: string | null
-  status?: $Enums.TripStatus
+  status?: string
   isFeatured?: boolean | null
   featuredUntil?: Date | string | null
   isBlockedByBalance?: boolean
@@ -3682,7 +3670,7 @@ export type TripCreateManyDriverInput = {
   routePolyline?: string | null
   routeDistanceM?: number | null
   routeDurationS?: number | null
-  routeStatus?: $Enums.RouteStatus
+  routeStatus?: string
   routeComputedAt?: Date | string | null
   routeVersion?: number
   actualPathPolyline?: string | null
@@ -3717,10 +3705,10 @@ export type TripUpdateWithoutDriverInput = {
   recurrencePattern?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   recurrenceDays?: Prisma.TripUpdaterecurrenceDaysInput | number[]
   recurrenceEndDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  genderPreference?: Prisma.EnumGenderPreferenceFieldUpdateOperationsInput | $Enums.GenderPreference
+  genderPreference?: Prisma.StringFieldUpdateOperationsInput | string
   driverInstructions?: Prisma.TripUpdatedriverInstructionsInput | string[]
   additionalInstructions?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  status?: Prisma.EnumTripStatusFieldUpdateOperationsInput | $Enums.TripStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   isFeatured?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   featuredUntil?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isBlockedByBalance?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -3730,7 +3718,7 @@ export type TripUpdateWithoutDriverInput = {
   routePolyline?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   routeDistanceM?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   routeDurationS?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  routeStatus?: Prisma.EnumRouteStatusFieldUpdateOperationsInput | $Enums.RouteStatus
+  routeStatus?: Prisma.StringFieldUpdateOperationsInput | string
   routeComputedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   routeVersion?: Prisma.IntFieldUpdateOperationsInput | number
   actualPathPolyline?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -3774,10 +3762,10 @@ export type TripUncheckedUpdateWithoutDriverInput = {
   recurrencePattern?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   recurrenceDays?: Prisma.TripUpdaterecurrenceDaysInput | number[]
   recurrenceEndDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  genderPreference?: Prisma.EnumGenderPreferenceFieldUpdateOperationsInput | $Enums.GenderPreference
+  genderPreference?: Prisma.StringFieldUpdateOperationsInput | string
   driverInstructions?: Prisma.TripUpdatedriverInstructionsInput | string[]
   additionalInstructions?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  status?: Prisma.EnumTripStatusFieldUpdateOperationsInput | $Enums.TripStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   isFeatured?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   featuredUntil?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isBlockedByBalance?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -3787,7 +3775,7 @@ export type TripUncheckedUpdateWithoutDriverInput = {
   routePolyline?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   routeDistanceM?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   routeDurationS?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  routeStatus?: Prisma.EnumRouteStatusFieldUpdateOperationsInput | $Enums.RouteStatus
+  routeStatus?: Prisma.StringFieldUpdateOperationsInput | string
   routeComputedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   routeVersion?: Prisma.IntFieldUpdateOperationsInput | number
   actualPathPolyline?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -3830,10 +3818,10 @@ export type TripUncheckedUpdateManyWithoutDriverInput = {
   recurrencePattern?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   recurrenceDays?: Prisma.TripUpdaterecurrenceDaysInput | number[]
   recurrenceEndDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  genderPreference?: Prisma.EnumGenderPreferenceFieldUpdateOperationsInput | $Enums.GenderPreference
+  genderPreference?: Prisma.StringFieldUpdateOperationsInput | string
   driverInstructions?: Prisma.TripUpdatedriverInstructionsInput | string[]
   additionalInstructions?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  status?: Prisma.EnumTripStatusFieldUpdateOperationsInput | $Enums.TripStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   isFeatured?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   featuredUntil?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isBlockedByBalance?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -3843,7 +3831,7 @@ export type TripUncheckedUpdateManyWithoutDriverInput = {
   routePolyline?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   routeDistanceM?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   routeDurationS?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  routeStatus?: Prisma.EnumRouteStatusFieldUpdateOperationsInput | $Enums.RouteStatus
+  routeStatus?: Prisma.StringFieldUpdateOperationsInput | string
   routeComputedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   routeVersion?: Prisma.IntFieldUpdateOperationsInput | number
   actualPathPolyline?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -3879,10 +3867,10 @@ export type TripCreateManyVehicleInput = {
   recurrencePattern?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   recurrenceDays?: Prisma.TripCreaterecurrenceDaysInput | number[]
   recurrenceEndDate?: Date | string | null
-  genderPreference?: $Enums.GenderPreference
+  genderPreference?: string
   driverInstructions?: Prisma.TripCreatedriverInstructionsInput | string[]
   additionalInstructions?: string | null
-  status?: $Enums.TripStatus
+  status?: string
   isFeatured?: boolean | null
   featuredUntil?: Date | string | null
   isBlockedByBalance?: boolean
@@ -3892,7 +3880,7 @@ export type TripCreateManyVehicleInput = {
   routePolyline?: string | null
   routeDistanceM?: number | null
   routeDurationS?: number | null
-  routeStatus?: $Enums.RouteStatus
+  routeStatus?: string
   routeComputedAt?: Date | string | null
   routeVersion?: number
   actualPathPolyline?: string | null
@@ -3927,10 +3915,10 @@ export type TripUpdateWithoutVehicleInput = {
   recurrencePattern?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   recurrenceDays?: Prisma.TripUpdaterecurrenceDaysInput | number[]
   recurrenceEndDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  genderPreference?: Prisma.EnumGenderPreferenceFieldUpdateOperationsInput | $Enums.GenderPreference
+  genderPreference?: Prisma.StringFieldUpdateOperationsInput | string
   driverInstructions?: Prisma.TripUpdatedriverInstructionsInput | string[]
   additionalInstructions?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  status?: Prisma.EnumTripStatusFieldUpdateOperationsInput | $Enums.TripStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   isFeatured?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   featuredUntil?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isBlockedByBalance?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -3940,7 +3928,7 @@ export type TripUpdateWithoutVehicleInput = {
   routePolyline?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   routeDistanceM?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   routeDurationS?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  routeStatus?: Prisma.EnumRouteStatusFieldUpdateOperationsInput | $Enums.RouteStatus
+  routeStatus?: Prisma.StringFieldUpdateOperationsInput | string
   routeComputedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   routeVersion?: Prisma.IntFieldUpdateOperationsInput | number
   actualPathPolyline?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -3984,10 +3972,10 @@ export type TripUncheckedUpdateWithoutVehicleInput = {
   recurrencePattern?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   recurrenceDays?: Prisma.TripUpdaterecurrenceDaysInput | number[]
   recurrenceEndDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  genderPreference?: Prisma.EnumGenderPreferenceFieldUpdateOperationsInput | $Enums.GenderPreference
+  genderPreference?: Prisma.StringFieldUpdateOperationsInput | string
   driverInstructions?: Prisma.TripUpdatedriverInstructionsInput | string[]
   additionalInstructions?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  status?: Prisma.EnumTripStatusFieldUpdateOperationsInput | $Enums.TripStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   isFeatured?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   featuredUntil?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isBlockedByBalance?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -3997,7 +3985,7 @@ export type TripUncheckedUpdateWithoutVehicleInput = {
   routePolyline?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   routeDistanceM?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   routeDurationS?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  routeStatus?: Prisma.EnumRouteStatusFieldUpdateOperationsInput | $Enums.RouteStatus
+  routeStatus?: Prisma.StringFieldUpdateOperationsInput | string
   routeComputedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   routeVersion?: Prisma.IntFieldUpdateOperationsInput | number
   actualPathPolyline?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -4040,10 +4028,10 @@ export type TripUncheckedUpdateManyWithoutVehicleInput = {
   recurrencePattern?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   recurrenceDays?: Prisma.TripUpdaterecurrenceDaysInput | number[]
   recurrenceEndDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  genderPreference?: Prisma.EnumGenderPreferenceFieldUpdateOperationsInput | $Enums.GenderPreference
+  genderPreference?: Prisma.StringFieldUpdateOperationsInput | string
   driverInstructions?: Prisma.TripUpdatedriverInstructionsInput | string[]
   additionalInstructions?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  status?: Prisma.EnumTripStatusFieldUpdateOperationsInput | $Enums.TripStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   isFeatured?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   featuredUntil?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isBlockedByBalance?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -4053,7 +4041,7 @@ export type TripUncheckedUpdateManyWithoutVehicleInput = {
   routePolyline?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   routeDistanceM?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   routeDurationS?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  routeStatus?: Prisma.EnumRouteStatusFieldUpdateOperationsInput | $Enums.RouteStatus
+  routeStatus?: Prisma.StringFieldUpdateOperationsInput | string
   routeComputedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   routeVersion?: Prisma.IntFieldUpdateOperationsInput | number
   actualPathPolyline?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -4424,10 +4412,10 @@ export type $TripPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     recurrencePattern: runtime.JsonValue | null
     recurrenceDays: number[]
     recurrenceEndDate: Date | null
-    genderPreference: $Enums.GenderPreference
+    genderPreference: string
     driverInstructions: string[]
     additionalInstructions: string | null
-    status: $Enums.TripStatus
+    status: string
     isFeatured: boolean | null
     featuredUntil: Date | null
     isBlockedByBalance: boolean
@@ -4437,7 +4425,7 @@ export type $TripPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     routePolyline: string | null
     routeDistanceM: number | null
     routeDurationS: number | null
-    routeStatus: $Enums.RouteStatus
+    routeStatus: string
     routeComputedAt: Date | null
     routeVersion: number
     actualPathPolyline: string | null
@@ -4903,10 +4891,10 @@ export interface TripFieldRefs {
   readonly recurrencePattern: Prisma.FieldRef<"Trip", 'Json'>
   readonly recurrenceDays: Prisma.FieldRef<"Trip", 'Int[]'>
   readonly recurrenceEndDate: Prisma.FieldRef<"Trip", 'DateTime'>
-  readonly genderPreference: Prisma.FieldRef<"Trip", 'GenderPreference'>
+  readonly genderPreference: Prisma.FieldRef<"Trip", 'String'>
   readonly driverInstructions: Prisma.FieldRef<"Trip", 'String[]'>
   readonly additionalInstructions: Prisma.FieldRef<"Trip", 'String'>
-  readonly status: Prisma.FieldRef<"Trip", 'TripStatus'>
+  readonly status: Prisma.FieldRef<"Trip", 'String'>
   readonly isFeatured: Prisma.FieldRef<"Trip", 'Boolean'>
   readonly featuredUntil: Prisma.FieldRef<"Trip", 'DateTime'>
   readonly isBlockedByBalance: Prisma.FieldRef<"Trip", 'Boolean'>
@@ -4916,7 +4904,7 @@ export interface TripFieldRefs {
   readonly routePolyline: Prisma.FieldRef<"Trip", 'String'>
   readonly routeDistanceM: Prisma.FieldRef<"Trip", 'Int'>
   readonly routeDurationS: Prisma.FieldRef<"Trip", 'Int'>
-  readonly routeStatus: Prisma.FieldRef<"Trip", 'RouteStatus'>
+  readonly routeStatus: Prisma.FieldRef<"Trip", 'String'>
   readonly routeComputedAt: Prisma.FieldRef<"Trip", 'DateTime'>
   readonly routeVersion: Prisma.FieldRef<"Trip", 'Int'>
   readonly actualPathPolyline: Prisma.FieldRef<"Trip", 'String'>

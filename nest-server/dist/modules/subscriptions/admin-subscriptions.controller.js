@@ -13,15 +13,21 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 import { Body, Controller, Get, HttpCode, Param, Post, Query } from '@nestjs/common';
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import { Roles } from '../../common/decorators/roles.decorator.js';
-import { RejectSubscriptionDto, SubscriptionIdParam } from './dto/subscription.dto.js';
+import { AdminSubscriptionListQuery, RejectSubscriptionDto, SubscriptionIdParam, } from './dto/subscription.dto.js';
 import { SubscriptionsService } from './subscriptions.service.js';
 let AdminSubscriptionsController = class AdminSubscriptionsController {
     subscriptions;
     constructor(subscriptions) {
         this.subscriptions = subscriptions;
     }
+    getStats() {
+        return this.subscriptions.getStats();
+    }
     listPending(query) {
         return this.subscriptions.listPending(query).then((pending) => ({ pending }));
+    }
+    getDetail(params) {
+        return this.subscriptions.getDetail(params.subscription_id);
     }
     approveSubscription(params, user) {
         return this.subscriptions.approve(params.subscription_id, user?.id ?? '');
@@ -31,12 +37,25 @@ let AdminSubscriptionsController = class AdminSubscriptionsController {
     }
 };
 __decorate([
+    Get('stats'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], AdminSubscriptionsController.prototype, "getStats", null);
+__decorate([
     Get('pending'),
     __param(0, Query()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
+    __metadata("design:paramtypes", [AdminSubscriptionListQuery]),
     __metadata("design:returntype", Promise)
 ], AdminSubscriptionsController.prototype, "listPending", null);
+__decorate([
+    Get(':subscription_id'),
+    __param(0, Param()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [SubscriptionIdParam]),
+    __metadata("design:returntype", Promise)
+], AdminSubscriptionsController.prototype, "getDetail", null);
 __decorate([
     Post(':subscription_id/approve'),
     HttpCode(200),

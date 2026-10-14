@@ -1,5 +1,4 @@
 import type * as runtime from "@prisma/client/runtime/client";
-import type * as $Enums from "../enums.js";
 import type * as Prisma from "../internal/prismaNamespace.js";
 export type PassengerProfileModel = runtime.Types.Result.DefaultSelection<Prisma.$PassengerProfilePayload>;
 export type AggregatePassengerProfile = {
@@ -10,7 +9,7 @@ export type AggregatePassengerProfile = {
 export type PassengerProfileMinAggregateOutputType = {
     id: string | null;
     passengerId: string | null;
-    preferredGender: $Enums.PreferredGender | null;
+    preferredGender: string | null;
     smokingPreference: string | null;
     nationalID: string | null;
     homeAddress: string | null;
@@ -20,7 +19,7 @@ export type PassengerProfileMinAggregateOutputType = {
 export type PassengerProfileMaxAggregateOutputType = {
     id: string | null;
     passengerId: string | null;
-    preferredGender: $Enums.PreferredGender | null;
+    preferredGender: string | null;
     smokingPreference: string | null;
     nationalID: string | null;
     homeAddress: string | null;
@@ -100,7 +99,7 @@ export type PassengerProfileGroupByArgs<ExtArgs extends runtime.Types.Extensions
 export type PassengerProfileGroupByOutputType = {
     id: string;
     passengerId: string;
-    preferredGender: $Enums.PreferredGender | null;
+    preferredGender: string | null;
     smokingPreference: string | null;
     savedRoutes: runtime.JsonValue | null;
     nationalID: string | null;
@@ -121,7 +120,7 @@ export type PassengerProfileWhereInput = {
     NOT?: Prisma.PassengerProfileWhereInput | Prisma.PassengerProfileWhereInput[];
     id?: Prisma.UuidFilter<"PassengerProfile"> | string;
     passengerId?: Prisma.UuidFilter<"PassengerProfile"> | string;
-    preferredGender?: Prisma.EnumPreferredGenderNullableFilter<"PassengerProfile"> | $Enums.PreferredGender | null;
+    preferredGender?: Prisma.StringNullableFilter<"PassengerProfile"> | string | null;
     smokingPreference?: Prisma.StringNullableFilter<"PassengerProfile"> | string | null;
     savedRoutes?: Prisma.JsonNullableFilter<"PassengerProfile">;
     nationalID?: Prisma.StringNullableFilter<"PassengerProfile"> | string | null;
@@ -150,7 +149,7 @@ export type PassengerProfileWhereUniqueInput = Prisma.AtLeast<{
     AND?: Prisma.PassengerProfileWhereInput | Prisma.PassengerProfileWhereInput[];
     OR?: Prisma.PassengerProfileWhereInput[];
     NOT?: Prisma.PassengerProfileWhereInput | Prisma.PassengerProfileWhereInput[];
-    preferredGender?: Prisma.EnumPreferredGenderNullableFilter<"PassengerProfile"> | $Enums.PreferredGender | null;
+    preferredGender?: Prisma.StringNullableFilter<"PassengerProfile"> | string | null;
     smokingPreference?: Prisma.StringNullableFilter<"PassengerProfile"> | string | null;
     savedRoutes?: Prisma.JsonNullableFilter<"PassengerProfile">;
     nationalID?: Prisma.StringNullableFilter<"PassengerProfile"> | string | null;
@@ -181,7 +180,7 @@ export type PassengerProfileScalarWhereWithAggregatesInput = {
     NOT?: Prisma.PassengerProfileScalarWhereWithAggregatesInput | Prisma.PassengerProfileScalarWhereWithAggregatesInput[];
     id?: Prisma.UuidWithAggregatesFilter<"PassengerProfile"> | string;
     passengerId?: Prisma.UuidWithAggregatesFilter<"PassengerProfile"> | string;
-    preferredGender?: Prisma.EnumPreferredGenderNullableWithAggregatesFilter<"PassengerProfile"> | $Enums.PreferredGender | null;
+    preferredGender?: Prisma.StringNullableWithAggregatesFilter<"PassengerProfile"> | string | null;
     smokingPreference?: Prisma.StringNullableWithAggregatesFilter<"PassengerProfile"> | string | null;
     savedRoutes?: Prisma.JsonNullableWithAggregatesFilter<"PassengerProfile">;
     nationalID?: Prisma.StringNullableWithAggregatesFilter<"PassengerProfile"> | string | null;
@@ -192,7 +191,7 @@ export type PassengerProfileScalarWhereWithAggregatesInput = {
 };
 export type PassengerProfileCreateInput = {
     id?: string;
-    preferredGender?: $Enums.PreferredGender | null;
+    preferredGender?: string | null;
     smokingPreference?: string | null;
     savedRoutes?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
     nationalID?: string | null;
@@ -205,7 +204,7 @@ export type PassengerProfileCreateInput = {
 export type PassengerProfileUncheckedCreateInput = {
     id?: string;
     passengerId: string;
-    preferredGender?: $Enums.PreferredGender | null;
+    preferredGender?: string | null;
     smokingPreference?: string | null;
     savedRoutes?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
     nationalID?: string | null;
@@ -216,7 +215,7 @@ export type PassengerProfileUncheckedCreateInput = {
 };
 export type PassengerProfileUpdateInput = {
     id?: Prisma.StringFieldUpdateOperationsInput | string;
-    preferredGender?: Prisma.NullableEnumPreferredGenderFieldUpdateOperationsInput | $Enums.PreferredGender | null;
+    preferredGender?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     smokingPreference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     savedRoutes?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
     nationalID?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
@@ -229,7 +228,7 @@ export type PassengerProfileUpdateInput = {
 export type PassengerProfileUncheckedUpdateInput = {
     id?: Prisma.StringFieldUpdateOperationsInput | string;
     passengerId?: Prisma.StringFieldUpdateOperationsInput | string;
-    preferredGender?: Prisma.NullableEnumPreferredGenderFieldUpdateOperationsInput | $Enums.PreferredGender | null;
+    preferredGender?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     smokingPreference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     savedRoutes?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
     nationalID?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
@@ -241,7 +240,7 @@ export type PassengerProfileUncheckedUpdateInput = {
 export type PassengerProfileCreateManyInput = {
     id?: string;
     passengerId: string;
-    preferredGender?: $Enums.PreferredGender | null;
+    preferredGender?: string | null;
     smokingPreference?: string | null;
     savedRoutes?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
     nationalID?: string | null;
@@ -252,7 +251,7 @@ export type PassengerProfileCreateManyInput = {
 };
 export type PassengerProfileUpdateManyMutationInput = {
     id?: Prisma.StringFieldUpdateOperationsInput | string;
-    preferredGender?: Prisma.NullableEnumPreferredGenderFieldUpdateOperationsInput | $Enums.PreferredGender | null;
+    preferredGender?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     smokingPreference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     savedRoutes?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
     nationalID?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
@@ -264,7 +263,7 @@ export type PassengerProfileUpdateManyMutationInput = {
 export type PassengerProfileUncheckedUpdateManyInput = {
     id?: Prisma.StringFieldUpdateOperationsInput | string;
     passengerId?: Prisma.StringFieldUpdateOperationsInput | string;
-    preferredGender?: Prisma.NullableEnumPreferredGenderFieldUpdateOperationsInput | $Enums.PreferredGender | null;
+    preferredGender?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     smokingPreference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     savedRoutes?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
     nationalID?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
@@ -337,12 +336,9 @@ export type PassengerProfileUncheckedUpdateOneWithoutPassengerNestedInput = {
     connect?: Prisma.PassengerProfileWhereUniqueInput;
     update?: Prisma.XOR<Prisma.XOR<Prisma.PassengerProfileUpdateToOneWithWhereWithoutPassengerInput, Prisma.PassengerProfileUpdateWithoutPassengerInput>, Prisma.PassengerProfileUncheckedUpdateWithoutPassengerInput>;
 };
-export type NullableEnumPreferredGenderFieldUpdateOperationsInput = {
-    set?: $Enums.PreferredGender | null;
-};
 export type PassengerProfileCreateWithoutPassengerInput = {
     id?: string;
-    preferredGender?: $Enums.PreferredGender | null;
+    preferredGender?: string | null;
     smokingPreference?: string | null;
     savedRoutes?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
     nationalID?: string | null;
@@ -353,7 +349,7 @@ export type PassengerProfileCreateWithoutPassengerInput = {
 };
 export type PassengerProfileUncheckedCreateWithoutPassengerInput = {
     id?: string;
-    preferredGender?: $Enums.PreferredGender | null;
+    preferredGender?: string | null;
     smokingPreference?: string | null;
     savedRoutes?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
     nationalID?: string | null;
@@ -377,7 +373,7 @@ export type PassengerProfileUpdateToOneWithWhereWithoutPassengerInput = {
 };
 export type PassengerProfileUpdateWithoutPassengerInput = {
     id?: Prisma.StringFieldUpdateOperationsInput | string;
-    preferredGender?: Prisma.NullableEnumPreferredGenderFieldUpdateOperationsInput | $Enums.PreferredGender | null;
+    preferredGender?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     smokingPreference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     savedRoutes?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
     nationalID?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
@@ -388,7 +384,7 @@ export type PassengerProfileUpdateWithoutPassengerInput = {
 };
 export type PassengerProfileUncheckedUpdateWithoutPassengerInput = {
     id?: Prisma.StringFieldUpdateOperationsInput | string;
-    preferredGender?: Prisma.NullableEnumPreferredGenderFieldUpdateOperationsInput | $Enums.PreferredGender | null;
+    preferredGender?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     smokingPreference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     savedRoutes?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
     nationalID?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
@@ -466,7 +462,7 @@ export type $PassengerProfilePayload<ExtArgs extends runtime.Types.Extensions.In
     scalars: runtime.Types.Extensions.GetPayloadResult<{
         id: string;
         passengerId: string;
-        preferredGender: $Enums.PreferredGender | null;
+        preferredGender: string | null;
         smokingPreference: string | null;
         savedRoutes: runtime.JsonValue | null;
         nationalID: string | null;
@@ -534,7 +530,7 @@ export interface Prisma__PassengerProfileClient<T, Null = never, ExtArgs extends
 export interface PassengerProfileFieldRefs {
     readonly id: Prisma.FieldRef<"PassengerProfile", 'String'>;
     readonly passengerId: Prisma.FieldRef<"PassengerProfile", 'String'>;
-    readonly preferredGender: Prisma.FieldRef<"PassengerProfile", 'PreferredGender'>;
+    readonly preferredGender: Prisma.FieldRef<"PassengerProfile", 'String'>;
     readonly smokingPreference: Prisma.FieldRef<"PassengerProfile", 'String'>;
     readonly savedRoutes: Prisma.FieldRef<"PassengerProfile", 'Json'>;
     readonly nationalID: Prisma.FieldRef<"PassengerProfile", 'String'>;

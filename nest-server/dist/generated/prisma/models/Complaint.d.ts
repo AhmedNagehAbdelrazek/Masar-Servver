@@ -1,5 +1,4 @@
 import type * as runtime from "@prisma/client/runtime/client";
-import type * as $Enums from "../enums.js";
 import type * as Prisma from "../internal/prismaNamespace.js";
 export type ComplaintModel = runtime.Types.Result.DefaultSelection<Prisma.$ComplaintPayload>;
 export type AggregateComplaint = {
@@ -14,7 +13,7 @@ export type ComplaintMinAggregateOutputType = {
     accusedId: string | null;
     category: string | null;
     description: string | null;
-    status: $Enums.ComplaintStatus | null;
+    status: string | null;
     resolution: string | null;
     resolvedBy: string | null;
     resolvedAt: Date | null;
@@ -28,7 +27,7 @@ export type ComplaintMaxAggregateOutputType = {
     accusedId: string | null;
     category: string | null;
     description: string | null;
-    status: $Enums.ComplaintStatus | null;
+    status: string | null;
     resolution: string | null;
     resolvedBy: string | null;
     resolvedAt: Date | null;
@@ -127,7 +126,7 @@ export type ComplaintGroupByOutputType = {
     category: string;
     description: string;
     evidenceUrls: string[];
-    status: $Enums.ComplaintStatus;
+    status: string;
     resolution: string | null;
     resolvedBy: string | null;
     resolvedAt: Date | null;
@@ -151,7 +150,7 @@ export type ComplaintWhereInput = {
     category?: Prisma.StringFilter<"Complaint"> | string;
     description?: Prisma.StringFilter<"Complaint"> | string;
     evidenceUrls?: Prisma.StringNullableListFilter<"Complaint">;
-    status?: Prisma.EnumComplaintStatusFilter<"Complaint"> | $Enums.ComplaintStatus;
+    status?: Prisma.StringFilter<"Complaint"> | string;
     resolution?: Prisma.StringNullableFilter<"Complaint"> | string | null;
     resolvedBy?: Prisma.UuidNullableFilter<"Complaint"> | string | null;
     resolvedAt?: Prisma.DateTimeNullableFilter<"Complaint"> | Date | string | null;
@@ -190,7 +189,7 @@ export type ComplaintWhereUniqueInput = Prisma.AtLeast<{
     category?: Prisma.StringFilter<"Complaint"> | string;
     description?: Prisma.StringFilter<"Complaint"> | string;
     evidenceUrls?: Prisma.StringNullableListFilter<"Complaint">;
-    status?: Prisma.EnumComplaintStatusFilter<"Complaint"> | $Enums.ComplaintStatus;
+    status?: Prisma.StringFilter<"Complaint"> | string;
     resolution?: Prisma.StringNullableFilter<"Complaint"> | string | null;
     resolvedBy?: Prisma.UuidNullableFilter<"Complaint"> | string | null;
     resolvedAt?: Prisma.DateTimeNullableFilter<"Complaint"> | Date | string | null;
@@ -229,7 +228,7 @@ export type ComplaintScalarWhereWithAggregatesInput = {
     category?: Prisma.StringWithAggregatesFilter<"Complaint"> | string;
     description?: Prisma.StringWithAggregatesFilter<"Complaint"> | string;
     evidenceUrls?: Prisma.StringNullableListFilter<"Complaint">;
-    status?: Prisma.EnumComplaintStatusWithAggregatesFilter<"Complaint"> | $Enums.ComplaintStatus;
+    status?: Prisma.StringWithAggregatesFilter<"Complaint"> | string;
     resolution?: Prisma.StringNullableWithAggregatesFilter<"Complaint"> | string | null;
     resolvedBy?: Prisma.UuidNullableWithAggregatesFilter<"Complaint"> | string | null;
     resolvedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Complaint"> | Date | string | null;
@@ -242,7 +241,7 @@ export type ComplaintCreateInput = {
     category: string;
     description: string;
     evidenceUrls?: Prisma.ComplaintCreateevidenceUrlsInput | string[];
-    status?: $Enums.ComplaintStatus;
+    status?: string;
     resolution?: string | null;
     resolvedBy?: string | null;
     resolvedAt?: Date | string | null;
@@ -260,7 +259,7 @@ export type ComplaintUncheckedCreateInput = {
     category: string;
     description: string;
     evidenceUrls?: Prisma.ComplaintCreateevidenceUrlsInput | string[];
-    status?: $Enums.ComplaintStatus;
+    status?: string;
     resolution?: string | null;
     resolvedBy?: string | null;
     resolvedAt?: Date | string | null;
@@ -274,7 +273,7 @@ export type ComplaintUpdateInput = {
     category?: Prisma.StringFieldUpdateOperationsInput | string;
     description?: Prisma.StringFieldUpdateOperationsInput | string;
     evidenceUrls?: Prisma.ComplaintUpdateevidenceUrlsInput | string[];
-    status?: Prisma.EnumComplaintStatusFieldUpdateOperationsInput | $Enums.ComplaintStatus;
+    status?: Prisma.StringFieldUpdateOperationsInput | string;
     resolution?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     resolvedBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     resolvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
@@ -292,7 +291,7 @@ export type ComplaintUncheckedUpdateInput = {
     category?: Prisma.StringFieldUpdateOperationsInput | string;
     description?: Prisma.StringFieldUpdateOperationsInput | string;
     evidenceUrls?: Prisma.ComplaintUpdateevidenceUrlsInput | string[];
-    status?: Prisma.EnumComplaintStatusFieldUpdateOperationsInput | $Enums.ComplaintStatus;
+    status?: Prisma.StringFieldUpdateOperationsInput | string;
     resolution?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     resolvedBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     resolvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
@@ -308,7 +307,7 @@ export type ComplaintCreateManyInput = {
     category: string;
     description: string;
     evidenceUrls?: Prisma.ComplaintCreateevidenceUrlsInput | string[];
-    status?: $Enums.ComplaintStatus;
+    status?: string;
     resolution?: string | null;
     resolvedBy?: string | null;
     resolvedAt?: Date | string | null;
@@ -321,7 +320,7 @@ export type ComplaintUpdateManyMutationInput = {
     category?: Prisma.StringFieldUpdateOperationsInput | string;
     description?: Prisma.StringFieldUpdateOperationsInput | string;
     evidenceUrls?: Prisma.ComplaintUpdateevidenceUrlsInput | string[];
-    status?: Prisma.EnumComplaintStatusFieldUpdateOperationsInput | $Enums.ComplaintStatus;
+    status?: Prisma.StringFieldUpdateOperationsInput | string;
     resolution?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     resolvedBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     resolvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
@@ -336,7 +335,7 @@ export type ComplaintUncheckedUpdateManyInput = {
     category?: Prisma.StringFieldUpdateOperationsInput | string;
     description?: Prisma.StringFieldUpdateOperationsInput | string;
     evidenceUrls?: Prisma.ComplaintUpdateevidenceUrlsInput | string[];
-    status?: Prisma.EnumComplaintStatusFieldUpdateOperationsInput | $Enums.ComplaintStatus;
+    status?: Prisma.StringFieldUpdateOperationsInput | string;
     resolution?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     resolvedBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     resolvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
@@ -481,9 +480,6 @@ export type ComplaintUpdateevidenceUrlsInput = {
     set?: string[];
     push?: string | string[];
 };
-export type EnumComplaintStatusFieldUpdateOperationsInput = {
-    set?: $Enums.ComplaintStatus;
-};
 export type ComplaintCreateNestedOneWithoutPenaltiesInput = {
     create?: Prisma.XOR<Prisma.ComplaintCreateWithoutPenaltiesInput, Prisma.ComplaintUncheckedCreateWithoutPenaltiesInput>;
     connectOrCreate?: Prisma.ComplaintCreateOrConnectWithoutPenaltiesInput;
@@ -504,7 +500,7 @@ export type ComplaintCreateWithoutReporterInput = {
     category: string;
     description: string;
     evidenceUrls?: Prisma.ComplaintCreateevidenceUrlsInput | string[];
-    status?: $Enums.ComplaintStatus;
+    status?: string;
     resolution?: string | null;
     resolvedBy?: string | null;
     resolvedAt?: Date | string | null;
@@ -520,7 +516,7 @@ export type ComplaintUncheckedCreateWithoutReporterInput = {
     category: string;
     description: string;
     evidenceUrls?: Prisma.ComplaintCreateevidenceUrlsInput | string[];
-    status?: $Enums.ComplaintStatus;
+    status?: string;
     resolution?: string | null;
     resolvedBy?: string | null;
     resolvedAt?: Date | string | null;
@@ -542,7 +538,7 @@ export type ComplaintCreateWithoutAccusedInput = {
     category: string;
     description: string;
     evidenceUrls?: Prisma.ComplaintCreateevidenceUrlsInput | string[];
-    status?: $Enums.ComplaintStatus;
+    status?: string;
     resolution?: string | null;
     resolvedBy?: string | null;
     resolvedAt?: Date | string | null;
@@ -558,7 +554,7 @@ export type ComplaintUncheckedCreateWithoutAccusedInput = {
     category: string;
     description: string;
     evidenceUrls?: Prisma.ComplaintCreateevidenceUrlsInput | string[];
-    status?: $Enums.ComplaintStatus;
+    status?: string;
     resolution?: string | null;
     resolvedBy?: string | null;
     resolvedAt?: Date | string | null;
@@ -598,7 +594,7 @@ export type ComplaintScalarWhereInput = {
     category?: Prisma.StringFilter<"Complaint"> | string;
     description?: Prisma.StringFilter<"Complaint"> | string;
     evidenceUrls?: Prisma.StringNullableListFilter<"Complaint">;
-    status?: Prisma.EnumComplaintStatusFilter<"Complaint"> | $Enums.ComplaintStatus;
+    status?: Prisma.StringFilter<"Complaint"> | string;
     resolution?: Prisma.StringNullableFilter<"Complaint"> | string | null;
     resolvedBy?: Prisma.UuidNullableFilter<"Complaint"> | string | null;
     resolvedAt?: Prisma.DateTimeNullableFilter<"Complaint"> | Date | string | null;
@@ -624,7 +620,7 @@ export type ComplaintCreateWithoutPenaltiesInput = {
     category: string;
     description: string;
     evidenceUrls?: Prisma.ComplaintCreateevidenceUrlsInput | string[];
-    status?: $Enums.ComplaintStatus;
+    status?: string;
     resolution?: string | null;
     resolvedBy?: string | null;
     resolvedAt?: Date | string | null;
@@ -641,7 +637,7 @@ export type ComplaintUncheckedCreateWithoutPenaltiesInput = {
     category: string;
     description: string;
     evidenceUrls?: Prisma.ComplaintCreateevidenceUrlsInput | string[];
-    status?: $Enums.ComplaintStatus;
+    status?: string;
     resolution?: string | null;
     resolvedBy?: string | null;
     resolvedAt?: Date | string | null;
@@ -667,7 +663,7 @@ export type ComplaintUpdateWithoutPenaltiesInput = {
     category?: Prisma.StringFieldUpdateOperationsInput | string;
     description?: Prisma.StringFieldUpdateOperationsInput | string;
     evidenceUrls?: Prisma.ComplaintUpdateevidenceUrlsInput | string[];
-    status?: Prisma.EnumComplaintStatusFieldUpdateOperationsInput | $Enums.ComplaintStatus;
+    status?: Prisma.StringFieldUpdateOperationsInput | string;
     resolution?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     resolvedBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     resolvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
@@ -684,7 +680,7 @@ export type ComplaintUncheckedUpdateWithoutPenaltiesInput = {
     category?: Prisma.StringFieldUpdateOperationsInput | string;
     description?: Prisma.StringFieldUpdateOperationsInput | string;
     evidenceUrls?: Prisma.ComplaintUpdateevidenceUrlsInput | string[];
-    status?: Prisma.EnumComplaintStatusFieldUpdateOperationsInput | $Enums.ComplaintStatus;
+    status?: Prisma.StringFieldUpdateOperationsInput | string;
     resolution?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     resolvedBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     resolvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
@@ -698,7 +694,7 @@ export type ComplaintCreateManyReporterInput = {
     category: string;
     description: string;
     evidenceUrls?: Prisma.ComplaintCreateevidenceUrlsInput | string[];
-    status?: $Enums.ComplaintStatus;
+    status?: string;
     resolution?: string | null;
     resolvedBy?: string | null;
     resolvedAt?: Date | string | null;
@@ -712,7 +708,7 @@ export type ComplaintCreateManyAccusedInput = {
     category: string;
     description: string;
     evidenceUrls?: Prisma.ComplaintCreateevidenceUrlsInput | string[];
-    status?: $Enums.ComplaintStatus;
+    status?: string;
     resolution?: string | null;
     resolvedBy?: string | null;
     resolvedAt?: Date | string | null;
@@ -725,7 +721,7 @@ export type ComplaintUpdateWithoutReporterInput = {
     category?: Prisma.StringFieldUpdateOperationsInput | string;
     description?: Prisma.StringFieldUpdateOperationsInput | string;
     evidenceUrls?: Prisma.ComplaintUpdateevidenceUrlsInput | string[];
-    status?: Prisma.EnumComplaintStatusFieldUpdateOperationsInput | $Enums.ComplaintStatus;
+    status?: Prisma.StringFieldUpdateOperationsInput | string;
     resolution?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     resolvedBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     resolvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
@@ -741,7 +737,7 @@ export type ComplaintUncheckedUpdateWithoutReporterInput = {
     category?: Prisma.StringFieldUpdateOperationsInput | string;
     description?: Prisma.StringFieldUpdateOperationsInput | string;
     evidenceUrls?: Prisma.ComplaintUpdateevidenceUrlsInput | string[];
-    status?: Prisma.EnumComplaintStatusFieldUpdateOperationsInput | $Enums.ComplaintStatus;
+    status?: Prisma.StringFieldUpdateOperationsInput | string;
     resolution?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     resolvedBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     resolvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
@@ -756,7 +752,7 @@ export type ComplaintUncheckedUpdateManyWithoutReporterInput = {
     category?: Prisma.StringFieldUpdateOperationsInput | string;
     description?: Prisma.StringFieldUpdateOperationsInput | string;
     evidenceUrls?: Prisma.ComplaintUpdateevidenceUrlsInput | string[];
-    status?: Prisma.EnumComplaintStatusFieldUpdateOperationsInput | $Enums.ComplaintStatus;
+    status?: Prisma.StringFieldUpdateOperationsInput | string;
     resolution?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     resolvedBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     resolvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
@@ -769,7 +765,7 @@ export type ComplaintUpdateWithoutAccusedInput = {
     category?: Prisma.StringFieldUpdateOperationsInput | string;
     description?: Prisma.StringFieldUpdateOperationsInput | string;
     evidenceUrls?: Prisma.ComplaintUpdateevidenceUrlsInput | string[];
-    status?: Prisma.EnumComplaintStatusFieldUpdateOperationsInput | $Enums.ComplaintStatus;
+    status?: Prisma.StringFieldUpdateOperationsInput | string;
     resolution?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     resolvedBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     resolvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
@@ -785,7 +781,7 @@ export type ComplaintUncheckedUpdateWithoutAccusedInput = {
     category?: Prisma.StringFieldUpdateOperationsInput | string;
     description?: Prisma.StringFieldUpdateOperationsInput | string;
     evidenceUrls?: Prisma.ComplaintUpdateevidenceUrlsInput | string[];
-    status?: Prisma.EnumComplaintStatusFieldUpdateOperationsInput | $Enums.ComplaintStatus;
+    status?: Prisma.StringFieldUpdateOperationsInput | string;
     resolution?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     resolvedBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     resolvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
@@ -800,7 +796,7 @@ export type ComplaintUncheckedUpdateManyWithoutAccusedInput = {
     category?: Prisma.StringFieldUpdateOperationsInput | string;
     description?: Prisma.StringFieldUpdateOperationsInput | string;
     evidenceUrls?: Prisma.ComplaintUpdateevidenceUrlsInput | string[];
-    status?: Prisma.EnumComplaintStatusFieldUpdateOperationsInput | $Enums.ComplaintStatus;
+    status?: Prisma.StringFieldUpdateOperationsInput | string;
     resolution?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     resolvedBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     resolvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
@@ -917,7 +913,7 @@ export type $ComplaintPayload<ExtArgs extends runtime.Types.Extensions.InternalA
         category: string;
         description: string;
         evidenceUrls: string[];
-        status: $Enums.ComplaintStatus;
+        status: string;
         resolution: string | null;
         resolvedBy: string | null;
         resolvedAt: Date | null;
@@ -990,7 +986,7 @@ export interface ComplaintFieldRefs {
     readonly category: Prisma.FieldRef<"Complaint", 'String'>;
     readonly description: Prisma.FieldRef<"Complaint", 'String'>;
     readonly evidenceUrls: Prisma.FieldRef<"Complaint", 'String[]'>;
-    readonly status: Prisma.FieldRef<"Complaint", 'ComplaintStatus'>;
+    readonly status: Prisma.FieldRef<"Complaint", 'String'>;
     readonly resolution: Prisma.FieldRef<"Complaint", 'String'>;
     readonly resolvedBy: Prisma.FieldRef<"Complaint", 'String'>;
     readonly resolvedAt: Prisma.FieldRef<"Complaint", 'DateTime'>;

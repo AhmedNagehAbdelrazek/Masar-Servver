@@ -25,6 +25,12 @@ let AdminPlansController = class AdminPlansController {
     listPlans() {
         return this.plans.listPlans().then((plans) => ({ plans }));
     }
+    getFreePlan() {
+        return this.plans.getFreePlan().then((plan) => ({ plan }));
+    }
+    updateFreePlan(dto, user) {
+        return this.plans.updateFreePlan(dto, user?.id ?? '').then((plan) => ({ plan }));
+    }
     createPlan(dto, user) {
         return this.plans.createPlan(dto, user?.id ?? '').then((plan) => ({ plan }));
     }
@@ -41,6 +47,20 @@ __decorate([
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", Promise)
 ], AdminPlansController.prototype, "listPlans", null);
+__decorate([
+    Get('free'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], AdminPlansController.prototype, "getFreePlan", null);
+__decorate([
+    Put('free'),
+    __param(0, Body()),
+    __param(1, CurrentUser()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [UpdatePlanDto, Object]),
+    __metadata("design:returntype", Promise)
+], AdminPlansController.prototype, "updateFreePlan", null);
 __decorate([
     Post(),
     HttpCode(201),

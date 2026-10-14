@@ -28,6 +28,7 @@ let AdminPenaltiesController = class AdminPenaltiesController {
             details: dto.details ?? null,
             complaint_id: dto.complaint_id ?? null,
             ends_at: dto.ends_at ?? null,
+            confirm_reviewed_log: dto.confirm_reviewed_log ?? null,
         });
     }
 };

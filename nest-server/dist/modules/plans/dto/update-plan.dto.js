@@ -19,6 +19,7 @@ export class UpdatePlanDto {
     features;
     is_free;
     free_offer;
+    is_active;
 }
 __decorate([
     IsOptional(),
@@ -80,4 +81,16 @@ __decorate([
     IsFreeOffer(),
     __metadata("design:type", Object)
 ], UpdatePlanDto.prototype, "free_offer", void 0);
+__decorate([
+    IsOptional(),
+    IsBoolean(),
+    Transform(({ value }) => {
+        if (value === 'true' || value === 1 || value === '1')
+            return true;
+        if (value === 'false' || value === 0 || value === '0')
+            return false;
+        return value;
+    }),
+    __metadata("design:type", Boolean)
+], UpdatePlanDto.prototype, "is_active", void 0);
 //# sourceMappingURL=update-plan.dto.js.map

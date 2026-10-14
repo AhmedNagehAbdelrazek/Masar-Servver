@@ -1,5 +1,4 @@
 import type * as runtime from "@prisma/client/runtime/client";
-import type * as $Enums from "../enums.js";
 import type * as Prisma from "../internal/prismaNamespace.js";
 export type VerificationStatusChangeModel = runtime.Types.Result.DefaultSelection<Prisma.$VerificationStatusChangePayload>;
 export type AggregateVerificationStatusChange = {
@@ -10,8 +9,8 @@ export type AggregateVerificationStatusChange = {
 export type VerificationStatusChangeMinAggregateOutputType = {
     id: string | null;
     driverId: string | null;
-    fromStatus: $Enums.VerificationStatus | null;
-    toStatus: $Enums.VerificationStatus | null;
+    fromStatus: string | null;
+    toStatus: string | null;
     reason: string | null;
     changedBy: string | null;
     createdAt: Date | null;
@@ -19,8 +18,8 @@ export type VerificationStatusChangeMinAggregateOutputType = {
 export type VerificationStatusChangeMaxAggregateOutputType = {
     id: string | null;
     driverId: string | null;
-    fromStatus: $Enums.VerificationStatus | null;
-    toStatus: $Enums.VerificationStatus | null;
+    fromStatus: string | null;
+    toStatus: string | null;
     reason: string | null;
     changedBy: string | null;
     createdAt: Date | null;
@@ -92,8 +91,8 @@ export type VerificationStatusChangeGroupByArgs<ExtArgs extends runtime.Types.Ex
 export type VerificationStatusChangeGroupByOutputType = {
     id: string;
     driverId: string;
-    fromStatus: $Enums.VerificationStatus | null;
-    toStatus: $Enums.VerificationStatus;
+    fromStatus: string | null;
+    toStatus: string;
     reason: string | null;
     markedFields: runtime.JsonValue | null;
     changedBy: string | null;
@@ -111,8 +110,8 @@ export type VerificationStatusChangeWhereInput = {
     NOT?: Prisma.VerificationStatusChangeWhereInput | Prisma.VerificationStatusChangeWhereInput[];
     id?: Prisma.UuidFilter<"VerificationStatusChange"> | string;
     driverId?: Prisma.UuidFilter<"VerificationStatusChange"> | string;
-    fromStatus?: Prisma.EnumVerificationStatusNullableFilter<"VerificationStatusChange"> | $Enums.VerificationStatus | null;
-    toStatus?: Prisma.EnumVerificationStatusFilter<"VerificationStatusChange"> | $Enums.VerificationStatus;
+    fromStatus?: Prisma.StringNullableFilter<"VerificationStatusChange"> | string | null;
+    toStatus?: Prisma.StringFilter<"VerificationStatusChange"> | string;
     reason?: Prisma.StringNullableFilter<"VerificationStatusChange"> | string | null;
     markedFields?: Prisma.JsonNullableFilter<"VerificationStatusChange">;
     changedBy?: Prisma.UuidNullableFilter<"VerificationStatusChange"> | string | null;
@@ -136,8 +135,8 @@ export type VerificationStatusChangeWhereUniqueInput = Prisma.AtLeast<{
     OR?: Prisma.VerificationStatusChangeWhereInput[];
     NOT?: Prisma.VerificationStatusChangeWhereInput | Prisma.VerificationStatusChangeWhereInput[];
     driverId?: Prisma.UuidFilter<"VerificationStatusChange"> | string;
-    fromStatus?: Prisma.EnumVerificationStatusNullableFilter<"VerificationStatusChange"> | $Enums.VerificationStatus | null;
-    toStatus?: Prisma.EnumVerificationStatusFilter<"VerificationStatusChange"> | $Enums.VerificationStatus;
+    fromStatus?: Prisma.StringNullableFilter<"VerificationStatusChange"> | string | null;
+    toStatus?: Prisma.StringFilter<"VerificationStatusChange"> | string;
     reason?: Prisma.StringNullableFilter<"VerificationStatusChange"> | string | null;
     markedFields?: Prisma.JsonNullableFilter<"VerificationStatusChange">;
     changedBy?: Prisma.UuidNullableFilter<"VerificationStatusChange"> | string | null;
@@ -163,8 +162,8 @@ export type VerificationStatusChangeScalarWhereWithAggregatesInput = {
     NOT?: Prisma.VerificationStatusChangeScalarWhereWithAggregatesInput | Prisma.VerificationStatusChangeScalarWhereWithAggregatesInput[];
     id?: Prisma.UuidWithAggregatesFilter<"VerificationStatusChange"> | string;
     driverId?: Prisma.UuidWithAggregatesFilter<"VerificationStatusChange"> | string;
-    fromStatus?: Prisma.EnumVerificationStatusNullableWithAggregatesFilter<"VerificationStatusChange"> | $Enums.VerificationStatus | null;
-    toStatus?: Prisma.EnumVerificationStatusWithAggregatesFilter<"VerificationStatusChange"> | $Enums.VerificationStatus;
+    fromStatus?: Prisma.StringNullableWithAggregatesFilter<"VerificationStatusChange"> | string | null;
+    toStatus?: Prisma.StringWithAggregatesFilter<"VerificationStatusChange"> | string;
     reason?: Prisma.StringNullableWithAggregatesFilter<"VerificationStatusChange"> | string | null;
     markedFields?: Prisma.JsonNullableWithAggregatesFilter<"VerificationStatusChange">;
     changedBy?: Prisma.UuidNullableWithAggregatesFilter<"VerificationStatusChange"> | string | null;
@@ -172,8 +171,8 @@ export type VerificationStatusChangeScalarWhereWithAggregatesInput = {
 };
 export type VerificationStatusChangeCreateInput = {
     id?: string;
-    fromStatus?: $Enums.VerificationStatus | null;
-    toStatus: $Enums.VerificationStatus;
+    fromStatus?: string | null;
+    toStatus: string;
     reason?: string | null;
     markedFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
     changedBy?: string | null;
@@ -183,8 +182,8 @@ export type VerificationStatusChangeCreateInput = {
 export type VerificationStatusChangeUncheckedCreateInput = {
     id?: string;
     driverId: string;
-    fromStatus?: $Enums.VerificationStatus | null;
-    toStatus: $Enums.VerificationStatus;
+    fromStatus?: string | null;
+    toStatus: string;
     reason?: string | null;
     markedFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
     changedBy?: string | null;
@@ -192,8 +191,8 @@ export type VerificationStatusChangeUncheckedCreateInput = {
 };
 export type VerificationStatusChangeUpdateInput = {
     id?: Prisma.StringFieldUpdateOperationsInput | string;
-    fromStatus?: Prisma.NullableEnumVerificationStatusFieldUpdateOperationsInput | $Enums.VerificationStatus | null;
-    toStatus?: Prisma.EnumVerificationStatusFieldUpdateOperationsInput | $Enums.VerificationStatus;
+    fromStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    toStatus?: Prisma.StringFieldUpdateOperationsInput | string;
     reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     markedFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
     changedBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
@@ -203,8 +202,8 @@ export type VerificationStatusChangeUpdateInput = {
 export type VerificationStatusChangeUncheckedUpdateInput = {
     id?: Prisma.StringFieldUpdateOperationsInput | string;
     driverId?: Prisma.StringFieldUpdateOperationsInput | string;
-    fromStatus?: Prisma.NullableEnumVerificationStatusFieldUpdateOperationsInput | $Enums.VerificationStatus | null;
-    toStatus?: Prisma.EnumVerificationStatusFieldUpdateOperationsInput | $Enums.VerificationStatus;
+    fromStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    toStatus?: Prisma.StringFieldUpdateOperationsInput | string;
     reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     markedFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
     changedBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
@@ -213,8 +212,8 @@ export type VerificationStatusChangeUncheckedUpdateInput = {
 export type VerificationStatusChangeCreateManyInput = {
     id?: string;
     driverId: string;
-    fromStatus?: $Enums.VerificationStatus | null;
-    toStatus: $Enums.VerificationStatus;
+    fromStatus?: string | null;
+    toStatus: string;
     reason?: string | null;
     markedFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
     changedBy?: string | null;
@@ -222,8 +221,8 @@ export type VerificationStatusChangeCreateManyInput = {
 };
 export type VerificationStatusChangeUpdateManyMutationInput = {
     id?: Prisma.StringFieldUpdateOperationsInput | string;
-    fromStatus?: Prisma.NullableEnumVerificationStatusFieldUpdateOperationsInput | $Enums.VerificationStatus | null;
-    toStatus?: Prisma.EnumVerificationStatusFieldUpdateOperationsInput | $Enums.VerificationStatus;
+    fromStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    toStatus?: Prisma.StringFieldUpdateOperationsInput | string;
     reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     markedFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
     changedBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
@@ -232,8 +231,8 @@ export type VerificationStatusChangeUpdateManyMutationInput = {
 export type VerificationStatusChangeUncheckedUpdateManyInput = {
     id?: Prisma.StringFieldUpdateOperationsInput | string;
     driverId?: Prisma.StringFieldUpdateOperationsInput | string;
-    fromStatus?: Prisma.NullableEnumVerificationStatusFieldUpdateOperationsInput | $Enums.VerificationStatus | null;
-    toStatus?: Prisma.EnumVerificationStatusFieldUpdateOperationsInput | $Enums.VerificationStatus;
+    fromStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    toStatus?: Prisma.StringFieldUpdateOperationsInput | string;
     reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     markedFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
     changedBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
@@ -313,13 +312,10 @@ export type VerificationStatusChangeUncheckedUpdateManyWithoutDriverNestedInput 
     updateMany?: Prisma.VerificationStatusChangeUpdateManyWithWhereWithoutDriverInput | Prisma.VerificationStatusChangeUpdateManyWithWhereWithoutDriverInput[];
     deleteMany?: Prisma.VerificationStatusChangeScalarWhereInput | Prisma.VerificationStatusChangeScalarWhereInput[];
 };
-export type NullableEnumVerificationStatusFieldUpdateOperationsInput = {
-    set?: $Enums.VerificationStatus | null;
-};
 export type VerificationStatusChangeCreateWithoutDriverInput = {
     id?: string;
-    fromStatus?: $Enums.VerificationStatus | null;
-    toStatus: $Enums.VerificationStatus;
+    fromStatus?: string | null;
+    toStatus: string;
     reason?: string | null;
     markedFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
     changedBy?: string | null;
@@ -327,8 +323,8 @@ export type VerificationStatusChangeCreateWithoutDriverInput = {
 };
 export type VerificationStatusChangeUncheckedCreateWithoutDriverInput = {
     id?: string;
-    fromStatus?: $Enums.VerificationStatus | null;
-    toStatus: $Enums.VerificationStatus;
+    fromStatus?: string | null;
+    toStatus: string;
     reason?: string | null;
     markedFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
     changedBy?: string | null;
@@ -361,8 +357,8 @@ export type VerificationStatusChangeScalarWhereInput = {
     NOT?: Prisma.VerificationStatusChangeScalarWhereInput | Prisma.VerificationStatusChangeScalarWhereInput[];
     id?: Prisma.UuidFilter<"VerificationStatusChange"> | string;
     driverId?: Prisma.UuidFilter<"VerificationStatusChange"> | string;
-    fromStatus?: Prisma.EnumVerificationStatusNullableFilter<"VerificationStatusChange"> | $Enums.VerificationStatus | null;
-    toStatus?: Prisma.EnumVerificationStatusFilter<"VerificationStatusChange"> | $Enums.VerificationStatus;
+    fromStatus?: Prisma.StringNullableFilter<"VerificationStatusChange"> | string | null;
+    toStatus?: Prisma.StringFilter<"VerificationStatusChange"> | string;
     reason?: Prisma.StringNullableFilter<"VerificationStatusChange"> | string | null;
     markedFields?: Prisma.JsonNullableFilter<"VerificationStatusChange">;
     changedBy?: Prisma.UuidNullableFilter<"VerificationStatusChange"> | string | null;
@@ -370,8 +366,8 @@ export type VerificationStatusChangeScalarWhereInput = {
 };
 export type VerificationStatusChangeCreateManyDriverInput = {
     id?: string;
-    fromStatus?: $Enums.VerificationStatus | null;
-    toStatus: $Enums.VerificationStatus;
+    fromStatus?: string | null;
+    toStatus: string;
     reason?: string | null;
     markedFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
     changedBy?: string | null;
@@ -379,8 +375,8 @@ export type VerificationStatusChangeCreateManyDriverInput = {
 };
 export type VerificationStatusChangeUpdateWithoutDriverInput = {
     id?: Prisma.StringFieldUpdateOperationsInput | string;
-    fromStatus?: Prisma.NullableEnumVerificationStatusFieldUpdateOperationsInput | $Enums.VerificationStatus | null;
-    toStatus?: Prisma.EnumVerificationStatusFieldUpdateOperationsInput | $Enums.VerificationStatus;
+    fromStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    toStatus?: Prisma.StringFieldUpdateOperationsInput | string;
     reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     markedFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
     changedBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
@@ -388,8 +384,8 @@ export type VerificationStatusChangeUpdateWithoutDriverInput = {
 };
 export type VerificationStatusChangeUncheckedUpdateWithoutDriverInput = {
     id?: Prisma.StringFieldUpdateOperationsInput | string;
-    fromStatus?: Prisma.NullableEnumVerificationStatusFieldUpdateOperationsInput | $Enums.VerificationStatus | null;
-    toStatus?: Prisma.EnumVerificationStatusFieldUpdateOperationsInput | $Enums.VerificationStatus;
+    fromStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    toStatus?: Prisma.StringFieldUpdateOperationsInput | string;
     reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     markedFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
     changedBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
@@ -397,8 +393,8 @@ export type VerificationStatusChangeUncheckedUpdateWithoutDriverInput = {
 };
 export type VerificationStatusChangeUncheckedUpdateManyWithoutDriverInput = {
     id?: Prisma.StringFieldUpdateOperationsInput | string;
-    fromStatus?: Prisma.NullableEnumVerificationStatusFieldUpdateOperationsInput | $Enums.VerificationStatus | null;
-    toStatus?: Prisma.EnumVerificationStatusFieldUpdateOperationsInput | $Enums.VerificationStatus;
+    fromStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    toStatus?: Prisma.StringFieldUpdateOperationsInput | string;
     reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     markedFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
     changedBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
@@ -465,8 +461,8 @@ export type $VerificationStatusChangePayload<ExtArgs extends runtime.Types.Exten
     scalars: runtime.Types.Extensions.GetPayloadResult<{
         id: string;
         driverId: string;
-        fromStatus: $Enums.VerificationStatus | null;
-        toStatus: $Enums.VerificationStatus;
+        fromStatus: string | null;
+        toStatus: string;
         reason: string | null;
         markedFields: runtime.JsonValue | null;
         changedBy: string | null;
@@ -531,8 +527,8 @@ export interface Prisma__VerificationStatusChangeClient<T, Null = never, ExtArgs
 export interface VerificationStatusChangeFieldRefs {
     readonly id: Prisma.FieldRef<"VerificationStatusChange", 'String'>;
     readonly driverId: Prisma.FieldRef<"VerificationStatusChange", 'String'>;
-    readonly fromStatus: Prisma.FieldRef<"VerificationStatusChange", 'VerificationStatus'>;
-    readonly toStatus: Prisma.FieldRef<"VerificationStatusChange", 'VerificationStatus'>;
+    readonly fromStatus: Prisma.FieldRef<"VerificationStatusChange", 'String'>;
+    readonly toStatus: Prisma.FieldRef<"VerificationStatusChange", 'String'>;
     readonly reason: Prisma.FieldRef<"VerificationStatusChange", 'String'>;
     readonly markedFields: Prisma.FieldRef<"VerificationStatusChange", 'Json'>;
     readonly changedBy: Prisma.FieldRef<"VerificationStatusChange", 'String'>;

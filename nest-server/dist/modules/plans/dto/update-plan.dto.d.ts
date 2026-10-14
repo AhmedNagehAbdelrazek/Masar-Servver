@@ -10,4 +10,5 @@ export declare class UpdatePlanDto {
         type: string;
         value: number;
     } | null;
+    is_active?: boolean;
 }

@@ -46,7 +46,7 @@ export type SosEventMinAggregateOutputType = {
   lat: runtime.Decimal | null
   lng: runtime.Decimal | null
   urgency: string | null
-  status: $Enums.SosStatus | null
+  status: string | null
   escalationLevel: number | null
   lastAlertAt: Date | null
   acknowledgedBy: string | null
@@ -65,7 +65,7 @@ export type SosEventMaxAggregateOutputType = {
   lat: runtime.Decimal | null
   lng: runtime.Decimal | null
   urgency: string | null
-  status: $Enums.SosStatus | null
+  status: string | null
   escalationLevel: number | null
   lastAlertAt: Date | null
   acknowledgedBy: string | null
@@ -261,7 +261,7 @@ export type SosEventGroupByOutputType = {
   lat: runtime.Decimal
   lng: runtime.Decimal
   urgency: string
-  status: $Enums.SosStatus
+  status: string
   escalationLevel: number
   lastAlertAt: Date | null
   acknowledgedBy: string | null
@@ -303,7 +303,7 @@ export type SosEventWhereInput = {
   lat?: Prisma.DecimalFilter<"SosEvent"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   lng?: Prisma.DecimalFilter<"SosEvent"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   urgency?: Prisma.StringFilter<"SosEvent"> | string
-  status?: Prisma.EnumSosStatusFilter<"SosEvent"> | $Enums.SosStatus
+  status?: Prisma.StringFilter<"SosEvent"> | string
   escalationLevel?: Prisma.IntFilter<"SosEvent"> | number
   lastAlertAt?: Prisma.DateTimeNullableFilter<"SosEvent"> | Date | string | null
   acknowledgedBy?: Prisma.UuidNullableFilter<"SosEvent"> | string | null
@@ -350,7 +350,7 @@ export type SosEventWhereUniqueInput = Prisma.AtLeast<{
   lat?: Prisma.DecimalFilter<"SosEvent"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   lng?: Prisma.DecimalFilter<"SosEvent"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   urgency?: Prisma.StringFilter<"SosEvent"> | string
-  status?: Prisma.EnumSosStatusFilter<"SosEvent"> | $Enums.SosStatus
+  status?: Prisma.StringFilter<"SosEvent"> | string
   escalationLevel?: Prisma.IntFilter<"SosEvent"> | number
   lastAlertAt?: Prisma.DateTimeNullableFilter<"SosEvent"> | Date | string | null
   acknowledgedBy?: Prisma.UuidNullableFilter<"SosEvent"> | string | null
@@ -399,7 +399,7 @@ export type SosEventScalarWhereWithAggregatesInput = {
   lat?: Prisma.DecimalWithAggregatesFilter<"SosEvent"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   lng?: Prisma.DecimalWithAggregatesFilter<"SosEvent"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   urgency?: Prisma.StringWithAggregatesFilter<"SosEvent"> | string
-  status?: Prisma.EnumSosStatusWithAggregatesFilter<"SosEvent"> | $Enums.SosStatus
+  status?: Prisma.StringWithAggregatesFilter<"SosEvent"> | string
   escalationLevel?: Prisma.IntWithAggregatesFilter<"SosEvent"> | number
   lastAlertAt?: Prisma.DateTimeNullableWithAggregatesFilter<"SosEvent"> | Date | string | null
   acknowledgedBy?: Prisma.UuidNullableWithAggregatesFilter<"SosEvent"> | string | null
@@ -415,7 +415,7 @@ export type SosEventCreateInput = {
   lat: runtime.Decimal | runtime.DecimalJsLike | number | string
   lng: runtime.Decimal | runtime.DecimalJsLike | number | string
   urgency?: string
-  status?: $Enums.SosStatus
+  status?: string
   escalationLevel?: number
   lastAlertAt?: Date | string | null
   acknowledgedBy?: string | null
@@ -437,7 +437,7 @@ export type SosEventUncheckedCreateInput = {
   lat: runtime.Decimal | runtime.DecimalJsLike | number | string
   lng: runtime.Decimal | runtime.DecimalJsLike | number | string
   urgency?: string
-  status?: $Enums.SosStatus
+  status?: string
   escalationLevel?: number
   lastAlertAt?: Date | string | null
   acknowledgedBy?: string | null
@@ -453,7 +453,7 @@ export type SosEventUpdateInput = {
   lat?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   lng?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   urgency?: Prisma.StringFieldUpdateOperationsInput | string
-  status?: Prisma.EnumSosStatusFieldUpdateOperationsInput | $Enums.SosStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   escalationLevel?: Prisma.IntFieldUpdateOperationsInput | number
   lastAlertAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   acknowledgedBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -475,7 +475,7 @@ export type SosEventUncheckedUpdateInput = {
   lat?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   lng?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   urgency?: Prisma.StringFieldUpdateOperationsInput | string
-  status?: Prisma.EnumSosStatusFieldUpdateOperationsInput | $Enums.SosStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   escalationLevel?: Prisma.IntFieldUpdateOperationsInput | number
   lastAlertAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   acknowledgedBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -494,7 +494,7 @@ export type SosEventCreateManyInput = {
   lat: runtime.Decimal | runtime.DecimalJsLike | number | string
   lng: runtime.Decimal | runtime.DecimalJsLike | number | string
   urgency?: string
-  status?: $Enums.SosStatus
+  status?: string
   escalationLevel?: number
   lastAlertAt?: Date | string | null
   acknowledgedBy?: string | null
@@ -510,7 +510,7 @@ export type SosEventUpdateManyMutationInput = {
   lat?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   lng?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   urgency?: Prisma.StringFieldUpdateOperationsInput | string
-  status?: Prisma.EnumSosStatusFieldUpdateOperationsInput | $Enums.SosStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   escalationLevel?: Prisma.IntFieldUpdateOperationsInput | number
   lastAlertAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   acknowledgedBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -529,7 +529,7 @@ export type SosEventUncheckedUpdateManyInput = {
   lat?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   lng?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   urgency?: Prisma.StringFieldUpdateOperationsInput | string
-  status?: Prisma.EnumSosStatusFieldUpdateOperationsInput | $Enums.SosStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   escalationLevel?: Prisma.IntFieldUpdateOperationsInput | number
   lastAlertAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   acknowledgedBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -745,16 +745,12 @@ export type SosEventUncheckedUpdateManyWithoutBookingNestedInput = {
   deleteMany?: Prisma.SosEventScalarWhereInput | Prisma.SosEventScalarWhereInput[]
 }
 
-export type EnumSosStatusFieldUpdateOperationsInput = {
-  set?: $Enums.SosStatus
-}
-
 export type SosEventCreateWithoutUserInput = {
   id?: string
   lat: runtime.Decimal | runtime.DecimalJsLike | number | string
   lng: runtime.Decimal | runtime.DecimalJsLike | number | string
   urgency?: string
-  status?: $Enums.SosStatus
+  status?: string
   escalationLevel?: number
   lastAlertAt?: Date | string | null
   acknowledgedBy?: string | null
@@ -774,7 +770,7 @@ export type SosEventUncheckedCreateWithoutUserInput = {
   lat: runtime.Decimal | runtime.DecimalJsLike | number | string
   lng: runtime.Decimal | runtime.DecimalJsLike | number | string
   urgency?: string
-  status?: $Enums.SosStatus
+  status?: string
   escalationLevel?: number
   lastAlertAt?: Date | string | null
   acknowledgedBy?: string | null
@@ -822,7 +818,7 @@ export type SosEventScalarWhereInput = {
   lat?: Prisma.DecimalFilter<"SosEvent"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   lng?: Prisma.DecimalFilter<"SosEvent"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   urgency?: Prisma.StringFilter<"SosEvent"> | string
-  status?: Prisma.EnumSosStatusFilter<"SosEvent"> | $Enums.SosStatus
+  status?: Prisma.StringFilter<"SosEvent"> | string
   escalationLevel?: Prisma.IntFilter<"SosEvent"> | number
   lastAlertAt?: Prisma.DateTimeNullableFilter<"SosEvent"> | Date | string | null
   acknowledgedBy?: Prisma.UuidNullableFilter<"SosEvent"> | string | null
@@ -838,7 +834,7 @@ export type SosEventCreateWithoutTripInput = {
   lat: runtime.Decimal | runtime.DecimalJsLike | number | string
   lng: runtime.Decimal | runtime.DecimalJsLike | number | string
   urgency?: string
-  status?: $Enums.SosStatus
+  status?: string
   escalationLevel?: number
   lastAlertAt?: Date | string | null
   acknowledgedBy?: string | null
@@ -858,7 +854,7 @@ export type SosEventUncheckedCreateWithoutTripInput = {
   lat: runtime.Decimal | runtime.DecimalJsLike | number | string
   lng: runtime.Decimal | runtime.DecimalJsLike | number | string
   urgency?: string
-  status?: $Enums.SosStatus
+  status?: string
   escalationLevel?: number
   lastAlertAt?: Date | string | null
   acknowledgedBy?: string | null
@@ -900,7 +896,7 @@ export type SosEventCreateWithoutBookingInput = {
   lat: runtime.Decimal | runtime.DecimalJsLike | number | string
   lng: runtime.Decimal | runtime.DecimalJsLike | number | string
   urgency?: string
-  status?: $Enums.SosStatus
+  status?: string
   escalationLevel?: number
   lastAlertAt?: Date | string | null
   acknowledgedBy?: string | null
@@ -920,7 +916,7 @@ export type SosEventUncheckedCreateWithoutBookingInput = {
   lat: runtime.Decimal | runtime.DecimalJsLike | number | string
   lng: runtime.Decimal | runtime.DecimalJsLike | number | string
   urgency?: string
-  status?: $Enums.SosStatus
+  status?: string
   escalationLevel?: number
   lastAlertAt?: Date | string | null
   acknowledgedBy?: string | null
@@ -964,7 +960,7 @@ export type SosEventCreateManyUserInput = {
   lat: runtime.Decimal | runtime.DecimalJsLike | number | string
   lng: runtime.Decimal | runtime.DecimalJsLike | number | string
   urgency?: string
-  status?: $Enums.SosStatus
+  status?: string
   escalationLevel?: number
   lastAlertAt?: Date | string | null
   acknowledgedBy?: string | null
@@ -980,7 +976,7 @@ export type SosEventUpdateWithoutUserInput = {
   lat?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   lng?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   urgency?: Prisma.StringFieldUpdateOperationsInput | string
-  status?: Prisma.EnumSosStatusFieldUpdateOperationsInput | $Enums.SosStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   escalationLevel?: Prisma.IntFieldUpdateOperationsInput | number
   lastAlertAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   acknowledgedBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1000,7 +996,7 @@ export type SosEventUncheckedUpdateWithoutUserInput = {
   lat?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   lng?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   urgency?: Prisma.StringFieldUpdateOperationsInput | string
-  status?: Prisma.EnumSosStatusFieldUpdateOperationsInput | $Enums.SosStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   escalationLevel?: Prisma.IntFieldUpdateOperationsInput | number
   lastAlertAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   acknowledgedBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1018,7 +1014,7 @@ export type SosEventUncheckedUpdateManyWithoutUserInput = {
   lat?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   lng?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   urgency?: Prisma.StringFieldUpdateOperationsInput | string
-  status?: Prisma.EnumSosStatusFieldUpdateOperationsInput | $Enums.SosStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   escalationLevel?: Prisma.IntFieldUpdateOperationsInput | number
   lastAlertAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   acknowledgedBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1036,7 +1032,7 @@ export type SosEventCreateManyTripInput = {
   lat: runtime.Decimal | runtime.DecimalJsLike | number | string
   lng: runtime.Decimal | runtime.DecimalJsLike | number | string
   urgency?: string
-  status?: $Enums.SosStatus
+  status?: string
   escalationLevel?: number
   lastAlertAt?: Date | string | null
   acknowledgedBy?: string | null
@@ -1052,7 +1048,7 @@ export type SosEventUpdateWithoutTripInput = {
   lat?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   lng?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   urgency?: Prisma.StringFieldUpdateOperationsInput | string
-  status?: Prisma.EnumSosStatusFieldUpdateOperationsInput | $Enums.SosStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   escalationLevel?: Prisma.IntFieldUpdateOperationsInput | number
   lastAlertAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   acknowledgedBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1072,7 +1068,7 @@ export type SosEventUncheckedUpdateWithoutTripInput = {
   lat?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   lng?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   urgency?: Prisma.StringFieldUpdateOperationsInput | string
-  status?: Prisma.EnumSosStatusFieldUpdateOperationsInput | $Enums.SosStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   escalationLevel?: Prisma.IntFieldUpdateOperationsInput | number
   lastAlertAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   acknowledgedBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1090,7 +1086,7 @@ export type SosEventUncheckedUpdateManyWithoutTripInput = {
   lat?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   lng?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   urgency?: Prisma.StringFieldUpdateOperationsInput | string
-  status?: Prisma.EnumSosStatusFieldUpdateOperationsInput | $Enums.SosStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   escalationLevel?: Prisma.IntFieldUpdateOperationsInput | number
   lastAlertAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   acknowledgedBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1108,7 +1104,7 @@ export type SosEventCreateManyBookingInput = {
   lat: runtime.Decimal | runtime.DecimalJsLike | number | string
   lng: runtime.Decimal | runtime.DecimalJsLike | number | string
   urgency?: string
-  status?: $Enums.SosStatus
+  status?: string
   escalationLevel?: number
   lastAlertAt?: Date | string | null
   acknowledgedBy?: string | null
@@ -1124,7 +1120,7 @@ export type SosEventUpdateWithoutBookingInput = {
   lat?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   lng?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   urgency?: Prisma.StringFieldUpdateOperationsInput | string
-  status?: Prisma.EnumSosStatusFieldUpdateOperationsInput | $Enums.SosStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   escalationLevel?: Prisma.IntFieldUpdateOperationsInput | number
   lastAlertAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   acknowledgedBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1144,7 +1140,7 @@ export type SosEventUncheckedUpdateWithoutBookingInput = {
   lat?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   lng?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   urgency?: Prisma.StringFieldUpdateOperationsInput | string
-  status?: Prisma.EnumSosStatusFieldUpdateOperationsInput | $Enums.SosStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   escalationLevel?: Prisma.IntFieldUpdateOperationsInput | number
   lastAlertAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   acknowledgedBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1162,7 +1158,7 @@ export type SosEventUncheckedUpdateManyWithoutBookingInput = {
   lat?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   lng?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   urgency?: Prisma.StringFieldUpdateOperationsInput | string
-  status?: Prisma.EnumSosStatusFieldUpdateOperationsInput | $Enums.SosStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   escalationLevel?: Prisma.IntFieldUpdateOperationsInput | number
   lastAlertAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   acknowledgedBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1292,7 +1288,7 @@ export type $SosEventPayload<ExtArgs extends runtime.Types.Extensions.InternalAr
     lat: runtime.Decimal
     lng: runtime.Decimal
     urgency: string
-    status: $Enums.SosStatus
+    status: string
     escalationLevel: number
     lastAlertAt: Date | null
     acknowledgedBy: string | null
@@ -1734,7 +1730,7 @@ export interface SosEventFieldRefs {
   readonly lat: Prisma.FieldRef<"SosEvent", 'Decimal'>
   readonly lng: Prisma.FieldRef<"SosEvent", 'Decimal'>
   readonly urgency: Prisma.FieldRef<"SosEvent", 'String'>
-  readonly status: Prisma.FieldRef<"SosEvent", 'SosStatus'>
+  readonly status: Prisma.FieldRef<"SosEvent", 'String'>
   readonly escalationLevel: Prisma.FieldRef<"SosEvent", 'Int'>
   readonly lastAlertAt: Prisma.FieldRef<"SosEvent", 'DateTime'>
   readonly acknowledgedBy: Prisma.FieldRef<"SosEvent", 'String'>

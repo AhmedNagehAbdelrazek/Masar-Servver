@@ -10,11 +10,12 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
-import { Body, Controller, Get, HttpCode, Param, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Header, HttpCode, Param, Post, Query } from '@nestjs/common';
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import { Roles } from '../../common/decorators/roles.decorator.js';
 import { AdminDashboardService } from './admin-dashboard.service.js';
 import { AccountActionDto, RejectDocumentDto, SetDriverStatusDto } from './dto/admin-actions.dto.js';
+import { SendDriverNotificationDto } from './dto/driver-notification.dto.js';
 import { DriversListQuery, DriverTripsQuery, RecentTripsQuery, ReservationsQuery, } from './dto/dashboard-queries.dto.js';
 import { DocumentDecisionParams } from './dto/document-key.param.js';
 import { DriverIdParam } from './dto/driver-id.param.js';
@@ -44,6 +45,9 @@ let AdminDashboardController = class AdminDashboardController {
     getDriverStats() {
         return this.dashboard.getDriverStats();
     }
+    exportDrivers(query) {
+        return this.dashboard.exportDrivers(query);
+    }
     getDriverHeader(params) {
         return this.dashboard.getDriverHeader(params.driver_id);
     }
@@ -64,6 +68,9 @@ let AdminDashboardController = class AdminDashboardController {
     }
     getDocuments(params) {
         return this.dashboard.getDocuments(params.driver_id);
+    }
+    sendDriverNotification(params, dto, user) {
+        return this.dashboard.sendDriverNotification(user?.id ?? '', params.driver_id, dto);
     }
     setDriverStatus(params, dto, user) {
         return this.dashboard.setDriverStatus(user?.id ?? '', params.driver_id, dto.status);
@@ -128,6 +135,14 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], AdminDashboardController.prototype, "getDriverStats", null);
 __decorate([
+    Get('drivers/export'),
+    Header('Content-Type', 'text/csv'),
+    __param(0, Query()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [DriversListQuery]),
+    __metadata("design:returntype", Promise)
+], AdminDashboardController.prototype, "exportDrivers", null);
+__decorate([
     Get('drivers/:driver_id'),
     __param(0, Param()),
     __metadata("design:type", Function),
@@ -180,6 +195,17 @@ __decorate([
     __metadata("design:paramtypes", [DriverIdParam]),
     __metadata("design:returntype", Promise)
 ], AdminDashboardController.prototype, "getDocuments", null);
+__decorate([
+    Post('drivers/:driver_id/notifications'),
+    HttpCode(200),
+    __param(0, Param()),
+    __param(1, Body()),
+    __param(2, CurrentUser()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [DriverIdParam,
+        SendDriverNotificationDto, Object]),
+    __metadata("design:returntype", Promise)
+], AdminDashboardController.prototype, "sendDriverNotification", null);
 __decorate([
     Post('drivers/:driver_id/status'),
     HttpCode(200),

@@ -8,7 +8,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 import { Type } from 'class-transformer';
-import { IsIn, IsInt, IsOptional, Max, Min } from 'class-validator';
+import { IsIn, IsInt, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
 import { COMPLAINT_CATEGORIES } from './create-complaint.dto.js';
 export const COMPLAINT_STATUSES = ['open', 'reviewing', 'resolved', 'dismissed'];
 export class DriverComplaintListQuery {
@@ -45,6 +45,7 @@ __decorate([
 export class AdminComplaintListQuery {
     status;
     category;
+    search;
     page;
     limit;
 }
@@ -58,6 +59,12 @@ __decorate([
     IsIn([...COMPLAINT_CATEGORIES]),
     __metadata("design:type", Object)
 ], AdminComplaintListQuery.prototype, "category", void 0);
+__decorate([
+    IsOptional(),
+    IsString(),
+    MaxLength(120),
+    __metadata("design:type", String)
+], AdminComplaintListQuery.prototype, "search", void 0);
 __decorate([
     IsOptional(),
     IsInt(),

@@ -1,5 +1,4 @@
 import type * as runtime from "@prisma/client/runtime/client";
-import type * as $Enums from "../enums.js";
 import type * as Prisma from "../internal/prismaNamespace.js";
 export type PaymentMethodModel = runtime.Types.Result.DefaultSelection<Prisma.$PaymentMethodPayload>;
 export type AggregatePaymentMethod = {
@@ -11,7 +10,7 @@ export type PaymentMethodMinAggregateOutputType = {
     id: string | null;
     name: string | null;
     accountNumber: string | null;
-    type: $Enums.PaymentMethodType | null;
+    type: string | null;
     email: string | null;
     isActive: boolean | null;
     createdAt: Date | null;
@@ -21,7 +20,7 @@ export type PaymentMethodMaxAggregateOutputType = {
     id: string | null;
     name: string | null;
     accountNumber: string | null;
-    type: $Enums.PaymentMethodType | null;
+    type: string | null;
     email: string | null;
     isActive: boolean | null;
     createdAt: Date | null;
@@ -97,7 +96,7 @@ export type PaymentMethodGroupByOutputType = {
     id: string;
     name: string;
     accountNumber: string;
-    type: $Enums.PaymentMethodType;
+    type: string;
     email: string | null;
     isActive: boolean;
     createdAt: Date;
@@ -116,7 +115,7 @@ export type PaymentMethodWhereInput = {
     id?: Prisma.UuidFilter<"PaymentMethod"> | string;
     name?: Prisma.StringFilter<"PaymentMethod"> | string;
     accountNumber?: Prisma.StringFilter<"PaymentMethod"> | string;
-    type?: Prisma.EnumPaymentMethodTypeFilter<"PaymentMethod"> | $Enums.PaymentMethodType;
+    type?: Prisma.StringFilter<"PaymentMethod"> | string;
     email?: Prisma.StringNullableFilter<"PaymentMethod"> | string | null;
     isActive?: Prisma.BoolFilter<"PaymentMethod"> | boolean;
     createdAt?: Prisma.DateTimeFilter<"PaymentMethod"> | Date | string;
@@ -139,7 +138,7 @@ export type PaymentMethodWhereUniqueInput = Prisma.AtLeast<{
     NOT?: Prisma.PaymentMethodWhereInput | Prisma.PaymentMethodWhereInput[];
     name?: Prisma.StringFilter<"PaymentMethod"> | string;
     accountNumber?: Prisma.StringFilter<"PaymentMethod"> | string;
-    type?: Prisma.EnumPaymentMethodTypeFilter<"PaymentMethod"> | $Enums.PaymentMethodType;
+    type?: Prisma.StringFilter<"PaymentMethod"> | string;
     email?: Prisma.StringNullableFilter<"PaymentMethod"> | string | null;
     isActive?: Prisma.BoolFilter<"PaymentMethod"> | boolean;
     createdAt?: Prisma.DateTimeFilter<"PaymentMethod"> | Date | string;
@@ -165,7 +164,7 @@ export type PaymentMethodScalarWhereWithAggregatesInput = {
     id?: Prisma.UuidWithAggregatesFilter<"PaymentMethod"> | string;
     name?: Prisma.StringWithAggregatesFilter<"PaymentMethod"> | string;
     accountNumber?: Prisma.StringWithAggregatesFilter<"PaymentMethod"> | string;
-    type?: Prisma.EnumPaymentMethodTypeWithAggregatesFilter<"PaymentMethod"> | $Enums.PaymentMethodType;
+    type?: Prisma.StringWithAggregatesFilter<"PaymentMethod"> | string;
     email?: Prisma.StringNullableWithAggregatesFilter<"PaymentMethod"> | string | null;
     isActive?: Prisma.BoolWithAggregatesFilter<"PaymentMethod"> | boolean;
     createdAt?: Prisma.DateTimeWithAggregatesFilter<"PaymentMethod"> | Date | string;
@@ -175,7 +174,7 @@ export type PaymentMethodCreateInput = {
     id?: string;
     name: string;
     accountNumber: string;
-    type: $Enums.PaymentMethodType;
+    type: string;
     email?: string | null;
     isActive?: boolean;
     createdAt?: Date | string;
@@ -185,7 +184,7 @@ export type PaymentMethodUncheckedCreateInput = {
     id?: string;
     name: string;
     accountNumber: string;
-    type: $Enums.PaymentMethodType;
+    type: string;
     email?: string | null;
     isActive?: boolean;
     createdAt?: Date | string;
@@ -195,7 +194,7 @@ export type PaymentMethodUpdateInput = {
     id?: Prisma.StringFieldUpdateOperationsInput | string;
     name?: Prisma.StringFieldUpdateOperationsInput | string;
     accountNumber?: Prisma.StringFieldUpdateOperationsInput | string;
-    type?: Prisma.EnumPaymentMethodTypeFieldUpdateOperationsInput | $Enums.PaymentMethodType;
+    type?: Prisma.StringFieldUpdateOperationsInput | string;
     email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean;
     createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
@@ -205,7 +204,7 @@ export type PaymentMethodUncheckedUpdateInput = {
     id?: Prisma.StringFieldUpdateOperationsInput | string;
     name?: Prisma.StringFieldUpdateOperationsInput | string;
     accountNumber?: Prisma.StringFieldUpdateOperationsInput | string;
-    type?: Prisma.EnumPaymentMethodTypeFieldUpdateOperationsInput | $Enums.PaymentMethodType;
+    type?: Prisma.StringFieldUpdateOperationsInput | string;
     email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean;
     createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
@@ -215,7 +214,7 @@ export type PaymentMethodCreateManyInput = {
     id?: string;
     name: string;
     accountNumber: string;
-    type: $Enums.PaymentMethodType;
+    type: string;
     email?: string | null;
     isActive?: boolean;
     createdAt?: Date | string;
@@ -225,7 +224,7 @@ export type PaymentMethodUpdateManyMutationInput = {
     id?: Prisma.StringFieldUpdateOperationsInput | string;
     name?: Prisma.StringFieldUpdateOperationsInput | string;
     accountNumber?: Prisma.StringFieldUpdateOperationsInput | string;
-    type?: Prisma.EnumPaymentMethodTypeFieldUpdateOperationsInput | $Enums.PaymentMethodType;
+    type?: Prisma.StringFieldUpdateOperationsInput | string;
     email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean;
     createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
@@ -235,7 +234,7 @@ export type PaymentMethodUncheckedUpdateManyInput = {
     id?: Prisma.StringFieldUpdateOperationsInput | string;
     name?: Prisma.StringFieldUpdateOperationsInput | string;
     accountNumber?: Prisma.StringFieldUpdateOperationsInput | string;
-    type?: Prisma.EnumPaymentMethodTypeFieldUpdateOperationsInput | $Enums.PaymentMethodType;
+    type?: Prisma.StringFieldUpdateOperationsInput | string;
     email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean;
     createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
@@ -270,9 +269,6 @@ export type PaymentMethodMinOrderByAggregateInput = {
     isActive?: Prisma.SortOrder;
     createdAt?: Prisma.SortOrder;
     updatedAt?: Prisma.SortOrder;
-};
-export type EnumPaymentMethodTypeFieldUpdateOperationsInput = {
-    set?: $Enums.PaymentMethodType;
 };
 export type PaymentMethodSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
     id?: boolean;
@@ -322,7 +318,7 @@ export type $PaymentMethodPayload<ExtArgs extends runtime.Types.Extensions.Inter
         id: string;
         name: string;
         accountNumber: string;
-        type: $Enums.PaymentMethodType;
+        type: string;
         email: string | null;
         isActive: boolean;
         createdAt: Date;
@@ -387,7 +383,7 @@ export interface PaymentMethodFieldRefs {
     readonly id: Prisma.FieldRef<"PaymentMethod", 'String'>;
     readonly name: Prisma.FieldRef<"PaymentMethod", 'String'>;
     readonly accountNumber: Prisma.FieldRef<"PaymentMethod", 'String'>;
-    readonly type: Prisma.FieldRef<"PaymentMethod", 'PaymentMethodType'>;
+    readonly type: Prisma.FieldRef<"PaymentMethod", 'String'>;
     readonly email: Prisma.FieldRef<"PaymentMethod", 'String'>;
     readonly isActive: Prisma.FieldRef<"PaymentMethod", 'Boolean'>;
     readonly createdAt: Prisma.FieldRef<"PaymentMethod", 'DateTime'>;

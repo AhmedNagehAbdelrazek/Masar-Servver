@@ -37,7 +37,7 @@ export type DelayEventSumAggregateOutputType = {
 export type DelayEventMinAggregateOutputType = {
   id: string | null
   bookingId: string | null
-  party: $Enums.DelayParty | null
+  party: string | null
   delayMinutes: number | null
   reason: string | null
   reportedBy: string | null
@@ -47,7 +47,7 @@ export type DelayEventMinAggregateOutputType = {
 export type DelayEventMaxAggregateOutputType = {
   id: string | null
   bookingId: string | null
-  party: $Enums.DelayParty | null
+  party: string | null
   delayMinutes: number | null
   reason: string | null
   reportedBy: string | null
@@ -194,7 +194,7 @@ export type DelayEventGroupByArgs<ExtArgs extends runtime.Types.Extensions.Inter
 export type DelayEventGroupByOutputType = {
   id: string
   bookingId: string
-  party: $Enums.DelayParty
+  party: string
   delayMinutes: number
   reason: string | null
   reportedBy: string
@@ -227,7 +227,7 @@ export type DelayEventWhereInput = {
   NOT?: Prisma.DelayEventWhereInput | Prisma.DelayEventWhereInput[]
   id?: Prisma.UuidFilter<"DelayEvent"> | string
   bookingId?: Prisma.UuidFilter<"DelayEvent"> | string
-  party?: Prisma.EnumDelayPartyFilter<"DelayEvent"> | $Enums.DelayParty
+  party?: Prisma.StringFilter<"DelayEvent"> | string
   delayMinutes?: Prisma.IntFilter<"DelayEvent"> | number
   reason?: Prisma.StringNullableFilter<"DelayEvent"> | string | null
   reportedBy?: Prisma.UuidFilter<"DelayEvent"> | string
@@ -252,7 +252,7 @@ export type DelayEventWhereUniqueInput = Prisma.AtLeast<{
   OR?: Prisma.DelayEventWhereInput[]
   NOT?: Prisma.DelayEventWhereInput | Prisma.DelayEventWhereInput[]
   bookingId?: Prisma.UuidFilter<"DelayEvent"> | string
-  party?: Prisma.EnumDelayPartyFilter<"DelayEvent"> | $Enums.DelayParty
+  party?: Prisma.StringFilter<"DelayEvent"> | string
   delayMinutes?: Prisma.IntFilter<"DelayEvent"> | number
   reason?: Prisma.StringNullableFilter<"DelayEvent"> | string | null
   reportedBy?: Prisma.UuidFilter<"DelayEvent"> | string
@@ -281,7 +281,7 @@ export type DelayEventScalarWhereWithAggregatesInput = {
   NOT?: Prisma.DelayEventScalarWhereWithAggregatesInput | Prisma.DelayEventScalarWhereWithAggregatesInput[]
   id?: Prisma.UuidWithAggregatesFilter<"DelayEvent"> | string
   bookingId?: Prisma.UuidWithAggregatesFilter<"DelayEvent"> | string
-  party?: Prisma.EnumDelayPartyWithAggregatesFilter<"DelayEvent"> | $Enums.DelayParty
+  party?: Prisma.StringWithAggregatesFilter<"DelayEvent"> | string
   delayMinutes?: Prisma.IntWithAggregatesFilter<"DelayEvent"> | number
   reason?: Prisma.StringNullableWithAggregatesFilter<"DelayEvent"> | string | null
   reportedBy?: Prisma.UuidWithAggregatesFilter<"DelayEvent"> | string
@@ -290,7 +290,7 @@ export type DelayEventScalarWhereWithAggregatesInput = {
 
 export type DelayEventCreateInput = {
   id?: string
-  party: $Enums.DelayParty
+  party: string
   delayMinutes: number
   reason?: string | null
   reportedBy: string
@@ -301,7 +301,7 @@ export type DelayEventCreateInput = {
 export type DelayEventUncheckedCreateInput = {
   id?: string
   bookingId: string
-  party: $Enums.DelayParty
+  party: string
   delayMinutes: number
   reason?: string | null
   reportedBy: string
@@ -310,7 +310,7 @@ export type DelayEventUncheckedCreateInput = {
 
 export type DelayEventUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  party?: Prisma.EnumDelayPartyFieldUpdateOperationsInput | $Enums.DelayParty
+  party?: Prisma.StringFieldUpdateOperationsInput | string
   delayMinutes?: Prisma.IntFieldUpdateOperationsInput | number
   reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   reportedBy?: Prisma.StringFieldUpdateOperationsInput | string
@@ -321,7 +321,7 @@ export type DelayEventUpdateInput = {
 export type DelayEventUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   bookingId?: Prisma.StringFieldUpdateOperationsInput | string
-  party?: Prisma.EnumDelayPartyFieldUpdateOperationsInput | $Enums.DelayParty
+  party?: Prisma.StringFieldUpdateOperationsInput | string
   delayMinutes?: Prisma.IntFieldUpdateOperationsInput | number
   reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   reportedBy?: Prisma.StringFieldUpdateOperationsInput | string
@@ -331,7 +331,7 @@ export type DelayEventUncheckedUpdateInput = {
 export type DelayEventCreateManyInput = {
   id?: string
   bookingId: string
-  party: $Enums.DelayParty
+  party: string
   delayMinutes: number
   reason?: string | null
   reportedBy: string
@@ -340,7 +340,7 @@ export type DelayEventCreateManyInput = {
 
 export type DelayEventUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  party?: Prisma.EnumDelayPartyFieldUpdateOperationsInput | $Enums.DelayParty
+  party?: Prisma.StringFieldUpdateOperationsInput | string
   delayMinutes?: Prisma.IntFieldUpdateOperationsInput | number
   reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   reportedBy?: Prisma.StringFieldUpdateOperationsInput | string
@@ -350,7 +350,7 @@ export type DelayEventUpdateManyMutationInput = {
 export type DelayEventUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   bookingId?: Prisma.StringFieldUpdateOperationsInput | string
-  party?: Prisma.EnumDelayPartyFieldUpdateOperationsInput | $Enums.DelayParty
+  party?: Prisma.StringFieldUpdateOperationsInput | string
   delayMinutes?: Prisma.IntFieldUpdateOperationsInput | number
   reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   reportedBy?: Prisma.StringFieldUpdateOperationsInput | string
@@ -447,13 +447,9 @@ export type DelayEventUncheckedUpdateManyWithoutBookingNestedInput = {
   deleteMany?: Prisma.DelayEventScalarWhereInput | Prisma.DelayEventScalarWhereInput[]
 }
 
-export type EnumDelayPartyFieldUpdateOperationsInput = {
-  set?: $Enums.DelayParty
-}
-
 export type DelayEventCreateWithoutBookingInput = {
   id?: string
-  party: $Enums.DelayParty
+  party: string
   delayMinutes: number
   reason?: string | null
   reportedBy: string
@@ -462,7 +458,7 @@ export type DelayEventCreateWithoutBookingInput = {
 
 export type DelayEventUncheckedCreateWithoutBookingInput = {
   id?: string
-  party: $Enums.DelayParty
+  party: string
   delayMinutes: number
   reason?: string | null
   reportedBy: string
@@ -501,7 +497,7 @@ export type DelayEventScalarWhereInput = {
   NOT?: Prisma.DelayEventScalarWhereInput | Prisma.DelayEventScalarWhereInput[]
   id?: Prisma.UuidFilter<"DelayEvent"> | string
   bookingId?: Prisma.UuidFilter<"DelayEvent"> | string
-  party?: Prisma.EnumDelayPartyFilter<"DelayEvent"> | $Enums.DelayParty
+  party?: Prisma.StringFilter<"DelayEvent"> | string
   delayMinutes?: Prisma.IntFilter<"DelayEvent"> | number
   reason?: Prisma.StringNullableFilter<"DelayEvent"> | string | null
   reportedBy?: Prisma.UuidFilter<"DelayEvent"> | string
@@ -510,7 +506,7 @@ export type DelayEventScalarWhereInput = {
 
 export type DelayEventCreateManyBookingInput = {
   id?: string
-  party: $Enums.DelayParty
+  party: string
   delayMinutes: number
   reason?: string | null
   reportedBy: string
@@ -519,7 +515,7 @@ export type DelayEventCreateManyBookingInput = {
 
 export type DelayEventUpdateWithoutBookingInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  party?: Prisma.EnumDelayPartyFieldUpdateOperationsInput | $Enums.DelayParty
+  party?: Prisma.StringFieldUpdateOperationsInput | string
   delayMinutes?: Prisma.IntFieldUpdateOperationsInput | number
   reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   reportedBy?: Prisma.StringFieldUpdateOperationsInput | string
@@ -528,7 +524,7 @@ export type DelayEventUpdateWithoutBookingInput = {
 
 export type DelayEventUncheckedUpdateWithoutBookingInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  party?: Prisma.EnumDelayPartyFieldUpdateOperationsInput | $Enums.DelayParty
+  party?: Prisma.StringFieldUpdateOperationsInput | string
   delayMinutes?: Prisma.IntFieldUpdateOperationsInput | number
   reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   reportedBy?: Prisma.StringFieldUpdateOperationsInput | string
@@ -537,7 +533,7 @@ export type DelayEventUncheckedUpdateWithoutBookingInput = {
 
 export type DelayEventUncheckedUpdateManyWithoutBookingInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  party?: Prisma.EnumDelayPartyFieldUpdateOperationsInput | $Enums.DelayParty
+  party?: Prisma.StringFieldUpdateOperationsInput | string
   delayMinutes?: Prisma.IntFieldUpdateOperationsInput | number
   reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   reportedBy?: Prisma.StringFieldUpdateOperationsInput | string
@@ -608,7 +604,7 @@ export type $DelayEventPayload<ExtArgs extends runtime.Types.Extensions.Internal
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
     bookingId: string
-    party: $Enums.DelayParty
+    party: string
     delayMinutes: number
     reason: string | null
     reportedBy: string
@@ -1039,7 +1035,7 @@ export interface Prisma__DelayEventClient<T, Null = never, ExtArgs extends runti
 export interface DelayEventFieldRefs {
   readonly id: Prisma.FieldRef<"DelayEvent", 'String'>
   readonly bookingId: Prisma.FieldRef<"DelayEvent", 'String'>
-  readonly party: Prisma.FieldRef<"DelayEvent", 'DelayParty'>
+  readonly party: Prisma.FieldRef<"DelayEvent", 'String'>
   readonly delayMinutes: Prisma.FieldRef<"DelayEvent", 'Int'>
   readonly reason: Prisma.FieldRef<"DelayEvent", 'String'>
   readonly reportedBy: Prisma.FieldRef<"DelayEvent", 'String'>

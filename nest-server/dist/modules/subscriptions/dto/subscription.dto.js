@@ -8,7 +8,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 import { Transform, Type } from 'class-transformer';
-import { IsBoolean, IsDefined, IsInt, IsNotEmpty, IsOptional, IsString, IsUUID, MaxLength, Min } from 'class-validator';
+import { IsBoolean, IsDefined, IsIn, IsInt, IsNotEmpty, IsOptional, IsString, IsUUID, Matches, Max, MaxLength, Min } from 'class-validator';
 export class CreateSubscriptionDto {
     plan_id;
     payment_method_id;
@@ -63,4 +63,60 @@ __decorate([
     IsUUID(),
     __metadata("design:type", String)
 ], SubscriptionIdParam.prototype, "subscription_id", void 0);
+export class AdminSubscriptionListQuery {
+    search;
+    status;
+    plan_id;
+    from;
+    to;
+    sort;
+    page;
+    limit;
+}
+__decorate([
+    IsOptional(),
+    IsString(),
+    MaxLength(120),
+    __metadata("design:type", String)
+], AdminSubscriptionListQuery.prototype, "search", void 0);
+__decorate([
+    IsOptional(),
+    IsIn(['pending_approval', 'active', 'rejected', 'cancelled', 'expired', 'all']),
+    __metadata("design:type", String)
+], AdminSubscriptionListQuery.prototype, "status", void 0);
+__decorate([
+    IsOptional(),
+    IsUUID(),
+    __metadata("design:type", String)
+], AdminSubscriptionListQuery.prototype, "plan_id", void 0);
+__decorate([
+    IsOptional(),
+    Matches(/^\d{4}-\d{2}-\d{2}$/),
+    __metadata("design:type", String)
+], AdminSubscriptionListQuery.prototype, "from", void 0);
+__decorate([
+    IsOptional(),
+    Matches(/^\d{4}-\d{2}-\d{2}$/),
+    __metadata("design:type", String)
+], AdminSubscriptionListQuery.prototype, "to", void 0);
+__decorate([
+    IsOptional(),
+    IsIn(['newest', 'oldest']),
+    __metadata("design:type", String)
+], AdminSubscriptionListQuery.prototype, "sort", void 0);
+__decorate([
+    IsOptional(),
+    IsInt(),
+    Min(1),
+    Type(() => Number),
+    __metadata("design:type", Number)
+], AdminSubscriptionListQuery.prototype, "page", void 0);
+__decorate([
+    IsOptional(),
+    IsInt(),
+    Min(1),
+    Max(100),
+    Type(() => Number),
+    __metadata("design:type", Number)
+], AdminSubscriptionListQuery.prototype, "limit", void 0);
 //# sourceMappingURL=subscription.dto.js.map

@@ -29,7 +29,7 @@ export type PenaltyMinAggregateOutputType = {
   userId: string | null
   complaintId: string | null
   tripId: string | null
-  type: $Enums.PenaltyType | null
+  type: string | null
   penaltyType: string | null
   severity: string | null
   reason: string | null
@@ -48,7 +48,7 @@ export type PenaltyMaxAggregateOutputType = {
   userId: string | null
   complaintId: string | null
   tripId: string | null
-  type: $Enums.PenaltyType | null
+  type: string | null
   penaltyType: string | null
   severity: string | null
   reason: string | null
@@ -218,7 +218,7 @@ export type PenaltyGroupByOutputType = {
   userId: string
   complaintId: string | null
   tripId: string | null
-  type: $Enums.PenaltyType
+  type: string
   penaltyType: string
   severity: string
   reason: string
@@ -258,7 +258,7 @@ export type PenaltyWhereInput = {
   userId?: Prisma.UuidFilter<"Penalty"> | string
   complaintId?: Prisma.UuidNullableFilter<"Penalty"> | string | null
   tripId?: Prisma.UuidNullableFilter<"Penalty"> | string | null
-  type?: Prisma.EnumPenaltyTypeFilter<"Penalty"> | $Enums.PenaltyType
+  type?: Prisma.StringFilter<"Penalty"> | string
   penaltyType?: Prisma.StringFilter<"Penalty"> | string
   severity?: Prisma.StringFilter<"Penalty"> | string
   reason?: Prisma.StringFilter<"Penalty"> | string
@@ -303,7 +303,7 @@ export type PenaltyWhereUniqueInput = Prisma.AtLeast<{
   userId?: Prisma.UuidFilter<"Penalty"> | string
   complaintId?: Prisma.UuidNullableFilter<"Penalty"> | string | null
   tripId?: Prisma.UuidNullableFilter<"Penalty"> | string | null
-  type?: Prisma.EnumPenaltyTypeFilter<"Penalty"> | $Enums.PenaltyType
+  type?: Prisma.StringFilter<"Penalty"> | string
   penaltyType?: Prisma.StringFilter<"Penalty"> | string
   severity?: Prisma.StringFilter<"Penalty"> | string
   reason?: Prisma.StringFilter<"Penalty"> | string
@@ -349,7 +349,7 @@ export type PenaltyScalarWhereWithAggregatesInput = {
   userId?: Prisma.UuidWithAggregatesFilter<"Penalty"> | string
   complaintId?: Prisma.UuidNullableWithAggregatesFilter<"Penalty"> | string | null
   tripId?: Prisma.UuidNullableWithAggregatesFilter<"Penalty"> | string | null
-  type?: Prisma.EnumPenaltyTypeWithAggregatesFilter<"Penalty"> | $Enums.PenaltyType
+  type?: Prisma.StringWithAggregatesFilter<"Penalty"> | string
   penaltyType?: Prisma.StringWithAggregatesFilter<"Penalty"> | string
   severity?: Prisma.StringWithAggregatesFilter<"Penalty"> | string
   reason?: Prisma.StringWithAggregatesFilter<"Penalty"> | string
@@ -366,7 +366,7 @@ export type PenaltyScalarWhereWithAggregatesInput = {
 export type PenaltyCreateInput = {
   id?: string
   tripId?: string | null
-  type: $Enums.PenaltyType
+  type: string
   penaltyType?: string
   severity?: string
   reason: string
@@ -387,7 +387,7 @@ export type PenaltyUncheckedCreateInput = {
   userId: string
   complaintId?: string | null
   tripId?: string | null
-  type: $Enums.PenaltyType
+  type: string
   penaltyType?: string
   severity?: string
   reason: string
@@ -404,7 +404,7 @@ export type PenaltyUncheckedCreateInput = {
 export type PenaltyUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   tripId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  type?: Prisma.EnumPenaltyTypeFieldUpdateOperationsInput | $Enums.PenaltyType
+  type?: Prisma.StringFieldUpdateOperationsInput | string
   penaltyType?: Prisma.StringFieldUpdateOperationsInput | string
   severity?: Prisma.StringFieldUpdateOperationsInput | string
   reason?: Prisma.StringFieldUpdateOperationsInput | string
@@ -425,7 +425,7 @@ export type PenaltyUncheckedUpdateInput = {
   userId?: Prisma.StringFieldUpdateOperationsInput | string
   complaintId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   tripId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  type?: Prisma.EnumPenaltyTypeFieldUpdateOperationsInput | $Enums.PenaltyType
+  type?: Prisma.StringFieldUpdateOperationsInput | string
   penaltyType?: Prisma.StringFieldUpdateOperationsInput | string
   severity?: Prisma.StringFieldUpdateOperationsInput | string
   reason?: Prisma.StringFieldUpdateOperationsInput | string
@@ -444,7 +444,7 @@ export type PenaltyCreateManyInput = {
   userId: string
   complaintId?: string | null
   tripId?: string | null
-  type: $Enums.PenaltyType
+  type: string
   penaltyType?: string
   severity?: string
   reason: string
@@ -461,7 +461,7 @@ export type PenaltyCreateManyInput = {
 export type PenaltyUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   tripId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  type?: Prisma.EnumPenaltyTypeFieldUpdateOperationsInput | $Enums.PenaltyType
+  type?: Prisma.StringFieldUpdateOperationsInput | string
   penaltyType?: Prisma.StringFieldUpdateOperationsInput | string
   severity?: Prisma.StringFieldUpdateOperationsInput | string
   reason?: Prisma.StringFieldUpdateOperationsInput | string
@@ -480,7 +480,7 @@ export type PenaltyUncheckedUpdateManyInput = {
   userId?: Prisma.StringFieldUpdateOperationsInput | string
   complaintId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   tripId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  type?: Prisma.EnumPenaltyTypeFieldUpdateOperationsInput | $Enums.PenaltyType
+  type?: Prisma.StringFieldUpdateOperationsInput | string
   penaltyType?: Prisma.StringFieldUpdateOperationsInput | string
   severity?: Prisma.StringFieldUpdateOperationsInput | string
   reason?: Prisma.StringFieldUpdateOperationsInput | string
@@ -645,14 +645,10 @@ export type PenaltyUncheckedUpdateManyWithoutComplaintNestedInput = {
   deleteMany?: Prisma.PenaltyScalarWhereInput | Prisma.PenaltyScalarWhereInput[]
 }
 
-export type EnumPenaltyTypeFieldUpdateOperationsInput = {
-  set?: $Enums.PenaltyType
-}
-
 export type PenaltyCreateWithoutUserInput = {
   id?: string
   tripId?: string | null
-  type: $Enums.PenaltyType
+  type: string
   penaltyType?: string
   severity?: string
   reason: string
@@ -671,7 +667,7 @@ export type PenaltyUncheckedCreateWithoutUserInput = {
   id?: string
   complaintId?: string | null
   tripId?: string | null
-  type: $Enums.PenaltyType
+  type: string
   penaltyType?: string
   severity?: string
   reason: string
@@ -719,7 +715,7 @@ export type PenaltyScalarWhereInput = {
   userId?: Prisma.UuidFilter<"Penalty"> | string
   complaintId?: Prisma.UuidNullableFilter<"Penalty"> | string | null
   tripId?: Prisma.UuidNullableFilter<"Penalty"> | string | null
-  type?: Prisma.EnumPenaltyTypeFilter<"Penalty"> | $Enums.PenaltyType
+  type?: Prisma.StringFilter<"Penalty"> | string
   penaltyType?: Prisma.StringFilter<"Penalty"> | string
   severity?: Prisma.StringFilter<"Penalty"> | string
   reason?: Prisma.StringFilter<"Penalty"> | string
@@ -736,7 +732,7 @@ export type PenaltyScalarWhereInput = {
 export type PenaltyCreateWithoutComplaintInput = {
   id?: string
   tripId?: string | null
-  type: $Enums.PenaltyType
+  type: string
   penaltyType?: string
   severity?: string
   reason: string
@@ -755,7 +751,7 @@ export type PenaltyUncheckedCreateWithoutComplaintInput = {
   id?: string
   userId: string
   tripId?: string | null
-  type: $Enums.PenaltyType
+  type: string
   penaltyType?: string
   severity?: string
   reason: string
@@ -799,7 +795,7 @@ export type PenaltyCreateManyUserInput = {
   id?: string
   complaintId?: string | null
   tripId?: string | null
-  type: $Enums.PenaltyType
+  type: string
   penaltyType?: string
   severity?: string
   reason: string
@@ -816,7 +812,7 @@ export type PenaltyCreateManyUserInput = {
 export type PenaltyUpdateWithoutUserInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   tripId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  type?: Prisma.EnumPenaltyTypeFieldUpdateOperationsInput | $Enums.PenaltyType
+  type?: Prisma.StringFieldUpdateOperationsInput | string
   penaltyType?: Prisma.StringFieldUpdateOperationsInput | string
   severity?: Prisma.StringFieldUpdateOperationsInput | string
   reason?: Prisma.StringFieldUpdateOperationsInput | string
@@ -835,7 +831,7 @@ export type PenaltyUncheckedUpdateWithoutUserInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   complaintId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   tripId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  type?: Prisma.EnumPenaltyTypeFieldUpdateOperationsInput | $Enums.PenaltyType
+  type?: Prisma.StringFieldUpdateOperationsInput | string
   penaltyType?: Prisma.StringFieldUpdateOperationsInput | string
   severity?: Prisma.StringFieldUpdateOperationsInput | string
   reason?: Prisma.StringFieldUpdateOperationsInput | string
@@ -853,7 +849,7 @@ export type PenaltyUncheckedUpdateManyWithoutUserInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   complaintId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   tripId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  type?: Prisma.EnumPenaltyTypeFieldUpdateOperationsInput | $Enums.PenaltyType
+  type?: Prisma.StringFieldUpdateOperationsInput | string
   penaltyType?: Prisma.StringFieldUpdateOperationsInput | string
   severity?: Prisma.StringFieldUpdateOperationsInput | string
   reason?: Prisma.StringFieldUpdateOperationsInput | string
@@ -871,7 +867,7 @@ export type PenaltyCreateManyComplaintInput = {
   id?: string
   userId: string
   tripId?: string | null
-  type: $Enums.PenaltyType
+  type: string
   penaltyType?: string
   severity?: string
   reason: string
@@ -888,7 +884,7 @@ export type PenaltyCreateManyComplaintInput = {
 export type PenaltyUpdateWithoutComplaintInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   tripId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  type?: Prisma.EnumPenaltyTypeFieldUpdateOperationsInput | $Enums.PenaltyType
+  type?: Prisma.StringFieldUpdateOperationsInput | string
   penaltyType?: Prisma.StringFieldUpdateOperationsInput | string
   severity?: Prisma.StringFieldUpdateOperationsInput | string
   reason?: Prisma.StringFieldUpdateOperationsInput | string
@@ -907,7 +903,7 @@ export type PenaltyUncheckedUpdateWithoutComplaintInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
   tripId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  type?: Prisma.EnumPenaltyTypeFieldUpdateOperationsInput | $Enums.PenaltyType
+  type?: Prisma.StringFieldUpdateOperationsInput | string
   penaltyType?: Prisma.StringFieldUpdateOperationsInput | string
   severity?: Prisma.StringFieldUpdateOperationsInput | string
   reason?: Prisma.StringFieldUpdateOperationsInput | string
@@ -925,7 +921,7 @@ export type PenaltyUncheckedUpdateManyWithoutComplaintInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
   tripId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  type?: Prisma.EnumPenaltyTypeFieldUpdateOperationsInput | $Enums.PenaltyType
+  type?: Prisma.StringFieldUpdateOperationsInput | string
   penaltyType?: Prisma.StringFieldUpdateOperationsInput | string
   severity?: Prisma.StringFieldUpdateOperationsInput | string
   reason?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1048,7 +1044,7 @@ export type $PenaltyPayload<ExtArgs extends runtime.Types.Extensions.InternalArg
     userId: string
     complaintId: string | null
     tripId: string | null
-    type: $Enums.PenaltyType
+    type: string
     penaltyType: string
     severity: string
     reason: string
@@ -1489,7 +1485,7 @@ export interface PenaltyFieldRefs {
   readonly userId: Prisma.FieldRef<"Penalty", 'String'>
   readonly complaintId: Prisma.FieldRef<"Penalty", 'String'>
   readonly tripId: Prisma.FieldRef<"Penalty", 'String'>
-  readonly type: Prisma.FieldRef<"Penalty", 'PenaltyType'>
+  readonly type: Prisma.FieldRef<"Penalty", 'String'>
   readonly penaltyType: Prisma.FieldRef<"Penalty", 'String'>
   readonly severity: Prisma.FieldRef<"Penalty", 'String'>
   readonly reason: Prisma.FieldRef<"Penalty", 'String'>

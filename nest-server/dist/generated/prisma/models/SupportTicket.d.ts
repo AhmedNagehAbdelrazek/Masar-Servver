@@ -1,5 +1,4 @@
 import type * as runtime from "@prisma/client/runtime/client";
-import type * as $Enums from "../enums.js";
 import type * as Prisma from "../internal/prismaNamespace.js";
 export type SupportTicketModel = runtime.Types.Result.DefaultSelection<Prisma.$SupportTicketPayload>;
 export type AggregateSupportTicket = {
@@ -13,8 +12,8 @@ export type SupportTicketMinAggregateOutputType = {
     category: string | null;
     subject: string | null;
     description: string | null;
-    priority: $Enums.TicketPriority | null;
-    status: $Enums.TicketStatus | null;
+    priority: string | null;
+    status: string | null;
     assignedTo: string | null;
     referenceCode: string | null;
     bookingId: string | null;
@@ -29,8 +28,8 @@ export type SupportTicketMaxAggregateOutputType = {
     category: string | null;
     subject: string | null;
     description: string | null;
-    priority: $Enums.TicketPriority | null;
-    status: $Enums.TicketStatus | null;
+    priority: string | null;
+    status: string | null;
     assignedTo: string | null;
     referenceCode: string | null;
     bookingId: string | null;
@@ -135,8 +134,8 @@ export type SupportTicketGroupByOutputType = {
     category: string;
     subject: string;
     description: string;
-    priority: $Enums.TicketPriority | null;
-    status: $Enums.TicketStatus | null;
+    priority: string | null;
+    status: string | null;
     assignedTo: string | null;
     referenceCode: string | null;
     bookingId: string | null;
@@ -160,8 +159,8 @@ export type SupportTicketWhereInput = {
     category?: Prisma.StringFilter<"SupportTicket"> | string;
     subject?: Prisma.StringFilter<"SupportTicket"> | string;
     description?: Prisma.StringFilter<"SupportTicket"> | string;
-    priority?: Prisma.EnumTicketPriorityNullableFilter<"SupportTicket"> | $Enums.TicketPriority | null;
-    status?: Prisma.EnumTicketStatusNullableFilter<"SupportTicket"> | $Enums.TicketStatus | null;
+    priority?: Prisma.StringNullableFilter<"SupportTicket"> | string | null;
+    status?: Prisma.StringNullableFilter<"SupportTicket"> | string | null;
     assignedTo?: Prisma.UuidNullableFilter<"SupportTicket"> | string | null;
     referenceCode?: Prisma.StringNullableFilter<"SupportTicket"> | string | null;
     bookingId?: Prisma.UuidNullableFilter<"SupportTicket"> | string | null;
@@ -202,8 +201,8 @@ export type SupportTicketWhereUniqueInput = Prisma.AtLeast<{
     category?: Prisma.StringFilter<"SupportTicket"> | string;
     subject?: Prisma.StringFilter<"SupportTicket"> | string;
     description?: Prisma.StringFilter<"SupportTicket"> | string;
-    priority?: Prisma.EnumTicketPriorityNullableFilter<"SupportTicket"> | $Enums.TicketPriority | null;
-    status?: Prisma.EnumTicketStatusNullableFilter<"SupportTicket"> | $Enums.TicketStatus | null;
+    priority?: Prisma.StringNullableFilter<"SupportTicket"> | string | null;
+    status?: Prisma.StringNullableFilter<"SupportTicket"> | string | null;
     assignedTo?: Prisma.UuidNullableFilter<"SupportTicket"> | string | null;
     bookingId?: Prisma.UuidNullableFilter<"SupportTicket"> | string | null;
     tripId?: Prisma.UuidNullableFilter<"SupportTicket"> | string | null;
@@ -242,8 +241,8 @@ export type SupportTicketScalarWhereWithAggregatesInput = {
     category?: Prisma.StringWithAggregatesFilter<"SupportTicket"> | string;
     subject?: Prisma.StringWithAggregatesFilter<"SupportTicket"> | string;
     description?: Prisma.StringWithAggregatesFilter<"SupportTicket"> | string;
-    priority?: Prisma.EnumTicketPriorityNullableWithAggregatesFilter<"SupportTicket"> | $Enums.TicketPriority | null;
-    status?: Prisma.EnumTicketStatusNullableWithAggregatesFilter<"SupportTicket"> | $Enums.TicketStatus | null;
+    priority?: Prisma.StringNullableWithAggregatesFilter<"SupportTicket"> | string | null;
+    status?: Prisma.StringNullableWithAggregatesFilter<"SupportTicket"> | string | null;
     assignedTo?: Prisma.UuidNullableWithAggregatesFilter<"SupportTicket"> | string | null;
     referenceCode?: Prisma.StringNullableWithAggregatesFilter<"SupportTicket"> | string | null;
     bookingId?: Prisma.UuidNullableWithAggregatesFilter<"SupportTicket"> | string | null;
@@ -257,8 +256,8 @@ export type SupportTicketCreateInput = {
     category: string;
     subject: string;
     description: string;
-    priority?: $Enums.TicketPriority | null;
-    status?: $Enums.TicketStatus | null;
+    priority?: string | null;
+    status?: string | null;
     assignedTo?: string | null;
     referenceCode?: string | null;
     bookingId?: string | null;
@@ -276,8 +275,8 @@ export type SupportTicketUncheckedCreateInput = {
     category: string;
     subject: string;
     description: string;
-    priority?: $Enums.TicketPriority | null;
-    status?: $Enums.TicketStatus | null;
+    priority?: string | null;
+    status?: string | null;
     assignedTo?: string | null;
     referenceCode?: string | null;
     bookingId?: string | null;
@@ -293,8 +292,8 @@ export type SupportTicketUpdateInput = {
     category?: Prisma.StringFieldUpdateOperationsInput | string;
     subject?: Prisma.StringFieldUpdateOperationsInput | string;
     description?: Prisma.StringFieldUpdateOperationsInput | string;
-    priority?: Prisma.NullableEnumTicketPriorityFieldUpdateOperationsInput | $Enums.TicketPriority | null;
-    status?: Prisma.NullableEnumTicketStatusFieldUpdateOperationsInput | $Enums.TicketStatus | null;
+    priority?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    status?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     assignedTo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     referenceCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     bookingId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
@@ -312,8 +311,8 @@ export type SupportTicketUncheckedUpdateInput = {
     category?: Prisma.StringFieldUpdateOperationsInput | string;
     subject?: Prisma.StringFieldUpdateOperationsInput | string;
     description?: Prisma.StringFieldUpdateOperationsInput | string;
-    priority?: Prisma.NullableEnumTicketPriorityFieldUpdateOperationsInput | $Enums.TicketPriority | null;
-    status?: Prisma.NullableEnumTicketStatusFieldUpdateOperationsInput | $Enums.TicketStatus | null;
+    priority?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    status?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     assignedTo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     referenceCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     bookingId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
@@ -330,8 +329,8 @@ export type SupportTicketCreateManyInput = {
     category: string;
     subject: string;
     description: string;
-    priority?: $Enums.TicketPriority | null;
-    status?: $Enums.TicketStatus | null;
+    priority?: string | null;
+    status?: string | null;
     assignedTo?: string | null;
     referenceCode?: string | null;
     bookingId?: string | null;
@@ -345,8 +344,8 @@ export type SupportTicketUpdateManyMutationInput = {
     category?: Prisma.StringFieldUpdateOperationsInput | string;
     subject?: Prisma.StringFieldUpdateOperationsInput | string;
     description?: Prisma.StringFieldUpdateOperationsInput | string;
-    priority?: Prisma.NullableEnumTicketPriorityFieldUpdateOperationsInput | $Enums.TicketPriority | null;
-    status?: Prisma.NullableEnumTicketStatusFieldUpdateOperationsInput | $Enums.TicketStatus | null;
+    priority?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    status?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     assignedTo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     referenceCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     bookingId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
@@ -361,8 +360,8 @@ export type SupportTicketUncheckedUpdateManyInput = {
     category?: Prisma.StringFieldUpdateOperationsInput | string;
     subject?: Prisma.StringFieldUpdateOperationsInput | string;
     description?: Prisma.StringFieldUpdateOperationsInput | string;
-    priority?: Prisma.NullableEnumTicketPriorityFieldUpdateOperationsInput | $Enums.TicketPriority | null;
-    status?: Prisma.NullableEnumTicketStatusFieldUpdateOperationsInput | $Enums.TicketStatus | null;
+    priority?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    status?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     assignedTo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     referenceCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     bookingId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
@@ -473,12 +472,6 @@ export type SupportTicketUncheckedUpdateManyWithoutUserNestedInput = {
     updateMany?: Prisma.SupportTicketUpdateManyWithWhereWithoutUserInput | Prisma.SupportTicketUpdateManyWithWhereWithoutUserInput[];
     deleteMany?: Prisma.SupportTicketScalarWhereInput | Prisma.SupportTicketScalarWhereInput[];
 };
-export type NullableEnumTicketPriorityFieldUpdateOperationsInput = {
-    set?: $Enums.TicketPriority | null;
-};
-export type NullableEnumTicketStatusFieldUpdateOperationsInput = {
-    set?: $Enums.TicketStatus | null;
-};
 export type SupportTicketCreateNestedOneWithoutMessagesInput = {
     create?: Prisma.XOR<Prisma.SupportTicketCreateWithoutMessagesInput, Prisma.SupportTicketUncheckedCreateWithoutMessagesInput>;
     connectOrCreate?: Prisma.SupportTicketCreateOrConnectWithoutMessagesInput;
@@ -510,8 +503,8 @@ export type SupportTicketCreateWithoutUserInput = {
     category: string;
     subject: string;
     description: string;
-    priority?: $Enums.TicketPriority | null;
-    status?: $Enums.TicketStatus | null;
+    priority?: string | null;
+    status?: string | null;
     assignedTo?: string | null;
     referenceCode?: string | null;
     bookingId?: string | null;
@@ -527,8 +520,8 @@ export type SupportTicketUncheckedCreateWithoutUserInput = {
     category: string;
     subject: string;
     description: string;
-    priority?: $Enums.TicketPriority | null;
-    status?: $Enums.TicketStatus | null;
+    priority?: string | null;
+    status?: string | null;
     assignedTo?: string | null;
     referenceCode?: string | null;
     bookingId?: string | null;
@@ -569,8 +562,8 @@ export type SupportTicketScalarWhereInput = {
     category?: Prisma.StringFilter<"SupportTicket"> | string;
     subject?: Prisma.StringFilter<"SupportTicket"> | string;
     description?: Prisma.StringFilter<"SupportTicket"> | string;
-    priority?: Prisma.EnumTicketPriorityNullableFilter<"SupportTicket"> | $Enums.TicketPriority | null;
-    status?: Prisma.EnumTicketStatusNullableFilter<"SupportTicket"> | $Enums.TicketStatus | null;
+    priority?: Prisma.StringNullableFilter<"SupportTicket"> | string | null;
+    status?: Prisma.StringNullableFilter<"SupportTicket"> | string | null;
     assignedTo?: Prisma.UuidNullableFilter<"SupportTicket"> | string | null;
     referenceCode?: Prisma.StringNullableFilter<"SupportTicket"> | string | null;
     bookingId?: Prisma.UuidNullableFilter<"SupportTicket"> | string | null;
@@ -584,8 +577,8 @@ export type SupportTicketCreateWithoutMessagesInput = {
     category: string;
     subject: string;
     description: string;
-    priority?: $Enums.TicketPriority | null;
-    status?: $Enums.TicketStatus | null;
+    priority?: string | null;
+    status?: string | null;
     assignedTo?: string | null;
     referenceCode?: string | null;
     bookingId?: string | null;
@@ -602,8 +595,8 @@ export type SupportTicketUncheckedCreateWithoutMessagesInput = {
     category: string;
     subject: string;
     description: string;
-    priority?: $Enums.TicketPriority | null;
-    status?: $Enums.TicketStatus | null;
+    priority?: string | null;
+    status?: string | null;
     assignedTo?: string | null;
     referenceCode?: string | null;
     bookingId?: string | null;
@@ -631,8 +624,8 @@ export type SupportTicketUpdateWithoutMessagesInput = {
     category?: Prisma.StringFieldUpdateOperationsInput | string;
     subject?: Prisma.StringFieldUpdateOperationsInput | string;
     description?: Prisma.StringFieldUpdateOperationsInput | string;
-    priority?: Prisma.NullableEnumTicketPriorityFieldUpdateOperationsInput | $Enums.TicketPriority | null;
-    status?: Prisma.NullableEnumTicketStatusFieldUpdateOperationsInput | $Enums.TicketStatus | null;
+    priority?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    status?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     assignedTo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     referenceCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     bookingId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
@@ -649,8 +642,8 @@ export type SupportTicketUncheckedUpdateWithoutMessagesInput = {
     category?: Prisma.StringFieldUpdateOperationsInput | string;
     subject?: Prisma.StringFieldUpdateOperationsInput | string;
     description?: Prisma.StringFieldUpdateOperationsInput | string;
-    priority?: Prisma.NullableEnumTicketPriorityFieldUpdateOperationsInput | $Enums.TicketPriority | null;
-    status?: Prisma.NullableEnumTicketStatusFieldUpdateOperationsInput | $Enums.TicketStatus | null;
+    priority?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    status?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     assignedTo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     referenceCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     bookingId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
@@ -665,8 +658,8 @@ export type SupportTicketCreateWithoutChatMessagesInput = {
     category: string;
     subject: string;
     description: string;
-    priority?: $Enums.TicketPriority | null;
-    status?: $Enums.TicketStatus | null;
+    priority?: string | null;
+    status?: string | null;
     assignedTo?: string | null;
     referenceCode?: string | null;
     bookingId?: string | null;
@@ -683,8 +676,8 @@ export type SupportTicketUncheckedCreateWithoutChatMessagesInput = {
     category: string;
     subject: string;
     description: string;
-    priority?: $Enums.TicketPriority | null;
-    status?: $Enums.TicketStatus | null;
+    priority?: string | null;
+    status?: string | null;
     assignedTo?: string | null;
     referenceCode?: string | null;
     bookingId?: string | null;
@@ -712,8 +705,8 @@ export type SupportTicketUpdateWithoutChatMessagesInput = {
     category?: Prisma.StringFieldUpdateOperationsInput | string;
     subject?: Prisma.StringFieldUpdateOperationsInput | string;
     description?: Prisma.StringFieldUpdateOperationsInput | string;
-    priority?: Prisma.NullableEnumTicketPriorityFieldUpdateOperationsInput | $Enums.TicketPriority | null;
-    status?: Prisma.NullableEnumTicketStatusFieldUpdateOperationsInput | $Enums.TicketStatus | null;
+    priority?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    status?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     assignedTo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     referenceCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     bookingId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
@@ -730,8 +723,8 @@ export type SupportTicketUncheckedUpdateWithoutChatMessagesInput = {
     category?: Prisma.StringFieldUpdateOperationsInput | string;
     subject?: Prisma.StringFieldUpdateOperationsInput | string;
     description?: Prisma.StringFieldUpdateOperationsInput | string;
-    priority?: Prisma.NullableEnumTicketPriorityFieldUpdateOperationsInput | $Enums.TicketPriority | null;
-    status?: Prisma.NullableEnumTicketStatusFieldUpdateOperationsInput | $Enums.TicketStatus | null;
+    priority?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    status?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     assignedTo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     referenceCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     bookingId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
@@ -746,8 +739,8 @@ export type SupportTicketCreateManyUserInput = {
     category: string;
     subject: string;
     description: string;
-    priority?: $Enums.TicketPriority | null;
-    status?: $Enums.TicketStatus | null;
+    priority?: string | null;
+    status?: string | null;
     assignedTo?: string | null;
     referenceCode?: string | null;
     bookingId?: string | null;
@@ -761,8 +754,8 @@ export type SupportTicketUpdateWithoutUserInput = {
     category?: Prisma.StringFieldUpdateOperationsInput | string;
     subject?: Prisma.StringFieldUpdateOperationsInput | string;
     description?: Prisma.StringFieldUpdateOperationsInput | string;
-    priority?: Prisma.NullableEnumTicketPriorityFieldUpdateOperationsInput | $Enums.TicketPriority | null;
-    status?: Prisma.NullableEnumTicketStatusFieldUpdateOperationsInput | $Enums.TicketStatus | null;
+    priority?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    status?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     assignedTo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     referenceCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     bookingId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
@@ -778,8 +771,8 @@ export type SupportTicketUncheckedUpdateWithoutUserInput = {
     category?: Prisma.StringFieldUpdateOperationsInput | string;
     subject?: Prisma.StringFieldUpdateOperationsInput | string;
     description?: Prisma.StringFieldUpdateOperationsInput | string;
-    priority?: Prisma.NullableEnumTicketPriorityFieldUpdateOperationsInput | $Enums.TicketPriority | null;
-    status?: Prisma.NullableEnumTicketStatusFieldUpdateOperationsInput | $Enums.TicketStatus | null;
+    priority?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    status?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     assignedTo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     referenceCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     bookingId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
@@ -795,8 +788,8 @@ export type SupportTicketUncheckedUpdateManyWithoutUserInput = {
     category?: Prisma.StringFieldUpdateOperationsInput | string;
     subject?: Prisma.StringFieldUpdateOperationsInput | string;
     description?: Prisma.StringFieldUpdateOperationsInput | string;
-    priority?: Prisma.NullableEnumTicketPriorityFieldUpdateOperationsInput | $Enums.TicketPriority | null;
-    status?: Prisma.NullableEnumTicketStatusFieldUpdateOperationsInput | $Enums.TicketStatus | null;
+    priority?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    status?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     assignedTo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     referenceCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     bookingId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
@@ -918,8 +911,8 @@ export type $SupportTicketPayload<ExtArgs extends runtime.Types.Extensions.Inter
         category: string;
         subject: string;
         description: string;
-        priority: $Enums.TicketPriority | null;
-        status: $Enums.TicketStatus | null;
+        priority: string | null;
+        status: string | null;
         assignedTo: string | null;
         referenceCode: string | null;
         bookingId: string | null;
@@ -992,8 +985,8 @@ export interface SupportTicketFieldRefs {
     readonly category: Prisma.FieldRef<"SupportTicket", 'String'>;
     readonly subject: Prisma.FieldRef<"SupportTicket", 'String'>;
     readonly description: Prisma.FieldRef<"SupportTicket", 'String'>;
-    readonly priority: Prisma.FieldRef<"SupportTicket", 'TicketPriority'>;
-    readonly status: Prisma.FieldRef<"SupportTicket", 'TicketStatus'>;
+    readonly priority: Prisma.FieldRef<"SupportTicket", 'String'>;
+    readonly status: Prisma.FieldRef<"SupportTicket", 'String'>;
     readonly assignedTo: Prisma.FieldRef<"SupportTicket", 'String'>;
     readonly referenceCode: Prisma.FieldRef<"SupportTicket", 'String'>;
     readonly bookingId: Prisma.FieldRef<"SupportTicket", 'String'>;

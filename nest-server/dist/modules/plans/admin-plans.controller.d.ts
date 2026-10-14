@@ -9,6 +9,12 @@ export declare class AdminPlansController {
     listPlans(): Promise<{
         plans: Record<string, unknown>[];
     }>;
+    getFreePlan(): Promise<{
+        plan: Record<string, unknown>;
+    }>;
+    updateFreePlan(dto: UpdatePlanDto, user?: AuthUser): Promise<{
+        plan: Record<string, unknown>;
+    }>;
     createPlan(dto: CreatePlanDto, user?: AuthUser): Promise<{
         plan: Record<string, unknown>;
     }>;

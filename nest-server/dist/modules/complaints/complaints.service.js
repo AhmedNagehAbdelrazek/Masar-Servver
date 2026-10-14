@@ -8,8 +8,12 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 import { Injectable, NotFoundException, UnprocessableEntityException, } from '@nestjs/common';
+import { maskPhone } from '../../common/utils/masking.js';
 import { buildPagination, parsePagination } from '../../common/utils/pagination.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
+import { PenaltyService } from '../driver/penalty.service.js';
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const TEMP_DURATION_DAYS = { '1d': 1, '3d': 3, '7d': 7 };
 function serializeCreate(c) {
     return {
         id: c.id,
@@ -26,8 +30,11 @@ function serializeAdmin(c) {
         description: c.description,
         status: c.status,
         reporter_name: c.reporter ? c.reporter.fullName : null,
+        reporter_role: c.reporter?.role ?? null,
         accused_name: c.accused ? c.accused.fullName : null,
+        accused_role: c.accused?.role ?? null,
         booking_id: c.bookingId,
+        trip_id: c.booking ? c.booking.tripId : null,
         evidence_urls: c.evidenceUrls,
         created_at: c.createdAt,
     };
@@ -59,8 +66,10 @@ function validationError(field, message) {
 }
 let ComplaintsService = class ComplaintsService {
     prisma;
-    constructor(prisma) {
+    penalties;
+    constructor(prisma, penalties) {
         this.prisma = prisma;
+        this.penalties = penalties;
     }
     async create(reporterId, data) {
         if (data.accused_id === reporterId) {
@@ -139,12 +148,22 @@ let ComplaintsService = class ComplaintsService {
             ...(filters.status ? { status: filters.status } : {}),
             ...(filters.category ? { category: filters.category } : {}),
         };
+        if (filters.search) {
+            const term = filters.search;
+            const searchOr = UUID_RE.test(term)
+                ? [{ id: term }]
+                : [
+                    { reporter: { fullName: { contains: term, mode: 'insensitive' } } },
+                    { accused: { fullName: { contains: term, mode: 'insensitive' } } },
+                ];
+            where.AND = [...(Array.isArray(where.AND) ? where.AND : where.AND ? [where.AND] : []), { OR: searchOr }];
+        }
         const [rows, count] = await Promise.all([
             this.prisma.complaint.findMany({
                 where,
                 include: {
-                    reporter: { select: { fullName: true } },
-                    accused: { select: { fullName: true } },
+                    reporter: { select: { fullName: true, role: true } },
+                    accused: { select: { fullName: true, role: true } },
                 },
                 orderBy: { createdAt: 'desc' },
                 skip: offset,
@@ -152,10 +171,201 @@ let ComplaintsService = class ComplaintsService {
             }),
             this.prisma.complaint.count({ where }),
         ]);
+        const bookingIds = [...new Set(rows.map((r) => r.bookingId).filter((v) => v != null))];
+        const tripByBooking = new Map();
+        if (bookingIds.length > 0) {
+            const bookings = await this.prisma.booking.findMany({
+                where: { id: { in: bookingIds } },
+                select: { id: true, tripId: true },
+            });
+            for (const b of bookings)
+                tripByBooking.set(b.id, b.tripId);
+        }
         return {
-            data: rows.map((c) => serializeAdmin(c)),
+            data: rows.map((c) => serializeAdmin({
+                ...c,
+                booking: c.bookingId ? { tripId: tripByBooking.get(c.bookingId) ?? '' } : null,
+            })),
             pagination: buildPagination(count, page, limit),
         };
+    }
+    async getStats() {
+        const [total, open, reviewing, resolved, dismissed] = await Promise.all([
+            this.prisma.complaint.count(),
+            this.prisma.complaint.count({ where: { status: 'open' } }),
+            this.prisma.complaint.count({ where: { status: 'reviewing' } }),
+            this.prisma.complaint.count({ where: { status: 'resolved' } }),
+            this.prisma.complaint.count({ where: { status: 'dismissed' } }),
+        ]);
+        return { total_complaints: total, open, reviewing, resolved, dismissed };
+    }
+    async getDetail(complaintId) {
+        const complaint = await this.prisma.complaint.findUnique({
+            where: { id: complaintId },
+            include: {
+                reporter: {
+                    select: { id: true, fullName: true, role: true, phone: true, createdAt: true },
+                },
+                accused: {
+                    select: {
+                        id: true,
+                        fullName: true,
+                        role: true,
+                        phone: true,
+                        status: true,
+                        avgRating: true,
+                        createdAt: true,
+                        _count: { select: { ratingsReceived: true } },
+                    },
+                },
+            },
+        });
+        if (!complaint) {
+            throw new NotFoundException({ message: 'COMPLAINT_NOT_FOUND', code: 'COMPLAINT_NOT_FOUND' });
+        }
+        const [booking, penalty, reviewer] = await Promise.all([
+            complaint.bookingId
+                ? this.prisma.booking.findUnique({
+                    where: { id: complaint.bookingId },
+                    include: {
+                        trip: {
+                            select: {
+                                id: true,
+                                originCity: true,
+                                destinationCity: true,
+                                departureTime: true,
+                                totalSeats: true,
+                                availableSeats: true,
+                                farePerSeat: true,
+                                status: true,
+                            },
+                        },
+                    },
+                })
+                : null,
+            this.prisma.penalty.findFirst({
+                where: { complaintId },
+                orderBy: { startsAt: 'desc' },
+            }),
+            complaint.resolvedBy
+                ? this.prisma.user.findUnique({
+                    where: { id: complaint.resolvedBy },
+                    select: { id: true, fullName: true },
+                })
+                : null,
+        ]);
+        const penaltyIssuer = penalty?.issuedBy
+            ? await this.prisma.user.findUnique({
+                where: { id: penalty.issuedBy },
+                select: { id: true, fullName: true },
+            })
+            : null;
+        const log = [{ event: 'filed', at: complaint.createdAt }];
+        if (complaint.resolvedAt) {
+            if (complaint.status === 'reviewing' || complaint.updatedAt < complaint.resolvedAt) {
+                log.push({ event: 'reviewing', at: complaint.updatedAt });
+            }
+            log.push({ event: 'decided', at: complaint.resolvedAt, status: complaint.status });
+        }
+        else if (complaint.status === 'reviewing') {
+            log.push({ event: 'reviewing', at: complaint.updatedAt });
+        }
+        return {
+            complaint: {
+                id: complaint.id,
+                category: complaint.category,
+                description: complaint.description,
+                evidence_urls: complaint.evidenceUrls,
+                status: complaint.status,
+                resolution: complaint.resolution,
+                created_at: complaint.createdAt,
+            },
+            reporter: complaint.reporter
+                ? { ...complaint.reporter, phone: maskPhone(complaint.reporter.phone) }
+                : null,
+            accused: complaint.accused
+                ? {
+                    ...complaint.accused,
+                    phone: maskPhone(complaint.accused.phone),
+                    avg_rating: Number(complaint.accused.avgRating) || 0,
+                    ratings_count: complaint.accused._count.ratingsReceived,
+                }
+                : null,
+            trip: booking?.trip
+                ? {
+                    id: booking.trip.id,
+                    route: `${booking.trip.originCity} ← ${booking.trip.destinationCity}`,
+                    departure_time: booking.trip.departureTime,
+                    seats_booked: booking.seatsBooked,
+                    total_seats: Number(booking.trip.totalSeats),
+                    available_seats: Number(booking.trip.availableSeats),
+                    seat_price: Number(booking.trip.farePerSeat),
+                    status: booking.trip.status,
+                    booking_id: booking.id,
+                }
+                : null,
+            penalty_action: complaint.accused
+                ? { accused_id: complaint.accused.id, accused_status: complaint.accused.status }
+                : null,
+            review_result: complaint.resolvedAt != null
+                ? {
+                    reviewed_by: reviewer,
+                    ended_at: complaint.resolvedAt,
+                    action: penalty
+                        ? {
+                            id: penalty.id,
+                            type: penalty.type,
+                            reason: penalty.reason,
+                            executed_by: penaltyIssuer,
+                            executed_at: penalty.startsAt,
+                            ends_at: penalty.endsAt,
+                            active: !penalty.endsAt || new Date(penalty.endsAt) > new Date(),
+                        }
+                        : null,
+                }
+                : null,
+            log,
+        };
+    }
+    async penalize(adminId, complaintId, dto) {
+        const complaint = await this.prisma.complaint.findUnique({ where: { id: complaintId } });
+        if (!complaint) {
+            throw new NotFoundException({ message: 'COMPLAINT_NOT_FOUND', code: 'COMPLAINT_NOT_FOUND' });
+        }
+        if (dto.kind === 'temporary') {
+            const days = dto.duration === 'custom' ? dto.durationDays : dto.duration != null ? TEMP_DURATION_DAYS[dto.duration] : undefined;
+            if (!days) {
+                throw validationError('durationDays', 'DURATION_DAYS_REQUIRED_FOR_CUSTOM_DURATION');
+            }
+            return this.penalties.issue(adminId, {
+                user_id: complaint.accusedId,
+                type: 'suspension',
+                reason: dto.reason,
+                details: dto.notes ?? `Temporary suspension for ${days} day(s)`,
+                complaint_id: complaintId,
+                ends_at: new Date(Date.now() + days * 24 * 3600 * 1000).toISOString(),
+            });
+        }
+        if (dto.kind === 'permanent') {
+            if (dto.confirmReviewedLog !== true) {
+                throw validationError('confirmReviewedLog', 'CONFIRM_REVIEWED_LOG_REQUIRED');
+            }
+            return this.penalties.issue(adminId, {
+                user_id: complaint.accusedId,
+                type: 'ban',
+                reason: dto.reason,
+                details: dto.notes ?? null,
+                complaint_id: complaintId,
+                confirm_reviewed_log: true,
+            });
+        }
+        return this.penalties.issue(adminId, {
+            user_id: complaint.accusedId,
+            type: 'warning',
+            reason: dto.reason,
+            details: dto.notes ?? null,
+            complaint_id: complaintId,
+        });
     }
     async resolve(adminId, complaintId, data) {
         const complaint = await this.prisma.complaint.findUnique({ where: { id: complaintId } });
@@ -190,7 +400,8 @@ let ComplaintsService = class ComplaintsService {
 };
 ComplaintsService = __decorate([
     Injectable(),
-    __metadata("design:paramtypes", [PrismaService])
+    __metadata("design:paramtypes", [PrismaService,
+        PenaltyService])
 ], ComplaintsService);
 export { ComplaintsService };
 //# sourceMappingURL=complaints.service.js.map

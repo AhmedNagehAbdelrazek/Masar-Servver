@@ -86,6 +86,13 @@ let PenaltyService = PenaltyService_1 = class PenaltyService {
                 details: [{ field: 'ends_at', message: 'ENDS_AT_MUST_BE_IN_THE_FUTURE' }],
             });
         }
+        if (type === 'ban' && payload.confirm_reviewed_log !== true) {
+            throw new UnprocessableEntityException({
+                message: 'CONFIRM_REVIEWED_LOG_REQUIRED',
+                code: 'VALIDATION_ERROR',
+                details: [{ field: 'confirm_reviewed_log', message: 'CONFIRM_REVIEWED_LOG_REQUIRED' }],
+            });
+        }
         const user = await this.prisma.user.findUnique({ where: { id: userId } });
         if (!user)
             throw new NotFoundException({ message: 'USER_NOT_FOUND', code: 'USER_NOT_FOUND' });

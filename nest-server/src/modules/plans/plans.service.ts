@@ -5,7 +5,7 @@ import {
   NotFoundException,
   UnprocessableEntityException,
 } from '@nestjs/common';
-import { Prisma, type PaymentMethodType } from '../../generated/prisma/client.js';
+import { Prisma } from '../../generated/prisma/client.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { RedisService } from '../../redis/redis.service.js';
 import type { CreatePaymentMethodDto, UpdatePaymentMethodDto } from './dto/payment-method.dto.js';
@@ -18,9 +18,15 @@ import type { UpdatePlanDto } from './dto/update-plan.dto.js';
 const PLANS_ACTIVE_KEY = 'plans:active';
 const PLANS_CACHE_TTL = 60;
 
-const DB_METHOD_TYPE: Record<string, PaymentMethodType> = {
+// Shared-DB note: `payment_methods.type` is a plain TEXT/VARCHAR column holding
+// the wire value verbatim ('bank_account' | 'e-wallet' | 'mobile_money').
+// Both servers read/write the hyphenated form — no enum-member translation.
+// OUT_METHOD_TYPE keeps the legacy underscore key so rows written by older
+// builds still render correctly.
+const DB_METHOD_TYPE: Record<string, string> = {
   bank_account: 'bank_account',
-  'e-wallet': 'e_wallet',
+  'e-wallet': 'e-wallet',
+  e_wallet: 'e-wallet',
   mobile_money: 'mobile_money',
 };
 

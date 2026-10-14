@@ -8,7 +8,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 import { Type } from 'class-transformer';
-import { IsDateString, IsIn, IsInt, IsNotEmpty, IsOptional, IsString, IsUUID, Max, MaxLength, Min, } from 'class-validator';
+import { IsBoolean, IsDateString, IsIn, IsInt, IsNotEmpty, IsOptional, IsString, IsUUID, Max, MaxLength, Min, } from 'class-validator';
 export class AdminUserListQuery {
     role;
     status;
@@ -86,6 +86,7 @@ export class IssuePenaltyDto {
     complaint_id;
     details;
     ends_at;
+    confirm_reviewed_log;
 }
 __decorate([
     IsUUID(),
@@ -119,4 +120,9 @@ __decorate([
     IsDateString(),
     __metadata("design:type", String)
 ], IssuePenaltyDto.prototype, "ends_at", void 0);
+__decorate([
+    IsOptional(),
+    IsBoolean(),
+    __metadata("design:type", Boolean)
+], IssuePenaltyDto.prototype, "confirm_reviewed_log", void 0);
 //# sourceMappingURL=admin-moderation.dto.js.map
