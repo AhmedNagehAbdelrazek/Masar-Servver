@@ -447,7 +447,7 @@
                 },
                 "nationalID": {
                     "allowNull": true,
-                    "field": "national_i_d",
+                    "field": "national_id",
                     "seqType": "Sequelize.STRING(30)"
                 },
                 "idVerified": {

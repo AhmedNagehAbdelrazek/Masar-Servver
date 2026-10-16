@@ -27,6 +27,16 @@ function validationError(code: string, message: string): UnprocessableEntityExce
   return new UnprocessableEntityException({ message, code });
 }
 
+// Temporary schema-drift guard: production app_db created by Main Server
+// (Sequelize underscored:true) has driver_profiles.national_i_d while
+// Prisma expects national_id (fixed by migration 033). If the column
+// rename hasn't applied yet, fall back to a query without the join
+// instead of 500ing the admin queue.
+function isMissingNationalIdColumn(err: unknown): boolean {
+  const msg = err instanceof Error ? err.message : String(err ?? '');
+  return msg.includes('driver_profiles.national_id') && msg.includes('does not exist');
+}
+
 interface SubscriptionRow {
   id: string;
   planName: string;
@@ -219,6 +229,29 @@ export class SubscriptionsService {
     });
   }
 
+  private queryPendingRows(
+    where: Prisma.DriverSubscriptionWhereInput,
+    sort: string,
+    withNationalId: boolean,
+  ) {
+    return this.prisma.driverSubscription.findMany({
+      where,
+      include: {
+        driver: {
+          select: {
+            id: true,
+            fullName: true,
+            phone: true,
+            ...(withNationalId ? { driverProfile: { select: { nationalID: true } } } : {}),
+          },
+        },
+        plan: { select: { name: true, cost: true, isActive: true } },
+        screenshot: { select: { id: true, url: true } },
+      },
+      orderBy: { createdAt: sort === 'oldest' ? 'asc' : 'desc' },
+    });
+  }
+
   async listPending(
     filters: {
       status?: string;
@@ -258,22 +291,11 @@ export class SubscriptionsService {
       if (to) createdAt.lte = new Date(`${to}T23:59:59.999Z`);
       where.createdAt = createdAt;
     }
-    const rows = await this.prisma.driverSubscription.findMany({
-      where,
-      include: {
-        driver: {
-          select: {
-            id: true,
-            fullName: true,
-            phone: true,
-            driverProfile: { select: { nationalID: true } },
-          },
-        },
-        plan: { select: { name: true, cost: true, isActive: true } },
-        screenshot: { select: { id: true, url: true } },
-      },
-      orderBy: { createdAt: sort === 'oldest' ? 'asc' : 'desc' },
-    });
+    const rows = await this.queryPendingRows(where, sort, true).catch((err) =>
+      isMissingNationalIdColumn(err)
+        ? this.queryPendingRows(where, sort, false)
+        : Promise.reject(err),
+    );
     return rows.map((sub) => {
       const driver = (sub.driver ?? {}) as unknown as {
         id: string;
@@ -322,10 +344,8 @@ export class SubscriptionsService {
     };
   }
 
-  // Figma 10846:39083 review dossier: driver block, chosen plan, transfer
-  // data + receipt, status/actions, submitted→decided history.
-  async getDetail(subscriptionId: string): Promise<Record<string, unknown>> {
-    const sub = await this.prisma.driverSubscription.findUnique({
+  private queryDetailRow(subscriptionId: string, withNationalId: boolean) {
+    return this.prisma.driverSubscription.findUnique({
       where: { id: subscriptionId },
       include: {
         driver: {
@@ -335,13 +355,23 @@ export class SubscriptionsService {
             phone: true,
             status: true,
             createdAt: true,
-            driverProfile: { select: { nationalID: true } },
+            ...(withNationalId ? { driverProfile: { select: { nationalID: true } } } : {}),
           },
         },
         plan: true,
         screenshot: { select: { id: true, url: true } },
       },
     });
+  }
+
+  // Figma 10846:39083 review dossier: driver block, chosen plan, transfer
+  // data + receipt, status/actions, submitted→decided history.
+  async getDetail(subscriptionId: string): Promise<Record<string, unknown>> {
+    const sub = await this.queryDetailRow(subscriptionId, true).catch((err) =>
+      isMissingNationalIdColumn(err)
+        ? this.queryDetailRow(subscriptionId, false)
+        : Promise.reject(err),
+    );
     if (!sub) {
       throw new NotFoundException({ message: 'SUBSCRIPTION_NOT_FOUND', code: 'SUBSCRIPTION_NOT_FOUND' });
     }

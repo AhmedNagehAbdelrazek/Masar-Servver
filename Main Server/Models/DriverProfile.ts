@@ -106,6 +106,7 @@ DriverProfile.init(
         },
     nationalID: {
             type: DataTypes.STRING(30),
+            field: 'national_id',
             allowNull: true,
         },
     idVerified: {
