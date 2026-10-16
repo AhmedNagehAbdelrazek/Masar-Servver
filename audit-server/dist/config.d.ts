@@ -1,7 +1,7 @@
 export declare const config: {
     port: number;
     database: {
-        url: string;
+        url: any;
         maxConnections: number;
     };
     ingestion: {

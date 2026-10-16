@@ -1,3 +1,3 @@
 import { Pool } from 'pg';
-export declare function createAdminRouter(pool: Pool): import("express-serve-static-core").Router;
+export declare function createAdminRouter(pool: Pool): any;
 //# sourceMappingURL=admin.d.ts.map

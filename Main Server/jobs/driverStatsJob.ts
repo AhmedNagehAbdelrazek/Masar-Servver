@@ -10,7 +10,7 @@ async function runDriverStats(): Promise<DriverStatsResult> {
     const updated: unknown[] = await (driverStatsService as { recomputeAllDrivers: () => Promise<unknown[]> }).recomputeAllDrivers();
     if (updated.length > 0) {
       (auditService as { track: (p: Record<string, unknown>) => void }).track({
-        eventType: 'driver_stats.recalculate',
+        eventType: 'system.event',
         action: 'recompute_all_drivers',
         outcome: 'success',
         payload: { driversUpdated: updated.length },

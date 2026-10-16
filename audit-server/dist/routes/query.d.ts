@@ -1,3 +1,3 @@
 import { Pool } from 'pg';
-export declare function createQueryRouter(pool: Pool): import("express-serve-static-core").Router;
+export declare function createQueryRouter(pool: Pool): any;
 //# sourceMappingURL=query.d.ts.map

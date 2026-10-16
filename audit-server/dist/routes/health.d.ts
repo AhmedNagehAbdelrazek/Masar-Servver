@@ -1,2 +1,2 @@
-export declare function createHealthRouter(): import("express-serve-static-core").Router;
+export declare function createHealthRouter(): any;
 //# sourceMappingURL=health.d.ts.map

@@ -1,6 +1,17 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.insertAuditBatch = insertAuditBatch;
+// Must stay in sync with migrations/001_init.sql CHECK constraints.
+// Unknown values are dropped (with a warning) so one bad producer
+// can't poison the whole batch and wedge the queue in a retry loop.
+const ALLOWED_EVENT_TYPES = new Set([
+    'http.request',
+    'domain.event',
+    'security.event',
+    'admin.action',
+    'system.event',
+]);
+const ALLOWED_OUTCOMES = new Set(['success', 'failure', 'denied']);
 async function insertAuditBatch(pool, payloads) {
     const allEvents = [];
     const allSpans = [];
@@ -26,7 +37,18 @@ async function insertAuditBatch(pool, payloads) {
     await insertSpans(pool, allSpans);
 }
 async function insertEvents(pool, events) {
-    if (!events.length)
+    const valid = events.filter((event) => {
+        if (!ALLOWED_EVENT_TYPES.has(event.event_type)) {
+            console.warn(`[audit-worker] dropping event ${event.id} with invalid event_type=${JSON.stringify(event.event_type)} action=${JSON.stringify(event.action)}`);
+            return false;
+        }
+        if (event.outcome != null && !ALLOWED_OUTCOMES.has(event.outcome)) {
+            console.warn(`[audit-worker] dropping event ${event.id} with invalid outcome=${JSON.stringify(event.outcome)}`);
+            return false;
+        }
+        return true;
+    });
+    if (!valid.length)
         return;
     const columns = [
         'id', 'schema_version', 'service_id', 'service_name', 'environment',
@@ -39,7 +61,7 @@ async function insertEvents(pool, events) {
     ];
     const values = [];
     const placeholders = [];
-    events.forEach((event, index) => {
+    valid.forEach((event, index) => {
         const offset = index * columns.length;
         placeholders.push('(' + columns.map((_, i) => `$${offset + i + 1}`).join(', ') + ')');
         values.push(event.id, event.schema_version ?? '1.0', event.service_id, event.service_name, event.environment, event.instance_id ?? null, event.event_type, event.event_time, event.action, event.outcome, event.actor_type ?? null, event.actor_id ?? null, event.actor_role ?? null, event.resource_type ?? null, event.resource_id ?? null, event.resource_label ?? null, event.trace_id ?? null, event.request_id ?? null, event.correlation_id ?? null, event.span_id ?? null, event.parent_span_id ?? null, event.caller_service ?? null, event.method ?? null, event.path ?? null, event.route ?? null, event.query ? JSON.stringify(event.query) : null, event.ip ?? null, event.user_agent ?? null, event.status_code ?? null, event.duration_ms ?? null, event.payload ? JSON.stringify(event.payload) : null, event.metadata ? JSON.stringify(event.metadata) : null, event.error ? JSON.stringify(event.error) : null, event.idempotency_key ?? null);

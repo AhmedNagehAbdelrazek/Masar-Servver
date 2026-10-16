@@ -1,6 +1,18 @@
 import { Pool } from 'pg';
 import { AuditQueuePayload } from './queue';
 
+// Must stay in sync with migrations/001_init.sql CHECK constraints.
+// Unknown values are dropped (with a warning) so one bad producer
+// can't poison the whole batch and wedge the queue in a retry loop.
+const ALLOWED_EVENT_TYPES = new Set([
+  'http.request',
+  'domain.event',
+  'security.event',
+  'admin.action',
+  'system.event',
+]);
+const ALLOWED_OUTCOMES = new Set(['success', 'failure', 'denied']);
+
 export async function insertAuditBatch(pool: Pool, payloads: AuditQueuePayload[]): Promise<void> {
   const allEvents: Record<string, unknown>[] = [];
   const allSpans: Record<string, unknown>[] = [];
@@ -29,7 +41,22 @@ export async function insertAuditBatch(pool: Pool, payloads: AuditQueuePayload[]
 }
 
 async function insertEvents(pool: Pool, events: Record<string, unknown>[]): Promise<void> {
-  if (!events.length) return;
+  const valid = events.filter((event) => {
+    if (!ALLOWED_EVENT_TYPES.has(event.event_type as string)) {
+      console.warn(
+        `[audit-worker] dropping event ${event.id} with invalid event_type=${JSON.stringify(event.event_type)} action=${JSON.stringify(event.action)}`,
+      );
+      return false;
+    }
+    if (event.outcome != null && !ALLOWED_OUTCOMES.has(event.outcome as string)) {
+      console.warn(
+        `[audit-worker] dropping event ${event.id} with invalid outcome=${JSON.stringify(event.outcome)}`,
+      );
+      return false;
+    }
+    return true;
+  });
+  if (!valid.length) return;
 
   const columns = [
     'id', 'schema_version', 'service_id', 'service_name', 'environment',
@@ -44,7 +71,7 @@ async function insertEvents(pool: Pool, events: Record<string, unknown>[]): Prom
   const values: unknown[] = [];
   const placeholders: string[] = [];
 
-  events.forEach((event, index) => {
+  valid.forEach((event, index) => {
     const offset = index * columns.length;
     placeholders.push('(' + columns.map((_, i) => `$${offset + i + 1}`).join(', ') + ')');
     values.push(
