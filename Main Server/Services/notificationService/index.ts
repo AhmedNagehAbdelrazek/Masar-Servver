@@ -600,6 +600,71 @@ async function countUnread(userId) {
   return Notification.count({ where: { userId, isRead: false } });
 }
 
+/**
+ * Register (or refresh) the FCM token that receives this user's push
+ * notifications. A token identifies one app install, so it can only belong
+ * to one account: when the same token is still attached to another user
+ * (shared phone or account switch), detach it there first so pushes never
+ * reach the previous account.
+ *
+ * The token itself is intentionally excluded from audit payloads.
+ */
+async function registerDevice(userId, fcmToken) {
+  const user = await User.findByPk(userId);
+  if (!user) throw ApiErrors.notFound('USER_NOT_FOUND');
+
+  const token = String(fcmToken || '').trim();
+  if (!token) throw ApiErrors.badRequest('BAD_REQUEST');
+
+  await User.update(
+    { fcmToken: null },
+    { where: { fcmToken: token, id: { [Op.ne]: userId } } }
+  );
+
+  if (user.fcmToken !== token) {
+    await user.update({ fcmToken: token });
+  }
+
+  auditService.track({
+    action: 'notification.device_registered',
+    resourceType: 'user',
+    resourceId: user.id,
+    actorId: userId,
+    actorType: 'user',
+  });
+
+  return { registered: true };
+}
+
+/**
+ * Detach an FCM token so the device stops receiving push notifications
+ * (call on logout). The optional token guards against a stale logout from
+ * an old device clearing a newer registration.
+ */
+async function unregisterDevice(userId, fcmToken = null) {
+  const user = await User.findByPk(userId);
+  if (!user) throw ApiErrors.notFound('USER_NOT_FOUND');
+
+  const token = fcmToken ? String(fcmToken).trim() : null;
+  if (token && user.fcmToken !== token) {
+    return { registered: Boolean(user.fcmToken) };
+  }
+
+  if (user.fcmToken) {
+    await user.update({ fcmToken: null });
+
+    auditService.track({
+      action: 'notification.device_unregistered',
+      resourceType: 'user',
+      resourceId: user.id,
+      actorId: userId,
+      actorType: 'user',
+    });
+  }
+
+  return { registered: false };
+}
+
 function emitCount(userId) {
   try {
     countUnread(userId)
@@ -623,6 +688,8 @@ module.exports = {
   markRead,
   markAllRead,
   countUnread,
+  registerDevice,
+  unregisterDevice,
 };
-export { sendToUser, notifyBookedPassengers, notifyConfirmedPassengers, listForUser, markRead, markAllRead, countUnread };
+export { sendToUser, notifyBookedPassengers, notifyConfirmedPassengers, listForUser, markRead, markAllRead, countUnread, registerDevice, unregisterDevice };
 export default module.exports;

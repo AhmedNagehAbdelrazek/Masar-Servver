@@ -34,7 +34,7 @@ const getTripById = catchAsync(async (req: Request, res: Response): Promise<void
 const getDriverTrips = catchAsync(async (req: Request, res: Response): Promise<void> => {
   const authReq = req as AuthRequest;
   const { status } = req.query as { status?: string };
-  const trips = await tripService.getDriverTrips(String(authReq.user?.id), status);
+  const trips = await tripService.getDriverTrips(String(authReq.user?.id), status ?? null);
   successResponse(res, { trips });
 });
 

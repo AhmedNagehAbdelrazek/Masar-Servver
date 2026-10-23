@@ -1,7 +1,8 @@
-import { Controller, Get, Param, Put, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Post, Put, Query } from '@nestjs/common';
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import type { AuthUser } from '../../common/guards/jwt-auth.guard.js';
 import { buildPagination, parsePagination } from '../../common/utils/pagination.js';
+import { RegisterDeviceDto, UnregisterDeviceDto } from './dto/device-token.dto.js';
 import { NotificationsService } from './notifications.service.js';
 
 // Express parity: Routes/notificationRoutes.ts.
@@ -49,5 +50,28 @@ export class NotificationsController {
     return this.notifications
       .markRead(user?.id ?? '', notificationId)
       .then((n) => ({ notification: { id: n.id, is_read: n.isRead } }));
+  }
+
+  // Express parity: POST/DELETE /api/notifications/device (FCM token
+  // registration + logout cleanup).
+  @Post('device')
+  @HttpCode(HttpStatus.OK)
+  registerDevice(
+    @Body() dto: RegisterDeviceDto,
+    @CurrentUser() user?: AuthUser,
+  ): Promise<{ device: { registered: boolean } }> {
+    return this.notifications
+      .registerDevice(user?.id ?? '', dto.fcm_token)
+      .then((result) => ({ device: result }));
+  }
+
+  @Delete('device')
+  unregisterDevice(
+    @Body() dto: UnregisterDeviceDto,
+    @CurrentUser() user?: AuthUser,
+  ): Promise<{ device: { registered: boolean } }> {
+    return this.notifications
+      .unregisterDevice(user?.id ?? '', dto?.fcm_token)
+      .then((result) => ({ device: result }));
   }
 }

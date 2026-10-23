@@ -216,6 +216,55 @@ export class NotificationsService {
     return { marked: res.count };
   }
 
+  // Port of notificationService.registerDevice (POST /api/notifications/device).
+  // A token identifies one app install, so it can only belong to one account:
+  // detach it from any previous user before storing it on the current one.
+  async registerDevice(userId: string, fcmToken: string): Promise<{ registered: true }> {
+    const token = fcmToken.trim();
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      throw new NotFoundException({ message: 'USER_NOT_FOUND', code: 'USER_NOT_FOUND' });
+    }
+
+    await this.prisma.user.updateMany({
+      where: { fcmToken: token, id: { not: userId } },
+      data: { fcmToken: null },
+    });
+
+    if (user.fcmToken !== token) {
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: { fcmToken: token },
+      });
+    }
+
+    return { registered: true };
+  }
+
+  // Port of notificationService.unregisterDevice (DELETE /api/notifications/device).
+  // The optional token guards against a stale logout clearing a newer
+  // registration made from another device.
+  async unregisterDevice(userId: string, fcmToken?: string): Promise<{ registered: boolean }> {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      throw new NotFoundException({ message: 'USER_NOT_FOUND', code: 'USER_NOT_FOUND' });
+    }
+
+    const token = fcmToken?.trim() || null;
+    if (token && user.fcmToken !== token) {
+      return { registered: Boolean(user.fcmToken) };
+    }
+
+    if (user.fcmToken) {
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: { fcmToken: null },
+      });
+    }
+
+    return { registered: false };
+  }
+
   async countUnread(userId: string): Promise<number> {
     return this.prisma.notification.count({ where: { userId, isRead: false } });
   }

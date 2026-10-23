@@ -71,4 +71,29 @@ describe('US8 Contract - Notifications', () => {
       notification: { id: notification.id, is_read: true },
     });
   });
+
+  it('POST /api/notifications/device returns { device: { registered: true } }', async () => {
+    const res = await getAgent()
+      .post('/api/notifications/device')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ fcm_token: 'contract-fcm-token-1234567890' });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ device: { registered: true } });
+  });
+
+  it('DELETE /api/notifications/device returns { device: { registered: false } }', async () => {
+    await User.update(
+      { fcmToken: 'contract-fcm-token-1234567890' },
+      { where: { id: USER_ID } }
+    );
+
+    const res = await getAgent()
+      .delete('/api/notifications/device')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ fcm_token: 'contract-fcm-token-1234567890' });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ device: { registered: false } });
+  });
 });

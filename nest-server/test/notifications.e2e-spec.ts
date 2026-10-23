@@ -1,9 +1,8 @@
 // 1:1 port of Main Server/tests/integration/notifications.test.js,
 // tests/integration/notificationSettings.test.js and
 // tests/contract/notifications.contract.test.js (Wave 2.1).
-// Deliberate corrections vs Express (verified failing 3/6 against Express itself):
-// PUT /:id/read carries a stray settings-array validator in Express that 422s
-// every bodyless call — the port does not reproduce that bug.
+// PUT /:id/read no longer carries the stray settings-array validator in
+// Express (fixed 2026-10-23); both servers now accept bodyless calls.
 // The settings spec's non-UUID user id ('...n01') is normalized to a valid UUID
 // (Prisma strictly validates UUID columns).
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
@@ -349,5 +348,158 @@ describe('US8 Contract - Notifications', () => {
     expect(res.body).toMatchObject({
       notification: { id: notification?.id, is_read: true },
     });
+  });
+});
+
+describe('Push device registration', () => {
+  let ctx: TestContext;
+  let ownerToken: string;
+
+  beforeAll(async () => {
+    ctx = await createTestApp();
+  });
+  afterAll(async () => {
+    await ctx.app.close();
+  });
+
+  beforeEach(async () => {
+    await resetTestState(ctx.prisma, ctx.redis);
+    await seedUser(ctx, OWNER_ID, '+962798000001');
+    await seedUser(ctx, OTHER_ID, '+962798000002');
+    ownerToken = generateAccessToken({ id: OWNER_ID, role: 'passenger' });
+  });
+
+  it('stores the FCM token on the authenticated user', async () => {
+    const res = await ctx.agent
+      .post('/api/notifications/device')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({ fcm_token: 'fcm-token-owner-1234567890' });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ device: { registered: true } });
+
+    const persisted = await ctx.prisma.user.findUnique({ where: { id: OWNER_ID } });
+    expect(persisted?.fcmToken).toBe('fcm-token-owner-1234567890');
+  });
+
+  it('refreshes the token when the same user registers again', async () => {
+    await ctx.prisma.user.update({
+      where: { id: OWNER_ID },
+      data: { fcmToken: 'fcm-token-owner-1234567890' },
+    });
+
+    const res = await ctx.agent
+      .post('/api/notifications/device')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({ fcm_token: 'fcm-token-owner-refreshed-1234567890' });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ device: { registered: true } });
+
+    const persisted = await ctx.prisma.user.findUnique({ where: { id: OWNER_ID } });
+    expect(persisted?.fcmToken).toBe('fcm-token-owner-refreshed-1234567890');
+  });
+
+  it('detaches the token from the previous account (shared device)', async () => {
+    await ctx.prisma.user.update({
+      where: { id: OTHER_ID },
+      data: { fcmToken: 'fcm-token-shared-1234567890' },
+    });
+
+    const res = await ctx.agent
+      .post('/api/notifications/device')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({ fcm_token: 'fcm-token-shared-1234567890' });
+
+    expect(res.status).toBe(200);
+
+    const owner = await ctx.prisma.user.findUnique({ where: { id: OWNER_ID } });
+    const other = await ctx.prisma.user.findUnique({ where: { id: OTHER_ID } });
+    expect(owner?.fcmToken).toBe('fcm-token-shared-1234567890');
+    expect(other?.fcmToken).toBeNull();
+  });
+
+  it('rejects a missing or blank token with 422', async () => {
+    const missing = await ctx.agent
+      .post('/api/notifications/device')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({});
+
+    expect(missing.status).toBe(422);
+    expect(missing.body.code).toBe('VALIDATION_ERROR');
+
+    const blank = await ctx.agent
+      .post('/api/notifications/device')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({ fcm_token: '   ' });
+
+    expect(blank.status).toBe(422);
+  });
+
+  it('requires authentication', async () => {
+    const res = await ctx.agent
+      .post('/api/notifications/device')
+      .send({ fcm_token: 'fcm-token-owner-1234567890' });
+
+    expect(res.status).toBe(401);
+  });
+
+  it('clears the stored token on unregister', async () => {
+    await ctx.prisma.user.update({
+      where: { id: OWNER_ID },
+      data: { fcmToken: 'fcm-token-logout-1234567890' },
+    });
+
+    const res = await ctx.agent
+      .delete('/api/notifications/device')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({ fcm_token: 'fcm-token-logout-1234567890' });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ device: { registered: false } });
+
+    const persisted = await ctx.prisma.user.findUnique({ where: { id: OWNER_ID } });
+    expect(persisted?.fcmToken).toBeNull();
+  });
+
+  it('does not clear a newer token when a stale device logs out', async () => {
+    await ctx.prisma.user.update({
+      where: { id: OWNER_ID },
+      data: { fcmToken: 'fcm-token-newer-1234567890' },
+    });
+
+    const res = await ctx.agent
+      .delete('/api/notifications/device')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({ fcm_token: 'fcm-token-stale-1234567890' });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ device: { registered: true } });
+
+    const persisted = await ctx.prisma.user.findUnique({ where: { id: OWNER_ID } });
+    expect(persisted?.fcmToken).toBe('fcm-token-newer-1234567890');
+  });
+
+  it('clears the token when no token is provided', async () => {
+    await ctx.prisma.user.update({
+      where: { id: OWNER_ID },
+      data: { fcmToken: 'fcm-token-logout-1234567890' },
+    });
+
+    const res = await ctx.agent
+      .delete('/api/notifications/device')
+      .set('Authorization', `Bearer ${ownerToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ device: { registered: false } });
+
+    const persisted = await ctx.prisma.user.findUnique({ where: { id: OWNER_ID } });
+    expect(persisted?.fcmToken).toBeNull();
+  });
+
+  it('requires authentication on unregister', async () => {
+    const res = await ctx.agent.delete('/api/notifications/device');
+
+    expect(res.status).toBe(401);
   });
 });

@@ -127,3 +127,131 @@ describe('PUT /api/notifications/:id/read', () => {
     expect(res.status).toBe(404);
   });
 });
+
+describe('POST /api/notifications/device', () => {
+  const TOKEN = 'fcm-token-owner-1234567890';
+  const SHARED_TOKEN = 'fcm-token-shared-1234567890';
+
+  it('should store the FCM token on the authenticated user', async () => {
+    const res = await getAgent()
+      .post('/api/notifications/device')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({ fcm_token: TOKEN });
+
+    expect(res.status).toBe(200);
+    expect(res.body.device.registered).toBe(true);
+
+    const persisted = await User.findByPk(OWNER_ID);
+    expect(persisted.fcmToken).toBe(TOKEN);
+  });
+
+  it('should refresh the token when the same user registers again', async () => {
+    await User.update({ fcmToken: TOKEN }, { where: { id: OWNER_ID } });
+
+    const res = await getAgent()
+      .post('/api/notifications/device')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({ fcm_token: 'fcm-token-owner-refreshed-1234567890' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.device.registered).toBe(true);
+
+    const persisted = await User.findByPk(OWNER_ID);
+    expect(persisted.fcmToken).toBe('fcm-token-owner-refreshed-1234567890');
+  });
+
+  it('should detach the token from the previous account (shared device)', async () => {
+    await User.update({ fcmToken: SHARED_TOKEN }, { where: { id: OTHER_ID } });
+
+    const res = await getAgent()
+      .post('/api/notifications/device')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({ fcm_token: SHARED_TOKEN });
+
+    expect(res.status).toBe(200);
+
+    const owner = await User.findByPk(OWNER_ID);
+    const other = await User.findByPk(OTHER_ID);
+    expect(owner.fcmToken).toBe(SHARED_TOKEN);
+    expect(other.fcmToken).toBeNull();
+  });
+
+  it('should reject a missing or blank token with 422', async () => {
+    const missing = await getAgent()
+      .post('/api/notifications/device')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({});
+
+    expect(missing.status).toBe(422);
+    expect(missing.body.code).toBe('VALIDATION_ERROR');
+
+    const blank = await getAgent()
+      .post('/api/notifications/device')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({ fcm_token: '   ' });
+
+    expect(blank.status).toBe(422);
+  });
+
+  it('should require authentication', async () => {
+    const res = await getAgent()
+      .post('/api/notifications/device')
+      .send({ fcm_token: TOKEN });
+
+    expect(res.status).toBe(401);
+  });
+});
+
+describe('DELETE /api/notifications/device', () => {
+  const TOKEN = 'fcm-token-logout-1234567890';
+
+  it('should clear the stored FCM token', async () => {
+    await User.update({ fcmToken: TOKEN }, { where: { id: OWNER_ID } });
+
+    const res = await getAgent()
+      .delete('/api/notifications/device')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({ fcm_token: TOKEN });
+
+    expect(res.status).toBe(200);
+    expect(res.body.device.registered).toBe(false);
+
+    const persisted = await User.findByPk(OWNER_ID);
+    expect(persisted.fcmToken).toBeNull();
+  });
+
+  it('should not clear a newer token when a stale device logs out', async () => {
+    await User.update({ fcmToken: 'fcm-token-newer-1234567890' }, { where: { id: OWNER_ID } });
+
+    const res = await getAgent()
+      .delete('/api/notifications/device')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({ fcm_token: TOKEN });
+
+    expect(res.status).toBe(200);
+    expect(res.body.device.registered).toBe(true);
+
+    const persisted = await User.findByPk(OWNER_ID);
+    expect(persisted.fcmToken).toBe('fcm-token-newer-1234567890');
+  });
+
+  it('should clear the token when no token is provided', async () => {
+    await User.update({ fcmToken: TOKEN }, { where: { id: OWNER_ID } });
+
+    const res = await getAgent()
+      .delete('/api/notifications/device')
+      .set('Authorization', `Bearer ${ownerToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.device.registered).toBe(false);
+
+    const persisted = await User.findByPk(OWNER_ID);
+    expect(persisted.fcmToken).toBeNull();
+  });
+
+  it('should require authentication', async () => {
+    const res = await getAgent().delete('/api/notifications/device');
+
+    expect(res.status).toBe(401);
+  });
+});

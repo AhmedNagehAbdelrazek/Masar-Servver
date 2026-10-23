@@ -155,9 +155,9 @@ text params).
 - Verified Express discrepancy (do not copy): `GET /api/plans` excludes free plans
   though `tests/contract/plan.contract.test.js` expects them — that test fails
   against Express itself (11/12). Port asserts actual behavior.
-- Verified Express bug (do not copy): `PUT /api/notifications/:id/read` carries a
-  stray settings-array validator that 422s every bodyless call — Express fails
-  3/6 of its own notification tests. Port omits body validation there.
+- Express bug fixed 2026-10-23: `PUT /api/notifications/:id/read` no longer
+  carries the stray settings-array validator, so both servers accept bodyless
+  calls (the port never reproduced the bug).
 - Verified Express discrepancy: `GET /api/admin/verification/queue` has no role
   filter, so the admin row appears (Express fails 9/10 of its own test file on
   the length-1 assertion). Port asserts the driver entry explicitly.

@@ -1010,9 +1010,21 @@
 
 ### [notif-2] PUT /api/notifications/:notification_id/read — any signed-in user
 **Use:** mark one notification read (re-emits the unread badge).
-**Request:** params `{notification_id}` (no param validator in code; controller/service require an owned id).
+**Request:** params `{notification_id}` (no param validator in code; controller/service require an owned id). No body.
 **Response:** `200 {notification: {id, is_read: true}}`.
-**Watch out:** route still runs the settings validator (needs a body `settings` array quirk — send `{}` tolerant; owned id required).
+**Watch out:** an owned id is required.
+
+### [notif-3] POST /api/notifications/device — any signed-in user
+**Use:** register/refresh the FCM device token used for push delivery. Call on login, app start, and whenever the SDK rotates the token.
+**Request:** body `{fcm_token* (string, 1–4096 chars)}`.
+**Response:** `200 {device: {registered: true}}`.
+**Watch out:** the same token is detached from any other account first (shared phone / account switch), and tokens are never included in audit payloads.
+
+### [notif-4] DELETE /api/notifications/device — any signed-in user
+**Use:** stop push delivery for this device (call on logout).
+**Request:** body `{fcm_token (string, optional)}` — when supplied, the stored token must match.
+**Response:** `200 {device: {registered: boolean}}` (`false` = no token remains on the account).
+**Watch out:** a stale logout with an old token leaves the newer registration intact.
 
 ### [notifset-1] GET /api/settings/notifications/ — any signed-in user
 **Use:** per-type channel toggles screen.

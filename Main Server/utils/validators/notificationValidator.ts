@@ -52,18 +52,44 @@ export const updateGroupedNotificationValidation: ValidationChain[] = [
 
 
 
-const _exported = { updateNotificationSettingsValidation, updateGroupedNotificationValidation };
+// Push device registration. The FCM token is issued by the client SDK and
+// refreshed on app start, so the register endpoint is called repeatedly.
+export const registerDeviceValidation: ValidationChain[] = [
+  body('fcm_token')
+    .notEmpty().withMessage(V.FCM_TOKEN_IS_REQUIRED)
+    .bail()
+    .isString().withMessage(V.FCM_TOKEN_MUST_BE_A_STRING)
+    .bail()
+    .trim()
+    .notEmpty().withMessage(V.FCM_TOKEN_IS_REQUIRED)
+    .isLength({ max: 4096 }).withMessage(V.FCM_TOKEN_MUST_BE_AT_MOST_4096_CHARACTERS),
+];
+
+export const unregisterDeviceValidation: ValidationChain[] = [
+  body('fcm_token')
+    .optional({ values: 'falsy' })
+    .isString().withMessage(V.FCM_TOKEN_MUST_BE_A_STRING)
+    .bail()
+    .trim()
+    .isLength({ max: 4096 }).withMessage(V.FCM_TOKEN_MUST_BE_AT_MOST_4096_CHARACTERS),
+];
+
+const _exported = { updateNotificationSettingsValidation, updateGroupedNotificationValidation, registerDeviceValidation, unregisterDeviceValidation };
 export default _exported;
 
 // CommonJS interop
 // @ts-ignore
 if (typeof module !== 'undefined' && module.exports) {
   // @ts-ignore
-  module.exports = { updateNotificationSettingsValidation, updateGroupedNotificationValidation };
+  module.exports = { updateNotificationSettingsValidation, updateGroupedNotificationValidation, registerDeviceValidation, unregisterDeviceValidation };
   // @ts-ignore
   module.exports.updateNotificationSettingsValidation = updateNotificationSettingsValidation;
   // @ts-ignore
   module.exports.updateGroupedNotificationValidation = updateGroupedNotificationValidation;
+  // @ts-ignore
+  module.exports.registerDeviceValidation = registerDeviceValidation;
+  // @ts-ignore
+  module.exports.unregisterDeviceValidation = unregisterDeviceValidation;
   // @ts-ignore
   module.exports.default = _exported;
 }

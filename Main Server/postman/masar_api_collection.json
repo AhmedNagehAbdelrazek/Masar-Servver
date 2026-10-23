@@ -2,7 +2,7 @@
  "info": {
   "_postman_id": "aa2fc350-c05f-4e31-ba21-18a58eb13b93",
   "name": "Masar API",
-  "description": "Complete API collection for the Masar ride-sharing platform (Driver Flow Audit reorganization, 2026-08-01 + Feature 008: Trip Details, Cancellation & Notification Settings).\n\nBase URL: {{base_url}} (default http://localhost:8000/api).\n\n## Folder organization\n- **Auth (shared)** â€” registration, login, tokens, forgot password, current user.\n- **Driver** â€” Profile & Vehicle, Verification (spec 006: status / submit / resubmit), Trip Management (incl. Get Trip Details, Cancel Trip with Penalty), Dashboard, Bookings, Communication, Ratings & Reviews, Complaints, Penalties, Notifications, Notification Settings, Subscription & Earnings.\n- **Passenger** â€” Trip Discovery, Booking, Tracking, Ratings, Complaints, Request Board, Favorites.\n- **Admin** â€” Subscription Management, Verification Queue, Users Management, Trip Moderation, Arbitration, Penalties, Reports & Analytics.\n\n## Feature 008 â€” Trip Details, Cancellation & Notification Settings\n- **GET /trips/:trip_id** â€” Enhanced with full driver profile, vehicle info, waypoints, attributes, and passenger booking details. Access restricted to trip participants (driver, confirmed passengers, admins).\n- **POST /trips/:trip_id/cancel** â€” New penalty-aware cancellation. Requires reason + optional note. Only allowed when no confirmed bookings exist. Creates penalty record and applies automatic escalation (warning â†’ 7d suspension â†’ 30d suspension). Bans never auto-created.\n- **GET /settings/notifications** â€” Returns all notification types with enabled/disabled state per channel (in_app, push). Falls back to defaults if no settings exist.\n- **PUT /settings/notifications** â€” Upserts notification preferences. Only provided types are updated.\n\n## Notes\n- Requests marked **PROPOSED** (in the description) are not implemented yet; their response examples are proposed designs.\n- Every request carries a success + error example.\n- Verification endpoints use the `{ \"status\": \"success\", \"data\": {...} }` envelope; admin approve/reject return the raw `{ \"driver_id\" | \"vehicle_id\", ... }` payload.\n- Token-setting tests on registration/login flows populate {{access_token}}/{{refresh_token}} automatically.\n- Error envelope: `{ \"status\": \"error\", \"message\": \"...\", \"code\": \"...\" }`.\n\n## Free Plan\n- The free plan is **automatically assigned** to every new driver at signup â€” no manual subscription required.\n- Drivers **cannot** subscribe to the free plan manually (`422 FREE_PLAN_NOT_SUBSCRIBABLE`).\n- The admin can create/update/deactivate the free plan via Admin > Subscription Management.\n- The free plan's `free_offer` configures the number of free trips (`{ \"type\": \"trips\", \"value\": N }`).\n- Once free trips are exhausted, the driver must subscribe to a paid plan to continue.\n\n## Feature 011 — Admin Dashboard API\n- **GET /admin/dashboard/summary** — Global dashboard: KPIs, alerts, top routes, recent trips, pending requests, latest complaints.\n- **GET /admin/dashboard/recent-trips** — Paginated recent trips list.\n- **GET /admin/dashboard/top-routes** — Top 5 frequent routes.\n- **GET /admin/dashboard/pending-requests** — Drivers with pending verification docs.\n- **GET /admin/dashboard/latest-complaints** — Latest complaints.\n- **GET /admin/dashboard/drivers** — Searchable/filterable/sortable driver directory.\n- **GET /admin/dashboard/drivers/stats/summary** — Platform-wide driver stat cards.\n- **GET /admin/dashboard/drivers/:driver_id** — Driver dossier header.\n- **GET /admin/dashboard/drivers/:driver_id/overview** — Personal info, trip stats, balance.\n- **GET /admin/dashboard/drivers/:driver_id/trips** — Driver trips with status/month filters.\n- **GET /admin/dashboard/drivers/:driver_id/evaluations** — Ratings distribution + reviews.\n- **GET /admin/dashboard/drivers/:driver_id/account-log** — Penalties + complaints log.\n- **GET /admin/dashboard/drivers/:driver_id/car** — Car info, photos, document status.\n- **GET /admin/dashboard/drivers/:driver_id/documents** — Personal + vehicle documents.\n- **POST /admin/dashboard/drivers/:driver_id/status** — Set driver account status.\n- **POST /admin/dashboard/drivers/:driver_id/account-status** — Suspend/reactivate/unblock alias.\n- **POST /admin/dashboard/drivers/:driver_id/documents/:key/approve** — Approve document.\n- **POST /admin/dashboard/drivers/:driver_id/documents/:key/reject** — Reject document.\n- **GET /admin/dashboard/reservations** — Reservations list.",
+  "description": "Complete API collection for the Masar ride-sharing platform (Driver Flow Audit reorganization, 2026-08-01 + Feature 008: Trip Details, Cancellation & Notification Settings).\n\nBase URL: {{base_url}} (default http://localhost:8000/api).\n\n## Folder organization\n- **Auth (shared)** â€” registration, login, tokens, forgot password, current user.\n- **Driver** â€” Profile & Vehicle, Verification (spec 006: status / submit / resubmit), Trip Management (incl. Get Trip Details, Cancel Trip with Penalty), Dashboard, Bookings, Communication, Ratings & Reviews, Complaints, Penalties, Notifications, Notification Settings, Subscription & Earnings.\n- **Passenger** â€” Trip Discovery, Booking, Tracking, Ratings, Complaints, Request Board, Favorites.\n- **Admin** â€” Subscription Management, Verification Queue, Users Management, Trip Moderation, Arbitration, Penalties, Reports & Analytics.\n\n## Feature 008 â€” Trip Details, Cancellation & Notification Settings\n- **GET /trips/:trip_id** â€” Enhanced with full driver profile, vehicle info, waypoints, attributes, and passenger booking details. Access restricted to trip participants (driver, confirmed passengers, admins).\n- **POST /trips/:trip_id/cancel** â€” New penalty-aware cancellation. Requires reason + optional note. Only allowed when no confirmed bookings exist. Creates penalty record and applies automatic escalation (warning â†’ 7d suspension â†’ 30d suspension). Bans never auto-created.\n- **GET /settings/notifications** â€” Returns all notification types with enabled/disabled state per channel (in_app, push). Falls back to defaults if no settings exist.\n- **PUT /settings/notifications** â€” Upserts notification preferences. Only provided types are updated.\n\n## Notes\n- Requests marked **PROPOSED** (in the description) are not implemented yet; their response examples are proposed designs.\n- Every request carries a success + error example.\n- Verification endpoints use the `{ \"status\": \"success\", \"data\": {...} }` envelope; admin approve/reject return the raw `{ \"driver_id\" | \"vehicle_id\", ... }` payload.\n- Token-setting tests on registration/login flows populate {{access_token}}/{{refresh_token}} automatically.\n- Error envelope: `{ \"status\": \"error\", \"message\": \"...\", \"code\": \"...\" }`.\n\n## Free Plan\n- The free plan is **automatically assigned** to every new driver at signup â€” no manual subscription required.\n- Drivers **cannot** subscribe to the free plan manually (`422 FREE_PLAN_NOT_SUBSCRIBABLE`).\n- The admin can create/update/deactivate the free plan via Admin > Subscription Management.\n- The free plan's `free_offer` configures the number of free trips (`{ \"type\": \"trips\", \"value\": N }`).\n- Once free trips are exhausted, the driver must subscribe to a paid plan to continue.\n\n## Feature 011 — Admin Dashboard API\n- **GET /admin/dashboard/summary** — Global dashboard: KPIs, alerts, top routes, recent trips, pending requests, latest complaints.\n- **GET /admin/dashboard/recent-trips** — Paginated recent trips list.\n- **GET /admin/dashboard/top-routes** — Top 5 frequent routes.\n- **GET /admin/dashboard/pending-requests** — Drivers with pending verification docs.\n- **GET /admin/dashboard/latest-complaints** — Latest complaints.\n- **GET /admin/dashboard/drivers** — Searchable/filterable/sortable driver directory.\n- **GET /admin/dashboard/drivers/stats/summary** — Platform-wide driver stat cards.\n- **GET /admin/dashboard/drivers/:driver_id** — Driver dossier header.\n- **GET /admin/dashboard/drivers/:driver_id/overview** — Personal info, trip stats, balance.\n- **GET /admin/dashboard/drivers/:driver_id/trips** — Driver trips with status/month filters.\n- **GET /admin/dashboard/drivers/:driver_id/evaluations** — Ratings distribution + reviews.\n- **GET /admin/dashboard/drivers/:driver_id/account-log** — Penalties + complaints log.\n- **GET /admin/dashboard/drivers/:driver_id/car** — Car info, photos, document status.\n- **GET /admin/dashboard/drivers/:driver_id/documents** — Personal + vehicle documents.\n- **POST /admin/dashboard/drivers/:driver_id/status** — Set driver account status.\n- **POST /admin/dashboard/drivers/:driver_id/account-status** — Suspend/reactivate/unblock alias.\n- **POST /admin/dashboard/drivers/:driver_id/documents/:key/approve** — Approve document.\n- **POST /admin/dashboard/drivers/:driver_id/documents/:key/reject** — Reject document.\n- **GET /admin/dashboard/reservations** — Reservations list.\n\n## Push Device Registration\n- **POST /notifications/device** - registers or refreshes the FCM token used for push notifications. A token belongs to one app install, so it is detached from the previous account first.\n- **DELETE /notifications/device** - clears the token on logout. The optional `fcm_token` body guards against a stale logout clearing a newer registration.",
   "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
   "_exporter_id": "28639752",
   "_collection_link": "https://go.postman.co/collection/28639752-aa2fc350-c05f-4e31-ba21-18a58eb13b93?source=collection_link"
@@ -23250,6 +23250,359 @@
          ],
          "cookie": [],
          "body": "{\n  \"status\": \"error\",\n  \"message\": \"Notification not found\",\n  \"code\": \"NOT_FOUND\"\n}"
+        }
+       ]
+      },
+      {
+       "name": "Register Device (Push)",
+       "event": [
+        {
+         "listen": "prerequest",
+         "script": {
+          "exec": [
+           "pm.environment.get('access_token') ? pm.request.headers.add({ key: 'Authorization', value: 'Bearer ' + pm.environment.get('access_token') }) : console.warn('No access_token set');"
+          ],
+          "type": "text/javascript",
+          "packages": {},
+          "requests": {}
+         }
+        },
+        {
+         "listen": "test",
+         "script": {
+          "exec": [
+           "pm.test('Device registered', function () {",
+           "    pm.response.to.have.status(200);",
+           "});",
+           "pm.test('Returns device.registered = true', function () {",
+           "    pm.expect(pm.response.json().device.registered).to.equal(true);",
+           "});"
+          ],
+          "type": "text/javascript",
+          "packages": {},
+          "requests": {}
+         }
+        }
+       ],
+       "request": {
+        "method": "POST",
+        "header": [
+         {
+          "key": "Authorization",
+          "value": "Bearer {{access_token}}",
+          "type": "text"
+         },
+         {
+          "key": "Content-Type",
+          "value": "application/json",
+          "type": "text"
+         }
+        ],
+        "url": {
+         "raw": "{{base_url}}/notifications/device",
+         "host": [
+          "{{base_url}}"
+         ],
+         "path": [
+          "notifications",
+          "device"
+         ]
+        },
+        "description": "Register or refresh the FCM device token used for push notifications. Call on login, on app start, and whenever the FCM SDK rotates the token.\n\nA token identifies one app install, so it is detached from any previous account before being stored on the caller - a shared phone never receives pushes intended for the previous user.\n\n**Access:** Any authenticated user.\n\n**Body fields**\n- `fcm_token` *(string, required, 1-4096 chars)* - FCM registration token from the client SDK.\n\n**Response:** `device.registered` is `true` once the token is persisted.\n\n**Implementation:** Express `notificationService.registerDevice` / Nest `NotificationsService.registerDevice`.",
+        "body": {
+         "mode": "raw",
+         "raw": "{\n  \"fcm_token\": \"dGhpc19pc19hX2Zha2VfZmNtX3Rva2VuX2Zvcl9wb3N0bWFu\"\n}"
+        }
+       },
+       "response": [
+        {
+         "name": "Success",
+         "originalRequest": {
+          "method": "POST",
+          "header": [
+           {
+            "key": "Authorization",
+            "value": "Bearer {{access_token}}",
+            "type": "text"
+           },
+           {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+           }
+          ],
+          "body": {
+           "mode": "raw",
+           "raw": "{\n  \"fcm_token\": \"dGhpc19pc19hX2Zha2VfZmNtX3Rva2VuX2Zvcl9wb3N0bWFu\"\n}"
+          },
+          "url": {
+           "raw": "{{base_url}}/notifications/device",
+           "host": [
+            "{{base_url}}"
+           ],
+           "path": [
+            "notifications",
+            "device"
+           ]
+          },
+          "description": "Register or refresh the FCM device token used for push notifications. Call on login, on app start, and whenever the FCM SDK rotates the token.\n\nA token identifies one app install, so it is detached from any previous account before being stored on the caller - a shared phone never receives pushes intended for the previous user.\n\n**Access:** Any authenticated user.\n\n**Body fields**\n- `fcm_token` *(string, required, 1-4096 chars)* - FCM registration token from the client SDK.\n\n**Response:** `device.registered` is `true` once the token is persisted.\n\n**Implementation:** Express `notificationService.registerDevice` / Nest `NotificationsService.registerDevice`."
+         },
+         "status": "OK",
+         "code": 200,
+         "_postman_previewlanguage": "json",
+         "header": [
+          {
+           "key": "Content-Type",
+           "value": "application/json",
+           "type": "text"
+          }
+         ],
+         "cookie": [],
+         "body": "{\n  \"device\": {\n    \"registered\": true\n  }\n}"
+        },
+        {
+         "name": "Validation Error",
+         "originalRequest": {
+          "method": "POST",
+          "header": [
+           {
+            "key": "Authorization",
+            "value": "Bearer {{access_token}}",
+            "type": "text"
+           },
+           {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+           }
+          ],
+          "body": {
+           "mode": "raw",
+           "raw": "{\n  \"fcm_token\": \"dGhpc19pc19hX2Zha2VfZmNtX3Rva2VuX2Zvcl9wb3N0bWFu\"\n}"
+          },
+          "url": {
+           "raw": "{{base_url}}/notifications/device",
+           "host": [
+            "{{base_url}}"
+           ],
+           "path": [
+            "notifications",
+            "device"
+           ]
+          },
+          "description": "Register or refresh the FCM device token used for push notifications. Call on login, on app start, and whenever the FCM SDK rotates the token.\n\nA token identifies one app install, so it is detached from any previous account before being stored on the caller - a shared phone never receives pushes intended for the previous user.\n\n**Access:** Any authenticated user.\n\n**Body fields**\n- `fcm_token` *(string, required, 1-4096 chars)* - FCM registration token from the client SDK.\n\n**Response:** `device.registered` is `true` once the token is persisted.\n\n**Implementation:** Express `notificationService.registerDevice` / Nest `NotificationsService.registerDevice`."
+         },
+         "status": "Unprocessable Entity",
+         "code": 422,
+         "_postman_previewlanguage": "json",
+         "header": [
+          {
+           "key": "Content-Type",
+           "value": "application/json",
+           "type": "text"
+          }
+         ],
+         "cookie": [],
+         "body": "{\n  \"status\": \"error\",\n  \"message\": \"Validation failed\",\n  \"code\": \"VALIDATION_ERROR\",\n  \"details\": [\n    {\n      \"field\": \"fcm_token\",\n      \"message\": \"fcm_token is required\",\n      \"value\": \"\"\n    }\n  ]\n}"
+        },
+        {
+         "name": "Unauthorized",
+         "originalRequest": {
+          "method": "POST",
+          "header": [
+           {
+            "key": "Authorization",
+            "value": "Bearer {{access_token}}",
+            "type": "text"
+           },
+           {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+           }
+          ],
+          "body": {
+           "mode": "raw",
+           "raw": "{\n  \"fcm_token\": \"dGhpc19pc19hX2Zha2VfZmNtX3Rva2VuX2Zvcl9wb3N0bWFu\"\n}"
+          },
+          "url": {
+           "raw": "{{base_url}}/notifications/device",
+           "host": [
+            "{{base_url}}"
+           ],
+           "path": [
+            "notifications",
+            "device"
+           ]
+          },
+          "description": "Register or refresh the FCM device token used for push notifications. Call on login, on app start, and whenever the FCM SDK rotates the token.\n\nA token identifies one app install, so it is detached from any previous account before being stored on the caller - a shared phone never receives pushes intended for the previous user.\n\n**Access:** Any authenticated user.\n\n**Body fields**\n- `fcm_token` *(string, required, 1-4096 chars)* - FCM registration token from the client SDK.\n\n**Response:** `device.registered` is `true` once the token is persisted.\n\n**Implementation:** Express `notificationService.registerDevice` / Nest `NotificationsService.registerDevice`."
+         },
+         "status": "Unauthorized",
+         "code": 401,
+         "_postman_previewlanguage": "json",
+         "header": [
+          {
+           "key": "Content-Type",
+           "value": "application/json",
+           "type": "text"
+          }
+         ],
+         "cookie": [],
+         "body": "{\n  \"status\": \"error\",\n  \"message\": \"Unauthorized\",\n  \"code\": \"UNAUTHORIZED\"\n}"
+        }
+       ]
+      },
+      {
+       "name": "Unregister Device (Push)",
+       "event": [
+        {
+         "listen": "prerequest",
+         "script": {
+          "exec": [
+           "pm.environment.get('access_token') ? pm.request.headers.add({ key: 'Authorization', value: 'Bearer ' + pm.environment.get('access_token') }) : console.warn('No access_token set');"
+          ],
+          "type": "text/javascript",
+          "packages": {},
+          "requests": {}
+         }
+        },
+        {
+         "listen": "test",
+         "script": {
+          "exec": [
+           "pm.test('Device unregistered', function () {",
+           "    pm.response.to.have.status(200);",
+           "});",
+           "pm.test('Returns device.registered = false', function () {",
+           "    pm.expect(pm.response.json().device.registered).to.equal(false);",
+           "});"
+          ],
+          "type": "text/javascript",
+          "packages": {},
+          "requests": {}
+         }
+        }
+       ],
+       "request": {
+        "method": "DELETE",
+        "header": [
+         {
+          "key": "Authorization",
+          "value": "Bearer {{access_token}}",
+          "type": "text"
+         },
+         {
+          "key": "Content-Type",
+          "value": "application/json",
+          "type": "text"
+         }
+        ],
+        "url": {
+         "raw": "{{base_url}}/notifications/device",
+         "host": [
+          "{{base_url}}"
+         ],
+         "path": [
+          "notifications",
+          "device"
+         ]
+        },
+        "description": "Unregister the FCM device token, typically on logout, so the device stops receiving push notifications.\n\n**Access:** Any authenticated user.\n\n**Body fields**\n- `fcm_token` *(string, optional, 1-4096 chars)* - when supplied, the stored token must match. This lets a stale logout from an old device leave a newer registration intact. Omit the body to clear the current token unconditionally.\n\n**Response:** `device.registered` is `false` when no token remains on the account; it stays `true` when a newer token was preserved.\n\n**Implementation:** Express `notificationService.unregisterDevice` / Nest `NotificationsService.unregisterDevice`.",
+        "body": {
+         "mode": "raw",
+         "raw": "{\n  \"fcm_token\": \"dGhpc19pc19hX2Zha2VfZmNtX3Rva2VuX2Zvcl9wb3N0bWFu\"\n}"
+        }
+       },
+       "response": [
+        {
+         "name": "Success",
+         "originalRequest": {
+          "method": "DELETE",
+          "header": [
+           {
+            "key": "Authorization",
+            "value": "Bearer {{access_token}}",
+            "type": "text"
+           },
+           {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+           }
+          ],
+          "body": {
+           "mode": "raw",
+           "raw": "{\n  \"fcm_token\": \"dGhpc19pc19hX2Zha2VfZmNtX3Rva2VuX2Zvcl9wb3N0bWFu\"\n}"
+          },
+          "url": {
+           "raw": "{{base_url}}/notifications/device",
+           "host": [
+            "{{base_url}}"
+           ],
+           "path": [
+            "notifications",
+            "device"
+           ]
+          },
+          "description": "Unregister the FCM device token, typically on logout, so the device stops receiving push notifications.\n\n**Access:** Any authenticated user.\n\n**Body fields**\n- `fcm_token` *(string, optional, 1-4096 chars)* - when supplied, the stored token must match. This lets a stale logout from an old device leave a newer registration intact. Omit the body to clear the current token unconditionally.\n\n**Response:** `device.registered` is `false` when no token remains on the account; it stays `true` when a newer token was preserved.\n\n**Implementation:** Express `notificationService.unregisterDevice` / Nest `NotificationsService.unregisterDevice`."
+         },
+         "status": "OK",
+         "code": 200,
+         "_postman_previewlanguage": "json",
+         "header": [
+          {
+           "key": "Content-Type",
+           "value": "application/json",
+           "type": "text"
+          }
+         ],
+         "cookie": [],
+         "body": "{\n  \"device\": {\n    \"registered\": false\n  }\n}"
+        },
+        {
+         "name": "Unauthorized",
+         "originalRequest": {
+          "method": "DELETE",
+          "header": [
+           {
+            "key": "Authorization",
+            "value": "Bearer {{access_token}}",
+            "type": "text"
+           },
+           {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+           }
+          ],
+          "body": {
+           "mode": "raw",
+           "raw": "{\n  \"fcm_token\": \"dGhpc19pc19hX2Zha2VfZmNtX3Rva2VuX2Zvcl9wb3N0bWFu\"\n}"
+          },
+          "url": {
+           "raw": "{{base_url}}/notifications/device",
+           "host": [
+            "{{base_url}}"
+           ],
+           "path": [
+            "notifications",
+            "device"
+           ]
+          },
+          "description": "Unregister the FCM device token, typically on logout, so the device stops receiving push notifications.\n\n**Access:** Any authenticated user.\n\n**Body fields**\n- `fcm_token` *(string, optional, 1-4096 chars)* - when supplied, the stored token must match. This lets a stale logout from an old device leave a newer registration intact. Omit the body to clear the current token unconditionally.\n\n**Response:** `device.registered` is `false` when no token remains on the account; it stays `true` when a newer token was preserved.\n\n**Implementation:** Express `notificationService.unregisterDevice` / Nest `NotificationsService.unregisterDevice`."
+         },
+         "status": "Unauthorized",
+         "code": 401,
+         "_postman_previewlanguage": "json",
+         "header": [
+          {
+           "key": "Content-Type",
+           "value": "application/json",
+           "type": "text"
+          }
+         ],
+         "cookie": [],
+         "body": "{\n  \"status\": \"error\",\n  \"message\": \"Unauthorized\",\n  \"code\": \"UNAUTHORIZED\"\n}"
         }
        ]
       }

@@ -35,5 +35,21 @@ const markRead = catchAsync(async (req: Request, res: Response): Promise<void> =
   successResponse(res, { notification: { id: notification['id'], is_read: notification['isRead'] } });
 });
 
-export { listNotifications, markRead };
-export default { listNotifications, markRead };
+const registerDevice = catchAsync(async (req: Request, res: Response): Promise<void> => {
+  const authReq = req as AuthRequest;
+  const { fcm_token } = (req.body || {}) as { fcm_token: string };
+  const result = await (notificationService as unknown as { registerDevice: (userId: string, token: string) => Promise<{ registered: boolean }> }).registerDevice(String(authReq.user?.id), fcm_token);
+  (auditService as unknown as { markResource: (res: Response, r: unknown) => void }).markResource(res, { type: 'user', id: String(authReq.user?.id) });
+  successResponse(res, { device: result });
+});
+
+const unregisterDevice = catchAsync(async (req: Request, res: Response): Promise<void> => {
+  const authReq = req as AuthRequest;
+  const { fcm_token } = (req.body || {}) as { fcm_token?: string };
+  const result = await (notificationService as unknown as { unregisterDevice: (userId: string, token?: string | null) => Promise<{ registered: boolean }> }).unregisterDevice(String(authReq.user?.id), fcm_token ?? null);
+  (auditService as unknown as { markResource: (res: Response, r: unknown) => void }).markResource(res, { type: 'user', id: String(authReq.user?.id) });
+  successResponse(res, { device: result });
+});
+
+export { listNotifications, markRead, registerDevice, unregisterDevice };
+export default { listNotifications, markRead, registerDevice, unregisterDevice };
