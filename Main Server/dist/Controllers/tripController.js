@@ -33,7 +33,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.attachOfferToTrip = exports.getTripPassengers = exports.getTripSeats = exports.getTripOptions = exports.getTripAttributes = exports.cancelTripWithPenalty = exports.cancelTrip = exports.updateTrip = exports.completeTrip = exports.startTrip = exports.getAvailableTrips = exports.getDriverTrips = exports.getTripById = exports.createTrip = void 0;
+exports.attachOfferToTrip = exports.getTripPassengers = exports.getTripSeats = exports.getTripOptions = exports.getTripAttributes = exports.cancelTripWithPenalty = exports.cancelTrip = exports.getAdminTripActual = exports.getAdminTripRoute = exports.getTripActual = exports.setTripPickupStatus = exports.getTripRoute = exports.updateTripStops = exports.updateTrip = exports.completeTrip = exports.startTrip = exports.getAvailableTrips = exports.getDriverTrips = exports.getTripById = exports.createTrip = void 0;
 const catchAsync_1 = require("../utils/catchAsync");
 const httpResponse_1 = require("../utils/httpResponse");
 const constants_1 = require("../config/constants");
@@ -65,7 +65,7 @@ exports.getTripById = getTripById;
 const getDriverTrips = (0, catchAsync_1.catchAsync)(async (req, res) => {
     const authReq = req;
     const { status } = req.query;
-    const trips = await tripService.getDriverTrips(String(authReq.user?.id), status);
+    const trips = await tripService.getDriverTrips(String(authReq.user?.id), status ?? null);
     (0, httpResponse_1.successResponse)(res, { trips });
 });
 exports.getDriverTrips = getDriverTrips;
@@ -199,6 +199,50 @@ const cancelTripWithPenalty = (0, catchAsync_1.catchAsync)(async (req, res) => {
     (0, httpResponse_1.successResponse)(res, result, 200);
 });
 exports.cancelTripWithPenalty = cancelTripWithPenalty;
+const updateTripStops = (0, catchAsync_1.catchAsync)(async (req, res) => {
+    const authReq = req;
+    const { trip_id } = req.params;
+    const result = await tripService.replaceTripStops(String(authReq.user?.id), trip_id, req.body.stops);
+    auditService.markResource(res, { type: 'trip', id: result.trip_id });
+    (0, httpResponse_1.successResponse)(res, result, 200);
+});
+exports.updateTripStops = updateTripStops;
+const getTripRoute = (0, catchAsync_1.catchAsync)(async (req, res) => {
+    const authReq = req;
+    const { trip_id } = req.params;
+    const route = await tripService.getTripRoute(String(authReq.user?.id), String(authReq.user?.role), trip_id, {});
+    (0, httpResponse_1.successResponse)(res, route);
+});
+exports.getTripRoute = getTripRoute;
+const setTripPickupStatus = (0, catchAsync_1.catchAsync)(async (req, res) => {
+    const authReq = req;
+    const { trip_id, booking_id } = req.params;
+    const result = await tripService.setPickupStatus(String(authReq.user?.id), trip_id, booking_id, req.body.pickup_status);
+    auditService.markResource(res, { type: 'booking', id: result.booking_id });
+    (0, httpResponse_1.successResponse)(res, result);
+});
+exports.setTripPickupStatus = setTripPickupStatus;
+const getTripActual = (0, catchAsync_1.catchAsync)(async (req, res) => {
+    const authReq = req;
+    const { trip_id } = req.params;
+    const actual = await tripService.getTripActual(String(authReq.user?.id), String(authReq.user?.role), trip_id);
+    (0, httpResponse_1.successResponse)(res, actual);
+});
+exports.getTripActual = getTripActual;
+const getAdminTripRoute = (0, catchAsync_1.catchAsync)(async (req, res) => {
+    const authReq = req;
+    const { trip_id } = req.params;
+    const route = await tripService.getTripRoute(String(authReq.user?.id), String(authReq.user?.role), trip_id, { audited: true });
+    (0, httpResponse_1.successResponse)(res, route);
+});
+exports.getAdminTripRoute = getAdminTripRoute;
+const getAdminTripActual = (0, catchAsync_1.catchAsync)(async (req, res) => {
+    const authReq = req;
+    const { trip_id } = req.params;
+    const actual = await tripService.getTripActual(String(authReq.user?.id), String(authReq.user?.role), trip_id);
+    (0, httpResponse_1.successResponse)(res, actual);
+});
+exports.getAdminTripActual = getAdminTripActual;
 const attachOfferToTrip = (0, catchAsync_1.catchAsync)(async (req, res) => {
     const authReq = req;
     const { trip_id, offer_id } = req.params;
@@ -215,6 +259,12 @@ exports.default = {
     startTrip,
     completeTrip,
     updateTrip,
+    updateTripStops,
+    getTripRoute,
+    setTripPickupStatus,
+    getTripActual,
+    getAdminTripRoute,
+    getAdminTripActual,
     cancelTrip,
     cancelTripWithPenalty,
     getTripAttributes,

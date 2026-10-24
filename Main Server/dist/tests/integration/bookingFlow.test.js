@@ -26,8 +26,7 @@ async function createTripFixture() {
         .send({
         origin_city: 'Amman',
         destination_city: 'Irbid',
-        departure_date: getFutureDate(1),
-        departure_time: '15:00',
+        departure_time: `${getFutureDate(1)}T15:00:00+03:00`,
         type_of_trip: 'once',
         fare_per_seat: '20.00',
         seats: [
@@ -52,7 +51,7 @@ async function createBooking(token, overrides = {}) {
         .set('Authorization', `Bearer ${token}`)
         .send({
         trip_id: tripId,
-        seat_number: 2,
+        seat_numbers: [2],
         agreed_fare: '20.00',
         ...overrides,
     });
@@ -160,7 +159,7 @@ describe('POST /api/bookings - create booking from locked seat', () => {
         await lockSeat(passenger1Token, 2);
         await createBooking(passenger1Token);
         await lockSeat(passenger1Token, 3);
-        const res = await createBooking(passenger1Token, { seat_number: 3 });
+        const res = await createBooking(passenger1Token, { seat_numbers: [3] });
         expect(res.status).toBe(201);
         const trip = await Trip.findByPk(tripId);
         expect(trip.availableSeats).toBe(0);
@@ -195,13 +194,13 @@ describe('POST /api/bookings - create booking from locked seat', () => {
         const res = await getAgent()
             .post('/api/bookings')
             .set('Authorization', `Bearer ${driverToken}`)
-            .send({ trip_id: tripId, seat_number: 2, agreed_fare: '20.00' });
+            .send({ trip_id: tripId, seat_numbers: [2], agreed_fare: '20.00' });
         expect(res.status).toBe(403);
     });
     it('should reject unauthenticated requests', async () => {
         const res = await getAgent()
             .post('/api/bookings')
-            .send({ trip_id: tripId, seat_number: 2, agreed_fare: '20.00' });
+            .send({ trip_id: tripId, seat_numbers: [2], agreed_fare: '20.00' });
         expect(res.status).toBe(401);
     });
     it('should reject invalid payload', async () => {
@@ -257,7 +256,7 @@ describe('GET /api/bookings/:booking_id - booking detail', () => {
             .set('Authorization', `Bearer ${passenger1Token}`);
         expect(res.status).toBe(200);
         expect(res.body.booking.id).toBe(bookingId);
-        expect(res.body.booking.trip.origin).toBe('Amman');
+        expect(res.body.booking.trip.origin).toMatchObject({ city: 'Amman' });
         expect(res.body.booking.driver.full_name).toBe('Booking Driver');
     });
     it('should forbid another passenger from viewing the booking', async () => {
@@ -297,7 +296,7 @@ describe('POST /api/bookings/:booking_id/cancel', () => {
     });
     it('should restore trip status from full to published on cancellation', async () => {
         await lockSeat(passenger1Token, 3);
-        await createBooking(passenger1Token, { seat_number: 3 });
+        await createBooking(passenger1Token, { seat_numbers: [3] });
         let trip = await Trip.findByPk(tripId);
         expect(trip.status).toBe('full');
         const res = await getAgent()

@@ -34,6 +34,8 @@ const offersRoutes_1 = __importDefault(require("./offersRoutes"));
 const supportTicketRoutes_1 = __importDefault(require("./supportTicketRoutes"));
 const favoriteRoutes_1 = __importDefault(require("./favoriteRoutes"));
 const profileRoutes_1 = __importDefault(require("./profileRoutes"));
+const mapsRoutes_1 = __importDefault(require("./mapsRoutes"));
+const adminTripRoutes_1 = __importDefault(require("./adminTripRoutes"));
 router.use('/healthz', healthRoutes_1.default);
 router.use('/health', realtimeHealthRoutes_1.default);
 router.use('/chat', chatRoutes_1.default);
@@ -63,6 +65,8 @@ router.use('/complaints', complaintRoutes_1.default);
 router.use('/notifications', notificationRoutes_1.default);
 router.use('/settings/notifications', notificationSettingRoutes_1.default);
 router.use('/vehicles', vehicleRoutes_1.default);
+router.use('/maps', mapsRoutes_1.default);
+router.use('/admin', adminTripRoutes_1.default);
 exports.default = router;
 module.exports = router;
 //# sourceMappingURL=index.js.map

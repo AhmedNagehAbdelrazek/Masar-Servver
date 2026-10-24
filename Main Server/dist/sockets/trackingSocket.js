@@ -8,6 +8,8 @@ const realtimeService_1 = __importDefault(require("../Services/realtimeService")
 const realtimeMetrics_1 = __importDefault(require("../Services/realtimeMetrics"));
 const socketRateLimiter_1 = require("../Services/socketRateLimiter");
 const ApiError_1 = require("../utils/ApiError");
+const constants_1 = require("../config/constants");
+const Models_1 = require("../Models");
 const socketAck_1 = require("../utils/socketAck");
 const trackingSocket = (io, socket) => {
     const user = socket.data.user;
@@ -19,6 +21,12 @@ const trackingSocket = (io, socket) => {
             const member = await realtimeService_1.default.isTripMember(user, tripId);
             if (!member)
                 throw ApiError_1.ApiErrors.forbidden('YOU_ARE_NOT_A_MEMBER_OF_THIS_TRIP');
+            // spec 013 (O6/X2): live rooms exist for in_progress trips only — even
+            // members are refused once the trip completes or is cancelled.
+            const trip = await Models_1.Trip.findByPk(tripId, { attributes: ['status'] });
+            if (!trip || trip.status !== constants_1.TRIP_STATUS.IN_PROGRESS) {
+                throw ApiError_1.ApiErrors.conflict('TRACKING_IS_ONLY_AVAILABLE_FOR_ACTIVE_TRIPS');
+            }
             socket.join(`trip:${tripId}`);
             if (ack)
                 ack((0, socketAck_1.ok)({ room: `trip:${tripId}` }));
@@ -54,6 +62,10 @@ const trackingSocket = (io, socket) => {
                 lng: payload ? payload.lng : undefined,
                 speed: payload ? payload.speed : undefined,
                 heading: payload ? payload.heading : undefined,
+                accuracy: payload ? payload.accuracy : undefined,
+                recorded_at: payload ? payload.recorded_at : undefined,
+                occurrence_date: payload ? payload.occurrence_date : undefined,
+                points: payload ? payload.points : undefined,
             });
             if (ack)
                 ack((0, socketAck_1.ok)(result));

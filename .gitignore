@@ -15,6 +15,7 @@ pnpm-debug.log*
 build/
 coverage/
 specs/
+*/dist
 
 # Local-only dev config (not for VPS deploy)
 docker-compose.override.yml

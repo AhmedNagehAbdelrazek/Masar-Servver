@@ -39,10 +39,12 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const router = (0, express_1.Router)();
 const c = __importStar(require("../Controllers/tripController"));
+const mapsC = __importStar(require("../Controllers/mapsController"));
 const protect_1 = __importDefault(require("../middlewares/protect"));
 const roleGuard_1 = require("../middlewares/roleGuard");
 const validatorMiddleware_1 = __importDefault(require("../middlewares/validatorMiddleware"));
 const tripValidator_1 = require("../utils/validators/tripValidator");
+const mapsValidator_1 = require("../utils/validators/mapsValidator");
 const express_validator_1 = require("express-validator");
 // Create trip (driver only)
 router.post('/', protect_1.default, (0, roleGuard_1.roleGuard)(['driver']), ...tripValidator_1.createTripValidation, validatorMiddleware_1.default, c.createTrip);
@@ -71,6 +73,16 @@ router.delete('/:trip_id', protect_1.default, (0, roleGuard_1.roleGuard)(['drive
 router.get('/:trip_id/attributes', protect_1.default, ...tripValidator_1.tripParamValidation, validatorMiddleware_1.default, c.getTripAttributes);
 // Trip passengers for dropdown selection (driver owner only)
 router.get('/:trip_id/passengers', protect_1.default, (0, roleGuard_1.roleGuard)(['driver']), ...tripValidator_1.tripPassengersValidation, validatorMiddleware_1.default, c.getTripPassengers);
+// Edit stops wholesale: add/remove/reorder, recompute route, notify passengers
+router.patch('/:trip_id/stops', protect_1.default, (0, roleGuard_1.roleGuard)(['driver']), ...tripValidator_1.tripParamValidation, ...mapsValidator_1.replaceStopsValidation, validatorMiddleware_1.default, c.updateTripStops);
+// Passenger pickup preview: accepted? + detour impact before booking
+router.post('/:trip_id/pickup-preview', protect_1.default, (0, roleGuard_1.roleGuard)(['passenger']), ...tripValidator_1.tripParamValidation, ...mapsValidator_1.pickupPreviewValidation, validatorMiddleware_1.default, mapsC.pickupPreview);
+// Planned route with ordered pickups + navigation links (driver owner, admin)
+router.get('/:trip_id/route', protect_1.default, (0, roleGuard_1.roleGuard)(['driver', 'admin']), ...tripValidator_1.tripParamValidation, validatorMiddleware_1.default, c.getTripRoute);
+// Recorded driven path (participants; null until compacted)
+router.get('/:trip_id/route/actual', protect_1.default, (0, roleGuard_1.roleGuard)(['driver', 'passenger']), ...tripValidator_1.tripParamValidation, validatorMiddleware_1.default, c.getTripActual);
+// Driver marks one booked pickup arrived/picked_up/missed
+router.patch('/:trip_id/pickups/:booking_id', protect_1.default, (0, roleGuard_1.roleGuard)(['driver']), ...tripValidator_1.tripParamValidation, ...mapsValidator_1.pickupStatusValidation, validatorMiddleware_1.default, c.setTripPickupStatus);
 // Attach an accepted ride-request offer to this trip (driver owner only, deferred materialization)
 const attachOfferValidation = [
     ...tripValidator_1.tripParamValidation,

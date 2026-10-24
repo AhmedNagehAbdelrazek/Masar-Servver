@@ -7,6 +7,7 @@ exports.driverOffersListValidation = exports.agreePriceValidation = exports.deci
 const express_validator_1 = require("express-validator");
 const constants_1 = require("../../config/constants");
 const validation_keys_1 = __importDefault(require("../../config/messages/validation-keys"));
+const time_1 = require("../time");
 exports.rideRequestParamValidation = [
     (0, express_validator_1.param)('request_id')
         .isUUID().withMessage(validation_keys_1.default.REQUEST_ID_MUST_BE_A_VALID_UUID),
@@ -36,10 +37,20 @@ exports.createRideRequestValidation = [
         .isFloat({ min: -180, max: 180 }).withMessage(validation_keys_1.default.ORIGIN_LNG_MUST_BE_A_VALID_LONGITUDE),
     (0, express_validator_1.body)('origin_time')
         .optional()
-        .isISO8601().withMessage(validation_keys_1.default.ORIGIN_TIME_MUST_BE_A_VALID_ISO_8601_DATETIME),
+        .isISO8601().withMessage(validation_keys_1.default.ORIGIN_TIME_MUST_BE_A_VALID_ISO_8601_DATETIME)
+        .custom((value) => {
+        if (!(0, time_1.hasTimezoneOffset)(value))
+            throw new Error(validation_keys_1.default.DATETIME_MUST_INCLUDE_TIMEZONE);
+        return true;
+    }),
     (0, express_validator_1.body)('arrival_deadline')
         .optional()
-        .isISO8601().withMessage(validation_keys_1.default.ARRIVAL_DEADLINE_MUST_BE_A_VALID_ISO_8601_DATETIME),
+        .isISO8601().withMessage(validation_keys_1.default.ARRIVAL_DEADLINE_MUST_BE_A_VALID_ISO_8601_DATETIME)
+        .custom((value) => {
+        if (!(0, time_1.hasTimezoneOffset)(value))
+            throw new Error(validation_keys_1.default.DATETIME_MUST_INCLUDE_TIMEZONE);
+        return true;
+    }),
     (0, express_validator_1.body)('seats_needed')
         .optional()
         .isInt({ min: 1, max: 8 }).withMessage(validation_keys_1.default.SEATS_NEEDED_MUST_BE_BETWEEN_1_AND_8),
@@ -77,10 +88,20 @@ exports.updateRideRequestValidation = [
         .isString().trim().isLength({ max: 120 }).withMessage(validation_keys_1.default.DESTINATION_CITY_MUST_BE_AT_MOST_120_CHARACTERS),
     (0, express_validator_1.body)('origin_time')
         .optional()
-        .isISO8601().withMessage(validation_keys_1.default.ORIGIN_TIME_MUST_BE_A_VALID_ISO_8601_DATETIME),
+        .isISO8601().withMessage(validation_keys_1.default.ORIGIN_TIME_MUST_BE_A_VALID_ISO_8601_DATETIME)
+        .custom((value) => {
+        if (!(0, time_1.hasTimezoneOffset)(value))
+            throw new Error(validation_keys_1.default.DATETIME_MUST_INCLUDE_TIMEZONE);
+        return true;
+    }),
     (0, express_validator_1.body)('arrival_deadline')
         .optional()
-        .isISO8601().withMessage(validation_keys_1.default.ARRIVAL_DEADLINE_MUST_BE_A_VALID_ISO_8601_DATETIME),
+        .isISO8601().withMessage(validation_keys_1.default.ARRIVAL_DEADLINE_MUST_BE_A_VALID_ISO_8601_DATETIME)
+        .custom((value) => {
+        if (!(0, time_1.hasTimezoneOffset)(value))
+            throw new Error(validation_keys_1.default.DATETIME_MUST_INCLUDE_TIMEZONE);
+        return true;
+    }),
     (0, express_validator_1.body)('seats_needed')
         .optional()
         .isInt({ min: 1, max: 8 }).withMessage(validation_keys_1.default.SEATS_NEEDED_MUST_BE_BETWEEN_1_AND_8),

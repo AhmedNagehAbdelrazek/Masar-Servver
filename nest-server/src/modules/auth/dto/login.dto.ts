@@ -1,8 +1,7 @@
 import { Transform } from 'class-transformer';
-import { IsDefined, IsIn, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { IsDefined, IsIn, IsNotEmpty, IsString } from 'class-validator';
 
-// Port of loginValidation. NOTE: Express applies bare isIn() to `role`
-// (skipped when absent), so role is optional here despite no .optional().
+// Port of loginValidation. Role is now mandatory.
 export class LoginDto {
   @IsDefined()
   @IsString()
@@ -14,7 +13,8 @@ export class LoginDto {
   @IsNotEmpty()
   password!: string;
 
-  @IsOptional()
+  @IsDefined()
+  @IsNotEmpty()
   @IsIn(['passenger', 'driver', 'admin'])
-  role?: string;
+  role!: 'passenger' | 'driver' | 'admin';
 }

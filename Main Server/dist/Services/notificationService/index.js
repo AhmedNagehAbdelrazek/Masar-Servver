@@ -10,6 +10,8 @@ exports.listForUser = listForUser;
 exports.markRead = markRead;
 exports.markAllRead = markAllRead;
 exports.countUnread = countUnread;
+exports.registerDevice = registerDevice;
+exports.unregisterDevice = unregisterDevice;
 // @ts-nocheck
 const sms_1 = __importDefault(require("./channels/sms"));
 const push_1 = __importDefault(require("./channels/push"));
@@ -357,6 +359,39 @@ const TEMPLATES = {
             body: 'Your account deletion request has been cancelled. Your account returns to its previous state.',
         },
     },
+    // spec 013: pickup / route / proximity templates
+    PICKUP_ADDED: {
+        ar: { title: 'نقطة صعود جديدة', body: 'أضاف {passenger} نقطة صعود جديدة إلى رحلتك {route}.' },
+        en: { title: 'New pickup', body: '{passenger} added a new pickup to your trip {route}.' },
+    },
+    PICKUP_CHANGED: {
+        ar: { title: 'تغيير نقطة الصعود', body: 'غيّر {passenger} نقطة الصعود في رحلتك {route}.' },
+        en: { title: 'Pickup changed', body: '{passenger} changed their pickup on your trip {route}.' },
+    },
+    PICKUP_CANCELLED: {
+        ar: { title: 'إلغاء نقطة الصعود', body: 'أُلغيت نقطة صعود في رحلتك {route}.' },
+        en: { title: 'Pickup cancelled', body: 'A pickup on your trip {route} was cancelled.' },
+    },
+    ROUTE_UPDATED: {
+        ar: { title: 'تحديث المسار', body: 'تم تحديث مسار الرحلة {route}. يرجى مراجعة التفاصيل.' },
+        en: { title: 'Route updated', body: 'The route for trip {route} was updated. Please review the details.' },
+    },
+    DRIVER_NEARBY: {
+        ar: { title: 'السائق قريب', body: 'السائق على بعد {distance_m} متر من نقطة صعودك.' },
+        en: { title: 'Driver nearby', body: 'Your driver is {distance_m} meters from your pickup.' },
+    },
+    DRIVER_ARRIVED: {
+        ar: { title: 'وصل السائق', body: 'وصل السائق إلى نقطة صعودك. يرجى الاستعداد.' },
+        en: { title: 'Driver arrived', body: 'Your driver has arrived at your pickup. Please be ready.' },
+    },
+    PICKUP_MISSED: {
+        ar: { title: 'تفويت الصعود', body: 'تم تسجيل نقطة صعودك على أنها فائتة.' },
+        en: { title: 'Pickup missed', body: 'Your pickup was marked as missed.' },
+    },
+    NEXT_PICKUP: {
+        ar: { title: 'الصعود التالي', body: 'الصعود التالي: {label} على بعد {distance_m} متر.' },
+        en: { title: 'Next pickup', body: 'Next pickup: {label}, {distance_m} meters away.' },
+    },
 };
 function interpolate(template, vars = {}) {
     return template.replace(/\{(\w+)\}/g, (match, key) => Object.prototype.hasOwnProperty.call(vars, key) ? String(vars[key]) : match);
@@ -385,8 +420,10 @@ async function sendToUser(user, type, { channels = ['in_app'], vars = {}, data =
     // Check user's notification settings to filter channels
     let allowedChannels = [...channels];
     try {
+        // : match UPPER template keys and lower settings values — the two
+        // taxonomies disagree upstream, so check both instead of migrating data.
         const setting = await Models_1.NotificationSetting.findOne({
-            where: { userId: user.id, notificationType: type },
+            where: { userId: user.id, notificationType: { [sequelize_1.Op.in]: [type, String(type).toLowerCase()] } },
         });
         if (setting) {
             if (!setting.enabledInApp)
@@ -564,6 +601,60 @@ async function markAllRead(userId) {
 async function countUnread(userId) {
     return Models_3.Notification.count({ where: { userId, isRead: false } });
 }
+/**
+ * Register (or refresh) the FCM token that receives this user's push
+ * notifications. A token identifies one app install, so it can only belong
+ * to one account: when the same token is still attached to another user
+ * (shared phone or account switch), detach it there first so pushes never
+ * reach the previous account.
+ *
+ * The token itself is intentionally excluded from audit payloads.
+ */
+async function registerDevice(userId, fcmToken) {
+    const user = await Models_2.User.findByPk(userId);
+    if (!user)
+        throw ApiError_1.ApiErrors.notFound('USER_NOT_FOUND');
+    const token = String(fcmToken || '').trim();
+    if (!token)
+        throw ApiError_1.ApiErrors.badRequest('BAD_REQUEST');
+    await Models_2.User.update({ fcmToken: null }, { where: { fcmToken: token, id: { [sequelize_1.Op.ne]: userId } } });
+    if (user.fcmToken !== token) {
+        await user.update({ fcmToken: token });
+    }
+    auditService_1.default.track({
+        action: 'notification.device_registered',
+        resourceType: 'user',
+        resourceId: user.id,
+        actorId: userId,
+        actorType: 'user',
+    });
+    return { registered: true };
+}
+/**
+ * Detach an FCM token so the device stops receiving push notifications
+ * (call on logout). The optional token guards against a stale logout from
+ * an old device clearing a newer registration.
+ */
+async function unregisterDevice(userId, fcmToken = null) {
+    const user = await Models_2.User.findByPk(userId);
+    if (!user)
+        throw ApiError_1.ApiErrors.notFound('USER_NOT_FOUND');
+    const token = fcmToken ? String(fcmToken).trim() : null;
+    if (token && user.fcmToken !== token) {
+        return { registered: Boolean(user.fcmToken) };
+    }
+    if (user.fcmToken) {
+        await user.update({ fcmToken: null });
+        auditService_1.default.track({
+            action: 'notification.device_unregistered',
+            resourceType: 'user',
+            resourceId: user.id,
+            actorId: userId,
+            actorType: 'user',
+        });
+    }
+    return { registered: false };
+}
 function emitCount(userId) {
     try {
         countUnread(userId)
@@ -587,6 +678,8 @@ module.exports = {
     markRead,
     markAllRead,
     countUnread,
+    registerDevice,
+    unregisterDevice,
 };
 exports.default = module.exports;
 //# sourceMappingURL=index.js.map

@@ -39,6 +39,12 @@ TripLocation.init({
         type: sequelize_1.DataTypes.NUMERIC(10, 2),
         allowNull: true,
     },
+    // spec 013 DB4: which recurrence occurrence this point belongs to
+    occurrenceDate: {
+        type: sequelize_1.DataTypes.DATEONLY,
+        field: 'occurrence_date',
+        allowNull: true,
+    },
 }, {
     sequelize: database_1.default,
     modelName: 'TripLocation',
@@ -50,6 +56,10 @@ TripLocation.init({
         {
             name: 'idx_trip_locations_trip_created',
             fields: ['trip_id', 'createdat'],
+        },
+        {
+            name: 'idx_trip_locations_trip_occurrence',
+            fields: ['trip_id', 'occurrence_date'],
         },
     ],
 });

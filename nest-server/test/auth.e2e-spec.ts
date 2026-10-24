@@ -358,7 +358,7 @@ describe('Auth Flow - Login / Refresh / Me / Logout', () => {
   });
 
   it('logs in with correct credentials', async () => {
-    const res = await ctx.agent.post('/api/auth/login').send({ phone: PHONE, password: PASSWORD });
+    const res = await ctx.agent.post('/api/auth/login').send({ phone: PHONE, password: PASSWORD, role: ROLE });
     expect(res.status).toBe(200);
     expect(res.body.access_token).toBeDefined();
     expect(res.body.refresh_token).toBeDefined();
@@ -369,14 +369,14 @@ describe('Auth Flow - Login / Refresh / Me / Logout', () => {
   it('rejects wrong password', async () => {
     const res = await ctx.agent
       .post('/api/auth/login')
-      .send({ phone: PHONE, password: 'Wrong@1234' });
+      .send({ phone: PHONE, password: 'Wrong@1234', role: ROLE });
     expect(res.status).toBe(401);
   });
 
   it('rejects non-existent phone', async () => {
     const res = await ctx.agent
       .post('/api/auth/login')
-      .send({ phone: '+962799999999', password: PASSWORD });
+      .send({ phone: '+962799999999', password: PASSWORD, role: ROLE });
     expect(res.status).toBe(401);
   });
 
@@ -471,12 +471,12 @@ describe('Auth Flow - Forgot Password / Resend OTP', () => {
 
     const loginRes = await ctx.agent
       .post('/api/auth/login')
-      .send({ phone: PHONE, password: PASSWORD });
+      .send({ phone: PHONE, password: PASSWORD, role: ROLE });
     expect(loginRes.status).toBe(401);
 
     const loginRes2 = await ctx.agent
       .post('/api/auth/login')
-      .send({ phone: PHONE, password: NEW_PASSWORD });
+      .send({ phone: PHONE, password: NEW_PASSWORD, role: ROLE });
     expect(loginRes2.status).toBe(200);
   });
 
@@ -525,7 +525,7 @@ describe('Auth Flow - Change password', () => {
 
     const loginRes = await ctx.agent
       .post('/api/auth/login')
-      .send({ phone: PHONE, password: 'Brand@1234' });
+      .send({ phone: PHONE, password: 'Brand@1234', role: ROLE });
     expect(loginRes.status).toBe(200);
   });
 

@@ -528,7 +528,7 @@ var migrationCommands = [{
                 },
                 "nationalID": {
                     "type": Sequelize.STRING(30),
-                    "field": "national_i_d",
+                    "field": "national_id",
                     "allowNull": true
                 },
                 "idVerified": {

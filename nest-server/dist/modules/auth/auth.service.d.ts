@@ -53,7 +53,7 @@ export declare class AuthService {
     }>;
     private autoAssignFreePlan;
     private loggerSafe;
-    login(phone: string, password: string, expectedRole?: string | null): Promise<{
+    login(phone: string, password: string, expectedRole: string): Promise<{
         access_token: string;
         refresh_token: string;
         user: AuthUserShape;

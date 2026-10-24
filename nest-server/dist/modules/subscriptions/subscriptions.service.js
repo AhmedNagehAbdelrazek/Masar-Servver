@@ -28,6 +28,10 @@ function maskNationalID(nationalID) {
 function validationError(code, message) {
     return new UnprocessableEntityException({ message, code });
 }
+function isMissingNationalIdColumn(err) {
+    const msg = err instanceof Error ? err.message : String(err ?? '');
+    return msg.includes('driver_profiles.national_id') && msg.includes('does not exist');
+}
 let SubscriptionsService = SubscriptionsService_1 = class SubscriptionsService {
     prisma;
     balance;
@@ -169,6 +173,24 @@ let SubscriptionsService = SubscriptionsService_1 = class SubscriptionsService {
             isInDebt: user.isInDebt,
         });
     }
+    queryPendingRows(where, sort, withNationalId) {
+        return this.prisma.driverSubscription.findMany({
+            where,
+            include: {
+                driver: {
+                    select: {
+                        id: true,
+                        fullName: true,
+                        phone: true,
+                        ...(withNationalId ? { driverProfile: { select: { nationalID: true } } } : {}),
+                    },
+                },
+                plan: { select: { name: true, cost: true, isActive: true } },
+                screenshot: { select: { id: true, url: true } },
+            },
+            orderBy: { createdAt: sort === 'oldest' ? 'asc' : 'desc' },
+        });
+    }
     async listPending(filters = {}) {
         const { status = 'pending_approval', sort = 'newest', search, plan_id, from, to } = filters;
         const validStatuses = ['pending_approval', 'active', 'rejected', 'cancelled', 'expired'];
@@ -200,22 +222,9 @@ let SubscriptionsService = SubscriptionsService_1 = class SubscriptionsService {
                 createdAt.lte = new Date(`${to}T23:59:59.999Z`);
             where.createdAt = createdAt;
         }
-        const rows = await this.prisma.driverSubscription.findMany({
-            where,
-            include: {
-                driver: {
-                    select: {
-                        id: true,
-                        fullName: true,
-                        phone: true,
-                        driverProfile: { select: { nationalID: true } },
-                    },
-                },
-                plan: { select: { name: true, cost: true, isActive: true } },
-                screenshot: { select: { id: true, url: true } },
-            },
-            orderBy: { createdAt: sort === 'oldest' ? 'asc' : 'desc' },
-        });
+        const rows = await this.queryPendingRows(where, sort, true).catch((err) => isMissingNationalIdColumn(err)
+            ? this.queryPendingRows(where, sort, false)
+            : Promise.reject(err));
         return rows.map((sub) => {
             const driver = (sub.driver ?? {});
             const plan = sub.plan;
@@ -255,8 +264,8 @@ let SubscriptionsService = SubscriptionsService_1 = class SubscriptionsService {
             rejected: rejected,
         };
     }
-    async getDetail(subscriptionId) {
-        const sub = await this.prisma.driverSubscription.findUnique({
+    queryDetailRow(subscriptionId, withNationalId) {
+        return this.prisma.driverSubscription.findUnique({
             where: { id: subscriptionId },
             include: {
                 driver: {
@@ -266,13 +275,18 @@ let SubscriptionsService = SubscriptionsService_1 = class SubscriptionsService {
                         phone: true,
                         status: true,
                         createdAt: true,
-                        driverProfile: { select: { nationalID: true } },
+                        ...(withNationalId ? { driverProfile: { select: { nationalID: true } } } : {}),
                     },
                 },
                 plan: true,
                 screenshot: { select: { id: true, url: true } },
             },
         });
+    }
+    async getDetail(subscriptionId) {
+        const sub = await this.queryDetailRow(subscriptionId, true).catch((err) => isMissingNationalIdColumn(err)
+            ? this.queryDetailRow(subscriptionId, false)
+            : Promise.reject(err));
         if (!sub) {
             throw new NotFoundException({ message: 'SUBSCRIPTION_NOT_FOUND', code: 'SUBSCRIPTION_NOT_FOUND' });
         }

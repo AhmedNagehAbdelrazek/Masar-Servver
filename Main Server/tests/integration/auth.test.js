@@ -368,7 +368,7 @@ describe('Auth Flow - Login', () => {
   it('should login with correct credentials', async () => {
     const res = await getAgent()
       .post('/api/auth/login')
-      .send({ phone: PHONE, password: PASSWORD });
+      .send({ phone: PHONE, password: PASSWORD, role: ROLE });
 
     expect(res.status).toBe(200);
     expect(res.body.access_token).toBeDefined();
@@ -380,7 +380,7 @@ describe('Auth Flow - Login', () => {
   it('should reject wrong password', async () => {
     const res = await getAgent()
       .post('/api/auth/login')
-      .send({ phone: PHONE, password: 'Wrong@1234' });
+      .send({ phone: PHONE, password: 'Wrong@1234', role: ROLE });
 
     expect(res.status).toBe(401);
   });
@@ -388,7 +388,7 @@ describe('Auth Flow - Login', () => {
   it('should reject non-existent phone', async () => {
     const res = await getAgent()
       .post('/api/auth/login')
-      .send({ phone: '+962799999999', password: PASSWORD });
+      .send({ phone: '+962799999999', password: PASSWORD, role: ROLE });
 
     expect(res.status).toBe(401);
   });
@@ -589,14 +589,14 @@ describe('Auth Flow - Forgot Password', () => {
     // Old password should not work
     const loginRes = await getAgent()
       .post('/api/auth/login')
-      .send({ phone: PHONE, password: PASSWORD });
+      .send({ phone: PHONE, password: PASSWORD, role: ROLE });
 
     expect(loginRes.status).toBe(401);
 
     // New password should work
     const loginRes2 = await getAgent()
       .post('/api/auth/login')
-      .send({ phone: PHONE, password: NEW_PASSWORD });
+      .send({ phone: PHONE, password: NEW_PASSWORD, role: ROLE });
 
     expect(loginRes2.status).toBe(200);
   });

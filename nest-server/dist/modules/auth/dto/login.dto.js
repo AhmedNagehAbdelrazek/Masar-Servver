@@ -8,7 +8,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 import { Transform } from 'class-transformer';
-import { IsDefined, IsIn, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { IsDefined, IsIn, IsNotEmpty, IsString } from 'class-validator';
 export class LoginDto {
     phone;
     password;
@@ -27,7 +27,8 @@ __decorate([
     __metadata("design:type", String)
 ], LoginDto.prototype, "password", void 0);
 __decorate([
-    IsOptional(),
+    IsDefined(),
+    IsNotEmpty(),
     IsIn(['passenger', 'driver', 'admin']),
     __metadata("design:type", String)
 ], LoginDto.prototype, "role", void 0);

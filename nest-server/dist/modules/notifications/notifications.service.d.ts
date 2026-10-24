@@ -45,6 +45,12 @@ export declare class NotificationsService {
     markAllRead(userId: string): Promise<{
         marked: number;
     }>;
+    registerDevice(userId: string, fcmToken: string): Promise<{
+        registered: true;
+    }>;
+    unregisterDevice(userId: string, fcmToken?: string): Promise<{
+        registered: boolean;
+    }>;
     countUnread(userId: string): Promise<number>;
     private emitCount;
 }

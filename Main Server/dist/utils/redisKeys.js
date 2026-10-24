@@ -10,6 +10,11 @@ exports.REDIS_KEYS = {
     OTP: (phone) => `otp:${phone}`,
     REFRESH_TOKEN: (userId) => `refresh:${userId}`,
     PLANS_ACTIVE: 'plans:active',
+    ROUTE: (hash) => `route:${hash}`,
+    MAPS_RATELIMIT: (userId) => `ratelimit:maps:${userId}`,
+    MAPS_USAGE: (api, day) => `maps:usage:${api}:${day}`,
+    PROXIMITY: (bookingId, kind) => `proximity:${bookingId}:${kind}`,
+    JOB_LASTRUN: (job) => `jobs:lastrun:${job}`,
 };
 exports.CACHE_TTL = {
     DASHBOARD: 30, // 30 seconds

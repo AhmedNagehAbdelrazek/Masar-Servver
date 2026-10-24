@@ -14,8 +14,14 @@ const Models_1 = require("../Models");
 const ApiError_1 = require("../utils/ApiError");
 const realtimeService_1 = __importDefault(require("./realtimeService"));
 const realtimeMetrics_1 = __importDefault(require("./realtimeMetrics"));
+const notificationService_1 = __importDefault(require("./notificationService"));
 const constants_1 = require("../config/constants");
-const ACTIVE_TRIP_STATUSES = [constants_1.TRIP_STATUS.IN_PROGRESS, constants_1.TRIP_STATUS.ONGOING];
+const maps_1 = __importDefault(require("../config/maps"));
+const redis_1 = require("../config/redis");
+const redisKeys_1 = require("../utils/redisKeys");
+const geo_1 = require("./geo");
+// spec 013 (O6): tracking-eligible = in_progress ONLY. ongoing no longer opens rooms.
+const ACTIVE_TRIP_STATUSES = [constants_1.TRIP_STATUS.IN_PROGRESS];
 exports.ACTIVE_TRIP_STATUSES = ACTIVE_TRIP_STATUSES;
 function serialize(point) {
     return {
@@ -29,17 +35,7 @@ function serialize(point) {
         timestamp: point.createdat ? point.createdat.toISOString() : new Date().toISOString(),
     };
 }
-/**
- * Great-circle distance in km (Haversine) — used for a simple ETA estimate.
- */
-function haversineKm(lat1, lng1, lat2, lng2) {
-    const R = 6371;
-    const dLat = ((lat2 - lat1) * Math.PI) / 180;
-    const dLng = ((lng2 - lng1) * Math.PI) / 180;
-    const a = Math.sin(dLat / 2) ** 2 +
-        Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLng / 2) ** 2;
-    return 2 * R * Math.asin(Math.sqrt(a));
-}
+/* geo.haversineKm is used for the straight-line ETA estimate (O9). */
 async function assertDriverOfActiveTrip(user, tripId) {
     if (!tripId)
         throw ApiError_1.ApiErrors.validation('TRIP_ID_IS_REQUIRED');
@@ -56,14 +52,46 @@ async function assertDriverOfActiveTrip(user, tripId) {
     return trip;
 }
 async function updateLocation(user, payload) {
-    const { tripId, lat, lng, speed, heading } = payload || {};
+    // : batch and single share one ingester. Cap 60, skip stale/old
+    // silently inside batches (offline replay), reject them on single sends.
+    const batch = Array.isArray(payload && payload.points) ? payload.points.slice(0, maps_1.default.trackingBatchMaxPoints) : null;
+    if (batch) {
+        const kept = [];
+        for (const p of batch) {
+            try {
+                kept.push(await ingestPoint(user, { tripId: payload.tripId || payload.trip_id, ...p }));
+            }
+            catch (_err) {
+                // skip bad/stale points inside a batch
+            }
+        }
+        return { trip_id: payload.tripId || payload.trip_id, received: batch.length, stored: kept.filter(Boolean).length };
+    }
+    return ingestPoint(user, payload);
+}
+function pointAgeMs(recordedAt) {
+    if (!recordedAt)
+        return 0;
+    const t = new Date(recordedAt).getTime();
+    if (Number.isNaN(t))
+        return 0;
+    return Date.now() - t;
+}
+async function ingestPoint(user, payload) {
+    const tripId = payload && (payload.tripId || payload.trip_id);
+    const { lat, lng, speed, heading } = payload || {};
     if (lat === undefined || lng === undefined) {
         throw ApiError_1.ApiErrors.validation('LAT_AND_LNG_ARE_REQUIRED');
     }
     if (Number.isNaN(Number(lat)) || Number.isNaN(Number(lng))) {
         throw ApiError_1.ApiErrors.validation('LAT_AND_LNG_MUST_BE_NUMBERS');
     }
+    const ageMs = pointAgeMs(payload && (payload.recorded_at || payload.recordedAt));
+    if (ageMs > maps_1.default.trackingMaxPointAgeSeconds * 1000) {
+        throw ApiError_1.ApiErrors.custom('LOCATION_POINT_TOO_OLD', 422, 'LOCATION_POINT_TOO_OLD');
+    }
     const trip = await assertDriverOfActiveTrip(user, tripId);
+    // persist-before-broadcast (SSOT 8)
     const point = await Models_1.TripLocation.create({
         tripId,
         driverId: user.id,
@@ -71,28 +99,111 @@ async function updateLocation(user, payload) {
         lng,
         speed: speed !== undefined ? speed : null,
         heading: heading !== undefined ? heading : null,
+        occurrenceDate: (payload && (payload.occurrence_date || payload.occurrenceDate)) || null,
     });
-    let etaMinutes = null;
-    if (trip.destinationLat !== null &&
-        trip.destinationLat !== undefined &&
-        trip.destinationLng !== null &&
-        trip.destinationLng !== undefined &&
-        speed > 0) {
-        const distKm = haversineKm(Number(lat), Number(lng), Number(trip.destinationLat), Number(trip.destinationLng));
-        etaMinutes = Math.max(0, Math.round((distKm / Number(speed)) * 60));
-    }
+    const speedNum = Number(speed);
     const out = {
         trip_id: tripId,
         driver_lat: Number(lat),
         driver_lng: Number(lng),
-        eta_minutes: etaMinutes,
+        eta_minutes: null,
         status: 'en_route',
         timestamp: point.createdat ? point.createdat.toISOString() : new Date().toISOString(),
     };
+    // Next pickup: first confirmed booking still awaiting boarding, in route order.
+    const upcoming = await Models_1.Booking.findAll({
+        where: { tripId, status: constants_1.BOOKING_STATUS.CONFIRMED },
+        include: [{ model: Models_1.User, as: 'passenger', attributes: ['id', 'fullName'] }],
+        order: [['pickupOrder', 'ASC']],
+    });
+    const pending = upcoming.filter((b) => ![constants_1.PICKUP_STATUS.PICKED_UP, constants_1.PICKUP_STATUS.MISSED].includes(b.pickupStatus));
+    const next = pending[0] || null;
+    if (next && next.pickupLat != null && speedNum > 0) {
+        const distKm = (0, geo_1.haversineKm)(Number(lat), Number(lng), Number(next.pickupLat), Number(next.pickupLng));
+        out.eta_minutes = Math.max(0, Math.round((distKm / speedNum) * 60));
+    }
+    else if (trip.destinationLat !== null &&
+        trip.destinationLat !== undefined &&
+        trip.destinationLng !== null &&
+        trip.destinationLng !== undefined &&
+        speedNum > 0) {
+        const distKm = (0, geo_1.haversineKm)(Number(lat), Number(lng), Number(trip.destinationLat), Number(trip.destinationLng));
+        out.eta_minutes = Math.max(0, Math.round((distKm / speedNum) * 60));
+    }
     realtimeService_1.default.emitToRoom(`trip:${tripId}`, 'tracking:update', out);
     realtimeMetrics_1.default.recordEvent('tracking:update');
     realtimeMetrics_1.default.recordDelivery();
+    // Driver guidance + per-passenger filtered ETA + once-per-booking proximity.
+    try {
+        await fanOut(user, trip, { lat: Number(lat), lng: Number(lng), speed: speedNum }, pending, next);
+    }
+    catch (err) {
+        console.warn('[trackingService] fan-out failed:', err.message);
+    }
     return out;
+}
+// : N small passenger rooms, not one payload per socket — the room
+// fan-out stays O(passengers), and each passenger only ever sees their own ETA.
+async function fanOut(driver, trip, pos, pending, next) {
+    const remaining = pending.length;
+    if (next && next.passenger) {
+        realtimeService_1.default.emitToUser(driver.id, 'tracking:next_pickup', {
+            trip_id: trip.id,
+            booking_id: next.id,
+            label: next.pickupLabel || next.pickupPlace || null,
+            distance_m: next.pickupLat != null ? Math.round((0, geo_1.haversineM)(pos.lat, pos.lng, Number(next.pickupLat), Number(next.pickupLng))) : null,
+            eta_minutes: null,
+            remaining_count: remaining,
+        });
+    }
+    for (const b of pending) {
+        if (b.pickupLat == null || b.pickupLng == null || !b.passenger)
+            continue;
+        const distM = (0, geo_1.haversineM)(pos.lat, pos.lng, Number(b.pickupLat), Number(b.pickupLng));
+        let eta = null;
+        if (pos.speed > 0)
+            eta = Math.max(0, Math.round(((distM / 1000) / pos.speed) * 60));
+        realtimeService_1.default.emitToUser(b.passenger.id, 'tracking:update', {
+            trip_id: trip.id,
+            driver_lat: pos.lat,
+            driver_lng: pos.lng,
+            eta_minutes: eta,
+            status: 'en_route',
+            timestamp: new Date().toISOString(),
+        });
+        await proximityOnce(trip, b, distM);
+    }
+}
+async function proximityOnce(trip, booking, distM) {
+    const fire = async (kind, threshold, template, vars) => {
+        if (distM > threshold)
+            return;
+        const key = redisKeys_1.REDIS_KEYS.PROXIMITY(booking.id, kind);
+        let seen = null;
+        try {
+            seen = await (0, redis_1.getKey)(key);
+        }
+        catch {
+            // redis offline — still notify, just possibly twice
+        }
+        if (seen)
+            return;
+        try {
+            await (0, redis_1.setKey)(key, '1');
+        }
+        catch {
+            // ignore
+        }
+        realtimeService_1.default.emitToUser(booking.passenger.id, 'tracking:proximity', { trip_id: trip.id, booking_id: booking.id, state: kind });
+        try {
+            await notificationService_1.default.sendToUser(booking.passenger, template, { channels: ['in_app', 'push'], vars, data: { trip_id: trip.id, booking_id: booking.id } });
+        }
+        catch (err) {
+            console.warn('[trackingService] proximity notification failed:', err.message);
+        }
+    };
+    await fire('near', maps_1.default.proximityNearMeters, 'DRIVER_NEARBY', { distance_m: Math.round(distM) });
+    await fire('arrived', maps_1.default.proximityArrivedMeters, 'DRIVER_ARRIVED', {});
 }
 async function startTracking(user, tripId) {
     await assertDriverOfActiveTrip(user, tripId);
@@ -137,13 +248,16 @@ async function getLatest(user, tripId) {
     });
     return point ? serialize(point) : null;
 }
-async function getHistory(user, tripId, { limit = 50 } = {}) {
+async function getHistory(user, tripId, { limit = 50, occurrenceDate = null } = {}) {
     if (!tripId)
         throw ApiError_1.ApiErrors.validation('TRIP_ID_IS_REQUIRED');
     await assertTripMember(user, tripId);
     const n = Math.min(500, Math.max(1, parseInt(limit, 10) || 50));
+    const where = { tripId };
+    if (occurrenceDate)
+        where.occurrenceDate = occurrenceDate;
     const rows = await Models_1.TripLocation.findAll({
-        where: { tripId },
+        where,
         order: [['createdat', 'DESC']],
         limit: n,
     });

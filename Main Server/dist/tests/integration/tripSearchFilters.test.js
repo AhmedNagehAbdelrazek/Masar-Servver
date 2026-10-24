@@ -12,8 +12,10 @@ let driverAToken;
 let driverBToken;
 let passengerToken;
 function getFutureDate(daysAhead = 1) {
-    const d = new Date();
-    d.setDate(d.getDate() + daysAhead);
+    // Jordan calendar date — the API anchors days to Asia/Amman, never
+    // server-local time (they differ late in the UTC evening).
+    const d = new Date(Date.now() + 3 * 60 * 60 * 1000);
+    d.setUTCDate(d.getUTCDate() + daysAhead);
     return d.toISOString().split('T')[0];
 }
 async function seedDriver(driverId, vehicleId, vehicleType, phone) {
@@ -33,8 +35,7 @@ async function createTrip(token, { departure_time, seats }) {
         .send({
         origin_city: 'Amman',
         destination_city: 'Irbid',
-        departure_date: getFutureDate(1),
-        departure_time,
+        departure_time: `${getFutureDate(1)}T${departure_time}:00+03:00`,
         type_of_trip: 'once',
         fare_per_seat: '15.00',
         seats,
@@ -148,7 +149,7 @@ describe('US1 - trip search filters', () => {
         // A recurring series whose first departure is already past and which does
         // not run on the searched weekday looks outdated and must not be returned,
         // even though the series itself has not ended yet.
-        const searchedWeekday = new Date().getDay();
+        const searchedWeekday = new Date(Date.now() + 3 * 60 * 60 * 1000).getUTCDay();
         const otherDay = (searchedWeekday + 1) % 7;
         const createRes = await getAgent()
             .post('/api/trips')
@@ -156,8 +157,7 @@ describe('US1 - trip search filters', () => {
             .send({
             origin_city: 'Amman',
             destination_city: 'Irbid',
-            departure_date: getFutureDate(1),
-            departure_time: '10:00',
+            departure_time: `${getFutureDate(1)}T16:00:00+03:00`,
             type_of_trip: 'repeated',
             repeated_days: [otherDay],
             repeated_end_date: getFutureDate(30),

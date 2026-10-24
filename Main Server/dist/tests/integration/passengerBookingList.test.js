@@ -62,8 +62,7 @@ beforeEach(async () => {
         .send({
         origin_city: 'Amman',
         destination_city: 'Irbid',
-        departure_date: getFutureDate(1),
-        departure_time: '14:00',
+        departure_time: `${getFutureDate(1)}T14:00:00+03:00`,
         type_of_trip: 'once',
         fare_per_seat: '15.00',
         seats: [
@@ -84,7 +83,7 @@ async function createBooking(token) {
     return getAgent()
         .post('/api/bookings')
         .set('Authorization', `Bearer ${token}`)
-        .send({ trip_id: tripId, seat_number: 2, agreed_fare: '15.00' });
+        .send({ trip_id: tripId, seat_numbers: [2], agreed_fare: '15.00' });
 }
 describe('US4 - enriched passenger booking list', () => {
     it('returns enriched rows with vehicle and driver image', async () => {

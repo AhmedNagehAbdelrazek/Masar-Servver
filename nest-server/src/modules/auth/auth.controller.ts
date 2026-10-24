@@ -54,7 +54,7 @@ export class AuthController {
     refresh_token: string;
     user: AuthUserShape;
   }> {
-    return this.auth.login(dto.phone, dto.password, dto.role ?? null);
+    return this.auth.login(dto.phone, dto.password, dto.role);
   }
 
   @Public()

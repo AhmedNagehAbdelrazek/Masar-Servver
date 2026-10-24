@@ -295,7 +295,7 @@ async function registerPassword(authHeader, data) {
     };
 }
 // ===== LOGIN =====
-async function login(phone, password) {
+async function login(phone, password, expectedRole) {
     const user = await Models_1.User.findOne({ where: { phone } });
     if (!user) {
         throw ApiError_1.ApiErrors.unauthorized('INVALID_PHONE_OR_PASSWORD');
@@ -309,6 +309,9 @@ async function login(phone, password) {
     const isMatch = await bcrypt_1.default.compare(password, user.passwordHash);
     if (!isMatch) {
         throw ApiError_1.ApiErrors.unauthorized('INVALID_PHONE_OR_PASSWORD');
+    }
+    if (expectedRole && user.role !== expectedRole) {
+        throw ApiError_1.ApiErrors.forbidden('ACCOUNT_ROLE_MISMATCH');
     }
     const accessToken = generateAccessToken(user);
     const { token: refreshToken, jti } = generateRefreshToken(user);

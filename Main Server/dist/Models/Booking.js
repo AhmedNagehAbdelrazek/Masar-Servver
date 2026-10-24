@@ -67,6 +67,53 @@ Booking.init({
         field: 'pickup_order',
         allowNull: true,
     },
+    // spec 013 DB2: pickup model (see migration 029)
+    pickupType: {
+        type: sequelize_1.DataTypes.ENUM('stop', 'custom'),
+        field: 'pickup_type',
+        allowNull: true,
+    },
+    pickupStopId: {
+        type: sequelize_1.DataTypes.UUID,
+        field: 'pickup_stop_id',
+        allowNull: true,
+    },
+    pickupLabel: {
+        type: sequelize_1.DataTypes.TEXT,
+        field: 'pickup_label',
+        allowNull: true,
+    },
+    pickupCity: {
+        type: sequelize_1.DataTypes.STRING(100),
+        field: 'pickup_city',
+        allowNull: true,
+    },
+    pickupArea: {
+        type: sequelize_1.DataTypes.STRING(120),
+        field: 'pickup_area',
+        allowNull: true,
+    },
+    detourSeconds: {
+        type: sequelize_1.DataTypes.INTEGER,
+        field: 'detour_seconds',
+        allowNull: true,
+    },
+    pickupStatus: {
+        type: sequelize_1.DataTypes.ENUM('pending', 'arrived', 'picked_up', 'missed'),
+        field: 'pickup_status',
+        allowNull: false,
+        defaultValue: 'pending',
+    },
+    arrivedAt: {
+        type: sequelize_1.DataTypes.DATE,
+        field: 'arrived_at',
+        allowNull: true,
+    },
+    pickedUpAt: {
+        type: sequelize_1.DataTypes.DATE,
+        field: 'picked_up_at',
+        allowNull: true,
+    },
     dropoffPlace: {
         type: sequelize_1.DataTypes.STRING(120),
         allowNull: true,

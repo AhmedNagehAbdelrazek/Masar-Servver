@@ -57,8 +57,8 @@ const registerPassword = (0, catchAsync_1.catchAsync)(async (req, res) => {
 });
 exports.registerPassword = registerPassword;
 const login = (0, catchAsync_1.catchAsync)(async (req, res) => {
-    const { phone, password } = req.body;
-    const result = await authService.login(phone, password);
+    const { phone, password, role } = req.body;
+    const result = await authService.login(phone, password, role);
     auditService.markResource(res, { type: 'user', id: result.user.id, label: result.user.phone });
     (0, httpResponse_1.successResponse)(res, result);
 });

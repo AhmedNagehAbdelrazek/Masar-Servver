@@ -43,6 +43,7 @@ const roleGuard_1 = require("../middlewares/roleGuard");
 const validatorMiddleware_1 = __importDefault(require("../middlewares/validatorMiddleware"));
 const c = __importStar(require("../Controllers/bookingController"));
 const v = __importStar(require("../utils/validators/bookingValidator"));
+const mapsValidator_1 = require("../utils/validators/mapsValidator");
 router.use(protect_1.default);
 router.get('/', (0, roleGuard_1.roleGuard)(['passenger']), ...v.passengerBookingListValidation, validatorMiddleware_1.default, c.listMyBookings);
 router.post('/', (0, roleGuard_1.roleGuard)(['passenger']), ...v.createBookingValidation, validatorMiddleware_1.default, c.createBooking);
@@ -50,6 +51,10 @@ router.get('/:booking_id', (0, roleGuard_1.roleGuard)(['passenger']), ...v.cance
 // Driver reveal for a confirmed booking (passenger owner, trip driver, or admin)
 router.get('/:booking_id/driver-profile', ...v.cancelBookingValidation, validatorMiddleware_1.default, c.getDriverProfile);
 router.put('/:booking_id/cancel', (0, roleGuard_1.roleGuard)(['passenger']), ...v.cancelBookingValidation, c.cancelBooking);
+// Planned route + own pickup (+ recorded path when available)
+router.get('/:booking_id/route', (0, roleGuard_1.roleGuard)(['passenger', 'driver']), ...v.cancelBookingValidation, validatorMiddleware_1.default, c.getBookingRoute);
+// Passenger changes pickup before the cutoff
+router.patch('/:booking_id/pickup', (0, roleGuard_1.roleGuard)(['passenger']), ...v.cancelBookingValidation, ...mapsValidator_1.pickupPreviewValidation, validatorMiddleware_1.default, c.editBookingPickup);
 router.post('/:booking_id/delay', ...v.reportDelayValidation, validatorMiddleware_1.default, c.reportDelay);
 router.get('/:booking_id/delays', ...v.delayListValidation, validatorMiddleware_1.default, c.listDelays);
 exports.default = router;

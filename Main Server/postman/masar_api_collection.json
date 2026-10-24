@@ -653,7 +653,7 @@
         ],
         "body": {
          "mode": "raw",
-         "raw": "// Driver - account\n\n{\n  \"phone\": \"+962790000001\", // full phone with country code\n  \"password\": \"Test@1234\"\n}\n\n// Passenger - account\n\n\n// {\n//   \"phone\": \"+962780000001\", // full phone with country code\n//   \"password\": \"Test@1234\"\n// }\n\n// Admin - account\n\n// {\n//   \"phone\": \"+962700000099\", // full phone with country code\n//   \"password\": \"93k40@87UR!gY\"\n// }\n\n\n"
+         "raw": "// Driver - account\n\n{\n  \"phone\": \"+962790000001\", // full phone with country code\n  \"password\": \"Test@1234\",\n  \"role\": \"driver\"\n}\n\n// Passenger - account\n\n\n// {\n//   \"phone\": \"+962780000001\", // full phone with country code\n//   \"password\": \"Test@1234\",\n//   \"role\": \"passenger\"\n// }\n\n// Admin - account\n\n// {\n//   \"phone\": \"+962700000099\", // full phone with country code\n//   \"password\": \"93k40@87UR!gY\",\n//   \"role\": \"admin\"\n// }\n\n\n"
         },
         "url": {
          "raw": "{{base_url}}/auth/login",
@@ -665,7 +665,7 @@
           "login"
          ]
         },
-        "description": "Login with phone and password. On success, `access_token` and `refresh_token` are stored in collection variables automatically.\n\n**Body fields**\n- `phone` *(string, required)* â€” full phone number in international format, e.g. `+962791234565`.\n- `password` *(string, required)* â€” account password."
+        "description": "Login with phone, password, and role. On success, `access_token` and `refresh_token` are stored in collection variables automatically.\n\n**Body fields**\n- `phone` *(string, required)* - full phone number in international format, e.g. `+962791234565`.\n- `password` *(string, required)* - account password.\n- `role` *(string, required)* - expected role: `passenger`, `driver`, or `admin`. If the account's role doesn't match, returns `403 ACCOUNT_ROLE_MISMATCH`."
        },
        "response": [
         {

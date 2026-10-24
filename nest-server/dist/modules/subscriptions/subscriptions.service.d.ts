@@ -32,6 +32,7 @@ export declare class SubscriptionsService {
     }): Promise<SubscriptionRow>;
     getMySubscriptions(driverId: string): Promise<Record<string, unknown>[]>;
     getCurrentSubscription(driverId: string): Promise<Record<string, unknown>>;
+    private queryPendingRows;
     listPending(filters?: {
         status?: string;
         sort?: string;
@@ -41,6 +42,7 @@ export declare class SubscriptionsService {
         to?: string;
     }): Promise<Record<string, unknown>[]>;
     getStats(): Promise<Record<string, unknown>>;
+    private queryDetailRow;
     getDetail(subscriptionId: string): Promise<Record<string, unknown>>;
     approve(subscriptionId: string, _actorId: string): Promise<{
         message: string;

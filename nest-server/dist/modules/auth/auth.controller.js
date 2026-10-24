@@ -37,7 +37,7 @@ let AuthController = class AuthController {
         return this.auth.registerPassword(authorization, dto);
     }
     login(dto) {
-        return this.auth.login(dto.phone, dto.password, dto.role ?? null);
+        return this.auth.login(dto.phone, dto.password, dto.role);
     }
     refresh(dto) {
         return this.auth.refresh(dto.refresh_token);

@@ -33,7 +33,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.markRead = exports.listNotifications = void 0;
+exports.unregisterDevice = exports.registerDevice = exports.markRead = exports.listNotifications = void 0;
 const catchAsync_1 = require("../utils/catchAsync");
 const httpResponse_1 = require("../utils/httpResponse");
 const pagination_1 = require("../utils/pagination");
@@ -69,5 +69,21 @@ const markRead = (0, catchAsync_1.catchAsync)(async (req, res) => {
     (0, httpResponse_1.successResponse)(res, { notification: { id: notification['id'], is_read: notification['isRead'] } });
 });
 exports.markRead = markRead;
-exports.default = { listNotifications, markRead };
+const registerDevice = (0, catchAsync_1.catchAsync)(async (req, res) => {
+    const authReq = req;
+    const { fcm_token } = (req.body || {});
+    const result = await notificationService.registerDevice(String(authReq.user?.id), fcm_token);
+    auditService.markResource(res, { type: 'user', id: String(authReq.user?.id) });
+    (0, httpResponse_1.successResponse)(res, { device: result });
+});
+exports.registerDevice = registerDevice;
+const unregisterDevice = (0, catchAsync_1.catchAsync)(async (req, res) => {
+    const authReq = req;
+    const { fcm_token } = (req.body || {});
+    const result = await notificationService.unregisterDevice(String(authReq.user?.id), fcm_token ?? null);
+    auditService.markResource(res, { type: 'user', id: String(authReq.user?.id) });
+    (0, httpResponse_1.successResponse)(res, { device: result });
+});
+exports.unregisterDevice = unregisterDevice;
+exports.default = { listNotifications, markRead, registerDevice, unregisterDevice };
 //# sourceMappingURL=notificationController.js.map

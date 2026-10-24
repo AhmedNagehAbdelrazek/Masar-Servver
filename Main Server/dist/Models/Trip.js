@@ -84,6 +84,12 @@ Trip.init({
         type: sequelize_1.DataTypes.NUMERIC(10, 2),
         allowNull: false,
     },
+    totalProfit: {
+        type: sequelize_1.DataTypes.NUMERIC(12, 2),
+        field: 'total_profit',
+        allowNull: false,
+        defaultValue: 0,
+    },
     currency: {
         type: sequelize_1.DataTypes.STRING(3),
         allowNull: true,
@@ -149,6 +155,64 @@ Trip.init({
     },
     moderatedBy: {
         type: sequelize_1.DataTypes.UUID,
+        allowNull: true,
+    },
+    // spec 013 DB1: planned route (see migration 028)
+    routePolyline: {
+        type: sequelize_1.DataTypes.TEXT,
+        allowNull: true,
+    },
+    routeDistanceM: {
+        type: sequelize_1.DataTypes.INTEGER,
+        field: 'route_distance_m',
+        allowNull: true,
+    },
+    routeDurationS: {
+        type: sequelize_1.DataTypes.INTEGER,
+        field: 'route_duration_s',
+        allowNull: true,
+    },
+    routeStatus: {
+        type: sequelize_1.DataTypes.ENUM('pending', 'ready', 'failed'),
+        field: 'route_status',
+        allowNull: false,
+        defaultValue: 'pending',
+    },
+    routeComputedAt: {
+        type: sequelize_1.DataTypes.DATE,
+        field: 'route_computed_at',
+        allowNull: true,
+    },
+    routeVersion: {
+        type: sequelize_1.DataTypes.INTEGER,
+        field: 'route_version',
+        allowNull: false,
+        defaultValue: 0,
+    },
+    // spec 013 DB3: recorded driven path (see migration 030)
+    actualPathPolyline: {
+        type: sequelize_1.DataTypes.TEXT,
+        field: 'actual_path_polyline',
+        allowNull: true,
+    },
+    actualDistanceM: {
+        type: sequelize_1.DataTypes.INTEGER,
+        field: 'actual_distance_m',
+        allowNull: true,
+    },
+    actualDurationS: {
+        type: sequelize_1.DataTypes.INTEGER,
+        field: 'actual_duration_s',
+        allowNull: true,
+    },
+    startedAt: {
+        type: sequelize_1.DataTypes.DATE,
+        field: 'started_at',
+        allowNull: true,
+    },
+    completedAt: {
+        type: sequelize_1.DataTypes.DATE,
+        field: 'completed_at',
         allowNull: true,
     },
 }, {

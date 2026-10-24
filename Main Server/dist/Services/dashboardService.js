@@ -27,6 +27,10 @@ const getDashboard = async (driverId) => {
     const driver = await Models_1.User.findByPk(driverId);
     if (!driver)
         throw ApiError_1.ApiErrors.notFound('USER_NOT_FOUND');
+    const vehicle = await driver.getVehicle();
+    if (!vehicle)
+        throw ApiError_1.ApiErrors.notFound('VEHICLE_NOT_FOUND');
+    const vehicleSeatsNumber = vehicle.seats;
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const tomorrow = new Date(today);
@@ -101,7 +105,9 @@ const getDashboard = async (driverId) => {
             driver_id: driver.id,
             full_name: driver.fullName,
             phone: driver.phone,
+            gender: driver.gender,
             rating: avgRating || 0,
+            vehicle_seats_number: vehicleSeatsNumber,
             total_trips_completed: totalCompleted,
             verified: driver.isVerified,
             profile_picture_url: driver.avatarUrl,

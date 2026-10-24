@@ -81,8 +81,7 @@ const VALID_TRIP_BODY = {
     destination_area: 'Downtown',
     destination_lat: '32.5500',
     destination_lng: '35.8500',
-    departure_date: (() => { const d = new Date(); d.setDate(d.getDate() + 5); return d.toISOString().split('T')[0]; })(),
-    departure_time: '14:00',
+    departure_time: `${(() => { const d = new Date(); d.setDate(d.getDate() + 5); return d.toISOString().split('T')[0]; })()}T14:00:00+03:00`,
     type_of_trip: 'once',
     fare_per_seat: '15.50',
     seats: [
@@ -188,8 +187,8 @@ describe('US2 - Driver Bookings', () => {
             expect(res.body.booking.id).toBe(booking.id);
             expect(res.body.booking.passenger_name).toBe('Lina Haddad');
             expect(res.body.booking.seat_number).toBe(2);
-            expect(res.body.booking.trip.origin).toBe('Amman');
-            expect(res.body.booking.trip.destination).toBe('Irbid');
+            expect(res.body.booking.trip.origin).toMatchObject({ city: 'Amman' });
+            expect(res.body.booking.trip.destination).toMatchObject({ city: 'Irbid' });
             expect(res.body.booking.reference_code).toMatch(/^MSR-/);
         });
         it('should return 403 for another driver\'s booking', async () => {

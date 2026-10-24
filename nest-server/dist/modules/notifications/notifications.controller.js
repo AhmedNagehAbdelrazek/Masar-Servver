@@ -10,9 +10,10 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
-import { Controller, Get, Param, Put, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Post, Put, Query } from '@nestjs/common';
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import { buildPagination, parsePagination } from '../../common/utils/pagination.js';
+import { RegisterDeviceDto, UnregisterDeviceDto } from './dto/device-token.dto.js';
 import { NotificationsService } from './notifications.service.js';
 let NotificationsController = class NotificationsController {
     notifications;
@@ -47,6 +48,16 @@ let NotificationsController = class NotificationsController {
             .markRead(user?.id ?? '', notificationId)
             .then((n) => ({ notification: { id: n.id, is_read: n.isRead } }));
     }
+    registerDevice(dto, user) {
+        return this.notifications
+            .registerDevice(user?.id ?? '', dto.fcm_token)
+            .then((result) => ({ device: result }));
+    }
+    unregisterDevice(dto, user) {
+        return this.notifications
+            .unregisterDevice(user?.id ?? '', dto?.fcm_token)
+            .then((result) => ({ device: result }));
+    }
 };
 __decorate([
     Get(),
@@ -64,6 +75,23 @@ __decorate([
     __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", Promise)
 ], NotificationsController.prototype, "markRead", null);
+__decorate([
+    Post('device'),
+    HttpCode(HttpStatus.OK),
+    __param(0, Body()),
+    __param(1, CurrentUser()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [RegisterDeviceDto, Object]),
+    __metadata("design:returntype", Promise)
+], NotificationsController.prototype, "registerDevice", null);
+__decorate([
+    Delete('device'),
+    __param(0, Body()),
+    __param(1, CurrentUser()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [UnregisterDeviceDto, Object]),
+    __metadata("design:returntype", Promise)
+], NotificationsController.prototype, "unregisterDevice", null);
 NotificationsController = __decorate([
     Controller('notifications'),
     __metadata("design:paramtypes", [NotificationsService])

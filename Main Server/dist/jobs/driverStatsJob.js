@@ -11,7 +11,7 @@ async function runDriverStats() {
         const updated = await driverStatsService_1.default.recomputeAllDrivers();
         if (updated.length > 0) {
             auditService_1.default.track({
-                eventType: 'driver_stats.recalculate',
+                eventType: 'system.event',
                 action: 'recompute_all_drivers',
                 outcome: 'success',
                 payload: { driversUpdated: updated.length },

@@ -24,14 +24,14 @@ describe('i18n message localization', () => {
   });
 
   it('APP_LOCALE=en renders English error messages', async () => {
-    const res = await ctx.agent.post('/api/auth/login').send({ phone: PHONE, password: 'Whatever1!' });
+    const res = await ctx.agent.post('/api/auth/login').send({ phone: PHONE, password: 'Whatever1!', role: 'driver' });
     expect(res.status).toBe(401);
     expect(res.body.message).toBe('Invalid phone or password');
     expect(res.body.message_en).toBeUndefined();
   });
 
   it('APP_LOCALE=ar renders Arabic error messages', async () => {
-    const res = await ctx.agent.post('/api/auth/login?lang=ar').send({ phone: PHONE, password: 'Whatever1!' });
+    const res = await ctx.agent.post('/api/auth/login?lang=ar').send({ phone: PHONE, password: 'Whatever1!', role: 'driver' });
     expect(res.status).toBe(401);
     expect(res.body.message).toBe('رقم الهاتف أو كلمة المرور غير صحيحة');
     expect(res.body.message_en).toBeUndefined();
@@ -41,13 +41,13 @@ describe('i18n message localization', () => {
     const res = await ctx.agent
       .post('/api/auth/login')
       .set('Accept-Language', 'ar')
-      .send({ phone: PHONE, password: 'Whatever1!' });
+      .send({ phone: PHONE, password: 'Whatever1!', role: 'driver' });
     expect(res.status).toBe(401);
     expect(res.body.message).toBe('رقم الهاتف أو كلمة المرور غير صحيحة');
   });
 
   it('lang=both sends Arabic under message and English under message_en', async () => {
-    const res = await ctx.agent.post('/api/auth/login?lang=both').send({ phone: PHONE, password: 'Whatever1!' });
+    const res = await ctx.agent.post('/api/auth/login?lang=both').send({ phone: PHONE, password: 'Whatever1!', role: 'driver' });
     expect(res.status).toBe(401);
     expect(res.body.message).toBe('رقم الهاتف أو كلمة المرور غير صحيحة');
     expect(res.body.message_en).toBe('Invalid phone or password');

@@ -43,7 +43,10 @@ const protect_1 = __importDefault(require("../middlewares/protect"));
 const validatorMiddleware_1 = __importDefault(require("../middlewares/validatorMiddleware"));
 const notificationValidator_1 = require("../utils/validators/notificationValidator");
 router.get('/', protect_1.default, validatorMiddleware_1.default, c.listNotifications);
-router.put('/:notification_id/read', protect_1.default, ...notificationValidator_1.updateNotificationSettingsValidation, validatorMiddleware_1.default, c.markRead);
+router.put('/:notification_id/read', protect_1.default, c.markRead);
+// Push device registration (FCM token upsert / logout cleanup)
+router.post('/device', protect_1.default, ...notificationValidator_1.registerDeviceValidation, validatorMiddleware_1.default, c.registerDevice);
+router.delete('/device', protect_1.default, ...notificationValidator_1.unregisterDeviceValidation, validatorMiddleware_1.default, c.unregisterDevice);
 exports.default = router;
 module.exports = router;
 //# sourceMappingURL=notificationRoutes.js.map

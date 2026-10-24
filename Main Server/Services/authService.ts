@@ -319,7 +319,7 @@ export async function registerPassword(authHeader: string | undefined, data: { p
 
 // ===== LOGIN =====
 
-export async function login(phone: string, password: string, expectedRole?: string | null): Promise<{ access_token: string; refresh_token: string; user: { id: string; phone: string; countryCode: string | null | undefined; role: string; fullName: string | null | undefined; isVerified: boolean } }> {
+export async function login(phone: string, password: string, expectedRole: string): Promise<{ access_token: string; refresh_token: string; user: { id: string; phone: string; countryCode: string | null | undefined; role: string; fullName: string | null | undefined; isVerified: boolean } }> {
   const user = await (User as unknown as { findOne: (opts: unknown) => Promise<(unknown & { id: string; phone: string; countryCode: string | null; role: string; fullName: string | null; isVerified: boolean; status: string; passwordHash: string; update: (data: unknown) => Promise<void> }) | null> }).findOne({ where: { phone } });
   if (!user) {
     throw ApiErrors.unauthorized('INVALID_PHONE_OR_PASSWORD');

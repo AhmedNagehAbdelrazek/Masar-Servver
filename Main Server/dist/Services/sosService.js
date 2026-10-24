@@ -50,6 +50,24 @@ async function findActiveForUser(userId) {
 }
 async function alertPayload(event) {
     const user = await Models_1.User.findByPk(event.userId, { attributes: ['id', 'fullName'] });
+    // spec 013 (SOC6): carry the driver's last known position alongside the
+    // passenger's. One indexed lookup, no schema change.
+    let driverLat = null;
+    let driverLng = null;
+    try {
+        const last = await Models_1.TripLocation.findOne({
+            where: { tripId: event.tripId },
+            order: [['createdat', 'DESC']],
+            attributes: ['lat', 'lng'],
+        });
+        if (last) {
+            driverLat = Number(last.lat);
+            driverLng = Number(last.lng);
+        }
+    }
+    catch (_err) {
+        // location history unavailable — alert still goes out
+    }
     return {
         sos_event_id: event.id,
         user_id: event.userId,
@@ -57,6 +75,8 @@ async function alertPayload(event) {
         trip_id: event.tripId,
         lat: Number(event.lat),
         lng: Number(event.lng),
+        driver_lat: driverLat,
+        driver_lng: driverLng,
         urgency: event.urgency,
         escalation_level: event.escalationLevel,
         triggered_at: event.createdat ? event.createdat.toISOString() : null,

@@ -86,6 +86,9 @@ exports.loginValidation = [
         .notEmpty().withMessage(validation_keys_1.default.PHONE_NUMBER_IS_REQUIRED),
     (0, express_validator_1.body)('password')
         .notEmpty().withMessage(validation_keys_1.default.PASSWORD_IS_REQUIRED),
+    (0, express_validator_1.body)('role')
+        .notEmpty().withMessage(validation_keys_1.default.ROLE_IS_REQUIRED)
+        .isIn(['passenger', 'driver', 'admin']).withMessage(validation_keys_1.default.ROLE_MUST_BE_PASSENGER_OR_DRIVER),
 ];
 exports.forgotPasswordValidation = [
     (0, express_validator_1.body)('phone')

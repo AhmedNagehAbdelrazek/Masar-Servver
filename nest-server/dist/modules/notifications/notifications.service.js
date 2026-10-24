@@ -199,6 +199,41 @@ let NotificationsService = NotificationsService_1 = class NotificationsService {
         await this.emitCount(userId);
         return { marked: res.count };
     }
+    async registerDevice(userId, fcmToken) {
+        const token = fcmToken.trim();
+        const user = await this.prisma.user.findUnique({ where: { id: userId } });
+        if (!user) {
+            throw new NotFoundException({ message: 'USER_NOT_FOUND', code: 'USER_NOT_FOUND' });
+        }
+        await this.prisma.user.updateMany({
+            where: { fcmToken: token, id: { not: userId } },
+            data: { fcmToken: null },
+        });
+        if (user.fcmToken !== token) {
+            await this.prisma.user.update({
+                where: { id: userId },
+                data: { fcmToken: token },
+            });
+        }
+        return { registered: true };
+    }
+    async unregisterDevice(userId, fcmToken) {
+        const user = await this.prisma.user.findUnique({ where: { id: userId } });
+        if (!user) {
+            throw new NotFoundException({ message: 'USER_NOT_FOUND', code: 'USER_NOT_FOUND' });
+        }
+        const token = fcmToken?.trim() || null;
+        if (token && user.fcmToken !== token) {
+            return { registered: Boolean(user.fcmToken) };
+        }
+        if (user.fcmToken) {
+            await this.prisma.user.update({
+                where: { id: userId },
+                data: { fcmToken: null },
+            });
+        }
+        return { registered: false };
+    }
     async countUnread(userId) {
         return this.prisma.notification.count({ where: { userId, isRead: false } });
     }

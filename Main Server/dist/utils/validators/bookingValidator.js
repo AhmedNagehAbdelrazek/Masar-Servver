@@ -7,6 +7,7 @@ exports.delayListValidation = exports.reportDelayValidation = exports.delayParam
 const express_validator_1 = require("express-validator");
 const constants_1 = require("../../config/constants");
 const validation_keys_1 = __importDefault(require("../../config/messages/validation-keys"));
+const time_1 = require("../time");
 exports.bookingListValidation = [
     (0, express_validator_1.query)('status')
         .optional()
@@ -31,21 +32,42 @@ exports.bookingParamValidation = [
 exports.createBookingValidation = [
     (0, express_validator_1.body)('trip_id')
         .isUUID().withMessage(validation_keys_1.default.TRIP_ID_MUST_BE_A_VALID_UUID),
+    // Unified seat selection: a mandatory list with 1..N seats.
+    // The legacy single `seat_number` field is no longer accepted — clients
+    // must send `seat_numbers` (even for a single seat).
     (0, express_validator_1.body)('seat_number')
         .optional()
-        .isInt({ min: 1 }).withMessage(validation_keys_1.default.SEAT_NUMBER_MUST_BE_A_POSITIVE_INTEGER),
+        .custom(() => {
+        throw new Error(validation_keys_1.default.SEAT_NUMBER_DEPRECATED_USE_SEAT_NUMBERS);
+    }),
     (0, express_validator_1.body)('seat_numbers')
-        .optional()
+        .exists().withMessage(validation_keys_1.default.SEAT_NUMBERS_IS_REQUIRED)
         .isArray({ min: 1 }).withMessage(validation_keys_1.default.SEAT_NUMBERS_MUST_BE_A_NON_EMPTY_ARRAY)
         .custom((value) => {
-        if (!Array.isArray(value) || !value.every((n) => Number.isInteger(Number(n)) && Number(n) >= 1)) {
+        if (!Array.isArray(value) || value.length === 0) {
+            throw new Error(validation_keys_1.default.SEAT_NUMBERS_MUST_BE_A_NON_EMPTY_ARRAY);
+        }
+        if (!value.every((n) => Number.isInteger(Number(n)) && Number(n) >= 1)) {
+            throw new Error(validation_keys_1.default.SEAT_NUMBERS_MUST_BE_POSITIVE_INTEGERS);
+        }
+        const nums = value.map(Number);
+        if (new Set(nums).size !== nums.length) {
             throw new Error(validation_keys_1.default.SEAT_NUMBERS_MUST_BE_POSITIVE_INTEGERS);
         }
         return true;
     }),
     (0, express_validator_1.body)('seats')
         .optional()
-        .isInt({ min: 1 }).withMessage(validation_keys_1.default.SEATS_MUST_BE_POSITIVE_INTEGER),
+        .isInt({ min: 1 }).withMessage(validation_keys_1.default.SEATS_MUST_BE_POSITIVE_INTEGER)
+        .custom((value, { req }) => {
+        const body = req.body;
+        if (body.seat_numbers !== undefined && Array.isArray(body.seat_numbers)) {
+            if (Number(value) !== body.seat_numbers.length) {
+                throw new Error(validation_keys_1.default.SEATS_COUNT_MUST_MATCH_SEAT_NUMBERS);
+            }
+        }
+        return true;
+    }),
     // pickup_point: allow UUID referencing TripStop OR object with name+lat/lng created at booking time
     (0, express_validator_1.body)('pickup_point')
         .optional()
@@ -153,6 +175,13 @@ exports.createBookingValidation = [
     (0, express_validator_1.body)('pickup.lng')
         .optional()
         .isFloat({ min: -180, max: 180 }).withMessage(validation_keys_1.default.ORIGIN_LONGITUDE_MUST_BE_BETWEEN_180_AND_180),
+    // spec 013: explicit pickup model (stop id or custom point descriptor)
+    (0, express_validator_1.body)('pickup_type')
+        .optional()
+        .isIn(Object.values(constants_1.PICKUP_TYPE)).withMessage(validation_keys_1.default.PICKUP_TYPE_MUST_BE_ONE_OF_STOP_CUSTOM),
+    (0, express_validator_1.body)('pickup_stop_id')
+        .optional()
+        .isUUID().withMessage(validation_keys_1.default.PICKUP_STOP_ID_MUST_BE_A_VALID_UUID),
     (0, express_validator_1.body)('dropoff')
         .optional()
         .isObject().withMessage(validation_keys_1.default.STOPS_MUST_BE_AN_ARRAY),
@@ -188,7 +217,12 @@ exports.createBookingValidation = [
         .isString().trim().isLength({ max: 255 }).withMessage(validation_keys_1.default.DROPOFF_PLACE_MUST_BE_AT_MOST_255_CHARACTERS),
     (0, express_validator_1.body)('dropoff_deadline')
         .optional()
-        .isISO8601().withMessage(validation_keys_1.default.DROPOFF_DEADLINE_MUST_BE_A_VALID_ISO_8601_DATETIME),
+        .isISO8601().withMessage(validation_keys_1.default.DROPOFF_DEADLINE_MUST_BE_A_VALID_ISO_8601_DATETIME)
+        .custom((value) => {
+        if (!(0, time_1.hasTimezoneOffset)(value))
+            throw new Error(validation_keys_1.default.DATETIME_MUST_INCLUDE_TIMEZONE);
+        return true;
+    }),
 ];
 exports.passengerBookingListValidation = [
     (0, express_validator_1.query)('status')

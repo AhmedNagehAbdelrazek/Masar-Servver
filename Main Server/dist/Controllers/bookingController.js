@@ -33,10 +33,11 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.listDelays = exports.reportDelay = exports.getDriverProfile = exports.cancelBooking = exports.getBooking = exports.listMyBookings = exports.createBooking = void 0;
+exports.listDelays = exports.reportDelay = exports.getDriverProfile = exports.editBookingPickup = exports.getBookingRoute = exports.cancelBooking = exports.getBooking = exports.listMyBookings = exports.createBooking = void 0;
 const catchAsync_1 = require("../utils/catchAsync");
 const httpResponse_1 = require("../utils/httpResponse");
 const bookingService = __importStar(require("../Services/bookingService"));
+const tripService = __importStar(require("../Services/tripService"));
 const delayService = __importStar(require("../Services/delayService"));
 const auditService = __importStar(require("../Services/auditService"));
 const createBooking = (0, catchAsync_1.catchAsync)(async (req, res) => {
@@ -76,6 +77,21 @@ const getDriverProfile = (0, catchAsync_1.catchAsync)(async (req, res) => {
     (0, httpResponse_1.successResponse)(res, result);
 });
 exports.getDriverProfile = getDriverProfile;
+const getBookingRoute = (0, catchAsync_1.catchAsync)(async (req, res) => {
+    const authReq = req;
+    const { booking_id } = req.params;
+    const route = await tripService.getBookingRoute(String(authReq.user?.id), String(authReq.user?.role), booking_id);
+    (0, httpResponse_1.successResponse)(res, route);
+});
+exports.getBookingRoute = getBookingRoute;
+const editBookingPickup = (0, catchAsync_1.catchAsync)(async (req, res) => {
+    const authReq = req;
+    const { booking_id } = req.params;
+    const result = await bookingService.editPickup(String(authReq.user?.id), booking_id, req.body);
+    auditService.markResource(res, { type: 'booking', id: result.booking_id });
+    (0, httpResponse_1.successResponse)(res, result);
+});
+exports.editBookingPickup = editBookingPickup;
 const reportDelay = (0, catchAsync_1.catchAsync)(async (req, res) => {
     const authReq = req;
     const { booking_id } = req.params;
@@ -91,5 +107,5 @@ const listDelays = (0, catchAsync_1.catchAsync)(async (req, res) => {
     (0, httpResponse_1.successResponse)(res, result);
 });
 exports.listDelays = listDelays;
-exports.default = { createBooking, listMyBookings, getBooking, cancelBooking, getDriverProfile, reportDelay, listDelays };
+exports.default = { createBooking, listMyBookings, getBooking, cancelBooking, getBookingRoute, editBookingPickup, getDriverProfile, reportDelay, listDelays };
 //# sourceMappingURL=bookingController.js.map

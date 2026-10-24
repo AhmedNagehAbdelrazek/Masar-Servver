@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.TEST_OTP = exports.TEST_PHONES = exports.PAGINATION = exports.ADMIN_ACTIONS = exports.ADMIN_RESOURCES = exports.REQUEST_OFFER_TTL_HOURS = exports.NOTIFICATION_TYPE_LABELS = exports.NOTIFICATION_GROUP_LABELS = exports.NOTIFICATION_CATEGORIES = exports.NOTIFICATION_TYPE = exports.CANCELLATION_ESCALATION = exports.PENALTY_CATEGORY = exports.PENALTY_SEVERITY = exports.MESSAGE_TYPE = exports.SOS_URGENCY = exports.SOS_STATUS = exports.FREE_OFFER_TYPE = exports.VERIFICATION_FIELD_KEYS = exports.VERIFICATION_STATUS = exports.PAYMENT_METHOD_TYPE = exports.PLAN_STATUS = exports.SUBSCRIPTION_STATUS = exports.STOP_TYPE = exports.SUBSCRIPTION_TIER = exports.TICKET_PRIORITY = exports.TICKET_STATUS = exports.PENALTY_TYPES = exports.COMPLAINT_STATUS = exports.REQUEST_OFFER_STATUS = exports.RIDE_REQUEST_STATUS = exports.PAYMENT_STATUS = exports.BOOKING_STATUS = exports.GENDER_PREFERENCE = exports.SEAT_TYPE = exports.TRIP_LIFECYCLE_GRACE_HOURS = exports.TRIP_DURATION_HOURS = exports.TRIP_STATUS = exports.VEHICLE_TYPES = exports.GENDER = exports.USER_STATUS = exports.ROLES = void 0;
+exports.TRACKING = exports.MAPS = exports.PICKUP_STATUS = exports.PICKUP_TYPE = exports.ROUTE_STATUS = exports.TEST_OTP = exports.TEST_PHONES = exports.PAGINATION = exports.ADMIN_ACTIONS = exports.ADMIN_RESOURCES = exports.REQUEST_OFFER_TTL_HOURS = exports.NOTIFICATION_TYPE_LABELS = exports.NOTIFICATION_GROUP_LABELS = exports.NOTIFICATION_CATEGORIES = exports.NOTIFICATION_TYPE = exports.CANCELLATION_ESCALATION = exports.PENALTY_CATEGORY = exports.PENALTY_SEVERITY = exports.MESSAGE_TYPE = exports.SOS_URGENCY = exports.SOS_STATUS = exports.FREE_OFFER_TYPE = exports.VERIFICATION_FIELD_KEYS = exports.VERIFICATION_STATUS = exports.PAYMENT_METHOD_TYPE = exports.PLAN_STATUS = exports.SUBSCRIPTION_STATUS = exports.STOP_TYPE = exports.SUBSCRIPTION_TIER = exports.TICKET_PRIORITY = exports.TICKET_STATUS = exports.PENALTY_TYPES = exports.COMPLAINT_STATUS = exports.REQUEST_OFFER_STATUS = exports.RIDE_REQUEST_STATUS = exports.PAYMENT_STATUS = exports.BOOKING_STATUS = exports.GENDER_PREFERENCE = exports.SEAT_TYPE = exports.TRIP_DURATION_HOURS = exports.TRIP_STATUS = exports.VEHICLE_TYPES = exports.GENDER = exports.USER_STATUS = exports.ROLES = void 0;
 exports.ROLES = {
     PASSENGER: 'passenger',
     DRIVER: 'driver',
@@ -38,12 +38,7 @@ exports.TRIP_STATUS = {
  * cannot publish another trip whose [departure, departure + duration) window
  * overlaps an existing active trip's window.
  */
-exports.TRIP_DURATION_HOURS = 2;
-/**
- * Grace period after a trip's assumed end before the lifecycle job closes it
- * (hours). Lets drivers complete slightly-late trips manually first.
- */
-exports.TRIP_LIFECYCLE_GRACE_HOURS = 1;
+exports.TRIP_DURATION_HOURS = 0;
 exports.SEAT_TYPE = {
     DRIVER: 'driver',
     UNAVAILABLE: 'unavailable',
@@ -201,6 +196,14 @@ exports.NOTIFICATION_TYPE = {
     SUBSCRIPTION_PAYMENT: 'subscription_payment',
     PAYMENT_CONFIRMED: 'payment_confirmed',
     SYSTEM_ANNOUNCEMENT: 'system_announcement',
+    PICKUP_ADDED: 'pickup_added',
+    PICKUP_CHANGED: 'pickup_changed',
+    PICKUP_CANCELLED: 'pickup_cancelled',
+    ROUTE_UPDATED: 'route_updated',
+    DRIVER_NEARBY: 'driver_nearby',
+    DRIVER_ARRIVED: 'driver_arrived',
+    PICKUP_MISSED: 'pickup_missed',
+    NEXT_PICKUP: 'next_pickup',
 };
 // Grouped notification settings categories for the driver settings screen
 // (spec 010). Each category lists its member NOTIFICATION_TYPE values.
@@ -219,6 +222,13 @@ exports.NOTIFICATION_CATEGORIES = {
             exports.NOTIFICATION_TYPE.TRIP_REMINDER,
             exports.NOTIFICATION_TYPE.TRIP_CANCELLED,
             exports.NOTIFICATION_TYPE.DELAY_REPORT,
+            exports.NOTIFICATION_TYPE.PICKUP_ADDED,
+            exports.NOTIFICATION_TYPE.PICKUP_CHANGED,
+            exports.NOTIFICATION_TYPE.PICKUP_CANCELLED,
+            exports.NOTIFICATION_TYPE.ROUTE_UPDATED,
+            exports.NOTIFICATION_TYPE.DRIVER_NEARBY,
+            exports.NOTIFICATION_TYPE.DRIVER_ARRIVED,
+            exports.NOTIFICATION_TYPE.PICKUP_MISSED,
         ],
     },
     subscriptions: {
@@ -242,6 +252,13 @@ exports.NOTIFICATION_GROUP_LABELS = {
         subscription_payment: 'الباقات',
         payment_confirmed: 'اعتماد الدفع',
         subscription_expiring: 'انتهاء الباقة',
+        pickup_added: 'نقطة صعود جديدة',
+        pickup_changed: 'تغيير نقطة الصعود',
+        pickup_cancelled: 'إلغاء نقطة الصعود',
+        route_updated: 'تحديث المسار',
+        driver_nearby: 'السائق قريب',
+        driver_arrived: 'وصل السائق',
+        pickup_missed: 'تفويت الصعود',
     },
     en: {
         booking_confirmed: 'New bookings',
@@ -253,6 +270,13 @@ exports.NOTIFICATION_GROUP_LABELS = {
         subscription_payment: 'Plans',
         payment_confirmed: 'Payment confirmed',
         subscription_expiring: 'Plan expiring',
+        pickup_added: 'New pickup',
+        pickup_changed: 'Pickup changed',
+        pickup_cancelled: 'Pickup cancelled',
+        route_updated: 'Route updated',
+        driver_nearby: 'Driver nearby',
+        driver_arrived: 'Driver arrived',
+        pickup_missed: 'Pickup missed',
     },
 };
 exports.NOTIFICATION_TYPE_LABELS = {
@@ -272,6 +296,14 @@ exports.NOTIFICATION_TYPE_LABELS = {
         subscription_payment: 'الباقات',
         payment_confirmed: 'اعتماد الدفع',
         system_announcement: 'إعلانات النظام',
+        pickup_added: 'نقطة صعود جديدة',
+        pickup_changed: 'تغيير نقطة الصعود',
+        pickup_cancelled: 'إلغاء نقطة الصعود',
+        route_updated: 'تحديث المسار',
+        driver_nearby: 'السائق قريب',
+        driver_arrived: 'وصل السائق',
+        pickup_missed: 'تفويت الصعود',
+        next_pickup: 'الصعود التالي',
     },
     en: {
         booking_confirmed: 'Booking confirmed',
@@ -289,6 +321,14 @@ exports.NOTIFICATION_TYPE_LABELS = {
         subscription_payment: 'Subscription payment',
         payment_confirmed: 'Payment confirmed',
         system_announcement: 'System announcement',
+        pickup_added: 'New pickup',
+        pickup_changed: 'Pickup changed',
+        pickup_cancelled: 'Pickup cancelled',
+        route_updated: 'Route updated',
+        driver_nearby: 'Driver nearby',
+        driver_arrived: 'Driver arrived',
+        pickup_missed: 'Pickup missed',
+        next_pickup: 'Next pickup',
     },
 };
 // How long a ride-request offer stays decidable before it auto-expires.
@@ -304,4 +344,31 @@ exports.PAGINATION = {
 };
 exports.TEST_PHONES = ['+962700000000', '+962711111111'];
 exports.TEST_OTP = '000000';
+// Maps, tracking & journey (spec 013). Platform defaults live in config/maps.ts;
+// these are the allowed enum values — never hardcode the strings elsewhere.
+exports.ROUTE_STATUS = {
+    PENDING: 'pending',
+    READY: 'ready',
+    FAILED: 'failed',
+};
+exports.PICKUP_TYPE = {
+    STOP: 'stop',
+    CUSTOM: 'custom',
+};
+exports.PICKUP_STATUS = {
+    PENDING: 'pending',
+    ARRIVED: 'arrived',
+    PICKED_UP: 'picked_up',
+    MISSED: 'missed',
+};
+exports.MAPS = {
+    REGION_CODE: 'jo',
+    WAYPOINT_LIMIT: 25,
+    NAV_LINK_WAYPOINT_LIMIT: 9,
+};
+exports.TRACKING = {
+    INTERVAL_SECONDS: 5,
+    BATCH_MAX_POINTS: 60,
+    MAX_POINT_AGE_SECONDS: 300,
+};
 //# sourceMappingURL=constants.js.map

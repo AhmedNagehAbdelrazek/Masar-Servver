@@ -7,6 +7,7 @@ exports.cancelTripValidation = exports.updateTripValidation = exports.releaseSea
 const express_validator_1 = require("express-validator");
 const constants_1 = require("../../config/constants");
 const validation_keys_1 = __importDefault(require("../../config/messages/validation-keys"));
+const time_1 = require("../time");
 exports.createTripValidation = [
     (0, express_validator_1.body)('origin_city')
         .trim()
@@ -176,20 +177,16 @@ exports.createTripValidation = [
     (0, express_validator_1.body)('stops.*.stop_order')
         .optional()
         .isInt({ min: 1 }).withMessage(validation_keys_1.default.STOP_ORDER_MUST_BE_A_POSITIVE_INTEGER),
-    (0, express_validator_1.body)('departure_date')
-        .notEmpty().withMessage(validation_keys_1.default.DEPARTURE_DATE_IS_REQUIRED)
-        .isDate().withMessage(validation_keys_1.default.DEPARTURE_DATE_MUST_BE_A_VALID_DATE_YYYY_MM_DD)
-        .custom((value) => {
-        const date = new Date(`${String(value)}T00:00:00`);
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        if (date < today)
-            throw new Error(validation_keys_1.default.DEPARTURE_DATE_MUST_BE_TODAY_OR_IN_THE_FUTURE);
-        return true;
-    }),
     (0, express_validator_1.body)('departure_time')
         .notEmpty().withMessage(validation_keys_1.default.DEPARTURE_TIME_IS_REQUIRED)
-        .matches(/^([01]\d|2[0-3]):([0-5]\d)$/).withMessage(validation_keys_1.default.DEPARTURE_TIME_MUST_BE_IN_HH_MM_FORMAT),
+        .isISO8601().withMessage(validation_keys_1.default.DEPARTURE_TIME_MUST_BE_A_VALID_ISO_8601_DATETIME)
+        .custom((value) => {
+        if (!(0, time_1.hasTimezoneOffset)(value))
+            throw new Error(validation_keys_1.default.DATETIME_MUST_INCLUDE_TIMEZONE);
+        if (new Date(String(value)) <= new Date())
+            throw new Error(validation_keys_1.default.DEPARTURE_TIME_MUST_BE_IN_THE_FUTURE);
+        return true;
+    }),
     (0, express_validator_1.body)('type_of_trip')
         .notEmpty().withMessage(validation_keys_1.default.TRIP_TYPE_IS_REQUIRED)
         .isIn(['once', 'repeated']).withMessage(validation_keys_1.default.TRIP_TYPE_MUST_BE_ONCE_OR_REPEATED),
@@ -208,9 +205,14 @@ exports.createTripValidation = [
         .notEmpty().withMessage(validation_keys_1.default.END_DATE_IS_REQUIRED_FOR_RECURRING_TRIPS)
         .isDate().withMessage(validation_keys_1.default.END_DATE_MUST_BE_A_VALID_DATE)
         .custom((value, { req }) => {
-        const endDate = new Date(`${String(value)}T00:00:00`);
-        const startDate = new Date(`${req.body.departure_date}T00:00:00`);
-        if (endDate <= startDate)
+        // Calendar dates are Jordan days: compare Jordan midnight
+        // against the timezone-aware departure instant.
+        const endDate = new Date(`${String(value)}T00:00:00+03:00`);
+        const departure = new Date(String(req.body.departure_time));
+        if (Number.isNaN(endDate.getTime()) || Number.isNaN(departure.getTime())) {
+            throw new Error(validation_keys_1.default.END_DATE_MUST_BE_A_VALID_DATE);
+        }
+        if (endDate <= departure)
             throw new Error(validation_keys_1.default.END_DATE_MUST_BE_AFTER_DEPARTURE_DATE);
         return true;
     }),
@@ -347,13 +349,20 @@ exports.updateTripValidation = [
         .optional()
         .isISO8601().withMessage(validation_keys_1.default.DEPARTURE_TIME_MUST_BE_A_VALID_ISO_8601_DATETIME)
         .custom((value) => {
+        if (!(0, time_1.hasTimezoneOffset)(value))
+            throw new Error(validation_keys_1.default.DATETIME_MUST_INCLUDE_TIMEZONE);
         if (new Date(String(value)) <= new Date())
             throw new Error(validation_keys_1.default.DEPARTURE_TIME_MUST_BE_IN_THE_FUTURE);
         return true;
     }),
     (0, express_validator_1.body)('arrival_time')
         .optional()
-        .isISO8601().withMessage(validation_keys_1.default.ARRIVAL_TIME_MUST_BE_A_VALID_ISO_8601_DATETIME),
+        .isISO8601().withMessage(validation_keys_1.default.ARRIVAL_TIME_MUST_BE_A_VALID_ISO_8601_DATETIME)
+        .custom((value) => {
+        if (!(0, time_1.hasTimezoneOffset)(value))
+            throw new Error(validation_keys_1.default.DATETIME_MUST_INCLUDE_TIMEZONE);
+        return true;
+    }),
     (0, express_validator_1.body)('gender_preference')
         .optional()
         .isIn(Object.values(constants_1.GENDER_PREFERENCE)).withMessage(validation_keys_1.default.GENDER_PREFERENCE_MUST_BE_ONE_OF_ALL_WOMEN_ONLY_MEN_ONLY),
@@ -405,7 +414,12 @@ exports.updateTripValidation = [
         .isInt({ min: 1 }).withMessage(validation_keys_1.default.STOP_ORDER_MUST_BE_A_POSITIVE_INTEGER),
     (0, express_validator_1.body)('stops.*.estimated_arrival')
         .optional()
-        .isISO8601().withMessage(validation_keys_1.default.ESTIMATED_ARRIVAL_MUST_BE_A_VALID_ISO_8601_DATETIME),
+        .isISO8601().withMessage(validation_keys_1.default.ESTIMATED_ARRIVAL_MUST_BE_A_VALID_ISO_8601_DATETIME)
+        .custom((value) => {
+        if (!(0, time_1.hasTimezoneOffset)(value))
+            throw new Error(validation_keys_1.default.DATETIME_MUST_INCLUDE_TIMEZONE);
+        return true;
+    }),
 ];
 exports.cancelTripValidation = [
     (0, express_validator_1.param)('trip_id').isUUID().withMessage(validation_keys_1.default.TRIP_ID_MUST_BE_A_VALID_UUID),

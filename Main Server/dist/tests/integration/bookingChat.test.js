@@ -114,8 +114,7 @@ beforeEach(async () => {
         .send({
         origin_city: 'Amman',
         destination_city: 'Irbid',
-        departure_date: getFutureDate(1),
-        departure_time: '15:00',
+        departure_time: `${getFutureDate(1)}T15:00:00+03:00`,
         type_of_trip: 'once',
         fare_per_seat: '20.00',
         seats: [
@@ -136,7 +135,7 @@ beforeEach(async () => {
         .set('Authorization', `Bearer ${passenger1Token}`)
         .send({
         trip_id: tripId,
-        seat_number: 2,
+        seat_numbers: [2],
         agreed_fare: '20.00',
     });
     expect(bookingRes.status).toBe(201);

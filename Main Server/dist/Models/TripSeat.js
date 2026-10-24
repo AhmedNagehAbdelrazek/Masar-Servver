@@ -28,6 +28,12 @@ TripSeat.init({
         type: sequelize_1.DataTypes.ENUM(...Object.values(constants_1.SEAT_TYPE)),
         allowNull: false,
     },
+    wasAvailable: {
+        type: sequelize_1.DataTypes.BOOLEAN,
+        field: 'was_available',
+        allowNull: false,
+        defaultValue: false,
+    },
 }, {
     sequelize: database_1.default,
     modelName: 'TripSeat',

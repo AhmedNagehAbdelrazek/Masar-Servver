@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.runTripLifecycle = exports.runDriverStats = exports.runDataRetention = exports.runSosEscalation = exports.runLowBalanceWarning = exports.runExpiryReminder = exports.runExpirySweep = exports.JOBS = void 0;
+exports.runActualPath = exports.runRouteRetry = exports.runTripLifecycle = exports.runDriverStats = exports.runDataRetention = exports.runSosEscalation = exports.runLowBalanceWarning = exports.runExpiryReminder = exports.runExpirySweep = exports.JOBS = void 0;
 exports.startJobs = startJobs;
 const fs_1 = __importDefault(require("fs"));
 const path_1 = __importDefault(require("path"));
@@ -18,6 +18,10 @@ const sosEscalationJob_1 = require("./sosEscalationJob");
 Object.defineProperty(exports, "runSosEscalation", { enumerable: true, get: function () { return sosEscalationJob_1.runSosEscalation; } });
 const dataRetentionJob_1 = require("./dataRetentionJob");
 Object.defineProperty(exports, "runDataRetention", { enumerable: true, get: function () { return dataRetentionJob_1.runDataRetention; } });
+const routeRetryJob_1 = require("./routeRetryJob");
+Object.defineProperty(exports, "runRouteRetry", { enumerable: true, get: function () { return routeRetryJob_1.runRouteRetry; } });
+const actualPathJob_1 = require("./actualPathJob");
+Object.defineProperty(exports, "runActualPath", { enumerable: true, get: function () { return actualPathJob_1.runActualPath; } });
 const driverStatsJob_1 = require("./driverStatsJob");
 Object.defineProperty(exports, "runDriverStats", { enumerable: true, get: function () { return driverStatsJob_1.runDriverStats; } });
 const tripLifecycleJob_1 = require("./tripLifecycleJob");
@@ -42,6 +46,14 @@ const JOBS = {
     dataRetention: {
         schedule: process.env.JOB_DATA_RETENTION_CRON || '0 3 * * *',
         task: dataRetentionJob_1.runDataRetention,
+    },
+    routeRetry: {
+        schedule: process.env.JOB_ROUTE_RETRY_CRON || '*/2 * * * *',
+        task: routeRetryJob_1.runRouteRetry,
+    },
+    actualPath: {
+        schedule: process.env.JOB_PATH_COMPACT_CRON || '*/10 * * * *',
+        task: actualPathJob_1.runActualPath,
     },
     driverStats: {
         schedule: process.env.JOB_DRIVER_STATS_CRON || '0 2 * * *',
@@ -143,7 +155,7 @@ function startJobs() {
     spawnWorker();
     return started;
 }
-exports.default = { startJobs, JOBS, runExpirySweep: expirySweepJob_1.runExpirySweep, runExpiryReminder: expiryReminderJob_1.runExpiryReminder, runLowBalanceWarning: lowBalanceWarningJob_1.runLowBalanceWarning, runSosEscalation: sosEscalationJob_1.runSosEscalation, runDataRetention: dataRetentionJob_1.runDataRetention, runDriverStats: driverStatsJob_1.runDriverStats, runTripLifecycle: tripLifecycleJob_1.runTripLifecycle };
+exports.default = { startJobs, JOBS, runExpirySweep: expirySweepJob_1.runExpirySweep, runExpiryReminder: expiryReminderJob_1.runExpiryReminder, runLowBalanceWarning: lowBalanceWarningJob_1.runLowBalanceWarning, runSosEscalation: sosEscalationJob_1.runSosEscalation, runDataRetention: dataRetentionJob_1.runDataRetention, runDriverStats: driverStatsJob_1.runDriverStats, runTripLifecycle: tripLifecycleJob_1.runTripLifecycle, runRouteRetry: routeRetryJob_1.runRouteRetry, runActualPath: actualPathJob_1.runActualPath };
 module.exports = {
     startJobs,
     JOBS,
@@ -154,5 +166,7 @@ module.exports = {
     runDataRetention: dataRetentionJob_1.runDataRetention,
     runDriverStats: driverStatsJob_1.runDriverStats,
     runTripLifecycle: tripLifecycleJob_1.runTripLifecycle,
+    runRouteRetry: routeRetryJob_1.runRouteRetry,
+    runActualPath: actualPathJob_1.runActualPath,
 };
 //# sourceMappingURL=index.js.map

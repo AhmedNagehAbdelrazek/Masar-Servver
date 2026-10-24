@@ -29,6 +29,7 @@ const redisKeys_1 = require("../utils/redisKeys");
 const redis_1 = require("../config/redis");
 const homeService_1 = __importDefault(require("./homeService"));
 const realtimeService_1 = __importDefault(require("./realtimeService"));
+const time_1 = require("../utils/time");
 const MATCH_WINDOW_BEFORE_MS = 24 * 60 * 60 * 1000;
 const MATCH_WINDOW_AFTER_MS = 2 * 24 * 60 * 60 * 1000;
 const MATCH_LIMIT = 10; // support at least 10 candidates
@@ -183,9 +184,10 @@ async function expireStale() {
     });
 }
 function computeExpiresAt(arrivalDeadline, originTime) {
-    if (arrivalDeadline)
-        return new Date(arrivalDeadline);
-    const base = originTime ? new Date(originTime) : new Date();
+    const deadline = (0, time_1.parseOptionalTimezoneAware)(arrivalDeadline);
+    if (deadline)
+        return deadline;
+    const base = (0, time_1.parseOptionalTimezoneAware)(originTime) || new Date();
     return new Date(base.getTime() + constants_1.REQUEST_OFFER_TTL_HOURS * 60 * 60 * 1000);
 }
 async function createRideRequest(userId, payload) {
@@ -198,12 +200,12 @@ async function createRideRequest(userId, payload) {
         originCity: payload.origin_city,
         originLat: payload.origin_lat !== undefined ? payload.origin_lat : null,
         originLng: payload.origin_lng !== undefined ? payload.origin_lng : null,
-        originTime: payload.origin_time ? new Date(payload.origin_time) : null,
+        originTime: (0, time_1.parseOptionalTimezoneAware)(payload.origin_time),
         destinationPlace: payload.destination_place || payload.destination_city,
         destinationCity: payload.destination_city,
         destinationLat: payload.destination_lat !== undefined ? payload.destination_lat : null,
         destinationLng: payload.destination_lng !== undefined ? payload.destination_lng : null,
-        arrivalDeadline: payload.arrival_deadline ? new Date(payload.arrival_deadline) : null,
+        arrivalDeadline: (0, time_1.parseOptionalTimezoneAware)(payload.arrival_deadline),
         seatsNeeded: payload.seats_needed || 1,
         maxBudget: payload.max_budget !== undefined ? payload.max_budget : null,
         currency: 'JOD',
@@ -299,11 +301,11 @@ async function updateRideRequest(userId, requestId, payload) {
     if (payload.origin_city !== undefined)
         updatable.originCity = payload.origin_city;
     if (payload.origin_time !== undefined)
-        updatable.originTime = payload.origin_time ? new Date(payload.origin_time) : null;
+        updatable.originTime = (0, time_1.parseOptionalTimezoneAware)(payload.origin_time);
     if (payload.destination_city !== undefined)
         updatable.destinationCity = payload.destination_city;
     if (payload.arrival_deadline !== undefined) {
-        updatable.arrivalDeadline = payload.arrival_deadline ? new Date(payload.arrival_deadline) : null;
+        updatable.arrivalDeadline = (0, time_1.parseOptionalTimezoneAware)(payload.arrival_deadline);
     }
     if (payload.seats_needed !== undefined)
         updatable.seatsNeeded = payload.seats_needed;
@@ -610,7 +612,7 @@ async function attachOfferToTrip(driverId, tripId, offerId, payload = {}) {
             agreedFare: offer.agreedFare,
             currency: offer.rideRequest.currency || 'JOD',
             dropoffPlace: payload.dropoff_place || null,
-            dropoffDeadline: payload.dropoff_deadline ? new Date(payload.dropoff_deadline) : null,
+            dropoffDeadline: (0, time_1.parseOptionalTimezoneAware)(payload.dropoff_deadline),
             status: constants_1.BOOKING_STATUS.CONFIRMED,
             paymentStatus: constants_1.PAYMENT_STATUS.PENDING,
             referenceCode,

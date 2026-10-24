@@ -322,7 +322,7 @@ export class AuthService {
   async login(
     phone: string,
     password: string,
-    expectedRole?: string | null,
+    expectedRole: string,
   ): Promise<{ access_token: string; refresh_token: string; user: AuthUserShape }> {
     const user = await this.prisma.user.findFirst({ where: { phone } });
     if (!user) throw unauthorized('INVALID_PHONE_OR_PASSWORD');

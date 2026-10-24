@@ -24,8 +24,7 @@ async function createTripViaApi(extra = {}) {
         .send({
         origin_city: 'Amman',
         destination_city: 'Irbid',
-        departure_date: getFutureDate(1),
-        departure_time: '10:00',
+        departure_time: `${getFutureDate(1)}T10:00:00+03:00`,
         type_of_trip: 'once',
         fare_per_seat: '15.00',
         seats: [
@@ -112,19 +111,37 @@ describe('tripLifecycleJob - stale trip close-out', () => {
         const updated = await Booking.findByPk(booking.id);
         expect(updated.status).toBe(BOOKING_STATUS.NO_SHOW);
     });
-    it('leaves future trips and just-departed trips untouched', async () => {
+    it('leaves future trips untouched but expires just-departed unoperated trips immediately', async () => {
         const futureId = await createTripViaApi();
         const futureBooking = await addConfirmedBooking(futureId);
-        const recentId = await createTripViaApi({ departure_time: '13:00' });
+        const recentId = await createTripViaApi({ departure_time: `${getFutureDate(1)}T13:00:00+03:00` });
         const recentBooking = await addConfirmedBooking(recentId);
         await Trip.update({ departureTime: hoursAgo(1) }, { where: { id: recentId } });
         const result = await runTripLifecycle();
         expect(result.autoCompleted).toEqual([]);
-        expect(result.expiredUnoperated).toEqual([]);
+        expect(result.expiredUnoperated).toEqual([recentId]);
+        expect(result.noShowBookings).toBe(1);
         expect((await Trip.findByPk(futureId)).status).toBe(TRIP_STATUS.PUBLISHED);
-        expect((await Trip.findByPk(recentId)).status).toBe(TRIP_STATUS.PUBLISHED);
         expect((await Booking.findByPk(futureBooking.id)).status).toBe(BOOKING_STATUS.CONFIRMED);
-        expect((await Booking.findByPk(recentBooking.id)).status).toBe(BOOKING_STATUS.CONFIRMED);
+        expect((await Trip.findByPk(recentId)).status).toBe(TRIP_STATUS.CANCELLED);
+        expect((await Booking.findByPk(recentBooking.id)).status).toBe(BOOKING_STATUS.NO_SHOW);
+    });
+    it('leaves started trips within the assumed ride duration untouched', async () => {
+        const tripId = await createTripViaApi();
+        const booking = await addConfirmedBooking(tripId);
+        await Trip.update({ departureTime: hoursAgo(1), status: TRIP_STATUS.IN_PROGRESS }, { where: { id: tripId } });
+        const result = await runTripLifecycle();
+        expect(result.autoCompleted).toEqual([]);
+        expect(result.expiredUnoperated).toEqual([]);
+        expect((await Trip.findByPk(tripId)).status).toBe(TRIP_STATUS.IN_PROGRESS);
+        expect((await Booking.findByPk(booking.id)).status).toBe(BOOKING_STATUS.CONFIRMED);
+    });
+    it('tolerates being invoked with a scheduler context argument', async () => {
+        // node-cron invokes tasks as taskFn(context) — the job must not mistake
+        // that context object for a Date (regression: now.getTime is not a function).
+        await expect(runTripLifecycle({ date: new Date() })).resolves.toMatchObject({ errors: [] });
+        await expect(runTripLifecycle(new Date())).resolves.toMatchObject({ errors: [] });
+        await expect(runTripLifecycle()).resolves.toMatchObject({ errors: [] });
     });
 });
 //# sourceMappingURL=tripLifecycle.test.js.map

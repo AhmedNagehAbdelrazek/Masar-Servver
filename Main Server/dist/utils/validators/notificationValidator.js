@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateGroupedNotificationValidation = exports.updateNotificationSettingsValidation = void 0;
+exports.unregisterDeviceValidation = exports.registerDeviceValidation = exports.updateGroupedNotificationValidation = exports.updateNotificationSettingsValidation = void 0;
 const express_validator_1 = require("express-validator");
 const constants_1 = require("../../config/constants");
 const validation_keys_1 = __importDefault(require("../../config/messages/validation-keys"));
@@ -49,17 +49,41 @@ exports.updateGroupedNotificationValidation = [
         .notEmpty().withMessage(validation_keys_1.default.ENABLED_IS_REQUIRED)
         .isBoolean({ strict: true }).withMessage(validation_keys_1.default.ENABLED_MUST_BE_A_BOOLEAN),
 ];
-const _exported = { updateNotificationSettingsValidation: exports.updateNotificationSettingsValidation, updateGroupedNotificationValidation: exports.updateGroupedNotificationValidation };
+// Push device registration. The FCM token is issued by the client SDK and
+// refreshed on app start, so the register endpoint is called repeatedly.
+exports.registerDeviceValidation = [
+    (0, express_validator_1.body)('fcm_token')
+        .notEmpty().withMessage(validation_keys_1.default.FCM_TOKEN_IS_REQUIRED)
+        .bail()
+        .isString().withMessage(validation_keys_1.default.FCM_TOKEN_MUST_BE_A_STRING)
+        .bail()
+        .trim()
+        .notEmpty().withMessage(validation_keys_1.default.FCM_TOKEN_IS_REQUIRED)
+        .isLength({ max: 4096 }).withMessage(validation_keys_1.default.FCM_TOKEN_MUST_BE_AT_MOST_4096_CHARACTERS),
+];
+exports.unregisterDeviceValidation = [
+    (0, express_validator_1.body)('fcm_token')
+        .optional({ values: 'falsy' })
+        .isString().withMessage(validation_keys_1.default.FCM_TOKEN_MUST_BE_A_STRING)
+        .bail()
+        .trim()
+        .isLength({ max: 4096 }).withMessage(validation_keys_1.default.FCM_TOKEN_MUST_BE_AT_MOST_4096_CHARACTERS),
+];
+const _exported = { updateNotificationSettingsValidation: exports.updateNotificationSettingsValidation, updateGroupedNotificationValidation: exports.updateGroupedNotificationValidation, registerDeviceValidation: exports.registerDeviceValidation, unregisterDeviceValidation: exports.unregisterDeviceValidation };
 exports.default = _exported;
 // CommonJS interop
 // @ts-ignore
 if (typeof module !== 'undefined' && module.exports) {
     // @ts-ignore
-    module.exports = { updateNotificationSettingsValidation: exports.updateNotificationSettingsValidation, updateGroupedNotificationValidation: exports.updateGroupedNotificationValidation };
+    module.exports = { updateNotificationSettingsValidation: exports.updateNotificationSettingsValidation, updateGroupedNotificationValidation: exports.updateGroupedNotificationValidation, registerDeviceValidation: exports.registerDeviceValidation, unregisterDeviceValidation: exports.unregisterDeviceValidation };
     // @ts-ignore
     module.exports.updateNotificationSettingsValidation = exports.updateNotificationSettingsValidation;
     // @ts-ignore
     module.exports.updateGroupedNotificationValidation = exports.updateGroupedNotificationValidation;
+    // @ts-ignore
+    module.exports.registerDeviceValidation = exports.registerDeviceValidation;
+    // @ts-ignore
+    module.exports.unregisterDeviceValidation = exports.unregisterDeviceValidation;
     // @ts-ignore
     module.exports.default = _exported;
 }

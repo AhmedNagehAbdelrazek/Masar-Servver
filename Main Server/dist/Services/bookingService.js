@@ -6,6 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.listForDriver = listForDriver;
 exports.getForDriver = getForDriver;
 exports.createBooking = createBooking;
+exports.editPickup = editPickup;
 exports.listForPassenger = listForPassenger;
 exports.getForPassenger = getForPassenger;
 exports.cancelBooking = cancelBooking;
@@ -21,10 +22,27 @@ const redis_1 = require("../config/redis");
 const seatLock_1 = require("../utils/seatLock");
 const auditService_1 = __importDefault(require("./auditService"));
 const notificationService_1 = __importDefault(require("./notificationService"));
+const pickupService_1 = __importDefault(require("./pickupService"));
+const routeService_1 = __importDefault(require("./routeService"));
+const maps_1 = __importDefault(require("../config/maps"));
 const referenceCode_1 = require("../utils/referenceCode");
 const homeService_1 = __importDefault(require("./homeService"));
 const realtimeService_1 = __importDefault(require("./realtimeService"));
 const constants_1 = require("../config/constants");
+const time_1 = require("../utils/time");
+// Reads must return the CURRENT state, not the last cron run: close out
+// anything already expired before serializing. Lazy-required to avoid a
+// module cycle (tripExpiryService -> tripService).
+async function sweepStaleTrips(tripIds) {
+    try {
+        const { refreshStaleTrips } = require('./tripExpiryService');
+        return await refreshStaleTrips(tripIds);
+    }
+    catch (err) {
+        console.warn('[bookingService] expiry sweep failed:', err.message);
+        return { touched: 0 };
+    }
+}
 function serializeRoutePoints(trip) {
     return (trip.stops || [])
         .slice()
@@ -165,13 +183,20 @@ async function listForDriver(driverId, filters = {}) {
         if (date_to)
             bookingWhere.createdat[sequelize_1.Op.lte] = new Date(new Date(date_to).setHours(23, 59, 59, 999));
     }
+    // Scope to the driver's own trips via tripId (a `where` inside the trip
+    // include pushes the join into the count subquery and breaks ordering by
+    // the trip's departure with pagination).
+    const driverTripIds = (await Models_1.Trip.findAll({ where: { driverId }, attributes: ['id'] })).map((t) => t.id);
+    // Expiry sweep first: a stale trip must read back in its terminal state.
+    await sweepStaleTrips(driverTripIds);
+    bookingWhere.tripId = { [sequelize_1.Op.in]: driverTripIds };
     const { rows, count } = await Models_1.Booking.findAndCountAll({
         where: bookingWhere,
         include: [
-            { model: Models_1.Trip, as: 'trip', where: { driverId }, attributes: ['id', 'originCity', 'originArea', 'originLat', 'originLng', 'destinationCity', 'destinationArea', 'destinationLat', 'destinationLng', 'farePerSeat'], include: [{ model: Models_1.TripStop, as: 'stops' }] },
+            { model: Models_1.Trip, as: 'trip', attributes: ['id', 'originCity', 'originArea', 'originLat', 'originLng', 'destinationCity', 'destinationArea', 'destinationLat', 'destinationLng', 'farePerSeat', 'departureTime', 'status'], include: [{ model: Models_1.TripStop, as: 'stops' }] },
             { model: Models_1.User, as: 'passenger', attributes: ['id', 'fullName', 'phone', 'avgRating'] },
         ],
-        order: [['createdat', 'DESC']],
+        order: [[{ model: Models_1.Trip, as: 'trip' }, 'departureTime', 'ASC']],
         offset,
         limit,
     });
@@ -184,17 +209,22 @@ async function listForDriver(driverId, filters = {}) {
  * Get a single booking on the driver's own trip (contract D4).
  */
 async function getForDriver(driverId, bookingId) {
-    const booking = await Models_1.Booking.findByPk(bookingId, {
+    const fetchBooking = () => Models_1.Booking.findByPk(bookingId, {
         include: [
-            { model: Models_1.Trip, as: 'trip', attributes: ['id', 'driverId', 'originCity', 'originArea', 'originLat', 'originLng', 'destinationCity', 'destinationArea', 'destinationLat', 'destinationLng', 'farePerSeat'], include: [{ model: Models_1.TripStop, as: 'stops' }] },
+            { model: Models_1.Trip, as: 'trip', attributes: ['id', 'driverId', 'originCity', 'originArea', 'originLat', 'originLng', 'destinationCity', 'destinationArea', 'destinationLat', 'destinationLng', 'farePerSeat', 'departureTime', 'status'], include: [{ model: Models_1.TripStop, as: 'stops' }] },
             { model: Models_1.User, as: 'passenger', attributes: ['id', 'fullName', 'phone', 'avgRating'] },
         ],
     });
+    let booking = await fetchBooking();
     if (!booking)
         throw ApiError_1.ApiErrors.notFound('BOOKING_NOT_FOUND');
     if (!booking.trip || booking.trip.driverId !== driverId) {
         throw ApiError_1.ApiErrors.forbidden('YOU_CAN_ONLY_VIEW_BOOKINGS_ON_YOUR_OWN_TRIPS');
     }
+    // Return the post-expiry version when the trip already aged out.
+    const swept = await sweepStaleTrips([booking.tripId]);
+    if (swept.touched > 0)
+        booking = await fetchBooking();
     return { booking: serializeDetail(booking) };
 }
 // ===== PASSENGER-SIDE BOOKING FLOW (spec 009 US1) =====
@@ -214,7 +244,7 @@ async function notifyDriver(trip, template, vars) {
     }
 }
 async function createBooking(passengerId, payload) {
-    const { trip_id, seat_number, seat_numbers, seats, agreed_fare, dropoff_place, dropoff_deadline, drop_off_point, dropoff_point, pickup_point, pick_up_point, pickup, dropoff, } = payload;
+    const { trip_id, seat_numbers, seats, agreed_fare, dropoff_place, dropoff_deadline, drop_off_point, dropoff_point, pickup_point, pick_up_point, pickup, dropoff, } = payload;
     // Raw pickup/dropoff inputs — may be UUID string or object {name, lat, lng}
     const rawPickupInput = pickup_point ?? pick_up_point ?? pickup ?? payload.pickup ?? payload.pickup_point ?? null;
     const rawDropoffInput = drop_off_point ?? dropoff_point ?? dropoff ?? payload.dropoff ?? payload.dropoff_point ?? payload.dropOffPoint ?? null;
@@ -224,33 +254,25 @@ async function createBooking(passengerId, payload) {
     if ([constants_1.USER_STATUS.SUSPENDED, constants_1.USER_STATUS.BANNED].includes(user.status)) {
         throw ApiError_1.ApiErrors.forbidden('ACCOUNT_IS_SUSPENDED_YOU_CANNOT_BOOK_TRIPS');
     }
-    // Locked-seat paths: legacy single `seat_number`, or multi `seat_numbers`.
-    // A locked seat must be consumed here — otherwise the booking only decrements
-    // the counter and the seat row never changes state.
-    const hasSingleSeat = seat_number !== undefined && seat_number !== null;
-    const hasMultiSeats = seat_numbers !== undefined && seat_numbers !== null;
-    if (hasSingleSeat && hasMultiSeats) {
-        throw ApiError_1.ApiErrors.validation('PROVIDE_SEAT_NUMBER_OR_SEAT_NUMBERS_NOT_BOTH');
+    // Unified seat selection: `seat_numbers` is a mandatory list with
+    // 1..N seats. Each seat must be a locked seat held by this passenger —
+    // otherwise the booking only decrements the counter and the seat rows
+    // never change state.
+    if (payload.seat_number !== undefined && payload.seat_number !== null) {
+        throw ApiError_1.ApiErrors.validation('SEAT_NUMBER_DEPRECATED_USE_SEAT_NUMBERS');
     }
-    let lockedSeats = null;
-    if (hasMultiSeats) {
-        const list = Array.isArray(seat_numbers) ? seat_numbers : [seat_numbers];
-        lockedSeats = [...new Set(list.map(Number))];
-        if (lockedSeats.length === 0 || lockedSeats.some((n) => !Number.isInteger(n) || n < 1)) {
-            throw ApiError_1.ApiErrors.validation('SEAT_NUMBERS_MUST_BE_POSITIVE_INTEGERS');
-        }
+    if (seat_numbers === undefined || seat_numbers === null) {
+        throw ApiError_1.ApiErrors.validation('SEAT_NUMBERS_IS_REQUIRED');
     }
-    else if (hasSingleSeat) {
-        lockedSeats = [Number(seat_number)];
-        if (!Number.isInteger(lockedSeats[0]) || lockedSeats[0] < 1) {
-            throw ApiError_1.ApiErrors.validation('SEAT_NUMBER_MUST_BE_A_POSITIVE_INTEGER');
-        }
+    const list = Array.isArray(seat_numbers) ? seat_numbers : [seat_numbers];
+    const lockedSeats = [...new Set(list.map(Number))];
+    if (lockedSeats.length === 0 ||
+        lockedSeats.length !== list.length ||
+        lockedSeats.some((n) => !Number.isInteger(n) || n < 1)) {
+        throw ApiError_1.ApiErrors.validation('SEAT_NUMBERS_MUST_BE_POSITIVE_INTEGERS');
     }
-    const requestedSeats = seats === undefined ? (lockedSeats ? lockedSeats.length : 1) : Number(seats);
-    if (!Number.isInteger(requestedSeats) || requestedSeats < 1) {
-        throw ApiError_1.ApiErrors.validation('SEATS_MUST_BE_POSITIVE_INTEGER');
-    }
-    if (lockedSeats && requestedSeats !== lockedSeats.length) {
+    const requestedSeats = lockedSeats.length;
+    if (seats !== undefined && seats !== null && Number(seats) !== requestedSeats) {
         throw ApiError_1.ApiErrors.validation('SEATS_COUNT_MUST_MATCH_LOCKED_SEAT_NUMBERS');
     }
     const trip = await Models_1.Trip.findByPk(trip_id, {
@@ -340,12 +362,61 @@ async function createBooking(passengerId, payload) {
             }
         }
     }
+    // spec 013: pickup model. Default = trip origin; stop ids auto-accept;
+    // custom points pass the shared distance/detour validator (rejects block booking).
+    let pickupPoint = {
+        pickupType: constants_1.PICKUP_TYPE.CUSTOM,
+        pickupStopId: null,
+        label: trip.originCity,
+        city: trip.originCity,
+        area: trip.originArea || null,
+        lat: trip.originLat != null ? Number(trip.originLat) : null,
+        lng: trip.originLng != null ? Number(trip.originLng) : null,
+        detourSeconds: 0,
+    };
+    if (rawPickupInput != null) {
+        if (isUuid(rawPickupInput)) {
+            const checked = await pickupService_1.default.validatePickup(trip_id, { pickup_type: constants_1.PICKUP_TYPE.STOP, pickup_stop_id: rawPickupInput });
+            const stop = await Models_1.TripStop.findByPk(rawPickupInput);
+            pickupPoint = {
+                pickupType: constants_1.PICKUP_TYPE.STOP,
+                pickupStopId: rawPickupInput,
+                label: checked.point.label || resolvedPickupPlace,
+                city: (stop && stop.city) || null,
+                area: null,
+                lat: checked.point.lat,
+                lng: checked.point.lng,
+                detourSeconds: 0,
+            };
+        }
+        else if (typeof rawPickupInput === 'object') {
+            const checked = await pickupService_1.default.validatePickup(trip_id, {
+                pickup_type: (payload.pickup_type === constants_1.PICKUP_TYPE.STOP ? constants_1.PICKUP_TYPE.STOP : constants_1.PICKUP_TYPE.CUSTOM),
+                pickup_stop_id: payload.pickup_stop_id || null,
+                lat: resolvedPickupLat != null ? Number(resolvedPickupLat) : null,
+                lng: resolvedPickupLng != null ? Number(resolvedPickupLng) : null,
+                pickup_label: resolvedPickupPlace,
+            });
+            if (!checked.accepted)
+                throw ApiError_1.ApiErrors.custom(checked.reason, 422, checked.reason);
+            pickupPoint = {
+                pickupType: constants_1.PICKUP_TYPE.CUSTOM,
+                pickupStopId: null,
+                label: (checked.point && checked.point.label) || resolvedPickupPlace,
+                city: null,
+                area: null,
+                lat: (checked.point && checked.point.lat) ?? (resolvedPickupLat != null ? Number(resolvedPickupLat) : null),
+                lng: (checked.point && checked.point.lng) ?? (resolvedPickupLng != null ? Number(resolvedPickupLng) : null),
+                detourSeconds: checked.detourSeconds,
+            };
+        }
+    }
     // Could the booking be satisfied right now? (re-checked atomically below)
     if (requestedSeats > Number(trip.availableSeats)) {
         throw ApiError_1.ApiErrors.custom('NOT_ENOUGH_AVAILABLE_SEATS_ON_THE_SELECTED_TRIP', 409, 'NOT_ENOUGH_AVAILABLE_SEATS_ON_THE_SELECTED_TRIP');
     }
-    // Locked-seat path uses explicit seat locks + specific seat rows.
-    const hasLockedSeats = lockedSeats !== null && lockedSeats.length > 0;
+    // Mandatory locked-seat path: explicit seat locks + specific seat rows.
+    const hasLockedSeats = true;
     let seatRows = [];
     if (hasLockedSeats) {
         for (const n of lockedSeats) {
@@ -389,15 +460,22 @@ async function createBooking(passengerId, payload) {
             seatsBooked: requestedSeats,
             agreedFare: agreed_fare,
             currency: 'JOD',
-            pickupPlace: resolvedPickupPlace,
-            pickupLat: resolvedPickupLat,
-            pickupLng: resolvedPickupLng,
+            pickupPlace: resolvedPickupPlace ?? pickupPoint.label,
+            pickupLat: resolvedPickupLat ?? pickupPoint.lat,
+            pickupLng: resolvedPickupLng ?? pickupPoint.lng,
             pickupOrder: resolvedPickupOrder,
+            pickupType: pickupPoint.pickupType,
+            pickupStopId: pickupPoint.pickupStopId,
+            pickupLabel: pickupPoint.label,
+            pickupCity: pickupPoint.city,
+            pickupArea: pickupPoint.area,
+            detourSeconds: pickupPoint.detourSeconds,
+            pickupStatus: constants_1.PICKUP_STATUS.PENDING,
             dropoffPlace: resolvedDropoffPlace,
             dropoffLat: resolvedDropoffLat,
             dropoffLng: resolvedDropoffLng,
             dropoffOrder: resolvedDropoffOrder,
-            dropoffDeadline: dropoff_deadline ? new Date(dropoff_deadline) : null,
+            dropoffDeadline: (0, time_1.parseOptionalTimezoneAware)(dropoff_deadline),
             status: constants_1.BOOKING_STATUS.CONFIRMED,
             paymentStatus: constants_1.PAYMENT_STATUS.PENDING,
             referenceCode,
@@ -454,8 +532,7 @@ async function createBooking(passengerId, payload) {
     }
     const routeLabel = `${trip.originCity} - ${trip.destinationCity}`;
     await Promise.allSettled([
-        notificationService_1.default.sendToUser(user, 'BOOKING_CONFIRMED_PASSENGER', {
-            channels: ['in_app', 'push'],
+        notificationService_1.default.sendToUser(user, 'BOOKING_CONFIRMED_PASSENGER', { channels: ['in_app', 'push'],
             vars: {
                 reference_code: booking.referenceCode,
                 origin: trip.originCity,
@@ -470,6 +547,28 @@ async function createBooking(passengerId, payload) {
             route: routeLabel,
         }),
     ]);
+    // spec 013: route recompute is best-effort AFTER the booking succeeded (O8).
+    // Driver learns the new pickup; live viewers refetch on route_updated.
+    try {
+        const recomputed = await routeService_1.default.computeTripRoute(trip_id);
+        if (recomputed.ok) {
+            try {
+                realtimeService_1.default.emitToRoom(`trip:${trip_id}`, 'tracking:route_updated', { route_version: recomputed.routeVersion });
+            }
+            catch (_err) {
+                // socket layer offline (e.g. tests) — ignore
+            }
+        }
+    }
+    catch (err) {
+        console.warn('[bookingService] post-booking recompute failed:', err.message);
+    }
+    try {
+        await notifyDriver(trip, 'PICKUP_ADDED', { passenger: user.fullName, route: routeLabel });
+    }
+    catch (err) {
+        console.warn('[bookingService] pickup_added notification failed:', err.message);
+    }
     const fullTrip = await Models_1.Trip.findByPk(trip_id, {
         include: [
             { model: Models_1.User, as: 'driver', attributes: ['id', 'fullName', 'phone', 'avgRating', 'avatarUrl'] },
@@ -510,6 +609,8 @@ function serializePassengerDetail(booking, trip, passenger) {
                 origin: trip.originCity,
                 destination: trip.destinationCity,
                 price: Number(trip.farePerSeat),
+                status: trip.status,
+                departure_time: trip.departureTime,
                 ...tripLocationData(trip),
             }
             : null,
@@ -536,9 +637,52 @@ function serializePassengerDetail(booking, trip, passenger) {
         passenger_rating: ratingRow ? Number(ratingRow.stars) : null,
     };
 }
+// Bring active bookings in line with their trip's terminal state so reads
+// return the CURRENT status, not a stale snapshot. Runs after the expiry
+// sweep (which handles time-based close-out) and covers drift where the
+// trip was driver-cancelled/completed but a booking row missed the update.
+// Terminal bookings are never touched; NO_SHOW rows (expiry path) are kept.
+async function syncBookingsWithTripStatus(passengerId) {
+    const active = await Models_1.Booking.findAll({
+        where: { passengerId, status: { [sequelize_1.Op.in]: [constants_1.BOOKING_STATUS.PENDING, constants_1.BOOKING_STATUS.CONFIRMED] } },
+        include: [{ model: Models_1.Trip, as: 'trip', attributes: ['id', 'driverId', 'status'] }],
+    });
+    for (const booking of active) {
+        const tripStatus = booking.trip && booking.trip.status;
+        try {
+            if (tripStatus === constants_1.TRIP_STATUS.CANCELLED) {
+                await booking.update({
+                    status: constants_1.BOOKING_STATUS.CANCELLED,
+                    cancellationReason: booking.cancellationReason || 'Trip cancelled by driver',
+                    cancelledBy: booking.cancelledBy || (booking.trip ? booking.trip.driverId : null),
+                    cancelledAt: booking.cancelledAt || new Date(),
+                });
+            }
+            else if (tripStatus === constants_1.TRIP_STATUS.COMPLETED) {
+                await booking.update({
+                    status: constants_1.BOOKING_STATUS.COMPLETED,
+                    paymentStatus: booking.paymentStatus === constants_1.PAYMENT_STATUS.PENDING ? 'paid_cash' : booking.paymentStatus,
+                    completedAt: booking.completedAt || new Date(),
+                });
+            }
+        }
+        catch (err) {
+            console.warn('[bookingService] booking status sync failed:', err.message);
+        }
+    }
+}
 async function listForPassenger(passengerId, filters = {}) {
     const { status, trip_id } = filters;
     const { page, limit, offset } = (0, pagination_1.parsePagination)(filters);
+    // Expiry sweep first: a stale trip must read back in its terminal state.
+    const liveTripIds = (await Models_1.Booking.findAll({
+        where: { passengerId, status: { [sequelize_1.Op.in]: [constants_1.BOOKING_STATUS.PENDING, constants_1.BOOKING_STATUS.CONFIRMED] } },
+        attributes: ['tripId'],
+    })).map((b) => b.tripId);
+    await sweepStaleTrips(liveTripIds);
+    // Then reconcile any drift vs the trip's current status BEFORE filtering,
+    // so `?status=` sees the fresh values.
+    await syncBookingsWithTripStatus(passengerId);
     const where = { passengerId };
     if (status)
         where.status = status;
@@ -550,7 +694,7 @@ async function listForPassenger(passengerId, filters = {}) {
             {
                 model: Models_1.Trip,
                 as: 'trip',
-                attributes: ['id', 'driverId', 'originCity', 'originArea', 'originLat', 'departureTime', 'originLng', 'destinationCity', 'destinationArea', 'destinationLat', 'destinationLng', 'farePerSeat'],
+                attributes: ['id', 'driverId', 'originCity', 'originArea', 'originLat', 'departureTime', 'originLng', 'destinationCity', 'destinationArea', 'destinationLat', 'destinationLng', 'farePerSeat', 'status'],
                 include: [
                     { model: Models_1.User, as: 'driver', attributes: ['id', 'fullName', 'phone', 'avgRating', 'avatarUrl'] },
                     { model: Models_1.TripStop, as: 'stops' },
@@ -559,7 +703,7 @@ async function listForPassenger(passengerId, filters = {}) {
             },
             { model: Models_1.Rating, as: 'ratings', attributes: ['stars'], where: { raterId: passengerId }, required: false },
         ],
-        order: [['createdat', 'DESC']],
+        order: [[{ model: Models_1.Trip, as: 'trip' }, 'departureTime', 'ASC']],
         offset,
         limit,
     });
@@ -569,12 +713,12 @@ async function listForPassenger(passengerId, filters = {}) {
     };
 }
 async function getForPassenger(passengerId, bookingId) {
-    const booking = await Models_1.Booking.findByPk(bookingId, {
+    const fetchBooking = () => Models_1.Booking.findByPk(bookingId, {
         include: [
             {
                 model: Models_1.Trip,
                 as: 'trip',
-                attributes: ['id', 'driverId', 'originCity', 'originArea', 'originLat', 'originLng', 'destinationCity', 'destinationArea', 'destinationLat', 'destinationLng', 'farePerSeat'],
+                attributes: ['id', 'driverId', 'originCity', 'originArea', 'originLat', 'originLng', 'destinationCity', 'destinationArea', 'destinationLat', 'destinationLng', 'farePerSeat', 'departureTime', 'status'],
                 include: [
                     { model: Models_1.User, as: 'driver', attributes: ['id', 'fullName', 'phone', 'avgRating', 'avatarUrl'] },
                     { model: Models_1.TripStop, as: 'stops' },
@@ -585,11 +729,19 @@ async function getForPassenger(passengerId, bookingId) {
             { model: Models_1.Rating, as: 'ratings', attributes: ['stars'], where: { raterId: passengerId }, required: false },
         ],
     });
+    let booking = await fetchBooking();
     if (!booking)
         throw ApiError_1.ApiErrors.notFound('BOOKING_NOT_FOUND');
     if (booking.passengerId !== passengerId) {
         throw ApiError_1.ApiErrors.forbidden('YOU_CAN_ONLY_VIEW_YOUR_OWN_BOOKINGS');
     }
+    // Return the post-expiry version when the trip already aged out.
+    const swept = await sweepStaleTrips([booking.tripId]);
+    if (swept.touched > 0)
+        booking = await fetchBooking();
+    // Reconcile drift vs the trip's terminal state (cancelled/completed).
+    await syncBookingsWithTripStatus(passengerId);
+    booking = await fetchBooking();
     return { booking: serializePassengerDetail(booking, booking.trip, booking.passenger) };
 }
 async function cancelBooking(passengerId, bookingId) {
@@ -687,8 +839,111 @@ async function cancelBooking(passengerId, bookingId) {
         seat_numbers: booking.seatNumbers || (booking.seatNumber != null ? [booking.seatNumber] : []),
         route: `${booking.trip.originCity} - ${booking.trip.destinationCity}`,
     });
+    // spec 013 (O2): after departure only the pickup is skipped — no re-routing.
+    // Before departure, recompute best-effort and tell the driver + room.
+    if ([constants_1.TRIP_STATUS.IN_PROGRESS, constants_1.TRIP_STATUS.ONGOING].includes(booking.trip.status)) {
+        try {
+            await notifyDriver(booking.trip, 'PICKUP_CANCELLED', { route: `${booking.trip.originCity} - ${booking.trip.destinationCity}` });
+        }
+        catch (err) {
+            console.warn('[bookingService] pickup_cancelled notification failed:', err.message);
+        }
+    }
+    else {
+        try {
+            const recomputed = await routeService_1.default.computeTripRoute(booking.tripId);
+            if (recomputed.ok) {
+                try {
+                    realtimeService_1.default.emitToRoom(`trip:${booking.tripId}`, 'tracking:route_updated', { route_version: recomputed.routeVersion });
+                }
+                catch (_err) {
+                    // socket layer offline (e.g. tests) — ignore
+                }
+            }
+        }
+        catch (err) {
+            console.warn('[bookingService] post-cancel recompute failed:', err.message);
+        }
+        try {
+            await notifyDriver(booking.trip, 'PICKUP_CANCELLED', { route: `${booking.trip.originCity} - ${booking.trip.destinationCity}` });
+        }
+        catch (err) {
+            console.warn('[bookingService] pickup_cancelled notification failed:', err.message);
+        }
+    }
     await homeService_1.default.invalidateHomeForTrip(booking.tripId, booking.trip.driverId);
     return { booking: { id: booking.id, status: booking.status, cancelled_at: booking.cancelledAt } };
+}
+/**
+ * Passenger changes their pickup before the cutoff (API10). Same shared
+ * validation as booking; recompute + driver notify are best-effort.
+ */
+async function editPickup(passengerId, bookingId, input) {
+    const booking = await Models_1.Booking.findByPk(bookingId, {
+        include: [{ model: Models_1.Trip, as: 'trip' }],
+    });
+    if (!booking)
+        throw ApiError_1.ApiErrors.notFound('BOOKING_NOT_FOUND');
+    if (booking.passengerId !== passengerId)
+        throw ApiError_1.ApiErrors.forbidden('YOU_CAN_ONLY_EDIT_YOUR_OWN_BOOKINGS');
+    if (booking.status !== constants_1.BOOKING_STATUS.CONFIRMED)
+        throw ApiError_1.ApiErrors.conflict('BOOKING_IS_NOT_CONFIRMED');
+    pickupService_1.default.assertBookable(booking.trip);
+    const cutoffMs = maps_1.default.pickupEditCutoffMinutes * 60 * 1000;
+    if (new Date(booking.trip.departureTime).getTime() - Date.now() < cutoffMs) {
+        throw ApiError_1.ApiErrors.custom('PICKUP_EDIT_CUTOFF_PASSED', 422, 'PICKUP_EDIT_CUTOFF_PASSED');
+    }
+    const type = (input && input.pickup_type) || (input && input.pickup_stop_id ? constants_1.PICKUP_TYPE.STOP : constants_1.PICKUP_TYPE.CUSTOM);
+    const checked = await pickupService_1.default.validatePickup(booking.tripId, {
+        pickup_type: type,
+        pickup_stop_id: (input && input.pickup_stop_id) || null,
+        lat: input && input.lat != null ? Number(input.lat) : null,
+        lng: input && input.lng != null ? Number(input.lng) : null,
+        pickup_label: input && (input.pickup_label || input.label),
+    }, {});
+    if (!checked.accepted)
+        throw ApiError_1.ApiErrors.custom(checked.reason, 422, checked.reason);
+    await booking.update({
+        pickupType: type,
+        pickupStopId: (checked.point && checked.point.pickupStopId) || null,
+        pickupLabel: (checked.point && checked.point.label) || null,
+        pickupLat: checked.point.lat,
+        pickupLng: checked.point.lng,
+        detourSeconds: checked.detourSeconds,
+        pickupStatus: constants_1.PICKUP_STATUS.PENDING,
+        arrivedAt: null,
+        pickedUpAt: null,
+    });
+    try {
+        const out = await routeService_1.default.computeTripRoute(booking.tripId);
+        if (out.ok) {
+            try {
+                realtimeService_1.default.emitToRoom(`trip:${booking.tripId}`, 'tracking:route_updated', { route_version: out.routeVersion });
+            }
+            catch (_err) {
+                // socket layer offline (e.g. tests) — ignore
+            }
+        }
+    }
+    catch (err) {
+        console.warn('[bookingService] pickup-edit recompute failed:', err.message);
+    }
+    try {
+        const driver = await Models_1.User.findByPk(booking.trip.driverId);
+        const passenger = await Models_1.User.findByPk(passengerId, { attributes: ['fullName'] });
+        if (driver) {
+            await notificationService_1.default.sendToUser(driver, 'PICKUP_CHANGED', {
+                channels: ['in_app', 'push'],
+                vars: { passenger: (passenger && passenger.fullName) || 'A passenger', route: `${booking.trip.originCity} - ${booking.trip.destinationCity}` },
+                data: { trip_id: booking.tripId, booking_id: booking.id },
+            });
+        }
+    }
+    catch (err) {
+        console.warn('[bookingService] pickup_changed notification failed:', err.message);
+    }
+    auditService_1.default.track({ action: 'booking.pickup_changed', resourceType: 'booking', resourceId: booking.id, actorId: passengerId, actorType: 'passenger', payload: { trip_id: booking.tripId } });
+    return { booking_id: booking.id, pickup_type: type, detour_seconds: checked.detourSeconds };
 }
 /**
  * Driver reveal for a confirmed booking (spec 012 US5). Only the booking's
@@ -759,6 +1014,6 @@ async function getDriverReveal(requesterId, requesterRole, bookingId) {
         },
     };
 }
-module.exports = { listForDriver, getForDriver, createBooking, listForPassenger, getForPassenger, cancelBooking, getDriverReveal };
+module.exports = { listForDriver, getForDriver, createBooking, editPickup, listForPassenger, getForPassenger, cancelBooking, getDriverReveal };
 exports.default = module.exports;
 //# sourceMappingURL=bookingService.js.map

@@ -63,6 +63,7 @@ DriverProfile.init({
     },
     nationalID: {
         type: sequelize_1.DataTypes.STRING(30),
+        field: 'national_id',
         allowNull: true,
     },
     idVerified: {

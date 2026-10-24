@@ -5,6 +5,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.completeTrip = exports.startTrip = exports.getAvailableTrips = exports.getDriverTrips = exports.getTripSeats = exports.getTripOptions = exports.getTripById = exports.createTrip = void 0;
 exports.updateTrip = updateTrip;
+exports.replaceTripStops = replaceTripStops;
+exports.getTripRoute = getTripRoute;
+exports.setPickupStatus = setPickupStatus;
+exports.getBookingRoute = getBookingRoute;
+exports.getTripActual = getTripActual;
 exports.cancelTrip = cancelTrip;
 exports.cancelTripWithPenalty = cancelTripWithPenalty;
 exports.getTripAttributes = getTripAttributes;
@@ -15,10 +20,14 @@ const ApiError_1 = require("../utils/ApiError");
 const constants_1 = require("../config/constants");
 const commissionService_1 = __importDefault(require("./commissionService"));
 const notificationService_1 = __importDefault(require("./notificationService"));
+const realtimeService_1 = __importDefault(require("./realtimeService"));
+const routeService_1 = __importDefault(require("./routeService"));
+const maps_1 = __importDefault(require("../config/maps"));
 const seatLock_1 = require("../utils/seatLock");
 const homeService_1 = __importDefault(require("./homeService"));
 const seatSerializer_1 = require("../utils/seatSerializer");
 const auditService_1 = __importDefault(require("./auditService"));
+const time_1 = require("../utils/time");
 const freeTrips_1 = require("../utils/freeTrips");
 const Models_1 = require("../Models");
 /**
@@ -143,13 +152,12 @@ function windowsOverlap(aStart, aEnd, bStart, bEnd) {
         && new Date(bStart).getTime() < new Date(aEnd).getTime();
 }
 function dateOnly(d) {
-    const x = new Date(d);
-    x.setHours(0, 0, 0, 0);
-    return x;
+    // Jordan calendar day (midnight Asia/Amman) — never server-local.
+    return (0, time_1.jordanDateOnly)(d);
 }
 function minutesOfDay(d) {
-    const dt = new Date(d);
-    return dt.getHours() * 60 + dt.getMinutes();
+    // Wall-clock minutes in Jordan for time-of-day comparisons.
+    return (0, time_1.jordanMinutesOfDay)(d);
 }
 function timeWindowsOverlap(aStartMin, bStartMin) {
     const durationMin = constants_1.TRIP_DURATION_HOURS * 60;
@@ -171,7 +179,7 @@ function sharedWeekdayOccurs(rangeStart, rangeEnd, weekdays) {
         return true;
     const cursor = new Date(start);
     for (let i = 0; i <= spanDays; i++) {
-        if (weekdays.includes(cursor.getDay()))
+        if (weekdays.includes((0, time_1.jordanWeekday)(cursor)))
             return true;
         cursor.setDate(cursor.getDate() + 1);
     }
@@ -215,7 +223,7 @@ async function assertNoOverlappingTrip(driverId, { departureTime, isRecurring, r
     const candidate = {
         departureTime: newStart,
         recurrenceDays: isRecurring ? (recurrenceDays || []) : null,
-        recurrenceEndDate: isRecurring && recurrenceEndDate ? new Date(recurrenceEndDate) : null,
+        recurrenceEndDate: isRecurring ? (0, time_1.parseJordanDateOrInstant)(recurrenceEndDate) : null,
     };
     for (const t of existing) {
         const curStart = new Date(t.departureTime);
@@ -276,8 +284,9 @@ const createTrip = async (driverId, data) => {
     if (driverSeats.length !== 1) {
         throw ApiError_1.ApiErrors.validation('EXACTLY_ONE_SEAT_MUST_BE_MARKED_AS_DRIVER');
     }
-    // Validate departure time is in the future
-    const departureDateTime = new Date(`${data.departure_date}T${data.departure_time}`);
+    // Departure is a single timezone-aware ISO-8601 instant
+    // (e.g. 2026-09-15T06:00:00+03:00). Naive datetimes are rejected.
+    const departureDateTime = (0, time_1.parseTimezoneAware)(data.departure_time);
     if (departureDateTime <= new Date()) {
         throw ApiError_1.ApiErrors.validation('DEPARTURE_TIME_MUST_BE_IN_THE_FUTURE');
     }
@@ -290,7 +299,7 @@ const createTrip = async (driverId, data) => {
         throw ApiError_1.ApiErrors.validation('END_DATE_IS_REQUIRED_FOR_RECURRING_TRIPS');
     }
     if (isRecurring) {
-        const endDate = new Date(data.repeated_end_date);
+        const endDate = (0, time_1.parseJordanDateOnly)(data.repeated_end_date);
         if (endDate <= departureDateTime) {
             throw ApiError_1.ApiErrors.validation('END_DATE_MUST_BE_AFTER_DEPARTURE_DATE');
         }
@@ -322,19 +331,22 @@ const createTrip = async (driverId, data) => {
         totalSeats: vehicle.seats,
         availableSeats: availableSeats.length,
         farePerSeat: data.fare_per_seat,
+        totalProfit: Number(data.fare_per_seat) * availableSeats.length,
         isRecurring,
         recurrenceDays: isRecurring ? data.repeated_days : null,
-        recurrenceEndDate: isRecurring ? data.repeated_end_date : null,
+        recurrenceEndDate: isRecurring ? (0, time_1.parseJordanDateOnly)(data.repeated_end_date) : null,
         genderPreference: data.allowed_type || constants_1.GENDER_PREFERENCE.ALL,
         driverInstructions: data.instructions || null,
         additionalInstructions: data.additional_instructions || null,
         status: constants_1.TRIP_STATUS.PUBLISHED,
     });
-    // Create seat configurations
+    // Create seat configurations. wasAvailable freezes the driver's
+    // designation so a booked seat still reads back as originally available.
     const seatRecords = data.seats.map((s) => ({
         tripId: trip.id,
         seatNumber: s.seat_number,
         seatType: s.type,
+        wasAvailable: s.type === constants_1.SEAT_TYPE.AVAILABLE,
     }));
     await Models_1.TripSeat.bulkCreate(seatRecords);
     // Create stops / waypoints including dedicated pickup and dropoff points (each with name + lat/lng)
@@ -392,6 +404,14 @@ const createTrip = async (driverId, data) => {
         stopRecords.forEach((r, idx) => { r.stopOrder = idx + 1; });
         await Models_1.TripStop.bulkCreate(stopRecords);
     }
+    // spec 013: best-effort route compute — failure marks route_status=failed and
+    // never blocks publish (O8). computeTripRoute never throws for provider errors.
+    try {
+        await routeService_1.default.computeTripRoute(trip.id);
+    }
+    catch (err) {
+        console.warn('[tripService] route compute failed:', err.message);
+    }
     trackTripMutation({
         action: 'trip.created',
         driverId,
@@ -412,6 +432,7 @@ const createTrip = async (driverId, data) => {
         total_seats: trip.totalSeats,
         available_seats: trip.availableSeats,
         estimated_earnings: trip.availableSeats * trip.farePerSeat,
+        total_profit: Number(trip.totalProfit),
         message: 'TRIP_PUBLISHED_SUCCESSFULLY',
     };
 };
@@ -436,6 +457,16 @@ function trackTripMutation({ action, driverId, tripId, payload = {} }) {
  * passengers + admins.
  */
 const getTripById = async (tripId) => {
+    // Reads return the current state: close out the trip first when it already
+    // aged past the lifecycle cutoff. Lazy-required to avoid a module cycle
+    // (tripExpiryService -> tripService).
+    try {
+        const { refreshStaleTrips } = require('./tripExpiryService');
+        await refreshStaleTrips([tripId]);
+    }
+    catch (err) {
+        console.warn('[tripService] expiry sweep failed:', err.message);
+    }
     const trip = await Models_1.Trip.findByPk(tripId, {
         include: [
             {
@@ -505,6 +536,7 @@ const getTripById = async (tripId) => {
         },
         departure_time: data.departureTime,
         fare_per_seat: Number(data.farePerSeat),
+        total_profit: Number(data.totalProfit) || 0,
         currency: data.currency || 'JOD',
         total_seats: data.totalSeats,
         available_seats: data.availableSeats,
@@ -560,6 +592,7 @@ const getTripById = async (tripId) => {
     delete data.destinationLat;
     delete data.destinationLng;
     delete data.farePerSeat;
+    delete data.totalProfit;
     delete data.totalSeats;
     delete data.availableSeats;
     delete data.genderPreference;
@@ -653,6 +686,7 @@ const getTripSeats = async (tripId) => {
         return {
             seat_number: s.seatNumber,
             seat_type: s.seatType,
+            was_available: Boolean(s.wasAvailable),
             is_available: s.seatType === 'available' && !locked,
             is_locked: locked,
             locked_by: lockedBy,
@@ -678,10 +712,26 @@ exports.getTripSeats = getTripSeats;
  * Get trips for a driver (contract D-list). Each trip is serialized with its
  * current lifecycle `status` included.
  */
-const getDriverTrips = async (driverId, status = null) => {
+const getDriverTrips = async (driverId, status) => {
     const where = { driverId };
     if (status)
         where.status = status;
+    // Reads return the current state: close out anything already expired first.
+    try {
+        const liveIds = (await Models_1.Trip.findAll({
+            where: {
+                driverId,
+                isRecurring: false,
+                status: { [sequelize_1.Op.in]: [constants_1.TRIP_STATUS.PUBLISHED, constants_1.TRIP_STATUS.FULL, constants_1.TRIP_STATUS.IN_PROGRESS, constants_1.TRIP_STATUS.ONGOING] },
+            },
+            attributes: ['id'],
+        })).map((t) => t.id);
+        const { refreshStaleTrips } = require('./tripExpiryService');
+        await refreshStaleTrips(liveIds);
+    }
+    catch (err) {
+        console.warn('[tripService] expiry sweep failed:', err.message);
+    }
     const trips = await Models_1.Trip.findAll({
         where,
         include: [
@@ -699,6 +749,7 @@ const getDriverTrips = async (driverId, status = null) => {
         departure_time: trip.departureTime,
         arrival_time: trip.arrivalTime,
         fare_per_seat: Number(trip.farePerSeat),
+        total_profit: Number(trip.totalProfit) || 0,
         currency: trip.currency || 'JOD',
         total_seats: trip.totalSeats,
         available_seats: trip.availableSeats,
@@ -712,6 +763,7 @@ const getDriverTrips = async (driverId, status = null) => {
         seats: (trip.seats || []).map((s) => ({
             seat_number: s.seatNumber,
             seat_type: s.seatType,
+            was_available: Boolean(s.wasAvailable),
         })),
         waypoints: (trip.stops || []).map((s) => ({
             stop_name: s.stopName,
@@ -739,9 +791,10 @@ async function fetchTripsForDate({ targetDate, originCity, destinationCity, gend
     let qd = null;
     let dayStart = null;
     if (hasDate) {
-        qd = new Date(targetDate);
-        dayStart = new Date(qd);
-        dayStart.setHours(0, 0, 0, 0);
+        // Jordan calendar day: date-only input means Jordan midnight; a full
+        // timezone-aware datetime is floored to its Jordan day.
+        qd = (0, time_1.parseJordanDayStart)(targetDate);
+        dayStart = (0, time_1.jordanDateOnly)(qd);
     }
     const where = {
         status: constants_1.TRIP_STATUS.PUBLISHED,
@@ -786,7 +839,7 @@ async function fetchTripsForDate({ targetDate, originCity, destinationCity, gend
                         {
                             [sequelize_1.Op.or]: [
                                 { departureTime: { [sequelize_1.Op.gte]: dayStart } },
-                                { recurrenceDays: { [sequelize_1.Op.contains]: [dayStart.getDay()] } },
+                                { recurrenceDays: { [sequelize_1.Op.contains]: [(0, time_1.jordanWeekday)(dayStart)] } },
                             ],
                         },
                     ],
@@ -838,21 +891,58 @@ async function fetchTripsForDate({ targetDate, originCity, destinationCity, gend
         include,
         order: [['departure_time', 'ASC']],
     });
-    // Post-filter time window as time-of-day (applies with or without a date:
-    // with a date the results span that date + all future days, so an absolute
-    // single-day datetime range would wrongly exclude every later trip)
+    // Time-window semantics (Jordan wall-clock; `date` — or today when omitted
+    // — anchors the day):
+    // - from only: departures at/after <anchor day @ from> — the searched date
+    //   and everything after it — nearest future first.
+    // - to only: departures between NOW and <anchor day @ to>.
+    // - both: departures whose time-of-day falls in [from, to] across the whole
+    //   range, closest to `from` at the top.
+    // Recurring series repeat on later days, so they are matched on time-of-day.
     if (timeFrom || timeTo) {
         const parseMinutes = (t) => {
             const [h, m] = t.split(':').map(Number);
             return h * 60 + m;
         };
-        const fromMin = timeFrom ? parseMinutes(timeFrom) : 0;
-        const toMin = timeTo ? parseMinutes(timeTo) : 23 * 60 + 59;
-        trips = trips.filter((trip) => {
-            const dt = new Date(trip.departureTime);
-            const minutes = dt.getHours() * 60 + dt.getMinutes();
-            return minutes >= fromMin && minutes <= toMin;
-        });
+        const fromMin = timeFrom ? parseMinutes(timeFrom) : null;
+        const toMin = timeTo ? parseMinutes(timeTo) : null;
+        const anchorStartMs = (hasDate ? dayStart : (0, time_1.jordanStartOfToday)()).getTime();
+        const byDepartureAsc = (a, b) => new Date(a.departureTime).getTime() - new Date(b.departureTime).getTime();
+        if (fromMin !== null && toMin === null) {
+            const cutoff = Math.max(anchorStartMs + fromMin * 60000, now.getTime());
+            trips = trips
+                .filter((trip) => {
+                if (trip.isRecurring)
+                    return (0, time_1.jordanMinutesOfDay)(trip.departureTime) >= fromMin;
+                return new Date(trip.departureTime).getTime() >= cutoff;
+            })
+                .sort(byDepartureAsc);
+        }
+        else if (fromMin === null && toMin !== null) {
+            const upper = anchorStartMs + toMin * 60000;
+            trips = trips
+                .filter((trip) => {
+                if (trip.isRecurring)
+                    return (0, time_1.jordanMinutesOfDay)(trip.departureTime) <= toMin;
+                const ms = new Date(trip.departureTime).getTime();
+                return ms > now.getTime() && ms <= upper;
+            })
+                .sort(byDepartureAsc);
+        }
+        else {
+            // Both bounds: time-of-day window across the whole range. Every
+            // in-window trip departs at/after <anchor day @ from>, so sorting by
+            // absolute distance to the window start is departure order — the trip
+            // closest to `from` (nearest future first) lands on top.
+            const anchorFromMs = anchorStartMs + fromMin * 60000;
+            trips = trips
+                .filter((trip) => {
+                const minutes = (0, time_1.jordanMinutesOfDay)(trip.departureTime);
+                return minutes >= fromMin && minutes <= toMin;
+            })
+                .sort((a, b) => Math.abs(new Date(a.departureTime).getTime() - anchorFromMs) -
+                Math.abs(new Date(b.departureTime).getTime() - anchorFromMs) || byDepartureAsc(a, b));
+        }
     }
     // Defensive: also filter out any trips that are effectively in the past
     // (in case of DB clock drift). Recurring trips are kept only if they start
@@ -866,37 +956,27 @@ async function fetchTripsForDate({ targetDate, originCity, destinationCity, gend
         if (new Date(trip.departureTime).getTime() >= dayStart.getTime())
             return true;
         const days = trip.recurrenceDays || [];
-        return days.includes(dayStart.getDay());
+        return days.includes((0, time_1.jordanWeekday)(dayStart));
     });
     return trips;
 }
 const getAvailableTrips = async (filters = {}) => {
     const { originCity, destinationCity, date, returnDate, genderPreference = null, timeFrom, timeTo, vehicleType, seats, } = filters;
-    // Validate dates when provided; allow omitting date to return all trips
+    // Validate dates when provided; allow omitting date to return all trips.
+    // Calendar days are Jordan days (Asia/Amman), never server-local.
     let queryDate = null;
     if (date) {
-        queryDate = new Date(date);
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const normalizedQuery = new Date(queryDate);
-        normalizedQuery.setHours(0, 0, 0, 0);
-        if (normalizedQuery < today) {
+        queryDate = (0, time_1.parseJordanDayStart)(date);
+        if ((0, time_1.jordanDateOnly)(queryDate) < (0, time_1.jordanStartOfToday)()) {
             throw ApiError_1.ApiErrors.validation('DATE_CANNOT_BE_IN_THE_PAST');
         }
     }
     if (returnDate) {
-        const rd = new Date(returnDate);
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const normReturn = new Date(rd);
-        normReturn.setHours(0, 0, 0, 0);
-        if (normReturn < today)
+        const rd = (0, time_1.parseJordanDayStart)(returnDate);
+        if ((0, time_1.jordanDateOnly)(rd) < (0, time_1.jordanStartOfToday)())
             throw ApiError_1.ApiErrors.validation('DATE_CANNOT_BE_IN_THE_PAST');
-        if (queryDate) {
-            const normQuery = new Date(queryDate);
-            normQuery.setHours(0, 0, 0, 0);
-            if (normReturn < normQuery)
-                throw ApiError_1.ApiErrors.validation('DATE_CANNOT_BE_IN_THE_PAST');
+        if (queryDate && (0, time_1.jordanDateOnly)(rd) < (0, time_1.jordanDateOnly)(queryDate)) {
+            throw ApiError_1.ApiErrors.validation('DATE_CANNOT_BE_IN_THE_PAST');
         }
     }
     const trips = await fetchTripsForDate({
@@ -970,7 +1050,7 @@ const startTrip = async (driverId, tripId) => {
         }
         throw ApiError_1.ApiErrors.custom('YOUR_TRIP_CANNOT_BE_STARTED_BECAUSE_YOUR_BALANCE_IS_INSUFFICIENT', 422, 'INSUFFICIENT_BALANCE');
     }
-    await trip.update({ status: constants_1.TRIP_STATUS.IN_PROGRESS });
+    await trip.update({ status: constants_1.TRIP_STATUS.IN_PROGRESS, startedAt: new Date() });
     // US2: best-effort notify confirmed passengers that the trip has started.
     try {
         await notificationService_1.default.notifyConfirmedPassengers([trip.id], 'TRIP_STARTED', { data: { trip_id: trip.id } });
@@ -1015,7 +1095,20 @@ const completeTrip = async (driverId, tripId) => {
         throw ApiError_1.ApiErrors.custom('TRIP_CANNOT_BE_COMPLETED_FROM_ITS_CURRENT_STATUS', 422, 'INVALID_TRIP_STATUS');
     }
     const result = await commissionService_1.default.deductCommission(trip, driverId);
-    await trip.update({ status: constants_1.TRIP_STATUS.COMPLETED });
+    await trip.update({ status: constants_1.TRIP_STATUS.COMPLETED, completedAt: new Date() });
+    // spec 013: compact the driven path best-effort; the job retries if empty.
+    try {
+        await routeService_1.default.compactActualPath(trip.id);
+    }
+    catch (err) {
+        console.warn('[tripService] actual path compaction failed:', err.message);
+    }
+    try {
+        realtimeService_1.default.emitToRoom(`trip:${trip.id}`, 'tracking:ended', { trip_id: trip.id, reason: 'completed' });
+    }
+    catch (_err) {
+        // socket layer offline (e.g. tests) — ignore
+    }
     // Finalize confirmed bookings (spec 009 US3): completed + paid_cash + timestamp.
     const confirmedBookings = await Models_1.Booking.findAll({
         where: { tripId: trip.id, status: constants_1.BOOKING_STATUS.CONFIRMED },
@@ -1111,11 +1204,255 @@ module.exports = {
     startTrip,
     completeTrip,
     updateTrip,
+    replaceTripStops,
+    getTripRoute,
+    setPickupStatus,
+    getBookingRoute,
+    getTripActual,
     cancelTrip,
     cancelTripWithPenalty,
     getTripAttributes,
     getTripPassengers,
 };
+/**
+ * Replace a trip's stops wholesale (PATCH /trips/:id/stops). Open trips only;
+ * recompute is best-effort and booked passengers are notified (O8 pattern).
+ */
+async function replaceTripStops(driverId, tripId, stops) {
+    const trip = await Models_1.Trip.findByPk(tripId);
+    if (!trip)
+        throw ApiError_1.ApiErrors.notFound('TRIP_NOT_FOUND');
+    if (trip.driverId !== driverId)
+        throw ApiError_1.ApiErrors.forbidden('YOU_CAN_ONLY_EDIT_YOUR_OWN_TRIPS');
+    if (![constants_1.TRIP_STATUS.PUBLISHED, constants_1.TRIP_STATUS.FULL].includes(trip.status)) {
+        throw ApiError_1.ApiErrors.custom('TRIP_STOPS_LOCKED_AFTER_START', 422, 'TRIP_STOPS_LOCKED_AFTER_START');
+    }
+    const list = Array.isArray(stops) ? stops : [];
+    if (list.length > maps_1.default.maxTripStops)
+        throw ApiError_1.ApiErrors.custom('TOO_MANY_WAYPOINTS', 422, 'TOO_MANY_WAYPOINTS');
+    const records = [];
+    for (let i = 0; i < list.length; i++) {
+        const s = list[i] || {};
+        const lat = Number(s.lat ?? s.stop_lat ?? s.latitude);
+        const lng = Number(s.lng ?? s.stop_lng ?? s.longitude);
+        if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+            throw ApiError_1.ApiErrors.validation('STOP_LATITUDE_MUST_BE_A_DECIMAL');
+        }
+        records.push({
+            tripId: trip.id,
+            stopOrder: i + 1,
+            stopName: s.stop_name || s.name || s.city || null,
+            city: s.city || s.stop_name || s.name || null,
+            address: s.address || null,
+            lat: String(lat),
+            lng: String(lng),
+            stopLat: String(lat),
+            stopLng: String(lng),
+            stopType: s.stop_type || 'both',
+        });
+    }
+    await Models_1.TripStop.destroy({ where: { tripId: trip.id } });
+    if (records.length)
+        await Models_1.TripStop.bulkCreate(records);
+    let routeStatus = trip.routeStatus;
+    try {
+        const out = await routeService_1.default.computeTripRoute(trip.id);
+        if (out.ok)
+            routeStatus = 'ready';
+        else
+            routeStatus = 'failed';
+    }
+    catch (err) {
+        routeStatus = 'failed';
+        console.warn('[tripService] stops recompute failed:', err.message);
+    }
+    try {
+        await notificationService_1.default.notifyConfirmedPassengers([trip.id], 'ROUTE_UPDATED', { data: { trip_id: trip.id } });
+    }
+    catch (err) {
+        console.warn('[tripService] route_updated notification failed:', err.message);
+    }
+    try {
+        const fresh = await Models_1.Trip.findByPk(trip.id, { attributes: ['routeVersion'] });
+        realtimeService_1.default.emitToRoom(`trip:${trip.id}`, 'tracking:route_updated', { route_version: fresh.routeVersion });
+    }
+    catch (_err) {
+        // socket layer offline (e.g. tests) — ignore
+    }
+    trackTripMutation({ action: 'trip.stops_replaced', driverId, tripId: trip.id, payload: { stops: records.length, route_status: routeStatus } });
+    return { trip_id: trip.id, stops: records.length, route_status: routeStatus };
+}
+/**
+ * Planned route view (API5 driver/admin, API11 support read-only).
+ * Passengers never see other pickups here — use the booking-scoped view (API9).
+ * Phone numbers are never included; names are first-name only (O7/masking).
+ */
+async function getTripRoute(requesterId, requesterRole, tripId, { audited = false } = {}) {
+    const trip = await Models_1.Trip.findByPk(tripId, { include: [{ model: Models_1.TripStop, as: 'stops' }] });
+    if (!trip)
+        throw ApiError_1.ApiErrors.notFound('TRIP_NOT_FOUND');
+    const isOwner = trip.driverId === requesterId;
+    const isStaff = ['admin', 'support', 'moderator'].includes(requesterRole);
+    if (!isOwner && !isStaff)
+        throw ApiError_1.ApiErrors.forbidden('YOU_CAN_ONLY_VIEW_ROUTES_ON_YOUR_OWN_TRIPS');
+    const bookings = await Models_1.Booking.findAll({
+        where: { tripId: trip.id, status: constants_1.BOOKING_STATUS.CONFIRMED },
+        include: [{ model: Models_1.User, as: 'passenger', attributes: ['id', 'fullName'] }],
+        order: [['pickupOrder', 'ASC']],
+    });
+    const waypoints = await routeService_1.default.buildWaypoints(trip);
+    const nav = routeService_1.default.buildNavigationLinks(waypoints);
+    const out = {
+        trip_id: trip.id,
+        route_status: trip.routeStatus,
+        route_version: trip.routeVersion,
+        polyline: trip.routePolyline,
+        distance_m: trip.routeDistanceM != null ? Number(trip.routeDistanceM) : null,
+        duration_s: trip.routeDurationS != null ? Number(trip.routeDurationS) : null,
+        stops: (trip.stops || []).slice().sort((a, b) => a.stopOrder - b.stopOrder).map((s) => ({
+            id: s.id,
+            stop_order: s.stopOrder,
+            stop_name: s.stopName,
+            city: s.city,
+            lat: s.lat != null ? Number(s.lat) : (s.stopLat != null ? Number(s.stopLat) : null),
+            lng: s.lng != null ? Number(s.lng) : (s.stopLng != null ? Number(s.stopLng) : null),
+            stop_type: s.stopType,
+        })),
+        pickups: bookings.map((b) => ({
+            booking_id: b.id,
+            first_name: b.passenger && b.passenger.fullName ? String(b.passenger.fullName).split(' ')[0] : null,
+            seats: b.seatsBooked,
+            lat: b.pickupLat != null ? Number(b.pickupLat) : null,
+            lng: b.pickupLng != null ? Number(b.pickupLng) : null,
+            pickup_order: b.pickupOrder,
+            pickup_status: b.pickupStatus,
+        })),
+        navigation_url: nav.navigation_url,
+        navigation_legs: nav.legs,
+    };
+    if (audited || !isOwner) {
+        auditService_1.default.track({ action: 'trip.route_viewed', resourceType: 'trip', resourceId: trip.id, actorId: requesterId, actorType: requesterRole, payload: {} });
+    }
+    return out;
+}
+/**
+ * Driver marks one booked pickup arrived/picked_up/missed (API8).
+ * : picked_up notifies via socket only — the passenger is in the car.
+ */
+async function setPickupStatus(driverId, tripId, bookingId, status) {
+    const trip = await Models_1.Trip.findByPk(tripId, { attributes: ['id', 'driverId'] });
+    if (!trip)
+        throw ApiError_1.ApiErrors.notFound('TRIP_NOT_FOUND');
+    if (trip.driverId !== driverId)
+        throw ApiError_1.ApiErrors.forbidden('YOU_CAN_ONLY_MANAGE_PICKUPS_ON_YOUR_OWN_TRIPS');
+    const booking = await Models_1.Booking.findOne({
+        where: { id: bookingId, tripId },
+        include: [{ model: Models_1.User, as: 'passenger', attributes: ['id', 'fullName'] }],
+    });
+    if (!booking)
+        throw ApiError_1.ApiErrors.notFound('BOOKING_NOT_FOUND');
+    if (booking.status !== constants_1.BOOKING_STATUS.CONFIRMED)
+        throw ApiError_1.ApiErrors.conflict('BOOKING_IS_NOT_CONFIRMED');
+    const now = new Date();
+    const patch = { pickupStatus: status };
+    if (status === 'arrived')
+        patch.arrivedAt = now;
+    if (status === 'picked_up')
+        patch.pickedUpAt = now;
+    // : missed touches pickup_status ONLY — booking.status stays CONFIRMED
+    // so the driver no-show rate (expiry-driven NO_SHOW rows) is never polluted
+    // by passenger misses. Passenger-side no-show tracking is out of scope.
+    await booking.update(patch);
+    try {
+        realtimeService_1.default.emitToRoom(`trip:${tripId}`, 'tracking:pickup_status', { trip_id: tripId, booking_id: booking.id, state: status });
+    }
+    catch (_err) {
+        // socket layer offline (e.g. tests) — ignore
+    }
+    if (booking.passenger && (status === 'arrived' || status === 'missed')) {
+        try {
+            await notificationService_1.default.sendToUser(booking.passenger, status === 'arrived' ? 'DRIVER_ARRIVED' : 'PICKUP_MISSED', {
+                channels: ['in_app', 'push'],
+                data: { trip_id: tripId, booking_id: booking.id },
+            });
+        }
+        catch (err) {
+            console.warn('[tripService] pickup-status notification failed:', err.message);
+        }
+    }
+    auditService_1.default.track({ action: 'booking.pickup_status', resourceType: 'booking', resourceId: booking.id, actorId: driverId, actorType: 'driver', payload: { trip_id: tripId, pickup_status: status } });
+    return { booking_id: booking.id, pickup_status: status };
+}
+/**
+ * Booking-scoped route view (API9): planned route plus MY pickup only, plus
+ * the recorded path when available. Participant or staff; staff see the
+ * recorded path only on completed trips (same rule as the admin endpoint).
+ */
+async function getBookingRoute(requesterId, requesterRole, bookingId) {
+    const booking = await Models_1.Booking.findByPk(bookingId, { include: [{ model: Models_1.Trip, as: 'trip', include: [{ model: Models_1.TripStop, as: 'stops' }] }] });
+    if (!booking || !booking.trip)
+        throw ApiError_1.ApiErrors.notFound('BOOKING_NOT_FOUND');
+    const trip = booking.trip;
+    const isMine = booking.passengerId === requesterId;
+    const isOwner = trip.driverId === requesterId;
+    const isStaff = ['admin', 'support', 'moderator'].includes(requesterRole);
+    if (!isMine && !isOwner && !isStaff)
+        throw ApiError_1.ApiErrors.forbidden('YOU_CAN_ONLY_VIEW_YOUR_OWN_BOOKINGS');
+    const done = trip.status === constants_1.TRIP_STATUS.COMPLETED;
+    return {
+        trip_id: trip.id,
+        booking_id: booking.id,
+        route_status: trip.routeStatus,
+        route_version: trip.routeVersion,
+        polyline: trip.routePolyline,
+        distance_m: trip.routeDistanceM != null ? Number(trip.routeDistanceM) : null,
+        duration_s: trip.routeDurationS != null ? Number(trip.routeDurationS) : null,
+        my_pickup: {
+            lat: booking.pickupLat != null ? Number(booking.pickupLat) : null,
+            lng: booking.pickupLng != null ? Number(booking.pickupLng) : null,
+            label: booking.pickupLabel || booking.pickupPlace,
+            pickup_status: booking.pickupStatus,
+        },
+        actual_path_polyline: done || isMine || isOwner ? trip.actualPathPolyline : null,
+        actual_distance_m: trip.actualDistanceM != null ? Number(trip.actualDistanceM) : null,
+        actual_duration_s: trip.actualDurationS != null ? Number(trip.actualDurationS) : null,
+    };
+}
+/**
+ * Recorded path view (GET /trips/:id/route/actual + admin actual endpoint).
+ * Participants get planned + recorded (null until compacted); staff are
+ * refused until completion — no live snooping through the history door.
+ */
+async function getTripActual(requesterId, requesterRole, tripId) {
+    const trip = await Models_1.Trip.findByPk(tripId);
+    if (!trip)
+        throw ApiError_1.ApiErrors.notFound('TRIP_NOT_FOUND');
+    const isOwner = trip.driverId === requesterId;
+    const isStaff = ['admin', 'support', 'moderator'].includes(requesterRole);
+    let isPassenger = false;
+    if (!isOwner && !isStaff) {
+        const mine = await Models_1.Booking.findOne({ where: { tripId, passengerId: requesterId }, attributes: ['id'] });
+        isPassenger = !!mine;
+        if (!isPassenger)
+            throw ApiError_1.ApiErrors.forbidden('YOU_CAN_ONLY_VIEW_ROUTES_ON_YOUR_OWN_TRIPS');
+    }
+    const done = trip.status === constants_1.TRIP_STATUS.COMPLETED;
+    if (isStaff && !done)
+        throw ApiError_1.ApiErrors.forbidden('ACTUAL_PATH_AVAILABLE_AFTER_COMPLETION');
+    if (isStaff) {
+        auditService_1.default.track({ action: 'trip.actual_viewed', resourceType: 'trip', resourceId: trip.id, actorId: requesterId, actorType: requesterRole, payload: {} });
+    }
+    return {
+        trip_id: trip.id,
+        route_status: trip.routeStatus,
+        polyline: trip.routePolyline,
+        actual_path_polyline: trip.actualPathPolyline,
+        actual_distance_m: trip.actualDistanceM != null ? Number(trip.actualDistanceM) : null,
+        actual_duration_s: trip.actualDurationS != null ? Number(trip.actualDurationS) : null,
+        started_at: trip.startedAt,
+        completed_at: trip.completedAt,
+    };
+}
 /**
  * Lean passenger list for one of the driver's own trips — shaped for
  * client-side pickers/dropdowns (e.g. rate-a-passenger after completion).
@@ -1175,10 +1512,15 @@ async function updateTrip(driverId, tripId, data) {
         throw ApiError_1.ApiErrors.custom('TRIP_CANNOT_BE_EDITED_FROM_ITS_CURRENT_STATUS', 422, 'INVALID_TRIP_STATUS');
     }
     const fields = {};
-    if (data.fare_per_seat !== undefined)
+    if (data.fare_per_seat !== undefined) {
         fields.farePerSeat = data.fare_per_seat;
-    if (data.arrival_time !== undefined)
-        fields.arrivalTime = data.arrival_time || null;
+        // Keep the full-occupancy profit in line with the new fare.
+        const sellableSeats = await Models_1.TripSeat.count({ where: { tripId: trip.id, wasAvailable: true } });
+        fields.totalProfit = Number(data.fare_per_seat) * sellableSeats;
+    }
+    if (data.arrival_time !== undefined) {
+        fields.arrivalTime = data.arrival_time ? (0, time_1.parseTimezoneAware)(data.arrival_time) : null;
+    }
     if (data.gender_preference !== undefined)
         fields.genderPreference = data.gender_preference;
     if (data.driver_instructions !== undefined)
@@ -1186,13 +1528,13 @@ async function updateTrip(driverId, tripId, data) {
     if (data.additional_instructions !== undefined)
         fields.additionalInstructions = data.additional_instructions || null;
     const departureChanged = data.departure_time !== undefined &&
-        new Date(data.departure_time).getTime() !== new Date(trip.departureTime).getTime();
+        (0, time_1.parseTimezoneAware)(data.departure_time).getTime() !== new Date(trip.departureTime).getTime();
     if (data.departure_time !== undefined)
-        fields.departureTime = new Date(data.departure_time);
+        fields.departureTime = (0, time_1.parseTimezoneAware)(data.departure_time);
     // Overlap guard: moving the departure into another active trip's window is refused.
     if (departureChanged) {
         await assertNoOverlappingTrip(driverId, {
-            departureTime: new Date(data.departure_time),
+            departureTime: (0, time_1.parseTimezoneAware)(data.departure_time),
             isRecurring: trip.isRecurring,
             recurrenceDays: trip.recurrenceDays,
             recurrenceEndDate: trip.recurrenceEndDate,
@@ -1221,7 +1563,7 @@ async function updateTrip(driverId, tripId, data) {
             lat: s.lat || null,
             lng: s.lng || null,
             stopType: s.stop_type || 'both',
-            estimatedArrival: s.estimated_arrival ? new Date(s.estimated_arrival) : null,
+            estimatedArrival: s.estimated_arrival ? (0, time_1.parseTimezoneAware)(s.estimated_arrival) : null,
         }));
         if (records.length > 0)
             await Models_1.TripStop.bulkCreate(records);
@@ -1250,6 +1592,7 @@ async function updateTrip(driverId, tripId, data) {
             destination_city: trip.destinationCity,
             departure_time: trip.departureTime,
             fare_per_seat: Number(trip.farePerSeat),
+            total_profit: Number(trip.totalProfit) || 0,
             status: trip.status,
             attributes: attributes.map((a) => ({ attr_key: a.attrKey, attr_value: a.attrValue })),
             notified_passengers: notifiedPassengers,
