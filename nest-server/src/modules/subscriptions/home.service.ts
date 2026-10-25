@@ -55,12 +55,15 @@ export class HomeService {
         expires_at: null,
         days_remaining: 0,
         free_trips: null,
+        is_active: false,
       };
     }
+    const now = Date.now();
     const daysRemaining = Math.max(
       0,
-      Math.ceil(((current.expiresAt?.getTime() ?? 0) - Date.now()) / DAY_MS),
+      Math.ceil(((current.expiresAt?.getTime() ?? 0) - now) / DAY_MS),
     );
+    const isActive = current.status === 'active' && (current.expiresAt?.getTime() ?? 0) > now;
     return {
       tier: String(current.planName ?? 'free').toLowerCase(),
       price: Number(current.planCost ?? 0),
@@ -68,6 +71,7 @@ export class HomeService {
       expires_at: current.expiresAt,
       days_remaining: daysRemaining,
       free_trips: freeTripsFor(current),
+      is_active: isActive,
     };
   }
 
@@ -100,6 +104,7 @@ export class HomeService {
             year: vehicle.modelYear,
             plate_number: vehicle.plateNumber,
             color: vehicle.color,
+            seats: vehicle.seats,
           }
         : null,
       status: trip.status,
@@ -195,6 +200,7 @@ export class HomeService {
         profile_picture_url: user.avatarUrl,
         rating: Number(user.avgRating ?? 0),
         total_trips_completed: Number(profile?.totalTrips ?? 0),
+        gender: user.gender ?? null,
       },
       subscription,
       next_trip: nextTripPayload,
@@ -211,9 +217,11 @@ export class HomeService {
 
   async getSubscription(driverId: string): Promise<Record<string, unknown>> {
     const current = (await this.balance.findCurrentSubscription(driverId)) as unknown as
-      | (SubscriptionLike & { id: string }) 
+      | (SubscriptionLike & { id: string; status: string })
       | null;
     const history = await this.subscriptions.getMySubscriptions(driverId);
+    const now = Date.now();
+    const isActive = current && current.status === 'active' && (current.expiresAt?.getTime() ?? 0) > now;
     return {
       subscription: current
         ? {
@@ -223,11 +231,12 @@ export class HomeService {
             expires_at: current.expiresAt,
             days_remaining: Math.max(
               0,
-              Math.ceil((((current.expiresAt as Date | null)?.getTime() ?? 0) - Date.now()) / DAY_MS),
+              Math.ceil((((current.expiresAt as Date | null)?.getTime() ?? 0) - now) / DAY_MS),
             ),
             balance: Number(current.balance ?? 0),
             plan_name: current.planName,
             free_trips: freeTripsFor(current),
+            is_active: isActive,
           }
         : null,
       history: (history as Record<string, unknown>[]).map((s) => {

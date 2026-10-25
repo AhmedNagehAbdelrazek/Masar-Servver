@@ -8,6 +8,7 @@ import { Module } from '@nestjs/common';
 import { RealtimeModule } from '../../realtime/realtime.module.js';
 import { NotificationsModule } from '../notifications/notifications.module.js';
 import { SubscriptionsModule } from '../subscriptions/subscriptions.module.js';
+import { TripsModule } from '../trips/trips.module.js';
 import { OffersController } from './offers.controller.js';
 import { RideRequestsController } from './ride-requests.controller.js';
 import { RideRequestsService } from './ride-requests.service.js';
@@ -15,7 +16,7 @@ let RideRequestsModule = class RideRequestsModule {
 };
 RideRequestsModule = __decorate([
     Module({
-        imports: [NotificationsModule, SubscriptionsModule, RealtimeModule],
+        imports: [NotificationsModule, SubscriptionsModule, RealtimeModule, TripsModule],
         controllers: [RideRequestsController, OffersController],
         providers: [RideRequestsService],
         exports: [RideRequestsService],

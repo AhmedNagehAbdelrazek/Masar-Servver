@@ -13,7 +13,7 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 import { Body, Controller, Get, HttpCode, Param, Post, Put, Query } from '@nestjs/common';
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import { Roles } from '../../common/decorators/roles.decorator.js';
-import { CreateOfferDto, CreateRideRequestDto, ListRideRequestsQuery, RequestIdParam, UpdateRideRequestDto, } from './dto/ride-request.dto.js';
+import { AcceptRideRequestBody, CreateOfferDto, CreateRideRequestDto, ListRideRequestsQuery, RequestIdParam, UpdateRideRequestDto, } from './dto/ride-request.dto.js';
 import { RideRequestsService } from './ride-requests.service.js';
 let RideRequestsController = class RideRequestsController {
     requests;
@@ -46,6 +46,9 @@ let RideRequestsController = class RideRequestsController {
     }
     listOffers(requestId, user) {
         return this.requests.listOffersForRequest(user?.id ?? '', requestId);
+    }
+    acceptRideRequest(params, dto, user) {
+        return this.requests.acceptRideRequest(user?.id ?? '', params.request_id, dto);
     }
 };
 __decorate([
@@ -114,6 +117,18 @@ __decorate([
     __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", Promise)
 ], RideRequestsController.prototype, "listOffers", null);
+__decorate([
+    Post(':request_id/accept'),
+    HttpCode(201),
+    Roles('driver'),
+    __param(0, Param()),
+    __param(1, Body()),
+    __param(2, CurrentUser()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [RequestIdParam,
+        AcceptRideRequestBody, Object]),
+    __metadata("design:returntype", Promise)
+], RideRequestsController.prototype, "acceptRideRequest", null);
 RideRequestsController = __decorate([
     Controller('ride-requests'),
     __metadata("design:paramtypes", [RideRequestsService])

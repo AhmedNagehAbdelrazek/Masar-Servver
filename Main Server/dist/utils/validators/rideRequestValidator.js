@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.driverOffersListValidation = exports.agreePriceValidation = exports.decideOfferValidation = exports.listOffersValidation = exports.createOfferValidation = exports.updateRideRequestValidation = exports.listRideRequestsValidation = exports.createRideRequestValidation = exports.offerParamValidation = exports.rideRequestParamValidation = void 0;
+exports.acceptRideRequestValidation = exports.driverOffersListValidation = exports.agreePriceValidation = exports.decideOfferValidation = exports.listOffersValidation = exports.createOfferValidation = exports.updateRideRequestValidation = exports.listRideRequestsValidation = exports.createRideRequestValidation = exports.offerParamValidation = exports.rideRequestParamValidation = void 0;
 const express_validator_1 = require("express-validator");
 const constants_1 = require("../../config/constants");
 const validation_keys_1 = __importDefault(require("../../config/messages/validation-keys"));
@@ -149,13 +149,55 @@ exports.driverOffersListValidation = [
         .optional()
         .isInt({ min: 1, max: 100 }).withMessage(validation_keys_1.default.LIMIT_MUST_BE_AN_INTEGER_BETWEEN_1_AND_100),
 ];
-const _exported = { rideRequestParamValidation: exports.rideRequestParamValidation, offerParamValidation: exports.offerParamValidation, createRideRequestValidation: exports.createRideRequestValidation, listRideRequestsValidation: exports.listRideRequestsValidation, updateRideRequestValidation: exports.updateRideRequestValidation, createOfferValidation: exports.createOfferValidation, listOffersValidation: exports.listOffersValidation, decideOfferValidation: exports.decideOfferValidation, agreePriceValidation: exports.agreePriceValidation, driverOffersListValidation: exports.driverOffersListValidation };
+exports.acceptRideRequestValidation = [
+    ...exports.rideRequestParamValidation,
+    (0, express_validator_1.body)('fare_per_seat')
+        .notEmpty().withMessage(validation_keys_1.default.FARE_PER_SEAT_IS_REQUIRED)
+        .isFloat({ min: 0 }).withMessage(validation_keys_1.default.AGREED_FARE_MUST_BE_A_NON_NEGATIVE_NUMBER),
+    (0, express_validator_1.body)('vehicle_id')
+        .optional()
+        .isUUID().withMessage(validation_keys_1.default.VEHICLE_ID_MUST_BE_A_VALID_UUID),
+    (0, express_validator_1.body)('seats')
+        .optional()
+        .isArray().withMessage(validation_keys_1.default.SEATS_MUST_BE_AN_ARRAY),
+    (0, express_validator_1.body)('type_of_trip')
+        .optional()
+        .isIn(['one_way', 'repeated']).withMessage(validation_keys_1.default.TYPE_OF_TRIP_MUST_BE_ONE_WAY_OR_REPEATED),
+    (0, express_validator_1.body)('repeated_days')
+        .optional()
+        .isArray().withMessage(validation_keys_1.default.REPEATED_DAYS_MUST_BE_AN_ARRAY),
+    (0, express_validator_1.body)('repeated_end_date')
+        .optional()
+        .isISO8601().withMessage(validation_keys_1.default.REPEATED_END_DATE_MUST_BE_A_VALID_ISO_8601_DATETIME),
+    (0, express_validator_1.body)('allowed_type')
+        .optional()
+        .isIn(['all', 'women_only', 'men_only']).withMessage(validation_keys_1.default.GENDER_PREFERENCE_MUST_BE_ONE_OF_ALL_WOMEN_ONLY_MEN_ONLY),
+    (0, express_validator_1.body)('instructions')
+        .optional()
+        .isArray().withMessage(validation_keys_1.default.INSTRUCTIONS_MUST_BE_AN_ARRAY),
+    (0, express_validator_1.body)('additional_instructions')
+        .optional()
+        .isString().trim().isLength({ max: 1000 }).withMessage(validation_keys_1.default.ADDITIONAL_INSTRUCTIONS_MUST_BE_AT_MOST_1000_CHARACTERS),
+    (0, express_validator_1.body)('pickup_point')
+        .optional()
+        .isObject().withMessage(validation_keys_1.default.PICKUP_POINT_MUST_BE_AN_OBJECT),
+    (0, express_validator_1.body)('dropoff_point')
+        .optional()
+        .isObject().withMessage(validation_keys_1.default.DROPOFF_POINT_MUST_BE_AN_OBJECT),
+    (0, express_validator_1.body)('waypoints')
+        .optional()
+        .isArray().withMessage(validation_keys_1.default.WAYPOINTS_MUST_BE_AN_ARRAY),
+    (0, express_validator_1.body)('stops')
+        .optional()
+        .isArray().withMessage(validation_keys_1.default.STOPS_MUST_BE_AN_ARRAY),
+];
+const _exported = { rideRequestParamValidation: exports.rideRequestParamValidation, offerParamValidation: exports.offerParamValidation, createRideRequestValidation: exports.createRideRequestValidation, listRideRequestsValidation: exports.listRideRequestsValidation, updateRideRequestValidation: exports.updateRideRequestValidation, createOfferValidation: exports.createOfferValidation, listOffersValidation: exports.listOffersValidation, decideOfferValidation: exports.decideOfferValidation, agreePriceValidation: exports.agreePriceValidation, driverOffersListValidation: exports.driverOffersListValidation, acceptRideRequestValidation: exports.acceptRideRequestValidation };
 exports.default = _exported;
 // CommonJS interop
 // @ts-ignore
 if (typeof module !== 'undefined' && module.exports) {
     // @ts-ignore
-    module.exports = { rideRequestParamValidation: exports.rideRequestParamValidation, offerParamValidation: exports.offerParamValidation, createRideRequestValidation: exports.createRideRequestValidation, listRideRequestsValidation: exports.listRideRequestsValidation, updateRideRequestValidation: exports.updateRideRequestValidation, createOfferValidation: exports.createOfferValidation, listOffersValidation: exports.listOffersValidation, decideOfferValidation: exports.decideOfferValidation, agreePriceValidation: exports.agreePriceValidation, driverOffersListValidation: exports.driverOffersListValidation };
+    module.exports = { rideRequestParamValidation: exports.rideRequestParamValidation, offerParamValidation: exports.offerParamValidation, createRideRequestValidation: exports.createRideRequestValidation, listRideRequestsValidation: exports.listRideRequestsValidation, updateRideRequestValidation: exports.updateRideRequestValidation, createOfferValidation: exports.createOfferValidation, listOffersValidation: exports.listOffersValidation, decideOfferValidation: exports.decideOfferValidation, agreePriceValidation: exports.agreePriceValidation, driverOffersListValidation: exports.driverOffersListValidation, acceptRideRequestValidation: exports.acceptRideRequestValidation };
     // @ts-ignore
     module.exports.rideRequestParamValidation = exports.rideRequestParamValidation;
     // @ts-ignore
@@ -176,6 +218,8 @@ if (typeof module !== 'undefined' && module.exports) {
     module.exports.agreePriceValidation = exports.agreePriceValidation;
     // @ts-ignore
     module.exports.driverOffersListValidation = exports.driverOffersListValidation;
+    // @ts-ignore
+    module.exports.acceptRideRequestValidation = exports.acceptRideRequestValidation;
     // @ts-ignore
     module.exports.default = _exported;
 }

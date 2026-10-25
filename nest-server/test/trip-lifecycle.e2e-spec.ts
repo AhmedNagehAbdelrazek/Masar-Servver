@@ -648,7 +648,7 @@ describe('Trip edit, cancel and attributes', () => {
       ).status,
     ).toBe(403);
 
-    // Second create needs a free slot (2h overlap guard is live in this port).
+    // Second create needs a free slot (1h overlap guard is live in this port).
     const plus6 = getFutureDate(6);
     const res = await ctx.agent
       .post('/api/trips')
@@ -680,14 +680,14 @@ describe('Trip edit, cancel and attributes', () => {
     const bad = await ctx.agent
       .put(`/api/trips/${second}`)
       .set('Authorization', `Bearer ${driverToken}`)
-      .send({ departure_time: `${date}T06:00:00+03:00` });
+      .send({ departure_time: `${date}T05:30:00+03:00` });
     expect(bad.status).toBe(409);
     expect(bad.body.code).toBe('TRIP_TIME_OVERLAP');
 
     const good = await ctx.agent
       .put(`/api/trips/${second}`)
       .set('Authorization', `Bearer ${driverToken}`)
-      .send({ departure_time: `${date}T12:00:00+03:00` });
+      .send({ departure_time: `${date}T06:00:00+03:00` });
     expect(good.status).toBe(200);
   });
 });

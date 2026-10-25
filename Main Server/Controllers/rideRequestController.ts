@@ -81,6 +81,14 @@ const agreePrice = catchAsync(async (req: Request, res: Response): Promise<void>
   successResponse(res, { offer });
 });
 
+const acceptRideRequest = catchAsync(async (req: Request, res: Response): Promise<void> => {
+  const authReq = req as AuthRequest;
+  const { request_id } = req.params as { request_id: string };
+  const result = await (rideRequestService as unknown as { acceptRideRequest: (driverId: string, requestId: string, body: unknown) => Promise<unknown> }).acceptRideRequest(String(authReq.user?.id), request_id, req.body);
+  (auditService as unknown as { markResource: (res: Response, r: unknown) => void }).markResource(res, { type: 'ride_request', id: request_id, label: 'ride request accepted' });
+  successResponse(res, result, 201);
+});
+
 export {
   createRideRequest,
   listRequests,
@@ -92,6 +100,7 @@ export {
   listMyOffers,
   decideOffer,
   agreePrice,
+  acceptRideRequest,
 };
 export default {
   createRideRequest,
@@ -104,4 +113,5 @@ export default {
   listMyOffers,
   decideOffer,
   agreePrice,
+  acceptRideRequest,
 };

@@ -2,8 +2,8 @@
 // VERIFIED DEVIATIONS (Express fails 4/35 of its own file):
 // - GET detail asserts the CURRENT nested shape (the flat originCity assert
 //   is stale — the service deletes those keys).
-// - The overlap guard implements the DOCUMENTED 2h window (code comments +
-//   suite names); Express ships TRIP_DURATION_HOURS=0 which deadens the guard
+// - The overlap guard now implements a 1h window (both Express and Nest).
+//   Express previously shipped TRIP_DURATION_HOURS=0 which deadened the guard
 //   (see trip.constants.ts).
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { resetTestState } from '../src/test/db.js';
@@ -255,7 +255,7 @@ describe('Trip - Create', () => {
   });
 });
 
-describe('Trip - Driver overlap guard (2h window)', () => {
+describe('Trip - Driver overlap guard (1h window)', () => {
   let ctx: TestContext;
   let driverToken: string;
 
@@ -354,7 +354,7 @@ describe('Trip - Driver overlap guard (2h window)', () => {
   it('rejects a second trip inside the first trip window', async () => {
     const date = getFutureDate(5);
     expect((await postTrip(overlapBody(date, '05:00'))).status).toBe(201);
-    const res = await postTrip(overlapBody(date, '06:00'));
+    const res = await postTrip(overlapBody(date, '05:30'));
     expect(res.status).toBe(409);
     expect(res.body.code).toBe('TRIP_TIME_OVERLAP');
   });
@@ -362,7 +362,7 @@ describe('Trip - Driver overlap guard (2h window)', () => {
   it('allows a trip exactly at the window boundary', async () => {
     const date = getFutureDate(5);
     expect((await postTrip(overlapBody(date, '05:00'))).status).toBe(201);
-    expect((await postTrip(overlapBody(date, '07:00'))).status).toBe(201);
+    expect((await postTrip(overlapBody(date, '06:00'))).status).toBe(201);
   });
 
   it('allows same time on different days', async () => {

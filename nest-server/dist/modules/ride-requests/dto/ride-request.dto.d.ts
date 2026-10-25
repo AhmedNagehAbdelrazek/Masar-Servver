@@ -55,3 +55,22 @@ export declare class AttachOfferBody {
     dropoff_place?: string;
     dropoff_deadline?: string;
 }
+export declare class AcceptRideRequestBody {
+    fare_per_seat: number;
+    vehicle_id?: string;
+    seats: Array<{
+        seat_number: number;
+        type: 'driver' | 'available' | 'unavailable';
+    }>;
+    type_of_trip?: string;
+    repeated_days?: number[];
+    repeated_end_date?: string;
+    allowed_type?: string;
+    instructions?: string[];
+    additional_instructions?: string;
+    pickup_point?: Record<string, unknown>;
+    dropoff_point?: Record<string, unknown>;
+    waypoints?: Record<string, unknown>[];
+    stops?: Record<string, unknown>[];
+    origin_time?: string;
+}

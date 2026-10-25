@@ -742,6 +742,321 @@ async function attachOfferToTrip(driverId, tripId, offerId, payload = {}) {
   };
 }
 
+/**
+ * Driver accepts a ride request directly without negotiation.
+ * Creates a trip for the driver and a booking for the passenger.
+ */
+async function acceptRideRequest(driverId, requestId, payload) {
+  await expireStale();
+
+  const driver = await User.findByPk(driverId);
+  if (!driver) throw ApiErrors.notFound('USER_NOT_FOUND');
+  if (driver.role !== 'driver') throw ApiErrors.forbidden('ONLY_DRIVERS_CAN_ACCEPT_RIDE_REQUESTS');
+  if (!driver.isVerified) throw ApiErrors.forbidden('DRIVER_NOT_VERIFIED');
+
+  const request = await RideRequest.findByPk(requestId);
+  if (!request) throw ApiErrors.notFound('RIDE_REQUEST_NOT_FOUND');
+  if (![RIDE_REQUEST_STATUS.OPEN, RIDE_REQUEST_STATUS.OFFERED].includes(request.status)) {
+    throw ApiErrors.conflict('RIDE_REQUEST_NO_LONGER_ACCEPTING');
+  }
+
+  // Check if driver already has an offer on this request
+  const existingOffer = await RequestOffer.findOne({
+    where: { requestId, driverId, status: REQUEST_OFFER_STATUS.SENT },
+  });
+  if (existingOffer) {
+    throw ApiErrors.conflict('YOU_ALREADY_HAVE_A_PENDING_OFFER_ON_THIS_RIDE_REQUEST');
+  }
+
+  // Check if driver already accepted this request
+  const acceptedOffer = await RequestOffer.findOne({
+    where: { requestId, driverId, status: REQUEST_OFFER_STATUS.ACCEPTED },
+  });
+  if (acceptedOffer) {
+    throw ApiErrors.conflict('YOU_HAVE_ALREADY_ACCEPTED_THIS_RIDE_REQUEST');
+  }
+
+  // Fetch driver's vehicle
+  const vehicle = await Vehicle.findOne({ where: { driverId } });
+  if (!vehicle) throw ApiErrors.forbidden('DRIVER_HAS_NO_REGISTERED_VEHICLE');
+  if (!vehicle.isVerified) throw ApiErrors.forbidden('DRIVER_VEHICLE_IS_NOT_VERIFIED');
+
+  // Validate seats configuration
+  const seats = payload.seats || [];
+  if (seats.length !== vehicle.seats) {
+    throw ApiErrors.validation('SEAT_COUNT_DOES_NOT_MATCH_VEHICLE_TOTAL_SEATS');
+  }
+
+  const seatNumbers = seats.map((s) => s.seat_number).sort((a, b) => a - b);
+  const expectedNumbers = Array.from({ length: vehicle.seats }, (_, i) => i + 1);
+  if (JSON.stringify(seatNumbers) !== JSON.stringify(expectedNumbers)) {
+    throw ApiErrors.validation('SEAT_NUMBERS_MUST_BE_SEQUENTIAL_FROM_1_TO_TOTAL_SEATS');
+  }
+
+  const availableSeats = seats.filter((s) => s.type === 'available');
+  if (availableSeats.length === 0) {
+    throw ApiErrors.validation('AT_LEAST_ONE_SEAT_MUST_BE_AVAILABLE');
+  }
+
+  const driverSeats = seats.filter((s) => s.type === 'driver');
+  if (driverSeats.length !== 1) {
+    throw ApiErrors.validation('EXACTLY_ONE_SEAT_MUST_BE_MARKED_AS_DRIVER');
+  }
+
+  // Validate departure time
+  const departureDateTime = parseTimezoneAware(payload.origin_time || request.originTime);
+  if (departureDateTime <= new Date()) {
+    throw ApiErrors.validation('DEPARTURE_TIME_MUST_BE_IN_THE_FUTURE');
+  }
+
+  // Validate recurrence
+  const isRecurring = payload.type_of_trip === 'repeated';
+  if (isRecurring && (!payload.repeated_days || payload.repeated_days.length === 0)) {
+    throw ApiErrors.validation('REPEATED_DAYS_ARE_REQUIRED_FOR_RECURRING_TRIPS');
+  }
+  if (isRecurring && !payload.repeated_end_date) {
+    throw ApiErrors.validation('END_DATE_IS_REQUIRED_FOR_RECURRING_TRIPS');
+  }
+  if (isRecurring) {
+    const endDate = parseJordanDateOnly(payload.repeated_end_date);
+    if (endDate <= departureDateTime) {
+      throw ApiErrors.validation('END_DATE_MUST_BE_AFTER_DEPARTURE_DATE');
+    }
+  }
+
+  // Overlap guard
+  await assertNoOverlappingTrip(driverId, {
+    departureTime: departureDateTime,
+    isRecurring,
+    recurrenceDays: isRecurring ? payload.repeated_days : null,
+    recurrenceEndDate: isRecurring ? payload.repeated_end_date : null,
+  });
+
+  // Free-trips gate
+  await assertFreeTripsAvailable(driverId);
+
+  // Minimum balance gate
+  const fare = Number(payload.fare_per_seat);
+  await assertCanPublish(driverId, fare);
+
+  // Create the trip
+  const trip = await Trip.create({
+    driverId,
+    vehicleId: vehicle.id,
+    originCity: request.originCity,
+    originArea: request.originArea || null,
+    originLat: request.originLat !== null && request.originLat !== undefined ? Number(request.originLat) : null,
+    originLng: request.originLng !== null && request.originLng !== undefined ? Number(request.originLng) : null,
+    destinationCity: request.destinationCity,
+    destinationArea: request.destinationArea || null,
+    destinationLat: request.destinationLat !== null && request.destinationLat !== undefined ? Number(request.destinationLat) : null,
+    destinationLng: request.destinationLng !== null && request.destinationLng !== undefined ? Number(request.destinationLng) : null,
+    departureTime: departureDateTime,
+    totalSeats: vehicle.seats,
+    availableSeats: availableSeats.length,
+    farePerSeat: fare,
+    totalProfit: fare * availableSeats.length,
+    isRecurring,
+    recurrenceDays: isRecurring ? payload.repeated_days : null,
+    recurrenceEndDate: isRecurring ? parseJordanDateOnly(payload.repeated_end_date) : null,
+    genderPreference: payload.allowed_type || GENDER_PREFERENCE.ALL,
+    driverInstructions: payload.instructions || null,
+    additionalInstructions: payload.additional_instructions || null,
+    status: TRIP_STATUS.PUBLISHED,
+  });
+
+  // Create seat configurations
+  const seatRecords = seats.map((s) => ({
+    tripId: trip.id,
+    seatNumber: s.seat_number,
+    seatType: s.type,
+    wasAvailable: s.type === SEAT_TYPE.AVAILABLE,
+  }));
+  await TripSeat.bulkCreate(seatRecords);
+
+  // Create stops/waypoints
+  const buildStopRecord = (src, fallbackOrder, fallbackType) => {
+    const name = src.stop_name || src.name || src.city || null;
+    const city = src.city || src.stop_name || src.name || null;
+    const address = src.address || null;
+    const latRaw = src.lat ?? src.stop_lat ?? src.latitude ?? null;
+    const lngRaw = src.lng ?? src.stop_lng ?? src.longitude ?? null;
+    const stopOrder = src.stop_order != null ? Number(src.stop_order) : fallbackOrder;
+    const stopType = src.stop_type || fallbackType || 'both';
+    return {
+      tripId: trip.id,
+      stopOrder,
+      stopName: name ? String(name).trim() : null,
+      city: city ? String(city).trim() : null,
+      address: address ? String(address).trim() : null,
+      lat: latRaw != null ? String(latRaw) : null,
+      lng: lngRaw != null ? String(lngRaw) : null,
+      stopLat: latRaw != null ? String(latRaw) : null,
+      stopLng: lngRaw != null ? String(lngRaw) : null,
+      stopType,
+    };
+  };
+
+  let stopRecords = [];
+  if (payload.stops && Array.isArray(payload.stops) && payload.stops.length > 0) {
+    stopRecords = payload.stops.map((s, idx) => buildStopRecord(s, idx + 1, s.stop_type || 'both'));
+  } else {
+    let order = 1;
+    const pickupSrc = payload.pickup_point || payload.pickup || payload.pickup_location || null;
+    if (pickupSrc && typeof pickupSrc === 'object') {
+      stopRecords.push(buildStopRecord(pickupSrc, order++, 'pickup'));
+    }
+    if (payload.waypoints && Array.isArray(payload.waypoints) && payload.waypoints.length > 0) {
+      for (const w of payload.waypoints) {
+        const hasAny = w.stop_name || w.name || w.stop_lat || w.lat || w.stop_lng || w.lng || w.city;
+        if (!hasAny) continue;
+        stopRecords.push(buildStopRecord(w, order++, w.stop_type || 'both'));
+      }
+    }
+    const dropoffSrc = payload.dropoff_point || payload.dropoff || payload.dropoff_location || payload.drop_off_point || null;
+    if (dropoffSrc && typeof dropoffSrc === 'object') {
+      stopRecords.push(buildStopRecord(dropoffSrc, order++, 'dropoff'));
+    }
+  }
+
+  if (stopRecords.length > 0) {
+    await TripStop.bulkCreate(stopRecords);
+  }
+
+  // Create an accepted offer record to track this acceptance
+  const offer = await RequestOffer.create({
+    requestId,
+    driverId,
+    tripId: trip.id,
+    offeredFare: fare,
+    agreedFare: fare,
+    message: 'Direct acceptance by driver',
+    status: REQUEST_OFFER_STATUS.ACCEPTED,
+  });
+
+  // Update ride request status
+  request.status = RIDE_REQUEST_STATUS.ACCEPTED;
+  await request.save();
+
+  // Decline any other pending offers on this request
+  await RequestOffer.update(
+    { status: REQUEST_OFFER_STATUS.DECLINED },
+    {
+      where: {
+        requestId: request.id,
+        id: { [Op.ne]: offer.id },
+        status: REQUEST_OFFER_STATUS.SENT,
+      },
+    }
+  );
+
+  // Create booking for passenger
+  const seatsNeeded = request.seatsNeeded || 1;
+  const referenceCode = await generateReferenceCode('MSR');
+
+  const booking = await sequelize.transaction(async (t) => {
+    const freshTrip = await Trip.findByPk(trip.id, { transaction: t, lock: t.LOCK.UPDATE });
+    const remainingSeats = freshTrip.availableSeats - seatsNeeded;
+    if (remainingSeats < 0) {
+      throw ApiErrors.conflict('NOT_ENOUGH_AVAILABLE_SEATS_ON_THE_SELECTED_TRIP');
+    }
+
+    const row = await Booking.create(
+      {
+        tripId: trip.id,
+        passengerId: request.passengerId,
+        seatNumber: null,
+        seatsBooked: seatsNeeded,
+        agreedFare: fare,
+        currency: request.currency || 'JOD',
+        dropoffPlace: null,
+        dropoffDeadline: null,
+        status: BOOKING_STATUS.CONFIRMED,
+        paymentStatus: PAYMENT_STATUS.PENDING,
+        referenceCode,
+        cancelledBy: null,
+      },
+      { transaction: t }
+    );
+
+    freshTrip.availableSeats = remainingSeats;
+    if (remainingSeats === 0 && freshTrip.status === TRIP_STATUS.PUBLISHED) {
+      freshTrip.status = TRIP_STATUS.FULL;
+    }
+    await freshTrip.save({ transaction: t });
+
+    offer.bookingId = row.id;
+    await offer.save({ transaction: t });
+
+    return row;
+  });
+
+  // Audit and notifications
+  auditService.track({
+    action: 'ride_request.accepted_direct',
+    resourceType: 'ride_request',
+    resourceId: request.id,
+    actorId: driverId,
+    actorType: 'driver',
+    payload: { trip_id: trip.id, booking_id: booking.id },
+  });
+
+  const passenger = await User.findByPk(request.passengerId);
+  if (passenger) {
+    await notificationService.sendToUser(passenger, 'RIDE_REQUEST_ACCEPTED', {
+      channels: ['in_app', 'push'],
+      vars: {
+        driver: driver.fullName,
+        trip_id: trip.id,
+        booking_reference: booking.referenceCode,
+      },
+    });
+  }
+
+  // Invalidate caches
+  try {
+    await deleteKey(REDIS_KEYS.PASSENGER_HOME(request.passengerId));
+  } catch (err) {
+    console.warn('[rideRequestService] passenger home cache invalidation failed:', (err as Error).message);
+  }
+  try {
+    await deleteKey(REDIS_KEYS.DRIVER_HOME(driverId));
+  } catch (err) {
+    console.warn('[rideRequestService] driver home cache invalidation failed:', (err as Error).message);
+  }
+  try {
+    await homeService.invalidateHomeForTrip(trip.id, driverId);
+  } catch (_err) {}
+  try {
+    realtimeService.emitToUser(request.passengerId, 'home:invalidate', { trip_id: trip.id });
+    realtimeService.emitToUser(driverId, 'home:invalidate', { trip_id: trip.id });
+  } catch (_err) {}
+
+  return {
+    trip: {
+      id: trip.id,
+      origin_city: trip.originCity,
+      destination_city: trip.destinationCity,
+      departure_time: trip.departureTime,
+      fare_per_seat: Number(trip.farePerSeat),
+      available_seats: trip.availableSeats,
+      status: trip.status,
+    },
+    booking: {
+      id: booking.id,
+      reference_code: booking.referenceCode,
+      trip_id: booking.tripId,
+      passenger_id: booking.passengerId,
+      seats_booked: booking.seatsBooked,
+      agreed_fare: Number(booking.agreedFare),
+      currency: booking.currency,
+      status: booking.status,
+      payment_status: booking.paymentStatus,
+    },
+    offer: serializeOffer(offer),
+  };
+}
+
 module.exports = {
   createRideRequest,
   listRequests,
@@ -753,8 +1068,9 @@ module.exports = {
   decideOffer,
   agreeOfferPrice,
   attachOfferToTrip,
+  acceptRideRequest,
   getMatches,
   expireStale,
 };
-export { createRideRequest, listRequests, getRequest, updateRideRequest, submitOffer, listOffersForRequest, listDriverOffers, decideOffer, agreeOfferPrice, attachOfferToTrip, getMatches, expireStale };
+export { createRideRequest, listRequests, getRequest, updateRideRequest, submitOffer, listOffersForRequest, listDriverOffers, decideOffer, agreeOfferPrice, attachOfferToTrip, acceptRideRequest, getMatches, expireStale };
 export default module.exports;

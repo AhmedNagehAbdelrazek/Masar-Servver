@@ -8,7 +8,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 import { Type } from 'class-transformer';
-import { IsDefined, IsIn, IsInt, IsISO8601, IsNotEmpty, IsNumber, IsObject, IsOptional, IsString, IsUUID, Max, MaxLength, Min, } from 'class-validator';
+import { IsArray, IsDefined, IsIn, IsInt, IsISO8601, IsNotEmpty, IsNumber, IsObject, IsOptional, IsString, IsUUID, Max, MaxLength, Min, } from 'class-validator';
 import { IsLat, IsLng, TrimString } from '../../../common/validators/geo.validators.js';
 export class CreateRideRequestDto {
     origin_city;
@@ -301,4 +301,97 @@ __decorate([
     IsString(),
     __metadata("design:type", String)
 ], AttachOfferBody.prototype, "dropoff_deadline", void 0);
+export class AcceptRideRequestBody {
+    fare_per_seat;
+    vehicle_id;
+    seats;
+    type_of_trip;
+    repeated_days;
+    repeated_end_date;
+    allowed_type;
+    instructions;
+    additional_instructions;
+    pickup_point;
+    dropoff_point;
+    waypoints;
+    stops;
+    origin_time;
+}
+__decorate([
+    IsDefined(),
+    IsNotEmpty(),
+    IsNumber(),
+    Min(0),
+    Type(() => Number),
+    __metadata("design:type", Number)
+], AcceptRideRequestBody.prototype, "fare_per_seat", void 0);
+__decorate([
+    IsOptional(),
+    IsUUID(),
+    __metadata("design:type", String)
+], AcceptRideRequestBody.prototype, "vehicle_id", void 0);
+__decorate([
+    IsDefined(),
+    IsArray(),
+    __metadata("design:type", Array)
+], AcceptRideRequestBody.prototype, "seats", void 0);
+__decorate([
+    IsOptional(),
+    IsIn(['one_way', 'repeated']),
+    __metadata("design:type", String)
+], AcceptRideRequestBody.prototype, "type_of_trip", void 0);
+__decorate([
+    IsOptional(),
+    IsArray(),
+    __metadata("design:type", Array)
+], AcceptRideRequestBody.prototype, "repeated_days", void 0);
+__decorate([
+    IsOptional(),
+    IsString(),
+    IsISO8601(),
+    __metadata("design:type", String)
+], AcceptRideRequestBody.prototype, "repeated_end_date", void 0);
+__decorate([
+    IsOptional(),
+    IsIn(['all', 'women_only', 'men_only']),
+    __metadata("design:type", String)
+], AcceptRideRequestBody.prototype, "allowed_type", void 0);
+__decorate([
+    IsOptional(),
+    IsArray(),
+    __metadata("design:type", Array)
+], AcceptRideRequestBody.prototype, "instructions", void 0);
+__decorate([
+    IsOptional(),
+    IsString(),
+    MaxLength(1000),
+    TrimString(),
+    __metadata("design:type", String)
+], AcceptRideRequestBody.prototype, "additional_instructions", void 0);
+__decorate([
+    IsOptional(),
+    IsObject(),
+    __metadata("design:type", Object)
+], AcceptRideRequestBody.prototype, "pickup_point", void 0);
+__decorate([
+    IsOptional(),
+    IsObject(),
+    __metadata("design:type", Object)
+], AcceptRideRequestBody.prototype, "dropoff_point", void 0);
+__decorate([
+    IsOptional(),
+    IsArray(),
+    __metadata("design:type", Array)
+], AcceptRideRequestBody.prototype, "waypoints", void 0);
+__decorate([
+    IsOptional(),
+    IsArray(),
+    __metadata("design:type", Array)
+], AcceptRideRequestBody.prototype, "stops", void 0);
+__decorate([
+    IsOptional(),
+    IsString(),
+    IsISO8601(),
+    __metadata("design:type", String)
+], AcceptRideRequestBody.prototype, "origin_time", void 0);
 //# sourceMappingURL=ride-request.dto.js.map

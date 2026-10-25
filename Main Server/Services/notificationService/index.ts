@@ -256,6 +256,16 @@ const TEMPLATES = {
       body: 'The passenger accepted your offer. Agree on the final price, then attach the offer to a trip.',
     },
   },
+  RIDE_REQUEST_ACCEPTED: {
+    ar: {
+      title: 'تم قبول طلب رحلتك',
+      body: 'السائق {driver} قبل طلب رحلتك. رقم الحجز: {booking_reference}. تفاصيل الرحلة: {trip_id}',
+    },
+    en: {
+      title: 'Your ride request was accepted',
+      body: 'Driver {driver} accepted your ride request. Booking reference: {booking_reference}. Trip details: {trip_id}',
+    },
+  },
   OFFER_DECLINED: {
     ar: {
       title: 'رُفض عرضك',

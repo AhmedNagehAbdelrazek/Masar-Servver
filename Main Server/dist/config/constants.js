@@ -37,8 +37,11 @@ exports.TRIP_STATUS = {
  * Assumed duration of a trip for driver overlap detection (hours). A driver
  * cannot publish another trip whose [departure, departure + duration) window
  * overlaps an existing active trip's window.
+ *
+ * Set to 1 to enforce a 1-hour minimum gap between trip departures.
+ * (Previously 0 which silently disabled the overlap guard.)
  */
-exports.TRIP_DURATION_HOURS = 0;
+exports.TRIP_DURATION_HOURS = 1;
 exports.SEAT_TYPE = {
     DRIVER: 'driver',
     UNAVAILABLE: 'unavailable',

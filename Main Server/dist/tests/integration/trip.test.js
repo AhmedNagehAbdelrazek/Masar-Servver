@@ -465,7 +465,7 @@ describe('Trip - Search Available Trips', () => {
         });
     });
 });
-describe('Trip - Driver overlap guard (2h window)', () => {
+describe('Trip - Driver overlap guard (1h window)', () => {
     const OVERLAP_SEATS = [
         { seat_number: 1, type: 'driver' },
         { seat_number: 2, type: 'available' },
@@ -486,19 +486,19 @@ describe('Trip - Driver overlap guard (2h window)', () => {
             .set('Authorization', `Bearer ${driverToken}`)
             .send(overlapBody(date, time, extra));
     }
-    it('rejects a second trip inside the first trip window (05:00 blocks until 07:00)', async () => {
+    it('rejects a second trip inside the first trip window (05:00 blocks until 06:00)', async () => {
+        const date = getFutureDate(5);
+        const first = await createTrip(date, '05:00');
+        expect(first.status).toBe(201);
+        const second = await createTrip(date, '05:30');
+        expect(second.status).toBe(409);
+        expect(second.body.code).toBe('TRIP_TIME_OVERLAP');
+    });
+    it('allows a trip starting exactly when the previous one ends (06:00)', async () => {
         const date = getFutureDate(5);
         const first = await createTrip(date, '05:00');
         expect(first.status).toBe(201);
         const second = await createTrip(date, '06:00');
-        expect(second.status).toBe(409);
-        expect(second.body.code).toBe('TRIP_TIME_OVERLAP');
-    });
-    it('allows a trip starting exactly when the previous one ends (07:00)', async () => {
-        const date = getFutureDate(5);
-        const first = await createTrip(date, '05:00');
-        expect(first.status).toBe(201);
-        const second = await createTrip(date, '07:00');
         expect(second.status).toBe(201);
     });
     it('allows the same clock time on a different day', async () => {
@@ -528,13 +528,13 @@ describe('Trip - Driver overlap guard (2h window)', () => {
         const clash = await getAgent()
             .put(`/api/trips/${secondId}`)
             .set('Authorization', `Bearer ${driverToken}`)
-            .send({ departure_time: `${date}T06:00:00+03:00` });
+            .send({ departure_time: `${date}T05:30:00+03:00` });
         expect(clash.status).toBe(409);
         expect(clash.body.code).toBe('TRIP_TIME_OVERLAP');
         const moved = await getAgent()
             .put(`/api/trips/${secondId}`)
             .set('Authorization', `Bearer ${driverToken}`)
-            .send({ departure_time: `${date}T12:00:00+03:00` });
+            .send({ departure_time: `${date}T06:00:00+03:00` });
         expect(moved.status).toBe(200);
     });
     it('rejects a one-off trip overlapping a weekly series occurrence', async () => {

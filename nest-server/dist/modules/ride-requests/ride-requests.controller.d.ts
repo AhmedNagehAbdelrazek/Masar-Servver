@@ -1,5 +1,5 @@
 import type { AuthUser } from '../../common/guards/jwt-auth.guard.js';
-import { CreateOfferDto, CreateRideRequestDto, ListRideRequestsQuery, RequestIdParam, UpdateRideRequestDto } from './dto/ride-request.dto.js';
+import { AcceptRideRequestBody, CreateOfferDto, CreateRideRequestDto, ListRideRequestsQuery, RequestIdParam, UpdateRideRequestDto } from './dto/ride-request.dto.js';
 import { RideRequestsService } from './ride-requests.service.js';
 export declare class RideRequestsController {
     private readonly requests;
@@ -26,5 +26,10 @@ export declare class RideRequestsController {
     }>;
     listOffers(requestId: string, user?: AuthUser): Promise<{
         data: Record<string, unknown>[];
+    }>;
+    acceptRideRequest(params: RequestIdParam, dto: AcceptRideRequestBody, user?: AuthUser): Promise<{
+        trip: Record<string, unknown>;
+        booking: Record<string, unknown>;
+        offer: Record<string, unknown>;
     }>;
 }

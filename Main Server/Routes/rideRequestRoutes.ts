@@ -17,5 +17,8 @@ router.put('/:request_id', roleGuard(['passenger']), ...v.updateRideRequestValid
 router.post('/:request_id/offers', roleGuard(['driver']), ...v.createOfferValidation, validate, c.submitOffer);
 router.get('/:request_id/offers', ...v.listOffersValidation, c.listOffers);
 
+// Driver accepts ride request directly (creates trip + booking)
+router.post('/:request_id/accept', roleGuard(['driver']), ...v.acceptRideRequestValidation, validate, c.acceptRideRequest);
+
 export default router;
 module.exports = router;

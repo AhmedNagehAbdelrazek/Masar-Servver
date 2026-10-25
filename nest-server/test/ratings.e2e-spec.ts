@@ -2,7 +2,7 @@
 // tests/contract/ratings.contract.test.js (Wave 1.3, full-stack Wave 8).
 // Trips are created via POST /api/trips + seat-lock + POST /api/bookings like
 // the other specs (sos, trip-lifecycle); each booking gets a distinct
-// departure day so the 2h overlap guard never fires across tests.
+// departure day so the 1h overlap guard never fires across tests.
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { resetTestState } from '../src/test/db.js';
 import { generateAccessToken } from '../src/test/jwt.js';

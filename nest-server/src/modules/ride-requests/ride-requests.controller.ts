@@ -3,6 +3,7 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import { Roles } from '../../common/decorators/roles.decorator.js';
 import type { AuthUser } from '../../common/guards/jwt-auth.guard.js';
 import {
+  AcceptRideRequestBody,
   CreateOfferDto,
   CreateRideRequestDto,
   ListRideRequestsQuery,
@@ -90,5 +91,16 @@ export class RideRequestsController {
     @CurrentUser() user?: AuthUser,
   ): Promise<{ data: Record<string, unknown>[] }> {
     return this.requests.listOffersForRequest(user?.id ?? '', requestId);
+  }
+
+  @Post(':request_id/accept')
+  @HttpCode(201)
+  @Roles('driver')
+  acceptRideRequest(
+    @Param() params: RequestIdParam,
+    @Body() dto: AcceptRideRequestBody,
+    @CurrentUser() user?: AuthUser,
+  ): Promise<{ trip: Record<string, unknown>; booking: Record<string, unknown>; offer: Record<string, unknown> }> {
+    return this.requests.acceptRideRequest(user?.id ?? '', params.request_id, dto);
   }
 }

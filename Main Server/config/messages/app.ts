@@ -164,6 +164,9 @@ export const APP_MESSAGES = {
   ACCEPT_THE_OFFER_BEFORE_AGREEING_ON_A_FINAL_PRICE: { en: 'Accept the offer before agreeing on a final price', ar: 'اقبل العرض قبل الاتفاق على السعر النهائي' },
   AGREE_ON_A_FINAL_PRICE_BEFORE_ATTACHING_THE_OFFER_TO: { en: 'Agree on a final price before attaching the offer to a trip', ar: 'اتفق على السعر النهائي قبل ربط العرض برحلة' },
   THE_UNDERLYING_RIDE_REQUEST_IS_NOT_IN_AN_ACCEPTED_STATE: { en: 'The underlying ride request is not in an accepted state', ar: 'طلب التنقل المرتبط ليس في حالة مقبولة' },
+  RIDE_REQUEST_NO_LONGER_ACCEPTING: { en: 'This ride request is no longer accepting drivers', ar: 'طلب التنقل هذا لم يعد يقبل سائقين' },
+  ONLY_DRIVERS_CAN_ACCEPT_RIDE_REQUESTS: { en: 'Only drivers can accept ride requests', ar: 'السائقون فقط يمكنهم قبول طلبات التنقل' },
+  YOU_HAVE_ALREADY_ACCEPTED_THIS_RIDE_REQUEST: { en: 'You have already accepted this ride request', ar: 'لقد قبلت طلب التنقل هذا بالفعل' },
 
   // ===== Delays / SOS =====
   ONLY_THE_TRIP_DRIVER_CAN_REPORT_A_DRIVER_DELAY: { en: 'Only the trip driver can report a driver delay', ar: 'سائق الرحلة فقط يمكنه الإبلاغ عن تأخر السائق' },

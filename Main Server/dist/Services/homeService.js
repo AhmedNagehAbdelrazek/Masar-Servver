@@ -45,6 +45,7 @@ function toDriverSection(user, profile) {
         profile_picture_url: user.avatarUrl,
         rating: Number(user.avgRating || 0),
         total_trips_completed: Number((profile && profile.totalTrips) || 0),
+        gender: user.gender ?? null,
     };
 }
 /**
@@ -58,17 +59,14 @@ function freeTripsFor(sub) {
     const used = Number(sub.freeTripsUsed) || 0;
     return { max: limit, used, remaining: Math.max(0, limit - used) };
 }
-/**
- * Home `subscription` section per C1: always present, free-tier defaults when
- * the driver has no active non-expired plan.
- */
-async function toSubscriptionSection(driverId) {
+function toSubscriptionSection(driverId) {
     const current = await balanceService_1.default.findCurrentSubscription(driverId);
     if (!current) {
-        return { tier: 'free', price: 0, currency: 'JOD', expires_at: null, days_remaining: 0, free_trips: null };
+        return { tier: 'free', price: 0, currency: 'JOD', expires_at: null, days_remaining: 0, free_trips: null, is_active: false };
     }
     const now = Date.now();
     const daysRemaining = Math.max(0, Math.ceil((new Date(current.expiresAt).getTime() - now) / DAY_MS));
+    const isActive = current.status === 'active' && new Date(current.expiresAt).getTime() > now;
     return {
         tier: String(current.planName || 'free').toLowerCase(),
         price: Number(current.planCost || 0),
@@ -76,6 +74,7 @@ async function toSubscriptionSection(driverId) {
         expires_at: current.expiresAt,
         days_remaining: daysRemaining,
         free_trips: freeTripsFor(current),
+        is_active: isActive,
     };
 }
 function toNextTrip(trip) {
@@ -105,6 +104,7 @@ function toNextTrip(trip) {
                 year: vehicle.modelYear,
                 plate_number: vehicle.plateNumber,
                 color: vehicle.color,
+                seats: vehicle.seats,
             }
             : null,
         status: trip.status,
@@ -230,6 +230,8 @@ async function invalidateHomeCache(_driverId) { }
 async function getSubscription(driverId) {
     const current = await balanceService_1.default.findCurrentSubscription(driverId);
     const history = await subscriptionService_1.default.getMySubscriptions(driverId);
+    const now = Date.now();
+    const isActive = current && current.status === 'active' && new Date(current.expiresAt).getTime() > now;
     return {
         subscription: current
             ? {
@@ -237,10 +239,11 @@ async function getSubscription(driverId) {
                 price: Number(current.planCost || 0),
                 currency: 'JOD',
                 expires_at: current.expiresAt,
-                days_remaining: Math.max(0, Math.ceil((new Date(current.expiresAt).getTime() - Date.now()) / DAY_MS)),
+                days_remaining: Math.max(0, Math.ceil((new Date(current.expiresAt).getTime() - now) / DAY_MS)),
                 balance: Number(current.balance || 0),
                 plan_name: current.planName,
                 free_trips: freeTripsFor(current),
+                is_active: isActive,
             }
             : null,
         history: history.map((s) => ({

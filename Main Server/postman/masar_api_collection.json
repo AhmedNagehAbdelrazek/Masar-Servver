@@ -13854,7 +13854,76 @@
        },
        "response": []
       }
-     ],
+     ,
+{
+  "name": "Accept Ride Request (Driver)",
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "exec": [
+          "pm.environment.get('access_token') ? pm.request.headers.add({ key: 'Authorization', value: 'Bearer ' + pm.environment.get('access_token') }) : console.warn('No access_token set');"
+        ],
+        "type": "text/javascript",
+        "packages": {},
+        "requests": {}
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "exec": [
+          "pm.test('Responds successfully', function () {",
+          "    pm.response.to.be.oneOf([200, 201]);",
+          "});",
+          "pm.test('Returns a JSON body', function () {",
+          "    pm.expect(pm.response.json()).to.be.an('object');",
+          "});"
+        ],
+        "type": "text/javascript",
+        "packages": {},
+        "requests": {}
+      }
+    }
+  ],
+  "request": {
+    "method": "POST",
+    "header": [
+      {
+        "key": "Authorization",
+        "value": "Bearer {{access_token}}",
+        "type": "text"
+      },
+      {
+        "key": "Content-Type",
+        "value": "application/json",
+        "type": "text"
+      }
+    ],
+    "body": {
+      "mode": "raw",
+      "raw": "{\n  \"fare_per_seat\": 15.0,\n  \"seats\": [\n    { \"seat_number\": 1, \"type\": \"driver\" },\n    { \"seat_number\": 2, \"type\": \"available\" },\n    { \"seat_number\": 3, \"type\": \"available\" },\n    { \"seat_number\": 4, \"type\": \"available\" }\n  ],\n  \"type_of_trip\": \"one_way\",\n  \"repeated_days\": [1, 3, 5],\n  \"repeated_end_date\": \"2026-12-31\",\n  \"allowed_type\": \"all\",\n  \"instructions\": [\"No smoking\", \"No pets\"],\n  \"additional_instructions\": \"Call when arriving\",\n  \"pickup_point\": {\n    \"stop_name\": \"Downtown Amman\",\n    \"city\": \"Amman\",\n    \"lat\": 31.95,\n    \"lng\": 35.93\n  },\n  \"dropoff_point\": {\n    \"stop_name\": \"Irbid Center\",\n    \"city\": \"Irbid\",\n    \"lat\": 32.55,\n    \"lng\": 35.85\n  },\n  \"waypoints\": [],\n  \"stops\": [],\n  \"origin_time\": \"2026-08-23T08:53:36.583Z\"\n}",
+      "options": {
+        "raw": {
+          "language": "json"
+        }
+      }
+    },
+    "url": {
+      "raw": "{{base_url}}/ride-requests/{{request_id}}/accept",
+      "host": [
+        "{{base_url}}"
+      ],
+      "path": [
+        "ride-requests",
+        "{{request_id}}",
+        "accept"
+      ]
+    },
+    "description": "Driver accepts a passenger's ride request directly, creating a trip and confirmed booking without negotiation.\n\n**Path parameter**\n- `request_id` *(UUID, required)* — the ride request to accept.\n\n**Body fields**\n- `fare_per_seat` *(number, required)* — fare per seat in JOD.\n- `seats` *(array, required)* — seat configuration matching driver's vehicle (exactly one `driver` seat, rest `available`).\n- `type_of_trip` *(string, optional)* — `one_way` (default) or `repeated`.\n- `repeated_days` *(array of ints, optional)* — required if `repeated`; integers 0=Sun .. 6=Sat.\n- `repeated_end_date` *(string, optional)* — ISO date, required if `repeated`.\n- `allowed_type` *(string, optional)* — gender preference: `all`, `women_only`, `men_only`.\n- `instructions` *(array, optional)* — driver instructions.\n- `additional_instructions` *(string, optional)* — additional notes.\n- `pickup_point` / `dropoff_point` *(object, optional)* — custom pickup/dropoff.\n- `waypoints` / `stops` *(array, optional)* — route waypoints.\n- `origin_time` *(string, optional)* — departure time; defaults to ride request's origin_time.\n\n**Responses**\n- `201` — Trip created, booking confirmed. Returns `{ trip, booking, offer }`.\n- `403` — Not a driver, not verified, or vehicle not verified.\n- `404` — Ride request not found.\n- `409` — Request no longer accepting, driver already has pending offer, or seat mismatch.\n- `422` — Validation error (seat config, fare, dates, overlap, balance, etc.)."
+  },
+  "response": []
+}],
      "description": "Spec 009 US4/US5 - ride-request board and offer lifecycle."
     },
     {

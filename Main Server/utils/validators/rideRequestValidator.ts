@@ -150,17 +150,58 @@ export const driverOffersListValidation: ValidationChain[] = [
     .isInt({ min: 1, max: 100 }).withMessage(V.LIMIT_MUST_BE_AN_INTEGER_BETWEEN_1_AND_100),
 ];
 
+export const acceptRideRequestValidation: ValidationChain[] = [
+  ...rideRequestParamValidation,
+  body('fare_per_seat')
+    .notEmpty().withMessage(V.FARE_PER_SEAT_IS_REQUIRED)
+    .isFloat({ min: 0 }).withMessage(V.AGREED_FARE_MUST_BE_A_NON_NEGATIVE_NUMBER),
+  body('vehicle_id')
+    .optional()
+    .isUUID().withMessage(V.VEHICLE_ID_MUST_BE_A_VALID_UUID),
+  body('seats')
+    .optional()
+    .isArray().withMessage(V.SEATS_MUST_BE_AN_ARRAY),
+  body('type_of_trip')
+    .optional()
+    .isIn(['one_way', 'repeated']).withMessage(V.TYPE_OF_TRIP_MUST_BE_ONE_WAY_OR_REPEATED),
+  body('repeated_days')
+    .optional()
+    .isArray().withMessage(V.REPEATED_DAYS_MUST_BE_AN_ARRAY),
+  body('repeated_end_date')
+    .optional()
+    .isISO8601().withMessage(V.REPEATED_END_DATE_MUST_BE_A_VALID_ISO_8601_DATETIME),
+  body('allowed_type')
+    .optional()
+    .isIn(['all', 'women_only', 'men_only']).withMessage(V.GENDER_PREFERENCE_MUST_BE_ONE_OF_ALL_WOMEN_ONLY_MEN_ONLY),
+  body('instructions')
+    .optional()
+    .isArray().withMessage(V.INSTRUCTIONS_MUST_BE_AN_ARRAY),
+  body('additional_instructions')
+    .optional()
+    .isString().trim().isLength({ max: 1000 }).withMessage(V.ADDITIONAL_INSTRUCTIONS_MUST_BE_AT_MOST_1000_CHARACTERS),
+  body('pickup_point')
+    .optional()
+    .isObject().withMessage(V.PICKUP_POINT_MUST_BE_AN_OBJECT),
+  body('dropoff_point')
+    .optional()
+    .isObject().withMessage(V.DROPOFF_POINT_MUST_BE_AN_OBJECT),
+  body('waypoints')
+    .optional()
+    .isArray().withMessage(V.WAYPOINTS_MUST_BE_AN_ARRAY),
+  body('stops')
+    .optional()
+    .isArray().withMessage(V.STOPS_MUST_BE_AN_ARRAY),
+];
 
 
-
-const _exported = { rideRequestParamValidation, offerParamValidation, createRideRequestValidation, listRideRequestsValidation, updateRideRequestValidation, createOfferValidation, listOffersValidation, decideOfferValidation, agreePriceValidation, driverOffersListValidation };
+const _exported = { rideRequestParamValidation, offerParamValidation, createRideRequestValidation, listRideRequestsValidation, updateRideRequestValidation, createOfferValidation, listOffersValidation, decideOfferValidation, agreePriceValidation, driverOffersListValidation, acceptRideRequestValidation };
 export default _exported;
 
 // CommonJS interop
 // @ts-ignore
 if (typeof module !== 'undefined' && module.exports) {
   // @ts-ignore
-  module.exports = { rideRequestParamValidation, offerParamValidation, createRideRequestValidation, listRideRequestsValidation, updateRideRequestValidation, createOfferValidation, listOffersValidation, decideOfferValidation, agreePriceValidation, driverOffersListValidation };
+  module.exports = { rideRequestParamValidation, offerParamValidation, createRideRequestValidation, listRideRequestsValidation, updateRideRequestValidation, createOfferValidation, listOffersValidation, decideOfferValidation, agreePriceValidation, driverOffersListValidation, acceptRideRequestValidation };
   // @ts-ignore
   module.exports.rideRequestParamValidation = rideRequestParamValidation;
   // @ts-ignore
@@ -181,6 +222,8 @@ if (typeof module !== 'undefined' && module.exports) {
   module.exports.agreePriceValidation = agreePriceValidation;
   // @ts-ignore
   module.exports.driverOffersListValidation = driverOffersListValidation;
+  // @ts-ignore
+  module.exports.acceptRideRequestValidation = acceptRideRequestValidation;
   // @ts-ignore
   module.exports.default = _exported;
 }

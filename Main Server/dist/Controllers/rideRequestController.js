@@ -33,7 +33,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.agreePrice = exports.decideOffer = exports.listMyOffers = exports.listOffers = exports.submitOffer = exports.updateRideRequest = exports.getMatches = exports.getRequest = exports.listRequests = exports.createRideRequest = void 0;
+exports.acceptRideRequest = exports.agreePrice = exports.decideOffer = exports.listMyOffers = exports.listOffers = exports.submitOffer = exports.updateRideRequest = exports.getMatches = exports.getRequest = exports.listRequests = exports.createRideRequest = void 0;
 const catchAsync_1 = require("../utils/catchAsync");
 const httpResponse_1 = require("../utils/httpResponse");
 const rideRequestService = __importStar(require("../Services/rideRequestService"));
@@ -113,6 +113,14 @@ const agreePrice = (0, catchAsync_1.catchAsync)(async (req, res) => {
     (0, httpResponse_1.successResponse)(res, { offer });
 });
 exports.agreePrice = agreePrice;
+const acceptRideRequest = (0, catchAsync_1.catchAsync)(async (req, res) => {
+    const authReq = req;
+    const { request_id } = req.params;
+    const result = await rideRequestService.acceptRideRequest(String(authReq.user?.id), request_id, req.body);
+    auditService.markResource(res, { type: 'ride_request', id: request_id, label: 'ride request accepted' });
+    (0, httpResponse_1.successResponse)(res, result, 201);
+});
+exports.acceptRideRequest = acceptRideRequest;
 exports.default = {
     createRideRequest,
     listRequests,
@@ -124,5 +132,6 @@ exports.default = {
     listMyOffers,
     decideOffer,
     agreePrice,
+    acceptRideRequest,
 };
 //# sourceMappingURL=rideRequestController.js.map

@@ -1,5 +1,6 @@
 import { Transform, Type } from 'class-transformer';
 import {
+  IsArray,
   IsDefined,
   IsIn,
   IsInt,
@@ -232,4 +233,72 @@ export class AttachOfferBody {
   @IsOptional()
   @IsString()
   dropoff_deadline?: string;
+}
+
+export class AcceptRideRequestBody {
+  @IsDefined()
+  @IsNotEmpty()
+  @IsNumber()
+  @Min(0)
+  @Type(() => Number)
+  fare_per_seat!: number;
+
+  @IsOptional()
+  @IsUUID()
+  vehicle_id?: string;
+
+  @IsDefined()
+  @IsArray()
+  seats!: Array<{
+    seat_number: number;
+    type: 'driver' | 'available' | 'unavailable';
+  }>;
+
+  @IsOptional()
+  @IsIn(['one_way', 'repeated'])
+  type_of_trip?: string;
+
+  @IsOptional()
+  @IsArray()
+  repeated_days?: number[];
+
+  @IsOptional()
+  @IsString()
+  @IsISO8601()
+  repeated_end_date?: string;
+
+  @IsOptional()
+  @IsIn(['all', 'women_only', 'men_only'])
+  allowed_type?: string;
+
+  @IsOptional()
+  @IsArray()
+  instructions?: string[];
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(1000)
+  @TrimString()
+  additional_instructions?: string;
+
+  @IsOptional()
+  @IsObject()
+  pickup_point?: Record<string, unknown>;
+
+  @IsOptional()
+  @IsObject()
+  dropoff_point?: Record<string, unknown>;
+
+  @IsOptional()
+  @IsArray()
+  waypoints?: Record<string, unknown>[];
+
+  @IsOptional()
+  @IsArray()
+  stops?: Record<string, unknown>[];
+
+  @IsOptional()
+  @IsString()
+  @IsISO8601()
+  origin_time?: string;
 }

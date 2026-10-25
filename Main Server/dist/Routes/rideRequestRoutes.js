@@ -51,6 +51,8 @@ router.get('/:request_id/matches', (0, roleGuard_1.roleGuard)(['passenger']), ..
 router.put('/:request_id', (0, roleGuard_1.roleGuard)(['passenger']), ...v.updateRideRequestValidation, validatorMiddleware_1.default, c.updateRideRequest);
 router.post('/:request_id/offers', (0, roleGuard_1.roleGuard)(['driver']), ...v.createOfferValidation, validatorMiddleware_1.default, c.submitOffer);
 router.get('/:request_id/offers', ...v.listOffersValidation, c.listOffers);
+// Driver accepts ride request directly (creates trip + booking)
+router.post('/:request_id/accept', (0, roleGuard_1.roleGuard)(['driver']), ...v.acceptRideRequestValidation, validatorMiddleware_1.default, c.acceptRideRequest);
 exports.default = router;
 module.exports = router;
 //# sourceMappingURL=rideRequestRoutes.js.map
