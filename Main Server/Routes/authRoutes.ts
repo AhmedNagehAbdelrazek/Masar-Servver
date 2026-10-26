@@ -27,7 +27,12 @@ router.post('/change-password', protect, ...changePasswordValidation, validate, 
 // Forgot password
 router.post('/forgot-password', ...forgotPasswordValidation, validate, c.forgotPassword);
 router.post('/forgot-password/verify-otp', ...verifyOTPValidation, validate, c.verifyForgotPasswordOTP);
+router.post('/forgot-password/sms', ...forgotPasswordValidation, validate, c.forgotPasswordSms);
+
+// Reset password
 router.post('/forgot-password/reset', ...resetPasswordValidation, validate, c.resetPassword);
+// Reset password via SMS
+router.post('/forgot-password/sms/reset', c.resetPasswordSms);
 
 // Resend OTP
 router.post('/resend-otp', ...resendOTPValidation, validate, c.resendOTP);

@@ -73,6 +73,18 @@ const verifyForgotPasswordOTP = catchAsync(async (req: Request, res: Response): 
   successResponse(res, result);
 });
 
+const forgotPasswordSms = catchAsync(async (req: Request, res: Response): Promise<void> => {
+  const { phone } = req.body as { phone: string };
+  const result = await (authService as unknown as { forgotPasswordSms: (phone: string) => Promise<unknown> }).forgotPasswordSms(phone);
+  successResponse(res, result);
+});
+
+const resetPasswordSms = catchAsync(async (req: Request, res: Response): Promise<void> => {
+  const { phone, resetCode, newPassword } = req.body as { phone: string; resetCode: string; newPassword: string };
+  const result = await (authService as unknown as { resetPasswordSms: (phone: string, resetCode: string, newPassword: string) => Promise<unknown> }).resetPasswordSms(phone, resetCode, newPassword);
+  successResponse(res, result);
+});
+
 const resetPassword = catchAsync(async (req: Request, res: Response): Promise<void> => {
   const { password } = req.body as { password: string };
   const result = await (authService as unknown as { resetPassword: (authHeader: string | undefined, password: string) => Promise<unknown> }).resetPassword(req.headers.authorization, password);
@@ -144,6 +156,8 @@ export {
   submitVehicle,
   getVehicle,
   getOnboardingStatus,
+  forgotPasswordSms,
+  resetPasswordSms,
 };
 export default {
   registerPhone,
@@ -164,4 +178,6 @@ export default {
   submitVehicle,
   getVehicle,
   getOnboardingStatus,
+  forgotPasswordSms,
+  resetPasswordSms,
 };

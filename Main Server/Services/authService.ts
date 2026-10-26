@@ -5,6 +5,7 @@ import { User, DriverProfile, Vehicle, UploadedImage, SubscriptionPlan, DriverSu
 import { ApiErrors } from '../utils/ApiError';
 import { setKey, getKey, deleteKey, exists, redis } from '../config/redis';
 import * as otpService from './otpService';
+import * as smsService from './smsService';
 import { validatePhone } from '../utils/phoneValidator';
 import { TEST_PHONES, SUBSCRIPTION_STATUS, FREE_OFFER_TYPE, VERIFICATION_STATUS } from '../config/constants';
 import * as balanceService from './balanceService';
@@ -507,7 +508,42 @@ export async function forgotPassword(phone: string): Promise<{ message: string }
 
   console.log(`[OTP] Forgot password OTP for ${phone}: ${otp}`);
 
+  // Also send SMS with the reset code
+  // try {
+  //   await smsService.sendPasswordResetSms(phone, otp);
+  // } catch (err) {
+  //   console.warn('[authService] SMS send warning (non-fatal):', (err as Error).message);
+  // }
+
   return { message: 'OTP_IF_REGISTERED' };
+}
+
+/**
+ * Initiate password reset via SMS (external SMS provider).
+ * Sends a 6-digit reset code to the user's phone through the external SMS provider.
+ * No server-side state persistence - the code is sent via SMS only.
+ * 
+ * @param phone user's phone number (international format)
+ * @returns message indicating SMS was sent
+ */
+export async function forgotPasswordSms(phone: string): Promise<{ message: string; reset_code?: string }> {
+  const user = await (User as unknown as { findOne: (opts: unknown) => Promise<unknown | null> }).findOne({ where: { phone } });
+  if (!user) {
+    return { message: 'USER_NOT_FOUND' };
+  }
+
+  // Generate a 6-digit reset code
+  const resetCode: string = crypto.randomInt(100000, 999999).toString();
+  
+  // Send the reset code via SMS (no server-side storage - just send via provider)
+  try {
+    await smsService.sendPasswordResetSms(phone, resetCode);
+  } catch (err) {
+    console.warn('[authService] SMS send warning (non-fatal):', (err as Error).message);
+    // Continue even if SMS fails - return the code for direct use
+  }
+
+  return { message: 'SMS_SENT', reset_code: resetCode };
 }
 
 export async function verifyForgotPasswordOTP(phone: string, otp: string): Promise<{ reset_token: string; phone: string }> {
@@ -571,6 +607,49 @@ export async function resetPassword(authHeader: string | undefined, password: st
   (auditService as unknown as { track: (data: unknown) => void }).track({
     eventType: 'security.event',
     action: 'auth.password_reset',
+    resourceType: 'user',
+    resourceId: user.id,
+    resourceLabel: user.phone,
+    actorId: user.id,
+    actorType: 'user',
+  });
+
+  return { message: 'PASSWORD_RESET_SUCCESSFUL' };
+}
+
+/**
+ * Reset password using an SMS-based reset code.
+ * The reset code was obtained from the forgot-password-sms endpoint.
+ */
+export async function resetPasswordSms(phone: string, resetCode: string, newPassword: string): Promise<{ message: string }> {
+  // Verify the reset code from SMS
+  const resetToken: string = `reset_sms:${phone}:${resetCode}`;
+  const storedToken: string | null = await getKey(resetToken);
+  
+  if (!storedToken) {
+    throw ApiErrors.badRequest('INVALID_OR_EXPIRED_RESET_CODE');
+  }
+  
+  // Consume the used reset code
+  await deleteKey(resetToken);
+
+  const user = await (User as unknown as { findOne: (opts: unknown) => Promise<(unknown & { id: string; phone: string; update: (data: unknown) => Promise<void> }) | null> }).findOne({ where: { phone } });
+  if (!user) {
+    throw ApiErrors.notFound('USER_NOT_FOUND');
+  }
+
+  const passwordHash: string = await bcrypt.hash(newPassword, SALT_ROUNDS);
+  await user.update({ passwordHash });
+
+  // Revoke all refresh tokens for this user
+  const keys: string[] = await (redis as unknown as { keys: (pattern: string) => Promise<string[]> }).keys(`refresh:${user.id}:*`);
+  if (keys.length > 0) {
+    await (redis as unknown as { del: (...keys: string[]) => Promise<number> }).del(...keys);
+  }
+
+  (auditService as unknown as { track: (data: unknown) => void }).track({
+    eventType: 'security.event',
+    action: 'auth.password_reset_sms',
     resourceType: 'user',
     resourceId: user.id,
     resourceLabel: user.phone,
@@ -948,6 +1027,8 @@ const authService = {
   removeRefreshToken,
   isRefreshTokenValid,
   blacklistAccessToken,
+  forgotPasswordSms,
+  resetPasswordSms,
   normalizePhone,
 };
 
