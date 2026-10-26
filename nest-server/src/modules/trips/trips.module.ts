@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { RealtimeModule } from '../../realtime/realtime.module.js';
 import { MapsModule } from '../maps/maps.module.js';
 import { NotificationsModule } from '../notifications/notifications.module.js';
@@ -12,7 +12,7 @@ import { TripsController } from './trips.controller.js';
 import { TripsService } from './trips.service.js';
 
 @Module({
-  imports: [SubscriptionsModule, NotificationsModule, RealtimeModule, MapsModule, RideRequestsModule],
+  imports: [SubscriptionsModule, NotificationsModule, RealtimeModule, MapsModule, forwardRef(() => RideRequestsModule)],
   controllers: [TripsController, SeatLockController, AdminTripController],
   providers: [TripsService, SeatLockService, TripExpiryService],
   exports: [TripsService, SeatLockService, TripExpiryService],

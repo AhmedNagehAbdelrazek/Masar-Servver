@@ -25,7 +25,7 @@ var migrationCommands = [{
         ALTER COLUMN "driver_instructions" TYPE TEXT[]
         USING (CASE
             WHEN "driver_instructions" IS NULL THEN NULL
-            WHEN pg_typeof("driver_instructions")::text = 'text[]' THEN "driver_instructions"
+            WHEN pg_typeof("driver_instructions")::text = 'text[]' THEN "driver_instructions"::text[]
             ELSE ARRAY["driver_instructions"]::text[]
         END)
     `]

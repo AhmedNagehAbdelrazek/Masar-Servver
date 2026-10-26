@@ -534,8 +534,11 @@ export async function forgotPasswordSms(phone: string): Promise<{ message: strin
 
   // Generate a 6-digit reset code
   const resetCode: string = crypto.randomInt(100000, 999999).toString();
-  
-  // Send the reset code via SMS (no server-side storage - just send via provider)
+
+  // Store the reset code in Redis for verification (10 minutes TTL)
+  await setKey(`reset_sms:${phone}:${resetCode}`, resetCode, 600);
+
+  // Send the reset code via SMS
   try {
     await smsService.sendPasswordResetSms(phone, resetCode);
   } catch (err) {
@@ -623,15 +626,15 @@ export async function resetPassword(authHeader: string | undefined, password: st
  */
 export async function resetPasswordSms(phone: string, resetCode: string, newPassword: string): Promise<{ message: string }> {
   // Verify the reset code from SMS
-  const resetToken: string = `reset_sms:${phone}:${resetCode}`;
-  const storedToken: string | null = await getKey(resetToken);
-  
+  const resetTokenKey: string = `reset_sms:${phone}:${resetCode}`;
+  const storedToken: string | null = await getKey(resetTokenKey);
+
   if (!storedToken) {
     throw ApiErrors.badRequest('INVALID_OR_EXPIRED_RESET_CODE');
   }
-  
+
   // Consume the used reset code
-  await deleteKey(resetToken);
+  await deleteKey(resetTokenKey);
 
   const user = await (User as unknown as { findOne: (opts: unknown) => Promise<(unknown & { id: string; phone: string; update: (data: unknown) => Promise<void> }) | null> }).findOne({ where: { phone } });
   if (!user) {

@@ -1,6 +1,8 @@
 import {
   ConflictException,
   ForbiddenException,
+  forwardRef,
+  Inject,
   Injectable,
   Logger,
   NotFoundException,
@@ -155,7 +157,7 @@ export class RideRequestsService {
     private readonly home: HomeService,
     private readonly redis: RedisService,
     private readonly realtime: RealtimeGateway,
-    private readonly tripsService: TripsService,
+    @Inject(forwardRef(() => TripsService)) private readonly tripsService: TripsService,
   ) {}
 
   async expireStale(): Promise<void> {

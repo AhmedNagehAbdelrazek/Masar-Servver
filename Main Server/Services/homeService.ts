@@ -51,7 +51,7 @@ function freeTripsFor(sub) {
   return { max: limit, used, remaining: Math.max(0, limit - used) };
 }
 
-function toSubscriptionSection(driverId) {
+async function toSubscriptionSection(driverId) {
   const current = await balanceService.findCurrentSubscription(driverId);
   if (!current) {
     return { tier: 'free', price: 0, currency: 'JOD', expires_at: null, days_remaining: 0, free_trips: null, is_active: false };

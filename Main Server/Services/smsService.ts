@@ -59,15 +59,15 @@ export async function sendSms(phone: string, message: string): Promise<SmsSendRe
         });
         
         res.on('end', () => {
-          const isSuccess = res.statusCode >= 200 && res.statusCode < 300;
-          
+          const isSuccess = res.statusCode !== undefined && res.statusCode >= 200 && res.statusCode < 300;
+
           if (isSuccess) {
             resolve({ success: true });
           } else {
             console.warn('[smsProvider] Unexpected response status:', res.statusCode, 'body:', data);
             resolve({ success: false, error: data || `HTTP ${res.statusCode}` });
           }
-        }
+        });
       });
       
       req.on('error', (err) => {
@@ -96,29 +96,34 @@ export async function checkSmsBalance(): Promise<{ balance: number; error?: stri
     const url = new URL(`${SMS_PROVIDER_BASE}/websmpp/balanceReport`);
     url.searchParams.append('userid', SMS_USERNAME);
     url.searchParams.append('password', SMS_PASSWORD);
-    
-    const response = await new Promise<{ balance: number; error?: string }>((resolve, reject) => {
-      https.get(url.toString(), (res) => {
+
+    const response = await new Promise<{ balance: number; error?: string }>((resolve) => {
+      const req = https.get(url.toString(), (res) => {
         let data = '';
-        
+
         res.on('data', (chunk) => {
           data += chunk;
         });
-        
+
         res.on('end', () => {
           const balanceMatch = data.match(/balance[=:]\s*(\d+)/i);
           const balance = balanceMatch ? parseInt(balanceMatch[1], 10) : 0;
-          
+
           resolve({ balance, error: undefined });
-        }
+        });
       });
-      
+
       req.on('error', (err) => {
         console.error('[smsProvider] Error checking balance:', err.message);
         resolve({ balance: 0, error: err.message || 'Failed to connect to SMS provider' });
       });
+
+      req.setTimeout(30000, () => {
+        req.destroy();
+        resolve({ balance: 0, error: 'Request timeout' });
+      });
     });
-    
+
     return response;
   } catch (error: any) {
     console.error('[smsProvider] Error checking balance:', error.message);
@@ -141,4 +146,3 @@ export default {
   checkSmsBalance,
   sendPasswordResetSms,
 };
-export { sendSms, checkSmsBalance, sendPasswordResetSms };

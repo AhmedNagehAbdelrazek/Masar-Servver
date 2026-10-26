@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Put, Query } from '@nestjs/common';
+import { Body, Controller, Delete, forwardRef, Get, HttpCode, Inject, Param, Patch, Post, Put, Query } from '@nestjs/common';
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import { Roles } from '../../common/decorators/roles.decorator.js';
 import type { AuthUser } from '../../common/guards/jwt-auth.guard.js';
@@ -32,7 +32,7 @@ export class TripsController {
   constructor(
     private readonly trips: TripsService,
     private readonly recentSearch: RecentSearchService,
-    private readonly offers: RideRequestsService,
+    @Inject(forwardRef(() => RideRequestsService)) private readonly offers: RideRequestsService,
   ) {}
 
   @Post()
