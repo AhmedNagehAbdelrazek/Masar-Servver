@@ -18,6 +18,7 @@ interface SubscriptionLike {
   expiresAt: Date | null;
   freeOffer: unknown;
   freeTripsUsed: number;
+  status: string;
 }
 
 function freeTripsFor(sub: SubscriptionLike | null): { max: number; used: number; remaining: number } | null {
