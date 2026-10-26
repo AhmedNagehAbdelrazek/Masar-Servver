@@ -63,7 +63,7 @@ async function bootstrap(): Promise<void> {
   // API_PREFIX versions the public surface: nest-server serves v2
   // (API_PREFIX=api/v2 in compose) while Express serves v1.
   // Default keeps local/test paths (/api/...) untouched.
-  app.setGlobalPrefix(process.env.API_PREFIX ?? 'api/v1', { exclude: ['/'] });
+  app.setGlobalPrefix('api/v1');
   app.useGlobalPipes(new ApiValidationPipe());
   app.useGlobalFilters(new HttpExceptionFilter());
   app.useGlobalInterceptors(

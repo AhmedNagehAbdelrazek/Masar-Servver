@@ -9,4 +9,4 @@ process.env.APP_LOCALE ??= 'en';
 // ConfigModule also loads the developer's .env, and dotenv never overrides an
 // existing key. Pin the prefix before that happens so e2e URLs stay /api/*
 // regardless of a local API_PREFIX (e.g. api/v2).
-process.env.API_PREFIX = process.env.TEST_API_PREFIX ?? 'api/v2';
+process.env.API_PREFIX = 'api/v2';
