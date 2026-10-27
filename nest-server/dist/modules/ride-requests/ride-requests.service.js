@@ -7,8 +7,11 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
+var __param = (this && this.__param) || function (paramIndex, decorator) {
+    return function (target, key) { decorator(target, key, paramIndex); }
+};
 var RideRequestsService_1;
-import { ConflictException, ForbiddenException, Injectable, Logger, NotFoundException, UnprocessableEntityException, } from '@nestjs/common';
+import { ConflictException, ForbiddenException, forwardRef, Inject, Injectable, Logger, NotFoundException, UnprocessableEntityException, } from '@nestjs/common';
 import { maskPhone } from '../../common/utils/masking.js';
 import { buildPagination, parsePagination } from '../../common/utils/pagination.js';
 import { generateReferenceCode } from '../../common/utils/reference-code.js';
@@ -988,6 +991,7 @@ let RideRequestsService = RideRequestsService_1 = class RideRequestsService {
 };
 RideRequestsService = RideRequestsService_1 = __decorate([
     Injectable(),
+    __param(5, Inject(forwardRef(() => TripsService))),
     __metadata("design:paramtypes", [PrismaService,
         NotificationsService,
         HomeService,

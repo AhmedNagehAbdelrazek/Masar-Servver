@@ -10,7 +10,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
-import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Put, Query } from '@nestjs/common';
+import { Body, Controller, Delete, forwardRef, Get, HttpCode, Inject, Param, Patch, Post, Put, Query } from '@nestjs/common';
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import { Roles } from '../../common/decorators/roles.decorator.js';
 import { RecentSearchService } from '../subscriptions/recent-search.service.js';
@@ -338,6 +338,7 @@ __decorate([
 ], TripsController.prototype, "getTripPassengers", null);
 TripsController = __decorate([
     Controller('trips'),
+    __param(2, Inject(forwardRef(() => RideRequestsService))),
     __metadata("design:paramtypes", [TripsService,
         RecentSearchService,
         RideRequestsService])

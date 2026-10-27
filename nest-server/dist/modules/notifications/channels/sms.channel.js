@@ -10,15 +10,25 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var SmsChannel_1;
 import { Injectable, Logger } from '@nestjs/common';
 import twilio from 'twilio';
+import { WebsmppSmsService } from '../../sms/websmpp-sms.service.js';
 let SmsChannel = SmsChannel_1 = class SmsChannel {
+    websmpp;
     logger = new Logger(SmsChannel_1.name);
     provider;
-    constructor() {
+    constructor(websmpp) {
+        this.websmpp = websmpp;
         this.provider = process.env.SMS_PROVIDER ?? 'log';
     }
     async send(user, message) {
         if (!user?.phone)
             return;
+        if (this.provider === 'websmpp') {
+            const result = await this.websmpp.sendSms(user.phone, message.body);
+            if (!result.success) {
+                this.logger.warn(`[sms:websmpp] send failed${result.errorCode ? ` (${result.errorCode})` : ''}: ${result.error}`);
+            }
+            return;
+        }
         if (this.provider === 'twilio') {
             try {
                 const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
@@ -38,7 +48,7 @@ let SmsChannel = SmsChannel_1 = class SmsChannel {
 };
 SmsChannel = SmsChannel_1 = __decorate([
     Injectable(),
-    __metadata("design:paramtypes", [])
+    __metadata("design:paramtypes", [WebsmppSmsService])
 ], SmsChannel);
 export { SmsChannel };
 //# sourceMappingURL=sms.channel.js.map

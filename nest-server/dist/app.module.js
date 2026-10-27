@@ -24,6 +24,7 @@ import { MapsModule } from './modules/maps/maps.module.js';
 import { ChatModule } from './modules/chat/chat.module.js';
 import { SosModule } from './modules/sos/sos.module.js';
 import { NotificationsModule } from './modules/notifications/notifications.module.js';
+import { SmsModule } from './modules/sms/sms.module.js';
 import { RatingsModule } from './modules/ratings/ratings.module.js';
 import { ComplaintsModule } from './modules/complaints/complaints.module.js';
 import { FavoritesModule } from './modules/favorites/favorites.module.js';
@@ -62,6 +63,7 @@ AppModule = __decorate([
             ChatModule,
             SosModule,
             NotificationsModule,
+            SmsModule,
             RatingsModule,
             ComplaintsModule,
             FavoritesModule,
