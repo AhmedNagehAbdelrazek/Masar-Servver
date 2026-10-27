@@ -1,6 +1,6 @@
 // @ts-nocheck
 import twilio from 'twilio';
-import smsService from '../smsService';
+import smsService from '../../smsService';
 /**
  * SMS channel.
  *
