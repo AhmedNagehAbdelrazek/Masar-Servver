@@ -1,5 +1,6 @@
 import { forwardRef, Module } from '@nestjs/common';
 import { RealtimeModule } from '../../realtime/realtime.module.js';
+import { SmsModule } from '../sms/sms.module.js';
 import { InAppChannel } from './channels/in-app.channel.js';
 import { PushChannel } from './channels/push.channel.js';
 import { SmsChannel } from './channels/sms.channel.js';
@@ -9,7 +10,7 @@ import { NotificationsController } from './notifications.controller.js';
 import { NotificationsService } from './notifications.service.js';
 
 @Module({
-  imports: [forwardRef(() => RealtimeModule)],
+  imports: [forwardRef(() => RealtimeModule), SmsModule],
   controllers: [NotificationsController, NotificationSettingsController],
   providers: [NotificationsService, NotificationSettingsService, SmsChannel, PushChannel, InAppChannel],
   exports: [NotificationsService, NotificationSettingsService],

@@ -1,15 +1,35 @@
 // @ts-nocheck
 import twilio from 'twilio';
+import smsService from '../smsService';
 /**
  * SMS channel.
  *
  * Provider interface: send({ to, body })
+ * - websmpp: Advance Messaging Systems (Broadnet) gateway (see SMS_API.pdf /
+ *   HLR_API.pdf). Requires SMS_USERNAME / SMS_PASSWORD / SMS_SENDER_ID —
+ *   the real production provider for this project.
  * - twilio: requires `twilio` package + TWILIO_ACCOUNT_SID/TWILIO_AUTH_TOKEN/TWILIO_FROM
  * - log (default): console fallback for development — never fails
  */
 const provider = process.env.SMS_PROVIDER || 'log';
 
 function buildProvider() {
+  if (provider === 'websmpp') {
+    // The channel must never throw upstream: a failed send is logged with
+    // the provider's error code (e.g. HTTP18 = insufficient balance).
+    return {
+      async send({ to, body }) {
+        const result = await smsService.sendSms(to, body);
+        if (!result.success) {
+          console.warn(
+            `[sms:websmpp] send failed${result.errorCode ? ` (${result.errorCode})` : ''}: ${result.error}`,
+            { to }
+          );
+        }
+      },
+    };
+  }
+
   if (provider === 'twilio') {
     try {
       const client = twilio(
