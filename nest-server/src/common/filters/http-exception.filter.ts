@@ -10,6 +10,33 @@ import { Request, Response } from 'express';
 import { hasKey, localizeDetail, shape } from '../i18n/i18n.js';
 import { resolveLocaleMode } from '../utils/locale.js';
 
+// Express parity (Main Server/utils/ApiError.ts): V1 has one code for every
+// 401 (UNAUTHORIZED), uses FORBIDDEN for role denials, and emits generic
+// NOT_FOUND for missing resources — but it *does* have a few explicit codes
+// (FIELD_LOCKED, SEAT_LOCK_EXPIRED, NO_PENDING_DELETION_REQUEST, ...), so only
+// collapse the codes that V2 invented: AUTH_* on 403 and *_NOT_FOUND on 404.
+function mapCodeToV1(status: number, code: unknown): unknown {
+  if (status === 401) return 'UNAUTHORIZED';
+  if (status === 403 && typeof code === 'string' && code.startsWith('AUTH_')) return 'FORBIDDEN';
+  if (status === 404 && typeof code === 'string') {
+    if (code === 'ROUTE_NOT_FOUND') return code;
+    if (code.endsWith('_NOT_FOUND') || code === 'SEAT_LOCK_EXPIRED_OR_DOES_NOT_EXIST') {
+      return 'NOT_FOUND';
+    }
+  }
+  return code;
+}
+
+function isJsonParseMessage(message: unknown): boolean {
+  return (
+    typeof message === 'string' &&
+    (/JSON at position/i.test(message) ||
+      /^Unexpected token/i.test(message) ||
+      /^Unexpected end of JSON/i.test(message) ||
+      /^Expected .+ in JSON/i.test(message))
+  );
+}
+
 // Port of Main Server/middlewares/globalErrorHandler.ts + utils/ApiError.ts
 // Error envelope: { status: 'error', message, message_en?, code, details? }
 @Catch()
@@ -39,11 +66,13 @@ export class HttpExceptionFilter implements ExceptionFilter {
                 (payload.params as Record<string, unknown> | undefined) ?? null,
                 mode,
               )
-            : { message: payload.message };
+            : isJsonParseMessage(payload.message)
+              ? shape('INVALID_JSON_BODY', null, mode)
+              : { message: payload.message };
         const out: Record<string, unknown> = {
           status: 'error',
           ...shaped,
-          code: payload.code,
+          code: mapCodeToV1(status, payload.code),
         };
         if (Array.isArray(payload.details)) {
           out.details = (payload.details as Record<string, string>[]).map((d) =>
@@ -72,7 +101,9 @@ export class HttpExceptionFilter implements ExceptionFilter {
       }
       res.status(status).json({
         status: 'error',
-        message: Array.isArray(message) ? message.join(', ') : (message ?? 'Error'),
+        ...(isJsonParseMessage(message)
+          ? shape('INVALID_JSON_BODY', null, mode)
+          : { message: Array.isArray(message) ? message.join(', ') : (message ?? 'Error') }),
         code: status === 401 ? 'UNAUTHORIZED' : status === 403 ? 'FORBIDDEN' : 'BAD_REQUEST',
       });
       return;

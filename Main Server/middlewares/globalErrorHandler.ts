@@ -77,6 +77,17 @@ const globalErrorHandler: ErrorRequestHandler = (
     return;
   }
 
+  if (error instanceof SyntaxError && error.statusCode === 400) {
+    // body-parser malformed JSON. Previously surfaced as "internal server
+    // error"; return the same clean message the Nest server emits.
+    res.status(400).json({
+      status: 'error',
+      ...shape('INVALID_JSON_BODY', null, mode),
+      code: 'BAD_REQUEST',
+    });
+    return;
+  }
+
   if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
     res.status(401).json({
       status: 'error',

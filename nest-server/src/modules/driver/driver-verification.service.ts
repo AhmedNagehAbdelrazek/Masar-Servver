@@ -191,10 +191,11 @@ export class DriverVerificationService {
     const uniqueIds = [...new Set(docIds)];
     const found = await this.prisma.uploadedImage.findMany({ where: { id: { in: uniqueIds } } });
     if (found.length !== uniqueIds.length) {
+      // Express parity: V1 raises a plain VALIDATION_ERROR whose message is the
+      // catalog key (no `details` array), so keep the same envelope.
       throw new UnprocessableEntityException({
-        message: 'VALIDATION_FAILED',
+        message: 'ONE_OR_MORE_UPLOADED_DOCUMENT_IDS_DO_NOT_EXIST',
         code: 'VALIDATION_ERROR',
-        details: [{ field: 'documents', message: 'ONE_OR_MORE_UPLOADED_DOCUMENT_IDS_DO_NOT_EXIST' }],
       });
     }
   }

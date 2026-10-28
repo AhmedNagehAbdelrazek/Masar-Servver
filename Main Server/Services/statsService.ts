@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { Op } from 'sequelize';
+import { Op, fn, col } from 'sequelize';
 import { User, Trip, Booking, DriverProfile } from '../Models';
 import { TRIP_STATUS, BOOKING_STATUS } from '../config/constants';
 

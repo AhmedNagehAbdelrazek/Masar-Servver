@@ -26,7 +26,7 @@ describe('health (Wave 0 harness proof)', () => {
     const res = await ctx.agent.get('/api/auth/me');
     expect(res.status).toBe(401);
     expect(res.body.status).toBe('error');
-    expect(res.body.code).toBe('AUTH_NO_TOKEN');
+    expect(res.body.code).toBe('UNAUTHORIZED');
   });
 
   it('unknown routes are 404 with envelope', async () => {

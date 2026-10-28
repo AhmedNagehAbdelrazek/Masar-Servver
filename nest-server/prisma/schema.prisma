@@ -263,7 +263,11 @@ model TripSeat {
   seatNumber   Int      @map("seat_number") @db.SmallInt
   seatType     String   @map("seat_type") @db.VarChar(20)
   wasAvailable Boolean  @default(false) @map("was_available")
-  createdAt    DateTime @default(now()) @map("createdat") @db.Timestamptz
+  // NOTE: trip_seats is the only Sequelize table whose timestamp column is
+  // snake_case (`created_at`); every other table uses `createdat`. Do not
+  // "fix" this back to @map("createdat") — Prisma reads/writes fail with
+  // P2022 ("column trip_seats.createdat does not exist") if you do.
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
 
   trip Trip @relation(fields: [tripId], references: [id], onDelete: Cascade)
 

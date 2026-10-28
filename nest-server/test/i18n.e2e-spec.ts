@@ -87,23 +87,23 @@ describe('guard error keys are localized', () => {
   it('missing token renders AUTH_NO_TOKEN in Arabic with ?lang=ar', async () => {
     const res = await ctx.agent.post('/api/upload?lang=ar');
     expect(res.status).toBe(401);
-    expect(res.body).toMatchObject({ status: 'error', code: 'AUTH_NO_TOKEN' });
+    expect(res.body).toMatchObject({ status: 'error', code: 'UNAUTHORIZED' });
     expect(res.body.message).toBe(APP_MESSAGES.AUTH_NO_TOKEN.ar);
   });
 
-  it('invalid token renders AUTH_INVALID_TOKEN in both locales', async () => {
+  it('invalid token renders AUTH_INVALID_TOKEN message with the V1 UNAUTHORIZED code', async () => {
     const en = await ctx.agent.post('/api/upload').set('Authorization', 'Bearer junk');
     expect(en.status).toBe(401);
-    expect(en.body).toMatchObject({ status: 'error', code: 'AUTH_INVALID_TOKEN' });
+    expect(en.body).toMatchObject({ status: 'error', code: 'UNAUTHORIZED' });
     expect(en.body.message).toBe(APP_MESSAGES.AUTH_INVALID_TOKEN.en);
 
     const ar = await ctx.agent.post('/api/upload?lang=ar').set('Authorization', 'Bearer junk');
     expect(ar.status).toBe(401);
-    expect(ar.body.code).toBe('AUTH_INVALID_TOKEN');
+    expect(ar.body.code).toBe('UNAUTHORIZED');
     expect(ar.body.message).toBe(APP_MESSAGES.AUTH_INVALID_TOKEN.ar);
   });
 
-  it('wrong role renders AUTH_INSUFFICIENT_ROLE in Arabic with ?lang=ar', async () => {
+  it('wrong role renders AUTH_INSUFFICIENT_ROLE message with the V1 FORBIDDEN code', async () => {
     // /api/favorites requires the passenger role; a driver token is valid auth
     // but fails RolesGuard -> 403.
     const token = generateAccessToken({ id: '00000000-0000-4000-8000-0000000000aa', role: 'driver' });
@@ -111,7 +111,7 @@ describe('guard error keys are localized', () => {
       .get('/api/favorites/routes?lang=ar')
       .set('Authorization', `Bearer ${token}`);
     expect(res.status).toBe(403);
-    expect(res.body).toMatchObject({ status: 'error', code: 'AUTH_INSUFFICIENT_ROLE' });
+    expect(res.body).toMatchObject({ status: 'error', code: 'FORBIDDEN' });
     expect(res.body.message).toBe(APP_MESSAGES.AUTH_INSUFFICIENT_ROLE.ar);
   });
 });

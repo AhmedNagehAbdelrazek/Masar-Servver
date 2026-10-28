@@ -17,8 +17,34 @@ import {
   MaxLength,
   Min,
   ValidateNested,
+  ValidationOptions,
+  registerDecorator,
 } from 'class-validator';
 import { IsLat, IsLng, IsMoney, TrimString } from '../../../common/validators/geo.validators.js';
+
+// Express parity: createTripValidation/updateTripValidation reject past
+// departure times before the controller runs, so the DTO must too (otherwise a
+// past date loses to 403/404/business-rule errors in V2).
+export function IsFutureDateTime(validationOptions?: ValidationOptions) {
+  return function (object: object, propertyName: string): void {
+    registerDecorator({
+      name: 'isFutureDateTime',
+      target: object.constructor,
+      propertyName,
+      options: validationOptions,
+      validator: {
+        validate(value: unknown): boolean {
+          if (typeof value !== 'string' || value.trim() === '') return false;
+          const time = Date.parse(value);
+          return Number.isFinite(time) && time > Date.now();
+        },
+        defaultMessage(): string {
+          return 'DEPARTURE_TIME_MUST_BE_IN_THE_FUTURE';
+        },
+      },
+    });
+  };
+}
 
 // Port of createTripValidation. Nested waypoint/stop/point fields are all
 // optional (the service skips coordinates-less waypoints); lat/lng accept
@@ -243,6 +269,7 @@ export class CreateTripDto {
   @IsDefined()
   @IsNotEmpty()
   @IsISO8601()
+  @IsFutureDateTime()
   departure_time!: string;
 
   @IsDefined()
@@ -344,6 +371,7 @@ export class UpdateTripDto {
   @IsOptional()
   @IsString()
   @IsISO8601()
+  @IsFutureDateTime()
   departure_time?: string;
 
   @IsOptional()

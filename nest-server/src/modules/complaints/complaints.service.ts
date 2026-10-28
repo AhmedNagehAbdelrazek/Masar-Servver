@@ -112,7 +112,7 @@ export class ComplaintsService {
     }
     const accused = await this.prisma.user.findUnique({ where: { id: data.accused_id } });
     if (!accused) {
-      throw new NotFoundException({ message: 'Accused user not found', code: 'ACCUSED_USER_NOT_FOUND' });
+      throw new NotFoundException({ message: 'ACCUSED_USER_NOT_FOUND', code: 'ACCUSED_USER_NOT_FOUND' });
     }
     const existing = await this.prisma.complaint.findFirst({
       where: {
@@ -432,7 +432,7 @@ export class ComplaintsService {
   ): Promise<{ complaint: Record<string, unknown> }> {
     const complaint = await this.prisma.complaint.findUnique({ where: { id: complaintId } });
     if (!complaint) {
-      throw new NotFoundException({ message: 'Complaint not found', code: 'COMPLAINT_NOT_FOUND' });
+      throw new NotFoundException({ message: 'COMPLAINT_NOT_FOUND', code: 'COMPLAINT_NOT_FOUND' });
     }
     if (data.status === 'resolved' && !data.resolution) {
       throw validationError('resolution', 'Resolution is required when resolving a complaint');

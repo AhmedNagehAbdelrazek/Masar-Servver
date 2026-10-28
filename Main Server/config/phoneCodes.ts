@@ -4639,11 +4639,8 @@ export type Codes = typeof codes;
 
 export default codes;
 
-// CommonJS interop
-// @ts-ignore
-if (typeof module !== 'undefined' && module.exports) {
-  // @ts-ignore
-  module.exports = codes;
-  // @ts-ignore
-  module.exports.default = codes;
-}
+// NOTE: do not add a `module.exports = codes` interop block here. This file is
+// compiled to CommonJS, and reassigning module.exports to the array replaces
+// the exports object, so `import { codes }` resolves to `undefined`
+// (surfacing as "Cannot read properties of undefined (reading 'find')" in the
+// phone validators). `exports.codes` / `exports.default` above are sufficient.

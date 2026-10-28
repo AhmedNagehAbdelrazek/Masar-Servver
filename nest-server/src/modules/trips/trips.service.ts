@@ -39,9 +39,15 @@ import { RouteService } from '../maps/route.service.js';
 import { assertNoOverlappingTrip } from './trip-overlap.js';
 import type { CreateTripDto } from './dto/create-trip.dto.js';
 
-function validationError(code: string, message: string, details?: unknown): UnprocessableEntityException {
+// Express parity: service-level validation failures use the generic
+// VALIDATION_ERROR code (the specific key stays in `message`, and details are
+// optional). Previously the specific key was emitted as `code`, which diverged
+// from the Express envelope on every 422.
+function validationError(_code: string, message: string, details?: unknown): UnprocessableEntityException {
   return new UnprocessableEntityException(
-    details === undefined ? { message, code } : { message, code, details },
+    details === undefined
+      ? { message, code: 'VALIDATION_ERROR' }
+      : { message, code: 'VALIDATION_ERROR', details },
   );
 }
 
@@ -208,6 +214,16 @@ export class TripsService {
       throw new ForbiddenException({ message: 'DRIVER_VEHICLE_IS_NOT_VERIFIED', code: 'FORBIDDEN' });
     }
 
+    // Express parity: departure_time is validated by express-validator before
+    // the service runs, so a past departure wins over seat-shape errors.
+    const departureDateTime = parseTimezoneAware(data.departure_time);
+    if (departureDateTime <= new Date()) {
+      throw validationError(
+        'DEPARTURE_TIME_MUST_BE_IN_THE_FUTURE',
+        'DEPARTURE_TIME_MUST_BE_IN_THE_FUTURE',
+      );
+    }
+
     const seats = data.seats ?? [];
     if (seats.length !== vehicle.seats) {
       throw validationError(
@@ -234,14 +250,6 @@ export class TripsService {
       throw validationError(
         'EXACTLY_ONE_SEAT_MUST_BE_MARKED_AS_DRIVER',
         'EXACTLY_ONE_SEAT_MUST_BE_MARKED_AS_DRIVER',
-      );
-    }
-
-    const departureDateTime = parseTimezoneAware(data.departure_time);
-    if (departureDateTime <= new Date()) {
-      throw validationError(
-        'DEPARTURE_TIME_MUST_BE_IN_THE_FUTURE',
-        'DEPARTURE_TIME_MUST_BE_IN_THE_FUTURE',
       );
     }
 

@@ -478,6 +478,14 @@ export async function me(id: string): Promise<{ id: string; phone: string; count
   if (!user) {
     throw ApiErrors.notFound('USER_NOT_FOUND');
   }
+  // Sequelize returns DECIMAL columns as strings; the public contract (and the
+  // Nest V2 implementation) exposes numbers, so cast at the boundary.
+  const numericAge =
+    user.age === null || user.age === undefined ? (user.age as number | null | undefined) : Number(user.age);
+  const numericRating =
+    user.avgRating === null || user.avgRating === undefined
+      ? (user.avgRating as number | undefined)
+      : Number(user.avgRating);
   return {
     id: user.id,
     phone: user.phone,
@@ -486,10 +494,10 @@ export async function me(id: string): Promise<{ id: string; phone: string; count
     email: user.email,
     role: user.role,
     gender: user.gender,
-    age: user.age,
+    age: numericAge,
     avatarUrl: user.avatarUrl,
     isVerified: user.isVerified,
-    avgRating: user.avgRating,
+    avgRating: numericRating,
     status: user.status,
     locale: user.locale,
   };

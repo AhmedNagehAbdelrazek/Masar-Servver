@@ -8,23 +8,31 @@ import { recordStatusChange, alertAdminsOfNewSubmission } from './verificationSe
 import auditService from './auditService';
 
 const DRIVER_DOC_FIELDS = [
-  'userIdentificationFront',
-  'userIdentificationBack',
-  'linceseFront',
-  'linceseBack',
-  'personalImageWithId',
+  'user_identification_front',
+  'user_identification_back',
+  'lincese_front',
+  'lincese_back',
+  'personal_image_with_id',
 ];
 
 const VEHICLE_DOC_FIELDS = [
-  'registrationDocFront',
-  'registrationDocBack',
-  'vehiclePhotoFront',
-  'vehiclePhotoBack',
+  'registration_doc_front',
+  'registration_doc_back',
+  'vehicle_photo_front',
+  'vehicle_photo_back',
 ];
 
 function isUniqueViolation(err) {
   const code = err && err.parent && err.parent.code;
   return code === '23505';
+}
+
+// Uploaded-document columns are foreign keys to uploaded_images. If an id
+// slips past verifyDocumentIds (e.g. a new document field), map the FK
+// violation to the same 422 the explicit check returns instead of a 500.
+function isForeignKeyViolation(err) {
+  const code = err && err.parent && err.parent.code;
+  return code === '23503';
 }
 
 function uniqueViolationMessage(err) {
@@ -260,6 +268,9 @@ async function submitOrResubmit(driverId, body) {
     await transaction.rollback();
     if (isUniqueViolation(err)) {
       throw ApiErrors.validation(uniqueViolationMessage(err));
+    }
+    if (isForeignKeyViolation(err)) {
+      throw ApiErrors.validation('ONE_OR_MORE_UPLOADED_DOCUMENT_IDS_DO_NOT_EXIST');
     }
     throw err;
   }
