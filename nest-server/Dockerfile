@@ -4,9 +4,9 @@
 FROM node:20-slim
 
 # openssl: Prisma's postinstall probes for it; node:*-slim does not ship it.
-# curl: Coolify's Docker healthcheck uses curl/wget, and slim images have neither.
+# wget: Coolify's Docker healthcheck uses wget (curl alone is not enough).
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends openssl ca-certificates curl \
+    && apt-get install -y --no-install-recommends openssl ca-certificates wget \
     && rm -rf /var/lib/apt/lists/*
 
 RUN corepack enable && corepack prepare pnpm@9 --activate
