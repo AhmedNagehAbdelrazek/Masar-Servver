@@ -8,8 +8,29 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 import { Type } from 'class-transformer';
-import { ArrayMinSize, IsArray, IsDefined, IsIn, IsInt, IsISO8601, IsNotEmpty, IsNumber, IsObject, IsOptional, IsString, IsUUID, Matches, Max, MaxLength, Min, ValidateNested, } from 'class-validator';
+import { ArrayMinSize, IsArray, IsDefined, IsIn, IsInt, IsISO8601, IsNotEmpty, IsNumber, IsObject, IsOptional, IsString, IsUUID, Matches, Max, MaxLength, Min, ValidateNested, registerDecorator, } from 'class-validator';
 import { IsLat, IsLng, IsMoney, TrimString } from '../../../common/validators/geo.validators.js';
+export function IsFutureDateTime(validationOptions) {
+    return function (object, propertyName) {
+        registerDecorator({
+            name: 'isFutureDateTime',
+            target: object.constructor,
+            propertyName,
+            options: validationOptions,
+            validator: {
+                validate(value) {
+                    if (typeof value !== 'string' || value.trim() === '')
+                        return false;
+                    const time = Date.parse(value);
+                    return Number.isFinite(time) && time > Date.now();
+                },
+                defaultMessage() {
+                    return 'DEPARTURE_TIME_MUST_BE_IN_THE_FUTURE';
+                },
+            },
+        });
+    };
+}
 class WaypointDto {
     stop_name;
     name;
@@ -325,6 +346,7 @@ __decorate([
     IsDefined(),
     IsNotEmpty(),
     IsISO8601(),
+    IsFutureDateTime(),
     __metadata("design:type", String)
 ], CreateTripDto.prototype, "departure_time", void 0);
 __decorate([
@@ -462,6 +484,7 @@ __decorate([
     IsOptional(),
     IsString(),
     IsISO8601(),
+    IsFutureDateTime(),
     __metadata("design:type", String)
 ], UpdateTripDto.prototype, "departure_time", void 0);
 __decorate([

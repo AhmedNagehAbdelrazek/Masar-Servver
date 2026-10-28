@@ -158,7 +158,7 @@ let PlansService = PlansService_1 = class PlansService {
     async updatePlan(planId, data, _actorId) {
         const plan = await this.prisma.subscriptionPlan.findUnique({ where: { id: planId } });
         if (!plan)
-            throw new NotFoundException({ message: 'Plan not found', code: 'PLAN_NOT_FOUND' });
+            throw new NotFoundException({ message: 'PLAN_NOT_FOUND', code: 'PLAN_NOT_FOUND' });
         const isFree = data.is_free !== undefined ? Boolean(data.is_free) : plan.isFree;
         const willBeActive = data.is_active !== undefined ? Boolean(data.is_active) : plan.isActive;
         if (isFree && willBeActive)
@@ -207,7 +207,7 @@ let PlansService = PlansService_1 = class PlansService {
     async deactivatePlan(planId, _actorId) {
         const plan = await this.prisma.subscriptionPlan.findUnique({ where: { id: planId } });
         if (!plan)
-            throw new NotFoundException({ message: 'Plan not found', code: 'PLAN_NOT_FOUND' });
+            throw new NotFoundException({ message: 'PLAN_NOT_FOUND', code: 'PLAN_NOT_FOUND' });
         await this.prisma.subscriptionPlan.update({ where: { id: planId }, data: { isActive: false } });
         await this.invalidatePlansCache();
         return { message: 'PLAN_DEACTIVATED' };
@@ -231,7 +231,7 @@ let PlansService = PlansService_1 = class PlansService {
     async updatePaymentMethod(methodId, data, _actorId) {
         const method = await this.prisma.paymentMethod.findUnique({ where: { id: methodId } });
         if (!method) {
-            throw new NotFoundException({ message: 'Payment method not found', code: 'PAYMENT_METHOD_NOT_FOUND' });
+            throw new NotFoundException({ message: 'PAYMENT_METHOD_NOT_FOUND', code: 'PAYMENT_METHOD_NOT_FOUND' });
         }
         const updated = await this.prisma.paymentMethod.update({
             where: { id: methodId },
@@ -247,7 +247,7 @@ let PlansService = PlansService_1 = class PlansService {
     async deactivatePaymentMethod(methodId, _actorId) {
         const method = await this.prisma.paymentMethod.findUnique({ where: { id: methodId } });
         if (!method) {
-            throw new NotFoundException({ message: 'Payment method not found', code: 'PAYMENT_METHOD_NOT_FOUND' });
+            throw new NotFoundException({ message: 'PAYMENT_METHOD_NOT_FOUND', code: 'PAYMENT_METHOD_NOT_FOUND' });
         }
         await this.prisma.paymentMethod.update({ where: { id: methodId }, data: { isActive: false } });
         return { message: 'PAYMENT_METHOD_DEACTIVATED' };

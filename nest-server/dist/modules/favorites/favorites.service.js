@@ -37,7 +37,7 @@ let FavoritesService = class FavoritesService {
     async assertDriverExists(driverId) {
         const driver = await this.prisma.user.findUnique({ where: { id: driverId } });
         if (!driver || driver.role !== 'driver') {
-            throw new NotFoundException({ message: 'Driver not found', code: 'DRIVER_NOT_FOUND' });
+            throw new NotFoundException({ message: 'DRIVER_NOT_FOUND', code: 'DRIVER_NOT_FOUND' });
         }
     }
     async addFavoriteDriver(passengerId, driverId) {
@@ -73,7 +73,7 @@ let FavoritesService = class FavoritesService {
             where: { passengerId, driverId },
         });
         if (!existing) {
-            throw new NotFoundException({ message: 'Favorite driver not found', code: 'FAVORITE_DRIVER_NOT_FOUND' });
+            throw new NotFoundException({ message: 'FAVORITE_DRIVER_NOT_FOUND', code: 'FAVORITE_DRIVER_NOT_FOUND' });
         }
         await this.prisma.favoriteDriver.delete({ where: { id: existing.id } });
         return { message: 'FAVORITE_DRIVER_REMOVED' };
@@ -128,7 +128,7 @@ let FavoritesService = class FavoritesService {
             where: { passengerId, originCity, destinationCity },
         });
         if (!existing) {
-            throw new NotFoundException({ message: 'Favorite route not found', code: 'FAVORITE_ROUTE_NOT_FOUND' });
+            throw new NotFoundException({ message: 'FAVORITE_ROUTE_NOT_FOUND', code: 'FAVORITE_ROUTE_NOT_FOUND' });
         }
         await this.prisma.favoriteRoute.delete({ where: { id: existing.id } });
         return { message: 'FAVORITE_ROUTE_REMOVED' };

@@ -146,9 +146,8 @@ let DriverVerificationService = class DriverVerificationService {
         const found = await this.prisma.uploadedImage.findMany({ where: { id: { in: uniqueIds } } });
         if (found.length !== uniqueIds.length) {
             throw new UnprocessableEntityException({
-                message: 'VALIDATION_FAILED',
+                message: 'ONE_OR_MORE_UPLOADED_DOCUMENT_IDS_DO_NOT_EXIST',
                 code: 'VALIDATION_ERROR',
-                details: [{ field: 'documents', message: 'ONE_OR_MORE_UPLOADED_DOCUMENT_IDS_DO_NOT_EXIST' }],
             });
         }
     }

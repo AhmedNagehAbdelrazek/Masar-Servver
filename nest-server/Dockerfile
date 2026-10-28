@@ -3,12 +3,20 @@
 # dependency graph ("Cannot read properties of null (reading 'matches')").
 FROM node:20-slim
 
+# Prisma's postinstall probes for OpenSSL; node:*-slim does not ship it.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends openssl ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
 RUN corepack enable && corepack prepare pnpm@9 --activate
 
 WORKDIR /app
 
 COPY package.json pnpm-lock.yaml ./
-RUN pnpm install --frozen-lockfile
+# --prod=false is deliberate: Coolify injects NODE_ENV=production as a build
+# arg, which makes pnpm skip devDependencies. The build needs the Prisma CLI
+# and the Nest CLI, and both are devDependencies.
+RUN pnpm install --frozen-lockfile --prod=false
 
 COPY . .
 

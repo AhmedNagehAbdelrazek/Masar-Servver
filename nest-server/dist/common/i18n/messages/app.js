@@ -1,5 +1,6 @@
 export const APP_MESSAGES = {
     BAD_REQUEST: { en: 'Bad request', ar: 'طلب غير صالح' },
+    INVALID_JSON_BODY: { en: 'Request body is not valid JSON', ar: 'صيغة الطلب غير صالحة' },
     CONFLICT: { en: 'Conflict', ar: 'تعارض في الطلب' },
     FORBIDDEN: { en: 'Forbidden', ar: 'غير مسموح' },
     INTERNAL_ERROR: { en: 'Internal server error', ar: 'خطأ داخلي في الخادم' },

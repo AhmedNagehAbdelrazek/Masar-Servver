@@ -1,3 +1,5 @@
+import { ValidationOptions } from 'class-validator';
+export declare function IsFutureDateTime(validationOptions?: ValidationOptions): (object: object, propertyName: string) => void;
 declare class WaypointDto {
     stop_name?: string;
     name?: string;

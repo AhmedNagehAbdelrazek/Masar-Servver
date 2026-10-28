@@ -3,6 +3,10 @@ export declare const APP_MESSAGES: {
         readonly en: "Bad request";
         readonly ar: "طلب غير صالح";
     };
+    readonly INVALID_JSON_BODY: {
+        readonly en: "Request body is not valid JSON";
+        readonly ar: "صيغة الطلب غير صالحة";
+    };
     readonly CONFLICT: {
         readonly en: "Conflict";
         readonly ar: "تعارض في الطلب";

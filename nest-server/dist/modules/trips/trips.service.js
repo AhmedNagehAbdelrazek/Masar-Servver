@@ -29,8 +29,10 @@ import { getMapsConfig } from '../maps/maps.config.js';
 import { PickupService } from '../maps/pickup.service.js';
 import { RouteService } from '../maps/route.service.js';
 import { assertNoOverlappingTrip } from './trip-overlap.js';
-function validationError(code, message, details) {
-    return new UnprocessableEntityException(details === undefined ? { message, code } : { message, code, details });
+function validationError(_code, message, details) {
+    return new UnprocessableEntityException(details === undefined
+        ? { message, code: 'VALIDATION_ERROR' }
+        : { message, code: 'VALIDATION_ERROR', details });
 }
 function toNumber(value) {
     if (value === null || value === undefined)
@@ -165,6 +167,10 @@ let TripsService = TripsService_1 = class TripsService {
         if (!vehicle.isVerified) {
             throw new ForbiddenException({ message: 'DRIVER_VEHICLE_IS_NOT_VERIFIED', code: 'FORBIDDEN' });
         }
+        const departureDateTime = parseTimezoneAware(data.departure_time);
+        if (departureDateTime <= new Date()) {
+            throw validationError('DEPARTURE_TIME_MUST_BE_IN_THE_FUTURE', 'DEPARTURE_TIME_MUST_BE_IN_THE_FUTURE');
+        }
         const seats = data.seats ?? [];
         if (seats.length !== vehicle.seats) {
             throw validationError('SEAT_COUNT_DOES_NOT_MATCH_VEHICLE_TOTAL_SEATS', 'SEAT_COUNT_DOES_NOT_MATCH_VEHICLE_TOTAL_SEATS');
@@ -180,10 +186,6 @@ let TripsService = TripsService_1 = class TripsService {
         }
         if (seats.filter((s) => s.type === 'driver').length !== 1) {
             throw validationError('EXACTLY_ONE_SEAT_MUST_BE_MARKED_AS_DRIVER', 'EXACTLY_ONE_SEAT_MUST_BE_MARKED_AS_DRIVER');
-        }
-        const departureDateTime = parseTimezoneAware(data.departure_time);
-        if (departureDateTime <= new Date()) {
-            throw validationError('DEPARTURE_TIME_MUST_BE_IN_THE_FUTURE', 'DEPARTURE_TIME_MUST_BE_IN_THE_FUTURE');
         }
         const isRecurring = data.type_of_trip === 'repeated';
         if (isRecurring && (!data.repeated_days || data.repeated_days.length === 0)) {

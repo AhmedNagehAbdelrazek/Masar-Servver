@@ -57,7 +57,7 @@ let RatingsService = class RatingsService {
             include: { trip: { select: { id: true, driverId: true } } },
         });
         if (!booking) {
-            throw new NotFoundException({ message: 'Booking not found', code: 'BOOKING_NOT_FOUND' });
+            throw new NotFoundException({ message: 'BOOKING_NOT_FOUND', code: 'BOOKING_NOT_FOUND' });
         }
         const isPassenger = booking.passengerId === raterId;
         const isDriver = booking.trip.driverId === raterId;

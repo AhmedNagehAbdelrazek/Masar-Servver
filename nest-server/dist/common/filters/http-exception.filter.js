@@ -8,6 +8,27 @@ var HttpExceptionFilter_1;
 import { Catch, HttpException, HttpStatus, Logger, } from '@nestjs/common';
 import { hasKey, localizeDetail, shape } from '../i18n/i18n.js';
 import { resolveLocaleMode } from '../utils/locale.js';
+function mapCodeToV1(status, code) {
+    if (status === 401)
+        return 'UNAUTHORIZED';
+    if (status === 403 && typeof code === 'string' && code.startsWith('AUTH_'))
+        return 'FORBIDDEN';
+    if (status === 404 && typeof code === 'string') {
+        if (code === 'ROUTE_NOT_FOUND')
+            return code;
+        if (code.endsWith('_NOT_FOUND') || code === 'SEAT_LOCK_EXPIRED_OR_DOES_NOT_EXIST') {
+            return 'NOT_FOUND';
+        }
+    }
+    return code;
+}
+function isJsonParseMessage(message) {
+    return (typeof message === 'string' &&
+        (/JSON at position/i.test(message) ||
+            /^Unexpected token/i.test(message) ||
+            /^Unexpected end of JSON/i.test(message) ||
+            /^Expected .+ in JSON/i.test(message)));
+}
 let HttpExceptionFilter = HttpExceptionFilter_1 = class HttpExceptionFilter {
     logger = new Logger(HttpExceptionFilter_1.name);
     catch(exception, host) {
@@ -25,11 +46,13 @@ let HttpExceptionFilter = HttpExceptionFilter_1 = class HttpExceptionFilter {
                 const payload = body;
                 const shaped = typeof payload.message === 'string' && hasKey(payload.message)
                     ? shape(payload.message, payload.params ?? null, mode)
-                    : { message: payload.message };
+                    : isJsonParseMessage(payload.message)
+                        ? shape('INVALID_JSON_BODY', null, mode)
+                        : { message: payload.message };
                 const out = {
                     status: 'error',
                     ...shaped,
-                    code: payload.code,
+                    code: mapCodeToV1(status, payload.code),
                 };
                 if (Array.isArray(payload.details)) {
                     out.details = payload.details.map((d) => localizeDetail(d, mode));
@@ -51,7 +74,9 @@ let HttpExceptionFilter = HttpExceptionFilter_1 = class HttpExceptionFilter {
             }
             res.status(status).json({
                 status: 'error',
-                message: Array.isArray(message) ? message.join(', ') : (message ?? 'Error'),
+                ...(isJsonParseMessage(message)
+                    ? shape('INVALID_JSON_BODY', null, mode)
+                    : { message: Array.isArray(message) ? message.join(', ') : (message ?? 'Error') }),
                 code: status === 401 ? 'UNAUTHORIZED' : status === 403 ? 'FORBIDDEN' : 'BAD_REQUEST',
             });
             return;
