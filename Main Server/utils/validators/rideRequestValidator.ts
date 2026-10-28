@@ -152,8 +152,14 @@ export const driverOffersListValidation: ValidationChain[] = [
 
 export const acceptRideRequestValidation: ValidationChain[] = [
   ...rideRequestParamValidation,
+  // Direct accept is intentionally bodyless: the trip is picked (or created)
+  // from the request. The old trip payload fields remain optional for clients
+  // that still send them.
+  body('trip_id')
+    .optional()
+    .isUUID().withMessage(V.TRIP_ID_MUST_BE_A_VALID_UUID_2),
   body('fare_per_seat')
-    .notEmpty().withMessage(V.FARE_PER_SEAT_IS_REQUIRED)
+    .optional()
     .isFloat({ min: 0 }).withMessage(V.AGREED_FARE_MUST_BE_A_NON_NEGATIVE_NUMBER),
   body('vehicle_id')
     .optional()

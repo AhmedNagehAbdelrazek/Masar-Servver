@@ -169,19 +169,33 @@ describe('Maps pickup flow', () => {
     expect(note).not.toBeNull();
   });
 
-  it('rejects far pickups and defaults missing pickup to origin', async () => {
+  it('accepts any custom pickup point, adds it to the route, and defaults missing pickup to origin', async () => {
     const tripId = await createTrip();
 
     const far = await lockAndBook(tripId, 2, { pickup: { name: 'Aqaba', lat: 29.53, lng: 35.01 } });
-    expect(far.status).toBe(422);
-    expect(far.body.code).toBe('PICKUP_TOO_FAR_FROM_ROUTE');
+    expect(far.status).toBe(201);
+
+    const farBooking = await ctx.prisma.booking.findFirst({
+      where: { tripId, passengerId: PASSENGER_ID, seatNumber: 2 },
+    });
+    expect(Number(farBooking?.pickupLat)).toBeCloseTo(29.53, 4);
+
+    const route = await ctx.agent
+      .get(`/api/trips/${tripId}/route`)
+      .set('Authorization', `Bearer ${driverToken}`);
+    expect(route.status).toBe(200);
+    expect(
+      (route.body.pickups as Array<{ lat: number; lng: number }>).some(
+        (p) => Math.abs(Number(p.lat) - 29.53) < 0.001 && Math.abs(Number(p.lng) - 35.01) < 0.001,
+      ),
+    ).toBe(true);
 
     const def = await lockAndBook(tripId, 3);
     expect(def.status).toBe(201);
-    const booking = await ctx.prisma.booking.findFirst({
-      where: { tripId, passengerId: PASSENGER_ID },
+    const defaultBooking = await ctx.prisma.booking.findFirst({
+      where: { tripId, passengerId: PASSENGER_ID, seatNumber: 3 },
     });
-    expect(Number(booking?.pickupLat)).toBeCloseTo(31.9539, 4);
+    expect(Number(defaultBooking?.pickupLat)).toBeCloseTo(31.9539, 4);
   });
 
   it('recovers from provider failure via recompute', async () => {

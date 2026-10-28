@@ -35,6 +35,8 @@ at connect. Live rooms are `trip:<id>` and open for `in_progress` trips only.
 //      "detour_seconds": 0, "reason": null }
 
 // POST /api/bookings (passenger) — pickup block is optional, defaults to origin
+// Custom points are accepted as-is for now (no distance/detour rejection) and
+// become route points on the post-booking recompute.
 { "trip_id": "...", "seat_numbers": [2], "agreed_fare": "15.50",
   "pickup": { "name": "Wasfi Al-Tal St", "lat": 32.25, "lng": 35.8793 } }
 
@@ -88,8 +90,10 @@ batch points carry original timestamps; non-drivers are dropped.
   `route_status: failed`; `routeRetryJob` (every 2 min) recovers automatically.
 - Too many stops/pickups → `422 TOO_MANY_WAYPOINTS` (compute never splits;
   only navigation links split into legs past ~9 waypoints).
-- Far/off-route pickup → `422 PICKUP_TOO_FAR_FROM_ROUTE` or
-  `PICKUP_DETOUR_TOO_LONG` with measured values for the UI to explain.
+- Custom booking pickups are accepted as-is for now (no distance/detour
+  rejection) and are included in the route on the post-booking recompute.
+  `pickup-preview` still reports `PICKUP_TOO_FAR_FROM_ROUTE` /
+  `PICKUP_DETOUR_TOO_LONG` for the UI.
 - Pickup edit after the cutoff or after start → `422 PICKUP_EDIT_CUTOFF_PASSED`.
 - Join from a stranger, cancelled booking, or finished trip → join refused.
 

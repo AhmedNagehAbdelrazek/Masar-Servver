@@ -6,7 +6,9 @@ import validate from '../middlewares/validatorMiddleware';
 import { registerDeviceValidation, unregisterDeviceValidation } from '../utils/validators/notificationValidator';
 
 router.get('/', protect, validate, c.listNotifications);
+router.put('/read-all', protect, c.markAllRead);
 router.put('/:notification_id/read', protect, c.markRead);
+router.delete('/', protect, c.deleteAll);
 
 // Push device registration (FCM token upsert / logout cleanup)
 router.post('/device', protect, ...registerDeviceValidation, validate, c.registerDevice);

@@ -42,6 +42,11 @@ export class NotificationsController {
     return { data, pagination: buildPagination(count, page, limit) };
   }
 
+  @Put('read-all')
+  markAllRead(@CurrentUser() user?: AuthUser): Promise<{ marked: number }> {
+    return this.notifications.markAllRead(user?.id ?? '');
+  }
+
   @Put(':notification_id/read')
   markRead(
     @Param('notification_id') notificationId: string,
@@ -50,6 +55,11 @@ export class NotificationsController {
     return this.notifications
       .markRead(user?.id ?? '', notificationId)
       .then((n) => ({ notification: { id: n.id, is_read: n.isRead } }));
+  }
+
+  @Delete()
+  deleteAll(@CurrentUser() user?: AuthUser): Promise<{ deleted: number }> {
+    return this.notifications.deleteAll(user?.id ?? '');
   }
 
   // Express parity: POST/DELETE /api/notifications/device (FCM token

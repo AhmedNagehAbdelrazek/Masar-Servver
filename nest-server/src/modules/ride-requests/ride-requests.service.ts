@@ -18,7 +18,7 @@ import { RedisService } from '../../redis/redis.service.js';
 import { NotificationsService, type NotifyUser } from '../notifications/notifications.service.js';
 import { HomeService } from '../subscriptions/home.service.js';
 import { TripsService } from '../trips/trips.service.js';
-import { assertNoOverlappingTrip } from '../trips/trip-overlap.js';
+import { RouteService } from '../maps/route.service.js';
 import type { CreateTripDto } from '../trips/dto/create-trip.dto.js';
 
 const MATCH_WINDOW_BEFORE_MS = 24 * 3600 * 1000;
@@ -112,6 +112,58 @@ interface RequestRow {
   offers?: OfferRow[];
 }
 
+interface AcceptRequestRow {
+  id: string;
+  passengerId: string;
+  originPlace: string;
+  originCity: string;
+  originLat: unknown;
+  originLng: unknown;
+  originTime: Date | null;
+  destinationPlace: string;
+  destinationCity: string;
+  destinationLat: unknown;
+  destinationLng: unknown;
+  seatsNeeded: number;
+  maxBudget: unknown;
+  currency: string | null;
+}
+
+interface AcceptTripRow {
+  id: string;
+  originCity: string;
+  originLat: unknown;
+  originLng: unknown;
+  destinationCity: string;
+  destinationLat: unknown;
+  destinationLng: unknown;
+  departureTime: Date;
+  farePerSeat: unknown;
+  availableSeats: number;
+  status: string;
+}
+
+interface AcceptRideRequestPayload {
+  trip_id?: string;
+  fare_per_seat?: string | number;
+  vehicle_id?: string;
+  seats?: Array<{
+    seat_number: number | string;
+    type: 'driver' | 'available' | 'unavailable';
+  }>;
+  type_of_trip?: string;
+  repeated_days?: number[];
+  repeated_end_date?: string;
+  allowed_type?: string;
+  instructions?: string[];
+  additional_instructions?: string;
+  pickup_point?: Record<string, unknown>;
+  dropoff_point?: Record<string, unknown>;
+  waypoints?: Record<string, unknown>[];
+  stops?: Record<string, unknown>[];
+  origin_time?: string;
+}
+
 function serializeRideRequest(
   request: RequestRow,
   { includeOffers = false }: { includeOffers?: boolean } = {},
@@ -157,6 +209,7 @@ export class RideRequestsService {
     private readonly home: HomeService,
     private readonly redis: RedisService,
     private readonly realtime: RealtimeGateway,
+    private readonly routes: RouteService,
     @Inject(forwardRef(() => TripsService)) private readonly tripsService: TripsService,
   ) {}
 
@@ -773,240 +826,250 @@ export class RideRequestsService {
     };
   }
 
-  /**
-   * Driver accepts a ride request directly without negotiation.
-   * Creates a trip for the driver and a booking for the passenger.
+    /**
+   * Driver accepts a ride request directly without requiring an offer first.
+   *
+   * The ride is materialized onto the driver's schedule:
+   * - `trip_id` attaches to that existing trip;
+   * - otherwise the closest matching open trip on the same route is used;
+   * - when none matches, a trip is created from the ride request with the
+   *   driver's vehicle (all passenger seats available).
+   *
+   * The booking pickup comes from the request origin, so the route recompute
+   * adds that point to the trip route.
    */
-  async acceptRideRequest(
+  private async resolveAcceptTrip(
     driverId: string,
-    requestId: string,
-    payload: {
-      fare_per_seat: string | number;
-      seats: Array<{ seat_number: number; type: "driver" | "available" | "unavailable" }>;
-      type_of_trip?: string;
-      repeated_days?: number[];
-      repeated_end_date?: string;
-      allowed_type?: string;
-      instructions?: string[];
-      additional_instructions?: string;
-      pickup_point?: Record<string, unknown>;
-      dropoff_point?: Record<string, unknown>;
-      waypoints?: Record<string, unknown>[];
-      stops?: Record<string, unknown>[];
-      origin_time?: string;
-    },
-  ): Promise<{ trip: Record<string, unknown>; booking: Record<string, unknown>; offer: Record<string, unknown> }> {
-    await this.expireStale();
-
-    const driver = await this.prisma.user.findUnique({ where: { id: driverId } });
-    if (!driver) throw new NotFoundException({ message: "USER_NOT_FOUND", code: "USER_NOT_FOUND" });
-    if (driver.role !== "driver") {
-      throw new ForbiddenException({ message: "ONLY_DRIVERS_CAN_ACCEPT_RIDE_REQUESTS", code: "FORBIDDEN" });
-    }
-    if (!driver.isVerified) {
-      throw new ForbiddenException({ message: "DRIVER_NOT_VERIFIED", code: "FORBIDDEN" });
-    }
-
-    const request = await this.prisma.rideRequest.findUnique({ where: { id: requestId } });
-    if (!request) throw new NotFoundException({ message: "RIDE_REQUEST_NOT_FOUND", code: "RIDE_REQUEST_NOT_FOUND" });
-    if (!["open", "offered"].includes(request.status)) {
-      throw new ConflictException({
-        message: "RIDE_REQUEST_NO_LONGER_ACCEPTING",
-        code: "RIDE_REQUEST_NO_LONGER_ACCEPTING",
-      });
-    }
-
-    // Check if driver already has an offer on this request
-    const existingOffer = await this.prisma.requestOffer.findFirst({
-      where: { requestId, driverId, status: "sent" },
-    });
-    if (existingOffer) {
-      throw new ConflictException({
-        message: "YOU_ALREADY_HAVE_A_PENDING_OFFER_ON_THIS_RIDE_REQUEST",
-        code: "YOU_ALREADY_HAVE_A_PENDING_OFFER_ON_THIS_RIDE_REQUEST",
-      });
-    }
-
-    // Check if driver already accepted this request
-    const acceptedOffer = await this.prisma.requestOffer.findFirst({
-      where: { requestId, driverId, status: "accepted" },
-    });
-    if (acceptedOffer) {
-      throw new ConflictException({
-        message: "YOU_HAVE_ALREADY_ACCEPTED_THIS_RIDE_REQUEST",
-        code: "YOU_HAVE_ALREADY_ACCEPTED_THIS_RIDE_REQUEST",
-      });
-    }
-
-    // Fetch driver"s vehicle
-    const vehicle = await this.prisma.vehicle.findFirst({ where: { driverId } });
-    if (!vehicle) throw new ForbiddenException({ message: "DRIVER_HAS_NO_REGISTERED_VEHICLE", code: "FORBIDDEN" });
-    if (!vehicle.isVerified) throw new ForbiddenException({ message: "DRIVER_VEHICLE_IS_NOT_VERIFIED", code: "FORBIDDEN" });
-
-    // Validate seats configuration
-    const seats = payload.seats;
-    if (seats.length !== vehicle.seats) {
-      throw new UnprocessableEntityException({
-        message: "SEAT_COUNT_DOES_NOT_MATCH_VEHICLE_TOTAL_SEATS",
-        code: "SEAT_COUNT_DOES_NOT_MATCH_VEHICLE_TOTAL_SEATS",
-      });
-    }
-
-    const seatNumbers = seats.map((s) => Number(s.seat_number)).sort((a, b) => a - b);
-    const expectedNumbers = Array.from({ length: vehicle.seats }, (_, i) => i + 1);
-    if (JSON.stringify(seatNumbers) !== JSON.stringify(expectedNumbers)) {
-      throw new UnprocessableEntityException({
-        message: "SEAT_NUMBERS_MUST_BE_SEQUENTIAL_FROM_1_TO_TOTAL_SEATS",
-        code: "SEAT_NUMBERS_MUST_BE_SEQUENTIAL_FROM_1_TO_TOTAL_SEATS",
-      });
-    }
-
-    const availableSeats = seats.filter((s) => s.type === "available");
-    if (availableSeats.length === 0) {
-      throw new UnprocessableEntityException({
-        message: "AT_LEAST_ONE_SEAT_MUST_BE_AVAILABLE",
-        code: "AT_LEAST_ONE_SEAT_MUST_BE_AVAILABLE",
-      });
-    }
-
-    const driverSeats = seats.filter((s) => s.type === "driver");
-    if (driverSeats.length !== 1) {
-      throw new UnprocessableEntityException({
-        message: "EXACTLY_ONE_SEAT_MUST_BE_MARKED_AS_DRIVER",
-        code: "EXACTLY_ONE_SEAT_MUST_BE_MARKED_AS_DRIVER",
-      });
-    }
-
-    // Validate departure time
-    const departureDateTime = parseOptionalTimezoneAware(payload.origin_time ?? request.originTime);
-    if (!departureDateTime || departureDateTime <= new Date()) {
-      throw new UnprocessableEntityException({
-        message: "DEPARTURE_TIME_MUST_BE_IN_THE_FUTURE",
-        code: "DEPARTURE_TIME_MUST_BE_IN_THE_FUTURE",
-      });
-    }
-
-    // Validate recurrence
-    const isRecurring = payload.type_of_trip === "repeated";
-    if (isRecurring && (!payload.repeated_days || payload.repeated_days.length === 0)) {
-      throw new UnprocessableEntityException({
-        message: "REPEATED_DAYS_ARE_REQUIRED_FOR_RECURRING_TRIPS",
-        code: "REPEATED_DAYS_ARE_REQUIRED_FOR_RECURRING_TRIPS",
-      });
-    }
-    if (isRecurring && !payload.repeated_end_date) {
-      throw new UnprocessableEntityException({
-        message: "END_DATE_IS_REQUIRED_FOR_RECURRING_TRIPS",
-        code: "END_DATE_IS_REQUIRED_FOR_RECURRING_TRIPS",
-      });
-    }
-    if (isRecurring) {
-      const endDate = parseOptionalTimezoneAware(payload.repeated_end_date);
-      if (!endDate || endDate <= departureDateTime) {
-        throw new UnprocessableEntityException({
-          message: "END_DATE_MUST_BE_AFTER_DEPARTURE_DATE",
-          code: "END_DATE_MUST_BE_AFTER_DEPARTURE_DATE",
+    request: AcceptRequestRow,
+    payload: AcceptRideRequestPayload,
+    seatsNeeded: number,
+  ): Promise<AcceptTripRow> {
+    if (payload.trip_id) {
+      const trip = await this.prisma.trip.findUnique({ where: { id: payload.trip_id } });
+      if (!trip) throw new NotFoundException({ message: 'TRIP_NOT_FOUND', code: 'TRIP_NOT_FOUND' });
+      if (trip.driverId !== driverId) {
+        throw new ForbiddenException({
+          message: 'YOU_CAN_ONLY_ATTACH_RIDES_TO_YOUR_OWN_TRIPS',
+          code: 'FORBIDDEN',
         });
       }
+      if (!['published', 'full'].includes(trip.status)) {
+        throw new ConflictException({
+          message: 'TRIP_IS_ALREADY_ONGOING_OR_COMPLETED',
+          code: 'TRIP_IS_ALREADY_ONGOING_OR_COMPLETED',
+        });
+      }
+      if (Number(trip.availableSeats) < seatsNeeded) {
+        throw new ConflictException({
+          message: 'NOT_ENOUGH_AVAILABLE_SEATS_ON_THE_SELECTED_TRIP',
+          code: 'NOT_ENOUGH_AVAILABLE_SEATS_ON_THE_SELECTED_TRIP',
+        });
+      }
+      return trip as unknown as AcceptTripRow;
     }
 
-    // Overlap guard
-    await assertNoOverlappingTrip(this.prisma, driverId, {
-      departureTime: departureDateTime,
-      isRecurring,
-      recurrenceDays: isRecurring ? (payload.repeated_days ?? null) : null,
-      recurrenceEndDate: isRecurring ? (payload.repeated_end_date ?? null) : null,
+    const candidates = await this.prisma.trip.findMany({
+      where: {
+        driverId,
+        status: { in: ['published', 'full'] },
+        availableSeats: { gte: seatsNeeded },
+        departureTime: { gte: new Date() },
+      },
+      orderBy: { departureTime: 'asc' },
     });
+    const normalize = (value: string | null): string => (value ?? '').trim().toLowerCase();
+    const sameRoute = candidates.filter(
+      (candidate) =>
+        normalize(candidate.originCity) === normalize(request.originCity) &&
+        normalize(candidate.destinationCity) === normalize(request.destinationCity),
+    );
 
-    // Build trip creation DTO from ride request + payload
+    if (sameRoute.length > 0) {
+      if (!request.originTime) return sameRoute[0] as unknown as AcceptTripRow;
+      const wanted = new Date(request.originTime).getTime();
+      return sameRoute.sort(
+        (a, b) =>
+          Math.abs(new Date(a.departureTime).getTime() - wanted) -
+          Math.abs(new Date(b.departureTime).getTime() - wanted),
+      )[0] as unknown as AcceptTripRow;
+    }
+
+    return this.createTripFromRideRequest(driverId, request, payload);
+  }
+
+  private async createTripFromRideRequest(
+    driverId: string,
+    request: AcceptRequestRow,
+    payload: AcceptRideRequestPayload,
+  ): Promise<AcceptTripRow> {
+    const vehicle = await this.prisma.vehicle.findFirst({ where: { driverId } });
+    if (!vehicle) {
+      throw new ForbiddenException({ message: 'DRIVER_HAS_NO_REGISTERED_VEHICLE', code: 'FORBIDDEN' });
+    }
+    if (!vehicle.isVerified) {
+      throw new ForbiddenException({ message: 'DRIVER_VEHICLE_IS_NOT_VERIFIED', code: 'FORBIDDEN' });
+    }
+
+    const totalSeats = Number(vehicle.seats) || 0;
+    const seatsNeeded = Math.max(1, Number(request.seatsNeeded) || 1);
+    if (totalSeats < seatsNeeded + 1) {
+      throw new ConflictException({
+        message: 'NOT_ENOUGH_SEATS_ON_DRIVER_VEHICLE',
+        code: 'NOT_ENOUGH_SEATS_ON_DRIVER_VEHICLE',
+      });
+    }
+
+    const seats =
+      Array.isArray(payload.seats) && payload.seats.length > 0
+        ? payload.seats
+        : [
+            { seat_number: 1, type: 'driver' as const },
+            ...Array.from({ length: totalSeats - 1 }, (_, index) => ({
+              seat_number: index + 2,
+              type: 'available' as const,
+            })),
+          ];
+
+    let departure = parseOptionalTimezoneAware(payload.origin_time);
+    if (!departure && request.originTime) departure = new Date(request.originTime);
+    if (!departure || departure.getTime() <= Date.now()) {
+      departure = new Date(Date.now() + 60 * 60 * 1000);
+    }
+
     const createTripDto: CreateTripDto = {
       origin_city: request.originCity,
-      origin_area: (request as Record<string, unknown>).originArea as string | undefined ?? undefined,
       origin_lat: request.originLat != null ? Number(request.originLat) : undefined,
       origin_lng: request.originLng != null ? Number(request.originLng) : undefined,
       destination_city: request.destinationCity,
-      destination_area: (request as Record<string, unknown>).destinationArea as string | undefined ?? undefined,
       destination_lat: request.destinationLat != null ? Number(request.destinationLat) : undefined,
       destination_lng: request.destinationLng != null ? Number(request.destinationLng) : undefined,
-      departure_time: departureDateTime.toISOString(),
-      fare_per_seat: Number(payload.fare_per_seat),
-      seats: seats.map((s) => ({
-        seat_number: Number(s.seat_number),
-        type: s.type as "driver" | "available" | "unavailable",
+      departure_time: departure.toISOString(),
+      fare_per_seat:
+        payload.fare_per_seat != null
+          ? Number(payload.fare_per_seat)
+          : request.maxBudget != null
+            ? Number(request.maxBudget)
+            : 0,
+      seats: seats.map((seat) => ({
+        seat_number: Number(seat.seat_number),
+        type: seat.type as 'driver' | 'available' | 'unavailable',
       })),
-      type_of_trip: isRecurring ? "repeated" : "one_way",
-      repeated_days: isRecurring ? (payload.repeated_days ?? []) : undefined,
-      repeated_end_date: isRecurring ? payload.repeated_end_date : undefined,
-      allowed_type: (payload.allowed_type ?? "all") as "all" | "women_only" | "men_only",
+      type_of_trip: payload.type_of_trip === 'repeated' ? 'repeated' : 'one_way',
+      repeated_days: payload.repeated_days,
+      repeated_end_date: payload.repeated_end_date,
+      allowed_type: (payload.allowed_type ?? 'all') as 'all' | 'women_only' | 'men_only',
       instructions: payload.instructions ?? [],
-      additional_instructions: payload.additional_instructions ?? undefined,
-      pickup_point: payload.pickup_point as any,
-      dropoff_point: payload.dropoff_point as any,
-      waypoints: payload.waypoints as any,
-      stops: payload.stops as any,
+      additional_instructions: payload.additional_instructions,
+      pickup_point: payload.pickup_point as never,
+      dropoff_point: payload.dropoff_point as never,
+      waypoints: payload.waypoints as never,
+      stops: payload.stops as never,
     };
 
-    // Create the trip using tripsService (handles validation, seats, stops, etc.)
-    const tripResult = await this.tripsService.createTrip(driverId, createTripDto);
-    const trip = await this.prisma.trip.findUnique({ where: { id: tripResult.trip_id } });
-    if (!trip) throw new NotFoundException({ message: "TRIP_NOT_FOUND", code: "TRIP_NOT_FOUND" });
+    const created = await this.tripsService.createTrip(driverId, createTripDto);
+    const trip = await this.prisma.trip.findUnique({ where: { id: created.trip_id } });
+    if (!trip) throw new NotFoundException({ message: 'TRIP_NOT_FOUND', code: 'TRIP_NOT_FOUND' });
+    return trip as unknown as AcceptTripRow;
+  }
 
-    // Create an accepted offer record to track this acceptance
-    const offer = await this.prisma.requestOffer.create({
-      data: {
-        requestId,
-        driverId,
-        tripId: trip.id,
-        offeredFare: Number(payload.fare_per_seat),
-        agreedFare: Number(payload.fare_per_seat),
-        message: "Direct acceptance by driver",
-        status: "accepted",
-      },
+  private async createDirectAcceptBooking(
+    trip: AcceptTripRow,
+    request: AcceptRequestRow,
+    fare: number,
+    seatsNeeded: number,
+  ): Promise<Record<string, unknown>> {
+    const availableSeats = await this.prisma.tripSeat.findMany({
+      where: { tripId: trip.id, seatType: 'available' },
+      orderBy: { seatNumber: 'asc' },
+      take: seatsNeeded,
     });
+    if (availableSeats.length < seatsNeeded) {
+      throw new ConflictException({
+        message: 'NOT_ENOUGH_AVAILABLE_SEATS_ON_THE_SELECTED_TRIP',
+        code: 'NOT_ENOUGH_AVAILABLE_SEATS_ON_THE_SELECTED_TRIP',
+      });
+    }
 
-    // Update ride request status
-    await this.prisma.rideRequest.update({
-      where: { id: requestId },
-      data: { status: "accepted" },
-    });
-
-    // Decline any other pending offers on this request
-    await this.prisma.requestOffer.updateMany({
-      where: {
-        requestId,
-        id: { not: offer.id },
-        status: "sent",
-      },
-      data: { status: "declined" },
-    });
-
-    // Create booking for passenger
-    const seatsNeeded = request.seatsNeeded || 1;
+    const seatNumbers = availableSeats.map((seat) => Number(seat.seatNumber));
     const referenceCode = await this.uniqueBookingCode();
+    const pickupLat =
+      request.originLat != null
+        ? Number(request.originLat)
+        : trip.originLat != null
+          ? Number(trip.originLat)
+          : null;
+    const pickupLng =
+      request.originLng != null
+        ? Number(request.originLng)
+        : trip.originLng != null
+          ? Number(trip.originLng)
+          : null;
+    const pickupLabel = request.originPlace || request.originCity || null;
+    const dropoffLat =
+      request.destinationLat != null
+        ? Number(request.destinationLat)
+        : trip.destinationLat != null
+          ? Number(trip.destinationLat)
+          : null;
+    const dropoffLng =
+      request.destinationLng != null
+        ? Number(request.destinationLng)
+        : trip.destinationLng != null
+          ? Number(trip.destinationLng)
+          : null;
 
     const booking = await this.prisma.$transaction(async (tx) => {
       const freshTrip = await tx.trip.findUnique({ where: { id: trip.id } });
-      if (!freshTrip) throw new NotFoundException({ message: "TRIP_NOT_FOUND", code: "TRIP_NOT_FOUND" });
-      const remaining = Number(freshTrip.availableSeats) - seatsNeeded;
-      if (remaining < 0) {
+      if (!freshTrip || !['published', 'full'].includes(freshTrip.status)) {
+        throw new ConflictException({ message: 'TRIP_NOT_BOOKABLE', code: 'TRIP_NOT_BOOKABLE' });
+      }
+
+      const remainingSeats = Number(freshTrip.availableSeats) - seatsNeeded;
+      if (remainingSeats < 0) {
         throw new ConflictException({
-          message: "NOT_ENOUGH_AVAILABLE_SEATS_ON_THE_SELECTED_TRIP",
-          code: "NOT_ENOUGH_AVAILABLE_SEATS_ON_THE_SELECTED_TRIP",
+          message: 'NOT_ENOUGH_AVAILABLE_SEATS_ON_THE_SELECTED_TRIP',
+          code: 'NOT_ENOUGH_AVAILABLE_SEATS_ON_THE_SELECTED_TRIP',
         });
+      }
+
+      const claimed = await tx.tripSeat.updateMany({
+        where: {
+          tripId: trip.id,
+          seatNumber: { in: seatNumbers },
+          seatType: 'available',
+        },
+        data: { seatType: 'unavailable' },
+      });
+      if (claimed.count !== seatsNeeded) {
+        throw new ConflictException({ message: 'SEAT_ALREADY_BOOKED', code: 'SEAT_ALREADY_BOOKED' });
       }
 
       const created = await tx.booking.create({
         data: {
           tripId: trip.id,
           passengerId: request.passengerId,
-          seatNumber: null,
+          seatNumber: seatNumbers[0],
+          seatNumbers,
           seatsBooked: seatsNeeded,
-          agreedFare: Number(payload.fare_per_seat),
-          currency: request.currency ?? "JOD",
-          dropoffPlace: null,
+          agreedFare: fare,
+          currency: request.currency ?? 'JOD',
+          pickupPlace: pickupLabel,
+          pickupLat,
+          pickupLng,
+          pickupOrder: null,
+          pickupType: 'custom',
+          pickupStopId: null,
+          pickupLabel,
+          pickupCity: request.originCity ?? null,
+          pickupArea: null,
+          detourSeconds: 0,
+          pickupStatus: 'pending',
+          dropoffPlace: request.destinationPlace || request.destinationCity || null,
+          dropoffLat,
+          dropoffLng,
           dropoffDeadline: null,
-          status: "confirmed",
-          paymentStatus: "pending",
+          status: 'confirmed',
+          paymentStatus: 'pending',
           referenceCode,
           cancelledBy: null,
         },
@@ -1015,17 +1078,142 @@ export class RideRequestsService {
       await tx.trip.update({
         where: { id: trip.id },
         data: {
-          availableSeats: remaining,
-          ...(remaining === 0 && freshTrip.status === "published" ? { status: "full" } : {}),
+          availableSeats: remainingSeats,
+          ...(remainingSeats === 0 && freshTrip.status === 'published' ? { status: 'full' } : {}),
         },
       });
-
-      await tx.requestOffer.update({ where: { id: offer.id }, data: { bookingId: created.id } });
 
       return created;
     });
 
-    // Notifications and cache invalidation
+    // Best-effort route recompute after the booking exists: this is what adds
+    // the ride request's point to the trip route.
+    try {
+      const recomputed = await this.routes.computeTripRoute(trip.id);
+      if (recomputed.ok) {
+        try {
+          this.realtime.emitToRoom(`trip:${trip.id}`, 'tracking:route_updated', {
+            route_version: recomputed.routeVersion,
+          });
+        } catch {
+          // socket offline
+        }
+      }
+    } catch (err) {
+      this.logger.warn(`post-accept route recompute failed: ${(err as Error).message}`);
+    }
+
+    return booking as unknown as Record<string, unknown>;
+  }
+
+  private async upsertAcceptedOffer(
+    driverId: string,
+    requestId: string,
+    trip: AcceptTripRow,
+    fare: number,
+    bookingId: string,
+  ): Promise<Record<string, unknown>> {
+    const existing = await this.prisma.requestOffer.findFirst({
+      where: { requestId, driverId },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (existing) {
+      if (existing.status === 'accepted' && existing.bookingId) {
+        throw new ConflictException({
+          message: 'YOU_HAVE_ALREADY_ACCEPTED_THIS_RIDE_REQUEST',
+          code: 'YOU_HAVE_ALREADY_ACCEPTED_THIS_RIDE_REQUEST',
+        });
+      }
+      return (await this.prisma.requestOffer.update({
+        where: { id: existing.id },
+        data: {
+          tripId: trip.id,
+          agreedFare: fare,
+          offeredFare: existing.offeredFare != null ? existing.offeredFare : fare,
+          status: 'accepted',
+          bookingId,
+          ...(existing.message ? {} : { message: 'Direct acceptance by driver' }),
+        },
+      })) as unknown as Record<string, unknown>;
+    }
+
+    return (await this.prisma.requestOffer.create({
+      data: {
+        requestId,
+        driverId,
+        tripId: trip.id,
+        offeredFare: fare,
+        agreedFare: fare,
+        message: 'Direct acceptance by driver',
+        status: 'accepted',
+        bookingId,
+      },
+    })) as unknown as Record<string, unknown>;
+  }
+
+  async acceptRideRequest(
+    driverId: string,
+    requestId: string,
+    payload: AcceptRideRequestPayload = {},
+  ): Promise<{
+    trip: Record<string, unknown>;
+    booking: Record<string, unknown>;
+    offer: Record<string, unknown>;
+  }> {
+    await this.expireStale();
+
+    const driver = await this.prisma.user.findUnique({ where: { id: driverId } });
+    if (!driver) throw new NotFoundException({ message: 'USER_NOT_FOUND', code: 'USER_NOT_FOUND' });
+    if (driver.role !== 'driver') {
+      throw new ForbiddenException({ message: 'ONLY_DRIVERS_CAN_ACCEPT_RIDE_REQUESTS', code: 'FORBIDDEN' });
+    }
+    if (!driver.isVerified) {
+      throw new ForbiddenException({ message: 'DRIVER_NOT_VERIFIED', code: 'FORBIDDEN' });
+    }
+
+    const request = await this.prisma.rideRequest.findUnique({ where: { id: requestId } });
+    if (!request) {
+      throw new NotFoundException({ message: 'RIDE_REQUEST_NOT_FOUND', code: 'RIDE_REQUEST_NOT_FOUND' });
+    }
+    if (!['open', 'offered'].includes(request.status)) {
+      throw new ConflictException({
+        message: 'RIDE_REQUEST_NO_LONGER_ACCEPTING',
+        code: 'RIDE_REQUEST_NO_LONGER_ACCEPTING',
+      });
+    }
+
+    const requestRow = request as unknown as AcceptRequestRow;
+    const seatsNeeded = Math.max(1, Number(request.seatsNeeded) || 1);
+    const trip = await this.resolveAcceptTrip(driverId, requestRow, payload, seatsNeeded);
+    const fare =
+      payload.fare_per_seat != null
+        ? Number(payload.fare_per_seat)
+        : trip.farePerSeat != null
+          ? Number(trip.farePerSeat)
+          : request.maxBudget != null
+            ? Number(request.maxBudget)
+            : 0;
+
+    const booking = await this.createDirectAcceptBooking(trip, requestRow, fare, seatsNeeded);
+    const offer = await this.upsertAcceptedOffer(
+      driverId,
+      requestId,
+      trip,
+      fare,
+      String(booking.id),
+    );
+
+    await this.prisma.rideRequest.update({
+      where: { id: requestId },
+      data: { status: 'accepted' },
+    });
+
+    await this.prisma.requestOffer.updateMany({
+      where: { requestId, id: { not: String(offer.id) }, status: 'sent' },
+      data: { status: 'declined' },
+    });
+
     try {
       await this.redis.deleteKey(`passenger_home:${request.passengerId}`, `driver_home:${driverId}`);
     } catch {
@@ -1037,21 +1225,21 @@ export class RideRequestsService {
       // best-effort
     }
     try {
-      this.realtime.emitToUser(request.passengerId, "home:invalidate", { trip_id: trip.id });
-      this.realtime.emitToUser(driverId, "home:invalidate", { trip_id: trip.id });
+      this.realtime.emitToUser(request.passengerId, 'home:invalidate', { trip_id: trip.id });
+      this.realtime.emitToUser(driverId, 'home:invalidate', { trip_id: trip.id });
     } catch {
-      // best-effort
+      // socket offline
     }
     try {
       const passenger = await this.prisma.user.findUnique({ where: { id: request.passengerId } });
       if (passenger) {
-        await this.notifications.sendToUser(passenger as unknown as NotifyUser, "RIDE_REQUEST_ACCEPTED", {
+        await this.notifications.sendToUser(passenger as unknown as NotifyUser, 'RIDE_REQUEST_ACCEPTED', {
           vars: {
             driver: driver.fullName,
             trip_id: trip.id,
-            booking_reference: booking.referenceCode,
+            booking_reference: String(booking.referenceCode),
           },
-          data: { trip_id: trip.id, booking_id: booking.id },
+          data: { trip_id: trip.id, booking_id: String(booking.id) },
         });
       }
     } catch (err) {
@@ -1065,7 +1253,7 @@ export class RideRequestsService {
         destination_city: trip.destinationCity,
         departure_time: trip.departureTime,
         fare_per_seat: Number(trip.farePerSeat),
-        available_seats: trip.availableSeats,
+        available_seats: Number(trip.availableSeats),
         status: trip.status,
       },
       booking: {
@@ -1074,12 +1262,16 @@ export class RideRequestsService {
         trip_id: booking.tripId,
         passenger_id: booking.passengerId,
         seats_booked: booking.seatsBooked,
+        seat_numbers: booking.seatNumbers ?? [],
         agreed_fare: Number(booking.agreedFare),
         currency: booking.currency,
+        pickup_place: booking.pickupPlace,
+        pickup_lat: booking.pickupLat != null ? Number(booking.pickupLat) : null,
+        pickup_lng: booking.pickupLng != null ? Number(booking.pickupLng) : null,
         status: booking.status,
         payment_status: booking.paymentStatus,
       },
-      offer: serializeOffer(offer as unknown as OfferRow),
+      offer,
     };
   }
 

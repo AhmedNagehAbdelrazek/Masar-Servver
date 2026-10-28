@@ -236,20 +236,25 @@ export class AttachOfferBody {
 }
 
 export class AcceptRideRequestBody {
-  @IsDefined()
-  @IsNotEmpty()
+  // Direct accept can be bodyless: the target trip is resolved from the
+  // driver's schedule, or created from the ride request when none matches.
+  @IsOptional()
+  @IsUUID()
+  trip_id?: string;
+
+  @IsOptional()
   @IsNumber()
   @Min(0)
   @Type(() => Number)
-  fare_per_seat!: number;
+  fare_per_seat?: number;
 
   @IsOptional()
   @IsUUID()
   vehicle_id?: string;
 
-  @IsDefined()
+  @IsOptional()
   @IsArray()
-  seats!: Array<{
+  seats?: Array<{
     seat_number: number;
     type: 'driver' | 'available' | 'unavailable';
   }>;

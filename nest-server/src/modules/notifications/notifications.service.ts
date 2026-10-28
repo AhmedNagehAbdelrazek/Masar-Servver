@@ -216,6 +216,12 @@ export class NotificationsService {
     return { marked: res.count };
   }
 
+  async deleteAll(userId: string): Promise<{ deleted: number }> {
+    const res = await this.prisma.notification.deleteMany({ where: { userId } });
+    await this.emitCount(userId);
+    return { deleted: res.count };
+  }
+
   // Port of notificationService.registerDevice (POST /api/notifications/device).
   // A token identifies one app install, so it can only belong to one account:
   // detach it from any previous user before storing it on the current one.

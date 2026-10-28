@@ -174,6 +174,38 @@ describe('PUT /api/notifications/:id/read', () => {
 
     expect(res.status).toBe(404);
   });
+
+  it('marks all own notifications read and leaves others untouched', async () => {
+    await seedNotification(ctx, OWNER_ID);
+    await seedNotification(ctx, OWNER_ID);
+    const other = await seedNotification(ctx, OTHER_ID);
+
+    const res = await ctx.agent
+      .put('/api/notifications/read-all')
+      .set('Authorization', `Bearer ${ownerToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.marked).toBe(2);
+
+    const own = await ctx.prisma.notification.findMany({ where: { userId: OWNER_ID } });
+    expect(own.every((n) => n.isRead === true)).toBe(true);
+    expect((await ctx.prisma.notification.findUnique({ where: { id: other.id } }))?.isRead).toBe(false);
+  });
+
+  it('deletes all own notifications and leaves others untouched', async () => {
+    await seedNotification(ctx, OWNER_ID);
+    await seedNotification(ctx, OWNER_ID);
+    const other = await seedNotification(ctx, OTHER_ID);
+
+    const res = await ctx.agent
+      .delete('/api/notifications')
+      .set('Authorization', `Bearer ${ownerToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.deleted).toBe(2);
+    expect(await ctx.prisma.notification.count({ where: { userId: OWNER_ID } })).toBe(0);
+    expect(await ctx.prisma.notification.count({ where: { id: other.id } })).toBe(1);
+  });
 });
 
 describe('US3 - Notification settings', () => {

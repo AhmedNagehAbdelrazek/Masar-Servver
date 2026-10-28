@@ -404,24 +404,37 @@ async function createBooking(passengerId, payload) {
         detourSeconds: 0,
       };
     } else if (typeof rawPickupInput === 'object') {
-      const checked = await pickupService.validatePickup(trip_id, {
-        pickup_type: (payload.pickup_type === PICKUP_TYPE.STOP ? PICKUP_TYPE.STOP : PICKUP_TYPE.CUSTOM),
-        pickup_stop_id: payload.pickup_stop_id || null,
-        lat: resolvedPickupLat != null ? Number(resolvedPickupLat) : null,
-        lng: resolvedPickupLng != null ? Number(resolvedPickupLng) : null,
-        pickup_label: resolvedPickupPlace,
-      });
-      if (!checked.accepted) throw ApiErrors.custom(checked.reason, 422, checked.reason);
-      pickupPoint = {
-        pickupType: PICKUP_TYPE.CUSTOM,
-        pickupStopId: null,
-        label: (checked.point && checked.point.label) || resolvedPickupPlace,
-        city: null,
-        area: null,
-        lat: (checked.point && checked.point.lat) ?? (resolvedPickupLat != null ? Number(resolvedPickupLat) : null),
-        lng: (checked.point && checked.point.lng) ?? (resolvedPickupLng != null ? Number(resolvedPickupLng) : null),
-        detourSeconds: checked.detourSeconds,
-      };
+      // Explicit stop references are still validated against the trip.
+      if (payload.pickup_stop_id) {
+        const checked = await pickupService.validatePickup(trip_id, {
+          pickup_type: PICKUP_TYPE.STOP,
+          pickup_stop_id: payload.pickup_stop_id,
+        });
+        pickupPoint = {
+          pickupType: PICKUP_TYPE.STOP,
+          pickupStopId: payload.pickup_stop_id,
+          label: (checked.point && checked.point.label) || resolvedPickupPlace,
+          city: (checked.point && checked.point.city) || null,
+          area: null,
+          lat: checked.point ? checked.point.lat : null,
+          lng: checked.point ? checked.point.lng : null,
+          detourSeconds: 0,
+        };
+      } else if (resolvedPickupLat != null && resolvedPickupLng != null) {
+        // Custom points are accepted as-is for now (no distance/detour
+        // rejection). The post-booking route recompute adds this point to
+        // the trip route, and rankPickups orders it along the route.
+        pickupPoint = {
+          pickupType: PICKUP_TYPE.CUSTOM,
+          pickupStopId: null,
+          label: resolvedPickupPlace || trip.originCity,
+          city: null,
+          area: null,
+          lat: Number(resolvedPickupLat),
+          lng: Number(resolvedPickupLng),
+          detourSeconds: 0,
+        };
+      }
     }
   }
 

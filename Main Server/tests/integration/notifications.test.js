@@ -255,3 +255,46 @@ describe('DELETE /api/notifications/device', () => {
     expect(res.status).toBe(401);
   });
 });
+describe('PUT /api/notifications/read-all', () => {
+  it('marks all of the user\'s unread notifications and leaves other users untouched', async () => {
+    await seedNotification(OWNER_ID);
+    await seedNotification(OWNER_ID);
+    const other = await seedNotification(OTHER_ID);
+
+    const res = await getAgent()
+      .put('/api/notifications/read-all')
+      .set('Authorization', `Bearer ${ownerToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.marked).toBe(2);
+
+    const own = await Notification.findAll({ where: { userId: OWNER_ID } });
+    expect(own.every((n) => n.isRead === true)).toBe(true);
+    expect((await Notification.findByPk(other.id)).isRead).toBe(false);
+  });
+
+  it('requires authentication', async () => {
+    expect((await getAgent().put('/api/notifications/read-all')).status).toBe(401);
+  });
+});
+
+describe('DELETE /api/notifications', () => {
+  it('deletes all of the user\'s notifications and leaves other users untouched', async () => {
+    await seedNotification(OWNER_ID);
+    await seedNotification(OWNER_ID);
+    const other = await seedNotification(OTHER_ID);
+
+    const res = await getAgent()
+      .delete('/api/notifications')
+      .set('Authorization', `Bearer ${ownerToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.deleted).toBe(2);
+    expect(await Notification.count({ where: { userId: OWNER_ID } })).toBe(0);
+    expect(await Notification.count({ where: { id: other.id } })).toBe(1);
+  });
+
+  it('requires authentication', async () => {
+    expect((await getAgent().delete('/api/notifications')).status).toBe(401);
+  });
+});

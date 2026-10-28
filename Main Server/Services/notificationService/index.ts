@@ -604,6 +604,23 @@ async function markAllRead(userId) {
 }
 
 /**
+ * Delete all of a user's notifications and re-emit the unread badge.
+ */
+async function deleteAll(userId) {
+  const deleted = await Notification.destroy({ where: { userId } });
+  emitCount(userId);
+  auditService.track({
+    action: 'notification.delete_all',
+    resourceType: 'notification',
+    resourceId: userId,
+    actorId: userId,
+    actorType: 'user',
+    payload: { deleted },
+  });
+  return { deleted };
+}
+
+/**
  * Count a user's unread notifications (for the realtime badge).
  */
 async function countUnread(userId) {
@@ -697,9 +714,10 @@ module.exports = {
   listForUser,
   markRead,
   markAllRead,
+  deleteAll,
   countUnread,
   registerDevice,
   unregisterDevice,
 };
-export { sendToUser, notifyBookedPassengers, notifyConfirmedPassengers, listForUser, markRead, markAllRead, countUnread, registerDevice, unregisterDevice };
+export { sendToUser, notifyBookedPassengers, notifyConfirmedPassengers, listForUser, markRead, markAllRead, deleteAll, countUnread, registerDevice, unregisterDevice };
 export default module.exports;

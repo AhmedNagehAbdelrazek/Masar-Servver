@@ -517,6 +517,90 @@ describe('Ride request board', () => {
       ).status,
     ).toBe(403);
   });
+
+  it('accepts a ride request directly and adds the point to the trip schedule', async () => {
+    const created = await createRideRequest(passenger1Token, {
+      origin_time: new Date(Date.now() + 6 * 3600 * 1000).toISOString(),
+      max_budget: 18,
+      origin_lat: 31.95,
+      origin_lng: 35.91,
+      destination_lat: 32.55,
+      destination_lng: 35.85,
+    });
+    const requestId = created.body.ride_request.id as string;
+
+    const res = await ctx.agent
+      .post(`/api/ride-requests/${requestId}/accept`)
+      .set('Authorization', `Bearer ${driver1Token}`)
+      .send({});
+
+    expect(res.status).toBe(201);
+    const booking = res.body.booking as Record<string, unknown>;
+    expect(booking.trip_id).toBe(tripId);
+    expect(booking.status).toBe('confirmed');
+    expect(Number(booking.pickup_lat)).toBeCloseTo(31.95, 4);
+
+    const saved = await ctx.prisma.booking.findUnique({ where: { id: booking.id as string } });
+    expect(saved?.tripId).toBe(tripId);
+
+    const request = await ctx.prisma.rideRequest.findUnique({ where: { id: requestId } });
+    expect(request?.status).toBe('accepted');
+
+    const route = await ctx.agent
+      .get(`/api/trips/${tripId}/route`)
+      .set('Authorization', `Bearer ${driver1Token}`);
+    expect(route.status).toBe(200);
+    expect(
+      (route.body.pickups as Array<{ booking_id: string }>).some((p) => p.booking_id === booking.id),
+    ).toBe(true);
+  });
+
+  it('accepts onto an explicit trip and rejects another driver trip', async () => {
+    const created = await createRideRequest(passenger1Token);
+    const requestId = created.body.ride_request.id as string;
+
+    const forbidden = await ctx.agent
+      .post(`/api/ride-requests/${requestId}/accept`)
+      .set('Authorization', `Bearer ${driver2Token}`)
+      .send({ trip_id: tripId });
+    expect(forbidden.status).toBe(403);
+
+    const res = await ctx.agent
+      .post(`/api/ride-requests/${requestId}/accept`)
+      .set('Authorization', `Bearer ${driver1Token}`)
+      .send({ trip_id: tripId });
+    expect(res.status).toBe(201);
+    expect((res.body.trip as Record<string, unknown>).id).toBe(tripId);
+  });
+
+  it('creates a new trip when the driver has no matching trip', async () => {
+    const created = await createRideRequest(passenger1Token, {
+      destination_city: 'Zarqa',
+      origin_time: new Date(Date.now() + 6 * 3600 * 1000).toISOString(),
+      max_budget: 12,
+      origin_lat: 31.95,
+      origin_lng: 35.91,
+      destination_lat: 32.07,
+      destination_lng: 36.09,
+    });
+    const requestId = created.body.ride_request.id as string;
+
+    const res = await ctx.agent
+      .post(`/api/ride-requests/${requestId}/accept`)
+      .set('Authorization', `Bearer ${driver1Token}`)
+      .send({});
+
+    expect(res.status).toBe(201);
+    const trip = res.body.trip as Record<string, unknown>;
+    expect(trip.id).not.toBe(tripId);
+    expect(trip.destination_city).toBe('Zarqa');
+    expect(Number(trip.fare_per_seat)).toBe(12);
+
+    const saved = await ctx.prisma.trip.findUnique({ where: { id: trip.id as string } });
+    expect(saved?.driverId).toBe(DRIVER1_ID);
+    expect(saved?.destinationCity).toBe('Zarqa');
+    expect(Number(saved?.availableSeats)).toBe(2);
+  });
 });
 
 describe('Ride request matches', () => {

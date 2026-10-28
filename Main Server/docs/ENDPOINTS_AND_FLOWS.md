@@ -432,6 +432,12 @@
 **Response:** `200 {data: [offer], pagination}`.
 **Watch out:** request owner or a driver who already offered; other drivers get `403`.
 
+### [ride-8] POST /api/ride-requests/:request_id/accept — driver
+**Use:** direct acceptance with no offer/negotiation. Body is optional (`{}` or none).
+**Request:** params `{request_id}`; optional body `{trip_id, fare_per_seat, origin_time, seats, type_of_trip, repeated_days, repeated_end_date, allowed_type, instructions, additional_instructions, pickup_point, dropoff_point, waypoints, stops}`.
+**Response:** `201 {trip, booking, offer}`.
+**Watch out:** `trip_id` must be the driver's own published/full trip. Without it the closest matching trip is used, or a new trip is created from the request (fare defaults to `max_budget`, departure to the request time or `now + 1h`). The booking pickup is the request origin and is included in the trip route by the post-booking recompute. `409` when the request is no longer open or has no seats.
+
 ### [offer-1] PUT /api/offers/:offer_id — passenger
 **Use:** accept / decline one bid.
 **Request:** params `{offer_id}`; body `{action*: "accept"|"decline"}`.
@@ -1014,13 +1020,25 @@
 **Response:** `200 {notification: {id, is_read: true}}`.
 **Watch out:** an owned id is required.
 
-### [notif-3] POST /api/notifications/device — any signed-in user
+### [notif-3] PUT /api/notifications/read-all — any signed-in user
+**Use:** mark every unread notification owned by the caller as read (re-emits the unread badge).
+**Request:** no body.
+**Response:** `200 {marked: number}`.
+**Watch out:** only the caller's notifications are touched.
+
+### [notif-4] DELETE /api/notifications — any signed-in user
+**Use:** clear the caller's notification inbox.
+**Request:** no body.
+**Response:** `200 {deleted: number}`.
+**Watch out:** only the caller's notifications are deleted; other users are untouched.
+
+### [notif-5] POST /api/notifications/device — any signed-in user
 **Use:** register/refresh the FCM device token used for push delivery. Call on login, app start, and whenever the SDK rotates the token.
 **Request:** body `{fcm_token* (string, 1–4096 chars)}`.
 **Response:** `200 {device: {registered: true}}`.
 **Watch out:** the same token is detached from any other account first (shared phone / account switch), and tokens are never included in audit payloads.
 
-### [notif-4] DELETE /api/notifications/device — any signed-in user
+### [notif-6] DELETE /api/notifications/device — any signed-in user
 **Use:** stop push delivery for this device (call on logout).
 **Request:** body `{fcm_token (string, optional)}` — when supplied, the stored token must match.
 **Response:** `200 {device: {registered: boolean}}` (`false` = no token remains on the account).
@@ -1135,6 +1153,7 @@ SOS mid-trip: `[sock-13]` → `[sock-14]` + admin `[sock-15]` → admin `[sos-2]
 ### F7 — Ride-request board flow (demand-driven)
 Passenger: `[ride-1]` (post need) → (optionally `[ride-4]` published-trip alternatives) → compare `[ride-7]` offers → `[offer-1]` accept → `[offer-2]` final fare → ⏳ driver attaches via `[trip-20]` → done (normal `confirmed` booking, continues in F5/F6).
 Driver: browse `[ride-2]` → `[ride-6]` bid (one pending per driver/request) → ⏳ passenger decision → if accepted, `[trip-20]` → done.
+Direct path: driver browses `[ride-2]` → `[ride-8]` accept (no offer needed) → booking lands on an existing matching trip or a newly created one → done.
 Withdraw anytime via `[ride-5]` (cancel declines sent offers).
 
 ### F8 — Chat flow (booking + support)
@@ -1153,7 +1172,7 @@ Reporter: `[complain-1]` (accused ≠ self; same open triple returns `already_fi
 Anyone: `[support-1]` (file, optional booking/trip link) → `[support-2]` list → `[support-3]` thread + `[chat-2]` history → reply `[support-6]` or live `[sock-3]` after `[sock-1]` join → staff: `[support-4]` triage/assign (`[sock-34]`) → `[support-5]` status → done (`[sock-35]` notifies owner on resolve; closed can't reopen).
 
 ### F13 — Notifications & settings flow
-Client: connect socket → `[sock-12]` badge count → `[notif-1]` inbox → `[notif-2]` / `[sock-9]` / `[sock-10]` mark read → `[sock-12]` refreshes. Live pushes arrive as `[sock-11]`. Preferences: `[notifset-1]` → `[notifset-2]` (drivers: `[notifset-3]` → `[notifset-4]`, master switch overwrites all). Server sends pickup/proximity/route/booking/trip events as `pickup_added|pickup_changed|pickup_cancelled|route_updated|driver_nearby|driver_arrived|pickup_missed` (toggleable) — never block mutations on delivery.
+Client: connect socket → `[sock-12]` badge count → `[notif-1]` inbox → `[notif-2]` / `[notif-3]` / `[sock-9]` / `[sock-10]` mark read → `[sock-12]` refreshes. Bulk clear via `[notif-4]`. Live pushes arrive as `[sock-11]`. Preferences: `[notifset-1]` → `[notifset-2]` (drivers: `[notifset-3]` → `[notifset-4]`, master switch overwrites all). Server sends pickup/proximity/route/booking/trip events as `pickup_added|pickup_changed|pickup_cancelled|route_updated|driver_nearby|driver_arrived|pickup_missed` (toggleable) — never block mutations on delivery.
 
 ### F14 — Driver verification & admin approval flow
 Driver: `[auth-13]` → `[auth-15]` (or fix via `[verif-3]`, state in `[verif-1]`/`[auth-17]`). Admin: `[aver-1]` queue → inspect docs → `[aver-2]`/`[aver-3]` identity (+`fields_to_fix`) → `[aver-4]`/`[aver-5]` vehicle → fully verified → driver can publish (F4). All decisions audited + driver notified.

@@ -618,27 +618,40 @@ export class BookingsService {
       pickupLng = checked.point ? checked.point.lng : resolvedPickupLng;
       detourSeconds = 0;
     } else {
-      const type =
-        payload.pickup_type === 'stop' ? 'stop' : 'custom';
-      const checked = await this.pickup.validatePickup(trip.id, {
-        pickup_type: payload.pickup_stop_id ? 'stop' : type,
-        pickup_stop_id: (payload.pickup_stop_id as string) ?? null,
-        lat: resolvedPickupLat,
-        lng: resolvedPickupLng,
-        pickup_label: resolvedPickupPlace,
-      });
-      if (!checked.accepted) {
-        throw new UnprocessableEntityException({
-          message: checked.reason ?? 'PICKUP_REJECTED',
-          code: checked.reason ?? 'PICKUP_REJECTED',
+      // Explicit stop references remain validated against the trip.
+      if (payload.pickup_stop_id) {
+        const checked = await this.pickup.validatePickup(trip.id, {
+          pickup_type: 'stop',
+          pickup_stop_id: payload.pickup_stop_id as string,
         });
+        pickupType = 'stop';
+        pickupStopId = checked.point?.pickupStopId ?? null;
+        pickupLabel = checked.point?.label ?? resolvedPickupPlace;
+        pickupLat = checked.point ? checked.point.lat : resolvedPickupLat;
+        pickupLng = checked.point ? checked.point.lng : resolvedPickupLng;
+        detourSeconds = 0;
+      } else if (resolvedPickupLat != null && resolvedPickupLng != null) {
+        // Custom points are accepted as-is for now (no distance/detour
+        // rejection). The route recompute after booking adds this point to
+        // the trip route and ranks it along the route.
+        pickupType = 'custom';
+        pickupStopId = null;
+        pickupLabel = resolvedPickupPlace ?? trip.originCity;
+        pickupCity = null;
+        pickupArea = null;
+        pickupLat = resolvedPickupLat;
+        pickupLng = resolvedPickupLng;
+        detourSeconds = 0;
+      } else {
+        // A point without coordinates cannot be routed; keep the origin.
+        pickupType = 'custom';
+        pickupLabel = trip.originCity;
+        pickupCity = trip.originCity;
+        pickupArea = trip.originArea;
+        pickupLat = trip.originLat != null ? Number(trip.originLat) : null;
+        pickupLng = trip.originLng != null ? Number(trip.originLng) : null;
+        detourSeconds = 0;
       }
-      pickupType = type;
-      pickupStopId = checked.point?.pickupStopId ?? null;
-      pickupLabel = checked.point?.label ?? resolvedPickupPlace;
-      pickupLat = checked.point ? checked.point.lat : resolvedPickupLat;
-      pickupLng = checked.point ? checked.point.lng : resolvedPickupLng;
-      detourSeconds = checked.detourSeconds;
     }
 
     if (requestedSeats > Number(trip.availableSeats)) {

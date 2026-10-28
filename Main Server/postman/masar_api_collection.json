@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "aa2fc350-c05f-4e31-ba21-18a58eb13b93",
     "name": "Masar API",
-    "description": "Complete API collection for the Masar ride-sharing platform (Driver Flow Audit reorganization, 2026-08-01 + Feature 008: Trip Details, Cancellation & Notification Settings).\n\nBase URL: {{base_url}} (default http://localhost:8000/api).\n\n## Folder organization\n- **Auth (shared)** â€” registration, login, tokens, forgot password, current user.\n- **Driver** â€” Profile & Vehicle, Verification (spec 006: status / submit / resubmit), Trip Management (incl. Get Trip Details, Cancel Trip with Penalty), Dashboard, Bookings, Communication, Ratings & Reviews, Complaints, Penalties, Notifications, Notification Settings, Subscription & Earnings.\n- **Passenger** â€” Trip Discovery, Booking, Tracking, Ratings, Complaints, Request Board, Favorites.\n- **Admin** â€” Subscription Management, Verification Queue, Users Management, Trip Moderation, Arbitration, Penalties, Reports & Analytics.\n\n## Feature 008 â€” Trip Details, Cancellation & Notification Settings\n- **GET /trips/:trip_id** â€” Enhanced with full driver profile, vehicle info, waypoints, attributes, and passenger booking details. Access restricted to trip participants (driver, confirmed passengers, admins).\n- **POST /trips/:trip_id/cancel** â€” New penalty-aware cancellation. Requires reason + optional note. Only allowed when no confirmed bookings exist. Creates penalty record and applies automatic escalation (warning â†’ 7d suspension â†’ 30d suspension). Bans never auto-created.\n- **GET /settings/notifications** â€” Returns all notification types with enabled/disabled state per channel (in_app, push). Falls back to defaults if no settings exist.\n- **PUT /settings/notifications** â€” Upserts notification preferences. Only provided types are updated.\n\n## Notes\n- Requests marked **PROPOSED** (in the description) are not implemented yet; their response examples are proposed designs.\n- Every request carries a success + error example.\n- Verification endpoints use the `{ \"status\": \"success\", \"data\": {...} }` envelope; admin approve/reject return the raw `{ \"driver_id\" | \"vehicle_id\", ... }` payload.\n- Token-setting tests on registration/login flows populate {{access_token}}/{{refresh_token}} automatically.\n- Error envelope: `{ \"status\": \"error\", \"message\": \"...\", \"code\": \"...\" }`.\n\n## Free Plan\n- The free plan is **automatically assigned** to every new driver at signup â€” no manual subscription required.\n- Drivers **cannot** subscribe to the free plan manually (`422 FREE_PLAN_NOT_SUBSCRIBABLE`).\n- The admin can create/update/deactivate the free plan via Admin > Subscription Management.\n- The free plan's `free_offer` configures the number of free trips (`{ \"type\": \"trips\", \"value\": N }`).\n- Once free trips are exhausted, the driver must subscribe to a paid plan to continue.\n\n## Feature 011 — Admin Dashboard API\n- **GET /admin/dashboard/summary** — Global dashboard: KPIs, alerts, top routes, recent trips, pending requests, latest complaints.\n- **GET /admin/dashboard/recent-trips** — Paginated recent trips list.\n- **GET /admin/dashboard/top-routes** — Top 5 frequent routes.\n- **GET /admin/dashboard/pending-requests** — Drivers with pending verification docs.\n- **GET /admin/dashboard/latest-complaints** — Latest complaints.\n- **GET /admin/dashboard/drivers** — Searchable/filterable/sortable driver directory.\n- **GET /admin/dashboard/drivers/stats/summary** — Platform-wide driver stat cards.\n- **GET /admin/dashboard/drivers/:driver_id** — Driver dossier header.\n- **GET /admin/dashboard/drivers/:driver_id/overview** — Personal info, trip stats, balance.\n- **GET /admin/dashboard/drivers/:driver_id/trips** — Driver trips with status/month filters.\n- **GET /admin/dashboard/drivers/:driver_id/evaluations** — Ratings distribution + reviews.\n- **GET /admin/dashboard/drivers/:driver_id/account-log** — Penalties + complaints log.\n- **GET /admin/dashboard/drivers/:driver_id/car** — Car info, photos, document status.\n- **GET /admin/dashboard/drivers/:driver_id/documents** — Personal + vehicle documents.\n- **POST /admin/dashboard/drivers/:driver_id/status** — Set driver account status.\n- **POST /admin/dashboard/drivers/:driver_id/account-status** — Suspend/reactivate/unblock alias.\n- **POST /admin/dashboard/drivers/:driver_id/documents/:key/approve** — Approve document.\n- **POST /admin/dashboard/drivers/:driver_id/documents/:key/reject** — Reject document.\n- **GET /admin/dashboard/reservations** — Reservations list.\n\n## Push Device Registration\n- **POST /notifications/device** - registers or refreshes the FCM token used for push notifications. A token belongs to one app install, so it is detached from the previous account first.\n- **DELETE /notifications/device** - clears the token on logout. The optional `fcm_token` body guards against a stale logout clearing a newer registration.",
+    "description": "Complete API collection for the Masar ride-sharing platform (Driver Flow Audit reorganization, 2026-08-01 + Feature 008: Trip Details, Cancellation & Notification Settings).\n\nBase URL: {{base_url}} (default http://localhost:8000/api).\n\n## Folder organization\n- **Auth (shared)** â€” registration, login, tokens, forgot password, current user.\n- **Driver** â€” Profile & Vehicle, Verification (spec 006: status / submit / resubmit), Trip Management (incl. Get Trip Details, Cancel Trip with Penalty), Dashboard, Bookings, Communication, Ratings & Reviews, Complaints, Penalties, Notifications, Notification Settings, Subscription & Earnings.\n- **Passenger** â€” Trip Discovery, Booking, Tracking, Ratings, Complaints, Request Board, Favorites.\n- **Admin** â€” Subscription Management, Verification Queue, Users Management, Trip Moderation, Arbitration, Penalties, Reports & Analytics.\n\n## Feature 008 â€” Trip Details, Cancellation & Notification Settings\n- **GET /trips/:trip_id** â€” Enhanced with full driver profile, vehicle info, waypoints, attributes, and passenger booking details. Access restricted to trip participants (driver, confirmed passengers, admins).\n- **POST /trips/:trip_id/cancel** â€” New penalty-aware cancellation. Requires reason + optional note. Only allowed when no confirmed bookings exist. Creates penalty record and applies automatic escalation (warning â†’ 7d suspension â†’ 30d suspension). Bans never auto-created.\n- **GET /settings/notifications** â€” Returns all notification types with enabled/disabled state per channel (in_app, push). Falls back to defaults if no settings exist.\n- **PUT /settings/notifications** â€” Upserts notification preferences. Only provided types are updated.\n\n## Notes\n- Requests marked **PROPOSED** (in the description) are not implemented yet; their response examples are proposed designs.\n- Every request carries a success + error example.\n- Verification endpoints use the `{ \"status\": \"success\", \"data\": {...} }` envelope; admin approve/reject return the raw `{ \"driver_id\" | \"vehicle_id\", ... }` payload.\n- Token-setting tests on registration/login flows populate {{access_token}}/{{refresh_token}} automatically.\n- Error envelope: `{ \"status\": \"error\", \"message\": \"...\", \"code\": \"...\" }`.\n\n## Free Plan\n- The free plan is **automatically assigned** to every new driver at signup â€” no manual subscription required.\n- Drivers **cannot** subscribe to the free plan manually (`422 FREE_PLAN_NOT_SUBSCRIBABLE`).\n- The admin can create/update/deactivate the free plan via Admin > Subscription Management.\n- The free plan's `free_offer` configures the number of free trips (`{ \"type\": \"trips\", \"value\": N }`).\n- Once free trips are exhausted, the driver must subscribe to a paid plan to continue.\n\n## Feature 011 — Admin Dashboard API\n- **GET /admin/dashboard/summary** — Global dashboard: KPIs, alerts, top routes, recent trips, pending requests, latest complaints.\n- **GET /admin/dashboard/recent-trips** — Paginated recent trips list.\n- **GET /admin/dashboard/top-routes** — Top 5 frequent routes.\n- **GET /admin/dashboard/pending-requests** — Drivers with pending verification docs.\n- **GET /admin/dashboard/latest-complaints** — Latest complaints.\n- **GET /admin/dashboard/drivers** — Searchable/filterable/sortable driver directory.\n- **GET /admin/dashboard/drivers/stats/summary** — Platform-wide driver stat cards.\n- **GET /admin/dashboard/drivers/:driver_id** — Driver dossier header.\n- **GET /admin/dashboard/drivers/:driver_id/overview** — Personal info, trip stats, balance.\n- **GET /admin/dashboard/drivers/:driver_id/trips** — Driver trips with status/month filters.\n- **GET /admin/dashboard/drivers/:driver_id/evaluations** — Ratings distribution + reviews.\n- **GET /admin/dashboard/drivers/:driver_id/account-log** — Penalties + complaints log.\n- **GET /admin/dashboard/drivers/:driver_id/car** — Car info, photos, document status.\n- **GET /admin/dashboard/drivers/:driver_id/documents** — Personal + vehicle documents.\n- **POST /admin/dashboard/drivers/:driver_id/status** — Set driver account status.\n- **POST /admin/dashboard/drivers/:driver_id/account-status** — Suspend/reactivate/unblock alias.\n- **POST /admin/dashboard/drivers/:driver_id/documents/:key/approve** — Approve document.\n- **POST /admin/dashboard/drivers/:driver_id/documents/:key/reject** — Reject document.\n- **GET /admin/dashboard/reservations** — Reservations list.\n\n## Push Device Registration\n- **POST /notifications/device** - registers or refreshes the FCM token used for push notifications. A token belongs to one app install, so it is detached from the previous account first.\n- **DELETE /notifications/device** - clears the token on logout. The optional `fcm_token` body guards against a stale logout clearing a newer registration.\n\n## Bulk notification actions\nThe collection now includes **PUT /notifications/read-all** and **DELETE /notifications**, and the driver direct-accept endpoint **POST /ride-requests/:request_id/accept** (bodyless or with an optional `trip_id`).",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "_exporter_id": "28639752",
     "_collection_link": "https://go.postman.co/collection/28639752-aa2fc350-c05f-4e31-ba21-18a58eb13b93?source=collection_link"
@@ -629,13 +629,46 @@
               ]
             }
           ]
-            },
+        },
+        {
+          "name": "Forgot Password SMS",
+          "item": [
             {
-              "name": "Forgot Password SMS",
-              "item": [
+              "name": "Initiate SMS Password Reset",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\\n  \"phone\": \"+962791234567\" // full phone with country code\\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}/auth/forgot-password/sms",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "auth",
+                    "forgot-password",
+                    "sms"
+                  ]
+                },
+                "description": "Initiate password reset via SMS. Sends a 6-digit reset code to the user's phone through the external SMS provider.\n\n**Body fields**\n- `phone` *(string, required)* â€” full phone number in international format, e.g. `+962791234567`."
+              },
+              "response": [
                 {
-                  "name": "Initiate SMS Password Reset",
-                  "request": {
+                  "name": "Success",
+                  "originalRequest": {
                     "method": "POST",
                     "header": [
                       {
@@ -645,12 +678,7 @@
                     ],
                     "body": {
                       "mode": "raw",
-                      "raw": "{\\n  \"phone\": \"+962791234567\" // full phone with country code\\n}",
-                      "options": {
-                        "raw": {
-                          "language": "json"
-                        }
-                      }
+                      "raw": "{\\n  \"phone\": \"+962791234567\" // full phone with country code\\n}"
                     },
                     "url": {
                       "raw": "{{base_url}}/auth/forgot-password/sms",
@@ -662,54 +690,60 @@
                         "forgot-password",
                         "sms"
                       ]
-                    },
-                    "description": "Initiate password reset via SMS. Sends a 6-digit reset code to the user's phone through the external SMS provider.\n\n**Body fields**\n- `phone` *(string, required)* â€” full phone number in international format, e.g. `+962791234567`."
-                  },
-                  "response": [
-                    {
-                      "name": "Success",
-                      "originalRequest": {
-                        "method": "POST",
-                        "header": [
-                          {
-                            "key": "Content-Type",
-                            "value": "application/json"
-                          }
-                        ],
-                        "body": {
-                          "mode": "raw",
-                          "raw": "{\\n  \"phone\": \"+962791234567\" // full phone with country code\\n}"
-                        },
-                        "url": {
-                          "raw": "{{base_url}}/auth/forgot-password/sms",
-                          "host": [
-                            "{{base_url}}"
-                          ],
-                          "path": [
-                            "auth",
-                            "forgot-password",
-                            "sms"
-                          ]
-                        }
-                      },
-                      "status": "OK",
-                      "code": 200,
-                      "_postman_previewlanguage": "json",
-                      "header": [
-                        {
-                          "key": "Content-Type",
-                          "value": "application/json",
-                          "type": "text"
-                        }
-                      ],
-                      "cookie": [],
-                      "body": "{\\n  \"message\": \"SMS_SENT\\n}\""
                     }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json",
+                      "type": "text"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\\n  \"message\": \"SMS_SENT\\n}\""
+                }
+              ]
+            },
+            {
+              "name": "Reset Password via SMS",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\\n  \"phone\": \"+962791234567\", // full phone with country code\\n  \"resetCode\": \"123456\", // 6-digit code received via SMS\\n  \"newPassword\": \"NewPass@123!\" // new password (min 8 chars, upper+lower+number+special)\\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}/auth/forgot-password/sms/reset",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "auth",
+                    "forgot-password",
+                    "sms",
+                    "reset"
                   ]
                 },
+                "description": "Reset password using the 6-digit code received via SMS.\n\n**Body fields**\n- `phone` *(string, required)* â€” full phone number in international format, e.g. `+962791234567`.\n- `resetCode` *(string, required)* â€” the 6-digit reset code received via SMS.\n- `newPassword` *(string, required)* â€” new password meeting complexity requirements."
+              },
+              "response": [
                 {
-                  "name": "Reset Password via SMS",
-                  "request": {
+                  "name": "Success",
+                  "originalRequest": {
                     "method": "POST",
                     "header": [
                       {
@@ -719,12 +753,7 @@
                     ],
                     "body": {
                       "mode": "raw",
-                      "raw": "{\\n  \"phone\": \"+962791234567\", // full phone with country code\\n  \"resetCode\": \"123456\", // 6-digit code received via SMS\\n  \"newPassword\": \"NewPass@123!\" // new password (min 8 chars, upper+lower+number+special)\\n}",
-                      "options": {
-                        "raw": {
-                          "language": "json"
-                        }
-                      }
+                      "raw": "{\\n  \"phone\": \"+962791234567\", // full phone with country code\\n  \"resetCode\": \"123456\", // 6-digit code received via SMS\\n  \"newPassword\": \"NewPass@123!\" // new password\\n}"
                     },
                     "url": {
                       "raw": "{{base_url}}/auth/forgot-password/sms/reset",
@@ -737,51 +766,20 @@
                         "sms",
                         "reset"
                       ]
-                    },
-                    "description": "Reset password using the 6-digit code received via SMS.\n\n**Body fields**\n- `phone` *(string, required)* â€” full phone number in international format, e.g. `+962791234567`.\n- `resetCode` *(string, required)* â€” the 6-digit reset code received via SMS.\n- `newPassword` *(string, required)* â€” new password meeting complexity requirements."
-                  },
-                  "response": [
-                    {
-                      "name": "Success",
-                      "originalRequest": {
-                        "method": "POST",
-                        "header": [
-                          {
-                            "key": "Content-Type",
-                            "value": "application/json"
-                          }
-                        ],
-                        "body": {
-                          "mode": "raw",
-                          "raw": "{\\n  \"phone\": \"+962791234567\", // full phone with country code\\n  \"resetCode\": \"123456\", // 6-digit code received via SMS\\n  \"newPassword\": \"NewPass@123!\" // new password\\n}"
-                        },
-                        "url": {
-                          "raw": "{{base_url}}/auth/forgot-password/sms/reset",
-                          "host": [
-                            "{{base_url}}"
-                          ],
-                          "path": [
-                            "auth",
-                            "forgot-password",
-                            "sms",
-                            "reset"
-                          ]
-                        }
-                      },
-                      "status": "OK",
-                      "code": 200,
-                      "_postman_previewlanguage": "json",
-                      "header": [
-                        {
-                          "key": "Content-Type",
-                          "value": "application/json",
-                          "type": "text"
-                        }
-                      ],
-                      "cookie": [],
-                      "body": "{\\n  \"message\": \"PASSWORD_RESET_SUCCESSFUL\\n}\""
                     }
-                  ]
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json",
+                      "type": "text"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\\n  \"message\": \"PASSWORD_RESET_SUCCESSFUL\\n}\""
                 }
               ]
             }
@@ -9591,6 +9589,126 @@
                   "body": "{\n  \"status\": \"error\",\n  \"message\": \"Offer price has not been agreed yet\",\n  \"code\": \"OFFER_PRICE_NOT_AGREED\"\n}"
                 }
               ]
+            },
+            {
+              "name": "Accept Ride Request (Driver)",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "exec": [
+                      "pm.environment.get('access_token') ? pm.request.headers.add({ key: 'Authorization', value: 'Bearer ' + pm.environment.get('access_token') }) : console.warn('No access_token set');"
+                    ],
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Responds successfully', function () {",
+                      "    pm.response.to.be.oneOf([200, 201]);",
+                      "});",
+                      "pm.test('Returns a JSON body', function () {",
+                      "    pm.expect(pm.response.json()).to.be.an('object');",
+                      "});"
+                    ],
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}/ride-requests/{{request_id}}/accept",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "ride-requests",
+                    "{{request_id}}",
+                    "accept"
+                  ]
+                },
+                "description": "Driver accepts a passenger ride request directly, with no offer or negotiation required.\n\n**Body is optional - send `{}` or no body at all.** The server resolves the target trip automatically:\n1. an explicit `trip_id` is used when supplied (must belong to the driver and still be published/full);\n2. otherwise the driver's closest published trip on the same origin/destination is used;\n3. when no matching trip exists, a trip is created from the ride request using the driver's verified vehicle and fare = `max_budget` (or `fare_per_seat` when supplied).\n\nThe confirmed booking is added to the trip schedule. The request origin is written as the booking pickup and included in the trip route by the post-booking route recompute.\n\n**Path parameter**\n- `request_id` *(UUID, required)* - the ride request to accept.\n\n**Optional body fields**\n- `trip_id` *(UUID)* - attach to this existing trip instead of auto-selecting/creating one.\n- `fare_per_seat` *(number)* - override the trip fare (defaults to the selected trip fare or the request max budget).\n- `origin_time` *(ISO-8601 with offset)* - departure when a new trip must be created.\n- Legacy trip-creation fields (`seats`, `type_of_trip`, `repeated_days`, `repeated_end_date`, `allowed_type`, `instructions`, `additional_instructions`, `pickup_point`, `dropoff_point`, `waypoints`, `stops`) are still accepted when provided.\n\n**Responses**\n- `201` - `{ trip, booking, offer }` with the booking now on the driver schedule.\n- `403` - not a driver, unverified driver/vehicle, or the supplied trip belongs to another driver.\n- `404` - ride request or trip not found.\n- `409` - request no longer open, no seats available, or trip not attachable.\n- `422` - validation error.\n\n**Nest parity:** same path on the Nest server (`{{nest_url}}/ride-requests/:request_id/accept`; Docker prefix `api/v2`)."
+              },
+              "response": [
+                {
+                  "name": "Created",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Authorization",
+                        "value": "Bearer {{access_token}}",
+                        "type": "text"
+                      },
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json",
+                        "type": "text"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{base_url}}/ride-requests/{{request_id}}/accept",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "ride-requests",
+                        "{{request_id}}",
+                        "accept"
+                      ]
+                    }
+                  },
+                  "status": "Created",
+                  "code": 201,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json",
+                      "type": "text"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n  \"trip\": {\n    \"id\": \"c1d2e3f4-0000-4000-8000-000000000001\",\n    \"origin_city\": \"Amman\",\n    \"destination_city\": \"Irbid\",\n    \"departure_time\": \"2026-11-01T16:00:00.000Z\",\n    \"fare_per_seat\": 18,\n    \"available_seats\": 1,\n    \"status\": \"published\"\n  },\n  \"booking\": {\n    \"id\": \"b1c2d3e4-0000-4000-8000-000000000002\",\n    \"reference_code\": \"MSR-A1B2C3\",\n    \"trip_id\": \"c1d2e3f4-0000-4000-8000-000000000001\",\n    \"passenger_id\": \"07eccd0a-b14a-46a7-83e0-36cbeafcca87\",\n    \"seats_booked\": 1,\n    \"seat_numbers\": [\n      2\n    ],\n    \"agreed_fare\": 18,\n    \"currency\": \"JOD\",\n    \"pickup_place\": \"Amman - Sweifieh\",\n    \"pickup_lat\": 31.95,\n    \"pickup_lng\": 35.91,\n    \"status\": \"confirmed\",\n    \"payment_status\": \"pending\"\n  },\n  \"offer\": {\n    \"id\": \"f1e2d3c4-0000-4000-8000-000000000003\",\n    \"request_id\": \"a1b2c3d4-0000-4000-8000-000000000004\",\n    \"driver_id\": \"d1e2f3a4-0000-4000-8000-000000000005\",\n    \"trip_id\": \"c1d2e3f4-0000-4000-8000-000000000001\",\n    \"status\": \"accepted\",\n    \"agreed_fare\": 18,\n    \"booking_id\": \"b1c2d3e4-0000-4000-8000-000000000002\"\n  }\n}"
+                }
+              ]
             }
           ],
           "description": "Spec 009 US5/US6 - driver side of the request board."
@@ -14162,75 +14280,6 @@
                   ]
                 },
                 "description": "Get ranked matching-trip suggestions for a ride request (spec 012 US6). Owner (passenger) only; advisory — never books automatically.\n\n**Path parameter**\n- `request_id` *(UUID, required)*.\n\n**200** `{ ride_request_id, matches: [{ trip_id, score_rank, origin, destination, departure_time, available_seats, fare_per_seat, currency, gender_preference, driver }] }`. Empty `matches: []` if none.\n\nErrors: `404 RIDE_REQUEST_NOT_FOUND`; `403` not the owner."
-              },
-              "response": []
-            },
-            {
-              "name": "Accept Ride Request (Driver)",
-              "event": [
-                {
-                  "listen": "prerequest",
-                  "script": {
-                    "exec": [
-                      "pm.environment.get('access_token') ? pm.request.headers.add({ key: 'Authorization', value: 'Bearer ' + pm.environment.get('access_token') }) : console.warn('No access_token set');"
-                    ],
-                    "type": "text/javascript",
-                    "packages": {},
-                    "requests": {}
-                  }
-                },
-                {
-                  "listen": "test",
-                  "script": {
-                    "exec": [
-                      "pm.test('Responds successfully', function () {",
-                      "    pm.response.to.be.oneOf([200, 201]);",
-                      "});",
-                      "pm.test('Returns a JSON body', function () {",
-                      "    pm.expect(pm.response.json()).to.be.an('object');",
-                      "});"
-                    ],
-                    "type": "text/javascript",
-                    "packages": {},
-                    "requests": {}
-                  }
-                }
-              ],
-              "request": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{access_token}}",
-                    "type": "text"
-                  },
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json",
-                    "type": "text"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"fare_per_seat\": 15.0,\n  \"seats\": [\n    { \"seat_number\": 1, \"type\": \"driver\" },\n    { \"seat_number\": 2, \"type\": \"available\" },\n    { \"seat_number\": 3, \"type\": \"available\" },\n    { \"seat_number\": 4, \"type\": \"available\" }\n  ],\n  \"type_of_trip\": \"one_way\",\n  \"repeated_days\": [1, 3, 5],\n  \"repeated_end_date\": \"2026-12-31\",\n  \"allowed_type\": \"all\",\n  \"instructions\": [\"No smoking\", \"No pets\"],\n  \"additional_instructions\": \"Call when arriving\",\n  \"pickup_point\": {\n    \"stop_name\": \"Downtown Amman\",\n    \"city\": \"Amman\",\n    \"lat\": 31.95,\n    \"lng\": 35.93\n  },\n  \"dropoff_point\": {\n    \"stop_name\": \"Irbid Center\",\n    \"city\": \"Irbid\",\n    \"lat\": 32.55,\n    \"lng\": 35.85\n  },\n  \"waypoints\": [],\n  \"stops\": [],\n  \"origin_time\": \"2026-08-23T08:53:36.583Z\"\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                },
-                "url": {
-                  "raw": "{{base_url}}/ride-requests/{{request_id}}/accept",
-                  "host": [
-                    "{{base_url}}"
-                  ],
-                  "path": [
-                    "ride-requests",
-                    "{{request_id}}",
-                    "accept"
-                  ]
-                },
-                "description": "Driver accepts a passenger's ride request directly, creating a trip and confirmed booking without negotiation.\n\n**Path parameter**\n- `request_id` *(UUID, required)* — the ride request to accept.\n\n**Body fields**\n- `fare_per_seat` *(number, required)* — fare per seat in JOD.\n- `seats` *(array, required)* — seat configuration matching driver's vehicle (exactly one `driver` seat, rest `available`).\n- `type_of_trip` *(string, optional)* — `one_way` (default) or `repeated`.\n- `repeated_days` *(array of ints, optional)* — required if `repeated`; integers 0=Sun .. 6=Sat.\n- `repeated_end_date` *(string, optional)* — ISO date, required if `repeated`.\n- `allowed_type` *(string, optional)* — gender preference: `all`, `women_only`, `men_only`.\n- `instructions` *(array, optional)* — driver instructions.\n- `additional_instructions` *(string, optional)* — additional notes.\n- `pickup_point` / `dropoff_point` *(object, optional)* — custom pickup/dropoff.\n- `waypoints` / `stops` *(array, optional)* — route waypoints.\n- `origin_time` *(string, optional)* — departure time; defaults to ride request's origin_time.\n\n**Responses**\n- `201` — Trip created, booking confirmed. Returns `{ trip, booking, offer }`.\n- `403` — Not a driver, not verified, or vehicle not verified.\n- `404` — Ride request not found.\n- `409` — Request no longer accepting, driver already has pending offer, or seat mismatch.\n- `422` — Validation error (seat config, fare, dates, overlap, balance, etc.)."
               },
               "response": []
             }
@@ -23442,299 +23491,6 @@
           "name": "Notifications",
           "item": [
             {
-              "name": "List Notifications",
-              "event": [
-                {
-                  "listen": "prerequest",
-                  "script": {
-                    "exec": [
-                      "pm.environment.get('access_token') ? pm.request.headers.add({ key: 'Authorization', value: 'Bearer ' + pm.environment.get('access_token') }) : console.warn('No access_token set');"
-                    ],
-                    "type": "text/javascript",
-                    "packages": {},
-                    "requests": {}
-                  }
-                },
-                {
-                  "listen": "test",
-                  "script": {
-                    "exec": [
-                      "pm.test('Responds successfully', function () {",
-                      "    pm.response.to.be.oneOf([200, 201]);",
-                      "});",
-                      "pm.test('Returns a JSON body', function () {",
-                      "    pm.expect(pm.response.json()).to.be.an('object');",
-                      "});"
-                    ],
-                    "type": "text/javascript",
-                    "packages": {},
-                    "requests": {}
-                  }
-                },
-                {
-                  "listen": "test",
-                  "script": {
-                    "exec": "pm.test('Capture notification_id', function () { pm.response.to.have.status(200); pm.collectionVariables.set('notification_id', pm.response.json().notification_id || pm.response.json().data.notification_id); });",
-                    "type": "text/javascript",
-                    "packages": {}
-                  },
-                  "requests": {}
-                }
-              ],
-              "request": {
-                "method": "GET",
-                "header": [
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{access_token}}",
-                    "type": "text"
-                  },
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json",
-                    "type": "text"
-                  }
-                ],
-                "url": {
-                  "raw": "{{base_url}}/notifications",
-                  "host": [
-                    "{{base_url}}"
-                  ],
-                  "path": [
-                    "notifications"
-                  ]
-                },
-                "description": "PROPOSED. In-app notifications."
-              },
-              "response": [
-                {
-                  "name": "Success",
-                  "originalRequest": {
-                    "method": "GET",
-                    "header": [
-                      {
-                        "key": "Authorization",
-                        "value": "Bearer {{access_token}}",
-                        "type": "text"
-                      },
-                      {
-                        "key": "Content-Type",
-                        "value": "application/json",
-                        "type": "text"
-                      }
-                    ],
-                    "url": {
-                      "raw": "{{base_url}}/notifications",
-                      "host": [
-                        "{{base_url}}"
-                      ],
-                      "path": [
-                        "notifications"
-                      ]
-                    },
-                    "description": "PROPOSED. In-app notifications."
-                  },
-                  "status": "OK",
-                  "code": 200,
-                  "_postman_previewlanguage": "json",
-                  "header": [
-                    {
-                      "key": "Content-Type",
-                      "value": "application/json",
-                      "type": "text"
-                    }
-                  ],
-                  "cookie": [],
-                  "body": "{\n  \"notifications\": [\n    {\n      \"id\": \"00000000-0000-0000-0000-000000000090\",\n      \"type\": \"TRIP_REMINDER\",\n      \"title\": \"Reminder\",\n      \"body\": \"Trip in 2 hours\",\n      \"is_read\": false,\n      \"created_at\": \"2026-08-31T06:00:00.000Z\"\n    }\n  ],\n  \"pagination\": {\n    \"page\": 1,\n    \"limit\": 20,\n    \"total\": 1,\n    \"total_pages\": 1\n  }\n}"
-                },
-                {
-                  "name": "Unauthorized",
-                  "originalRequest": {
-                    "method": "GET",
-                    "header": [
-                      {
-                        "key": "Authorization",
-                        "value": "Bearer {{access_token}}",
-                        "type": "text"
-                      },
-                      {
-                        "key": "Content-Type",
-                        "value": "application/json",
-                        "type": "text"
-                      }
-                    ],
-                    "url": {
-                      "raw": "{{base_url}}/notifications",
-                      "host": [
-                        "{{base_url}}"
-                      ],
-                      "path": [
-                        "notifications"
-                      ]
-                    },
-                    "description": "PROPOSED. In-app notifications."
-                  },
-                  "status": "Unauthorized",
-                  "code": 401,
-                  "_postman_previewlanguage": "json",
-                  "header": [
-                    {
-                      "key": "Content-Type",
-                      "value": "application/json",
-                      "type": "text"
-                    }
-                  ],
-                  "cookie": [],
-                  "body": "{\n  \"status\": \"error\",\n  \"message\": \"Unauthorized\",\n  \"code\": \"UNAUTHORIZED\"\n}"
-                }
-              ]
-            },
-            {
-              "name": "Mark Notification Read",
-              "event": [
-                {
-                  "listen": "prerequest",
-                  "script": {
-                    "exec": [
-                      "pm.environment.get('access_token') ? pm.request.headers.add({ key: 'Authorization', value: 'Bearer ' + pm.environment.get('access_token') }) : console.warn('No access_token set');"
-                    ],
-                    "type": "text/javascript",
-                    "packages": {},
-                    "requests": {}
-                  }
-                },
-                {
-                  "listen": "test",
-                  "script": {
-                    "exec": [
-                      "pm.test('Responds successfully', function () {",
-                      "    pm.response.to.be.oneOf([200, 201]);",
-                      "});",
-                      "pm.test('Returns a JSON body', function () {",
-                      "    pm.expect(pm.response.json()).to.be.an('object');",
-                      "});"
-                    ],
-                    "type": "text/javascript",
-                    "packages": {},
-                    "requests": {}
-                  }
-                }
-              ],
-              "request": {
-                "method": "PUT",
-                "header": [
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{access_token}}",
-                    "type": "text"
-                  },
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json",
-                    "type": "text"
-                  }
-                ],
-                "url": {
-                  "raw": "{{base_url}}/notifications/{{notification_id}}/read",
-                  "host": [
-                    "{{base_url}}"
-                  ],
-                  "path": [
-                    "notifications",
-                    "{{notification_id}}",
-                    "read"
-                  ]
-                },
-                "description": "PROPOSED. Mark notification read."
-              },
-              "response": [
-                {
-                  "name": "Success",
-                  "originalRequest": {
-                    "method": "PUT",
-                    "header": [
-                      {
-                        "key": "Authorization",
-                        "value": "Bearer {{access_token}}",
-                        "type": "text"
-                      },
-                      {
-                        "key": "Content-Type",
-                        "value": "application/json",
-                        "type": "text"
-                      }
-                    ],
-                    "url": {
-                      "raw": "{{base_url}}/notifications/{{notification_id}}/read",
-                      "host": [
-                        "{{base_url}}"
-                      ],
-                      "path": [
-                        "notifications",
-                        "{{notification_id}}",
-                        "read"
-                      ]
-                    },
-                    "description": "PROPOSED. Mark notification read."
-                  },
-                  "status": "OK",
-                  "code": 200,
-                  "_postman_previewlanguage": "json",
-                  "header": [
-                    {
-                      "key": "Content-Type",
-                      "value": "application/json",
-                      "type": "text"
-                    }
-                  ],
-                  "cookie": [],
-                  "body": "{\n  \"notification\": {\n    \"id\": \"00000000-0000-0000-0000-000000000090\",\n    \"is_read\": true\n  }\n}"
-                },
-                {
-                  "name": "Not found",
-                  "originalRequest": {
-                    "method": "PUT",
-                    "header": [
-                      {
-                        "key": "Authorization",
-                        "value": "Bearer {{access_token}}",
-                        "type": "text"
-                      },
-                      {
-                        "key": "Content-Type",
-                        "value": "application/json",
-                        "type": "text"
-                      }
-                    ],
-                    "url": {
-                      "raw": "{{base_url}}/notifications/{{notification_id}}/read",
-                      "host": [
-                        "{{base_url}}"
-                      ],
-                      "path": [
-                        "notifications",
-                        "{{notification_id}}",
-                        "read"
-                      ]
-                    },
-                    "description": "PROPOSED. Mark notification read."
-                  },
-                  "status": "Not Found",
-                  "code": 404,
-                  "_postman_previewlanguage": "json",
-                  "header": [
-                    {
-                      "key": "Content-Type",
-                      "value": "application/json",
-                      "type": "text"
-                    }
-                  ],
-                  "cookie": [],
-                  "body": "{\n  \"status\": \"error\",\n  \"message\": \"Notification not found\",\n  \"code\": \"NOT_FOUND\"\n}"
-                }
-              ]
-            },
-            {
               "name": "Register Device (Push)",
               "event": [
                 {
@@ -24094,6 +23850,497 @@
                   ],
                   "cookie": [],
                   "body": "{\n  \"status\": \"error\",\n  \"message\": \"Unauthorized\",\n  \"code\": \"UNAUTHORIZED\"\n}"
+                }
+              ]
+            },
+            {
+              "name": "List Notifications",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "exec": [
+                      "pm.environment.get('access_token') ? pm.request.headers.add({ key: 'Authorization', value: 'Bearer ' + pm.environment.get('access_token') }) : console.warn('No access_token set');"
+                    ],
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Responds successfully', function () {",
+                      "    pm.response.to.be.oneOf([200, 201]);",
+                      "});",
+                      "pm.test('Returns a JSON body', function () {",
+                      "    pm.expect(pm.response.json()).to.be.an('object');",
+                      "});"
+                    ],
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": "pm.test('Capture notification_id', function () { pm.response.to.have.status(200); pm.collectionVariables.set('notification_id', pm.response.json().notification_id || pm.response.json().data.notification_id); });",
+                    "type": "text/javascript",
+                    "packages": {}
+                  },
+                  "requests": {}
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/notifications",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "notifications"
+                  ]
+                },
+                "description": "PROPOSED. In-app notifications."
+              },
+              "response": [
+                {
+                  "name": "Success",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "Authorization",
+                        "value": "Bearer {{access_token}}",
+                        "type": "text"
+                      },
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json",
+                        "type": "text"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{base_url}}/notifications",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "notifications"
+                      ]
+                    },
+                    "description": "PROPOSED. In-app notifications."
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json",
+                      "type": "text"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n  \"notifications\": [\n    {\n      \"id\": \"00000000-0000-0000-0000-000000000090\",\n      \"type\": \"TRIP_REMINDER\",\n      \"title\": \"Reminder\",\n      \"body\": \"Trip in 2 hours\",\n      \"is_read\": false,\n      \"created_at\": \"2026-08-31T06:00:00.000Z\"\n    }\n  ],\n  \"pagination\": {\n    \"page\": 1,\n    \"limit\": 20,\n    \"total\": 1,\n    \"total_pages\": 1\n  }\n}"
+                },
+                {
+                  "name": "Unauthorized",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "Authorization",
+                        "value": "Bearer {{access_token}}",
+                        "type": "text"
+                      },
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json",
+                        "type": "text"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{base_url}}/notifications",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "notifications"
+                      ]
+                    },
+                    "description": "PROPOSED. In-app notifications."
+                  },
+                  "status": "Unauthorized",
+                  "code": 401,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json",
+                      "type": "text"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n  \"status\": \"error\",\n  \"message\": \"Unauthorized\",\n  \"code\": \"UNAUTHORIZED\"\n}"
+                }
+              ]
+            },
+            {
+              "name": "Mark Notification Read",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "exec": [
+                      "pm.environment.get('access_token') ? pm.request.headers.add({ key: 'Authorization', value: 'Bearer ' + pm.environment.get('access_token') }) : console.warn('No access_token set');"
+                    ],
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Responds successfully', function () {",
+                      "    pm.response.to.be.oneOf([200, 201]);",
+                      "});",
+                      "pm.test('Returns a JSON body', function () {",
+                      "    pm.expect(pm.response.json()).to.be.an('object');",
+                      "});"
+                    ],
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
+                  }
+                }
+              ],
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/notifications/{{notification_id}}/read",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "notifications",
+                    "{{notification_id}}",
+                    "read"
+                  ]
+                },
+                "description": "PROPOSED. Mark notification read."
+              },
+              "response": [
+                {
+                  "name": "Success",
+                  "originalRequest": {
+                    "method": "PUT",
+                    "header": [
+                      {
+                        "key": "Authorization",
+                        "value": "Bearer {{access_token}}",
+                        "type": "text"
+                      },
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json",
+                        "type": "text"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{base_url}}/notifications/{{notification_id}}/read",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "notifications",
+                        "{{notification_id}}",
+                        "read"
+                      ]
+                    },
+                    "description": "PROPOSED. Mark notification read."
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json",
+                      "type": "text"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n  \"notification\": {\n    \"id\": \"00000000-0000-0000-0000-000000000090\",\n    \"is_read\": true\n  }\n}"
+                },
+                {
+                  "name": "Not found",
+                  "originalRequest": {
+                    "method": "PUT",
+                    "header": [
+                      {
+                        "key": "Authorization",
+                        "value": "Bearer {{access_token}}",
+                        "type": "text"
+                      },
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json",
+                        "type": "text"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{base_url}}/notifications/{{notification_id}}/read",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "notifications",
+                        "{{notification_id}}",
+                        "read"
+                      ]
+                    },
+                    "description": "PROPOSED. Mark notification read."
+                  },
+                  "status": "Not Found",
+                  "code": 404,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json",
+                      "type": "text"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n  \"status\": \"error\",\n  \"message\": \"Notification not found\",\n  \"code\": \"NOT_FOUND\"\n}"
+                }
+              ]
+            },
+            {
+              "name": "Mark All Notifications Read",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "exec": [
+                      "pm.environment.get('access_token') ? pm.request.headers.add({ key: 'Authorization', value: 'Bearer ' + pm.environment.get('access_token') }) : console.warn('No access_token set');"
+                    ],
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Responds successfully', function () {",
+                      "    pm.response.to.be.oneOf([200, 201]);",
+                      "});",
+                      "pm.test('Returns a JSON body', function () {",
+                      "    pm.expect(pm.response.json()).to.be.an('object');",
+                      "});"
+                    ],
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
+                  }
+                }
+              ],
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/notifications/read-all",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "notifications",
+                    "read-all"
+                  ]
+                },
+                "description": "Mark every unread notification belonging to the authenticated user as read. Returns the number of rows updated and emits the new unread badge over the socket. Requires any authenticated user.\n\n**Nest parity:** same path on the Nest server (`{{nest_url}}/notifications/read-all`; Docker prefix `api/v2`)."
+              },
+              "response": [
+                {
+                  "name": "Success",
+                  "originalRequest": {
+                    "method": "PUT",
+                    "header": [
+                      {
+                        "key": "Authorization",
+                        "value": "Bearer {{access_token}}",
+                        "type": "text"
+                      },
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json",
+                        "type": "text"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{base_url}}/notifications/read-all",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "notifications",
+                        "read-all"
+                      ]
+                    }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json",
+                      "type": "text"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n  \"marked\": 7\n}"
+                }
+              ]
+            },
+            {
+              "name": "Delete All Notifications",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "exec": [
+                      "pm.environment.get('access_token') ? pm.request.headers.add({ key: 'Authorization', value: 'Bearer ' + pm.environment.get('access_token') }) : console.warn('No access_token set');"
+                    ],
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Responds successfully', function () {",
+                      "    pm.response.to.be.oneOf([200, 201]);",
+                      "});",
+                      "pm.test('Returns a JSON body', function () {",
+                      "    pm.expect(pm.response.json()).to.be.an('object');",
+                      "});"
+                    ],
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
+                  }
+                }
+              ],
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/notifications",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "notifications"
+                  ]
+                },
+                "description": "Delete every notification belonging to the authenticated user. Other users are never touched. Returns the number of rows deleted and refreshes the unread badge over the socket. Requires any authenticated user.\n\n**Nest parity:** same path on the Nest server (`{{nest_url}}/notifications`; Docker prefix `api/v2`)."
+              },
+              "response": [
+                {
+                  "name": "Success",
+                  "originalRequest": {
+                    "method": "DELETE",
+                    "header": [
+                      {
+                        "key": "Authorization",
+                        "value": "Bearer {{access_token}}",
+                        "type": "text"
+                      },
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json",
+                        "type": "text"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{base_url}}/notifications",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "notifications"
+                      ]
+                    }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json",
+                      "type": "text"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n  \"deleted\": 7\n}"
                 }
               ]
             }

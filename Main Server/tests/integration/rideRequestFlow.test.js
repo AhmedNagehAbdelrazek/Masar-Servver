@@ -693,3 +693,91 @@ describe('POST /api/trips/:trip_id/offers/:offer_id/attach - deferred materializ
     expect(res.status).toBe(409);
   });
 });
+describe('POST /api/ride-requests/:request_id/accept - direct acceptance', () => {
+  it('accepts bodyless, materializes a booking on the driver trip, and adds the pickup to the route', async () => {
+    const created = await createRideRequest(passenger2Token, {
+      origin_time: new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString(),
+      max_budget: 18,
+      origin_lat: 31.95,
+      origin_lng: 35.91,
+      destination_lat: 32.55,
+      destination_lng: 35.85,
+    });
+    expect(created.status).toBe(201);
+    const requestId = created.body.ride_request.id;
+
+    const res = await getAgent()
+      .post(`/api/ride-requests/${requestId}/accept`)
+      .set('Authorization', `Bearer ${driver1Token}`)
+      .send({});
+
+    expect(res.status).toBe(201);
+    expect(res.body.trip.id).toBe(tripId);
+    expect(res.body.booking.trip_id).toBe(tripId);
+    expect(res.body.booking.status).toBe('confirmed');
+    expect(Number(res.body.booking.pickup_lat)).toBeCloseTo(31.95, 4);
+
+    const booking = await Booking.findByPk(res.body.booking.id);
+    expect(booking).not.toBeNull();
+    expect(booking.tripId).toBe(tripId);
+
+    const request = await RideRequest.findByPk(requestId);
+    expect(request.status).toBe('accepted');
+
+    const route = await getAgent()
+      .get(`/api/trips/${tripId}/route`)
+      .set('Authorization', `Bearer ${driver1Token}`);
+    expect(route.status).toBe(200);
+    expect(route.body.pickups.some((p) => p.booking_id === booking.id)).toBe(true);
+  });
+
+  it('accepts onto an explicit trip and rejects another driver trip', async () => {
+    const created = await createRideRequest(passenger2Token);
+    const requestId = created.body.ride_request.id;
+
+    const forbidden = await getAgent()
+      .post(`/api/ride-requests/${requestId}/accept`)
+      .set('Authorization', `Bearer ${driver2Token}`)
+      .send({ trip_id: tripId });
+    expect(forbidden.status).toBe(403);
+
+    const res = await getAgent()
+      .post(`/api/ride-requests/${requestId}/accept`)
+      .set('Authorization', `Bearer ${driver1Token}`)
+      .send({ trip_id: tripId });
+    expect(res.status).toBe(201);
+    expect(res.body.trip.id).toBe(tripId);
+  });
+});
+describe('POST /api/ride-requests/:request_id/accept - trip creation fallback', () => {
+  it('creates a new trip when the driver has no matching trip', async () => {
+    const created = await createRideRequest(passenger2Token, {
+      destination_city: 'Zarqa',
+      origin_time: new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString(),
+      max_budget: 12,
+      origin_lat: 31.95,
+      origin_lng: 35.91,
+      destination_lat: 32.07,
+      destination_lng: 36.09,
+    });
+    expect(created.status).toBe(201);
+    const requestId = created.body.ride_request.id;
+
+    const res = await getAgent()
+      .post(`/api/ride-requests/${requestId}/accept`)
+      .set('Authorization', `Bearer ${driver1Token}`)
+      .send({});
+
+    expect(res.status).toBe(201);
+    expect(res.body.trip.id).not.toBe(tripId);
+    expect(res.body.trip.destination_city).toBe('Zarqa');
+    expect(Number(res.body.trip.fare_per_seat)).toBe(12);
+    expect(res.body.booking.trip_id).toBe(res.body.trip.id);
+
+    const trip = await Trip.findByPk(res.body.trip.id);
+    expect(trip.driverId).toBe(DRIVER1_ID);
+    expect(trip.originCity).toBe('Amman');
+    expect(trip.destinationCity).toBe('Zarqa');
+    expect(Number(trip.availableSeats)).toBe(2);
+  });
+});
