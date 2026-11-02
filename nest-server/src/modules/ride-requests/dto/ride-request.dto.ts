@@ -260,7 +260,7 @@ export class AcceptRideRequestBody {
   }>;
 
   @IsOptional()
-  @IsIn(['one_way', 'repeated'])
+  @IsIn(['once', 'repeated'])
   type_of_trip?: string;
 
   @IsOptional()

@@ -53,7 +53,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"country_code\": \"JO\", // ISO country code (e.g. \"JO\")\n  \"phone\": \"791234561\", // phone number without country code\n  \"role\": \"driver\" // \"passenger\" | \"driver\"\n}",
+                  "raw": "{\n  \"country_code\": \"JO\",\n  \"phone\": \"791234561\",\n  \"role\": \"driver\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -154,7 +154,8 @@
                   "cookie": [],
                   "body": "{\n  \"status\": \"error\",\n  \"message\": \"Phone number is already registered\",\n  \"code\": \"CONFLICT\"\n}"
                 }
-              ]
+              ],
+              "description": "---\nBody variants & field notes (moved out of the request body so the body is valid JSON — copy back into the body to use):\nISO country code (e.g. \"JO\")\nphone number without country code\n\"passenger\" | \"driver\""
             },
             {
               "name": "Step 2 - Verify OTP",
@@ -195,7 +196,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"phone\": \"+962791234565\", // full phone with country code\n  \"otp\": \"944075\" // 6-digit OTP sent via SMS\n}",
+                  "raw": "{\n  \"phone\": \"+962791234565\",\n  \"otp\": \"944075\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -296,7 +297,8 @@
                   "cookie": [],
                   "body": "{\n  \"status\": \"error\",\n  \"message\": \"Invalid OTP\",\n  \"code\": \"BAD_REQUEST\"\n}"
                 }
-              ]
+              ],
+              "description": "---\nBody variants & field notes (moved out of the request body so the body is valid JSON — copy back into the body to use):\nfull phone with country code\n6-digit OTP sent via SMS"
             },
             {
               "name": "Step 3 - Set Password",
@@ -356,7 +358,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"password\": \"Test@1234\", // min 8 chars, letters + numbers\n  \"confirmPassword\": \"Test@1234\" // must match password\n}",
+                  "raw": "{\n  \"password\": \"Test@1234\",\n  \"confirmPassword\": \"Test@1234\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -485,7 +487,8 @@
                   "cookie": [],
                   "body": "{\n  \"status\": \"error\",\n  \"message\": \"Invalid or expired registration token\",\n  \"code\": \"UNAUTHORIZED\"\n}"
                 }
-              ]
+              ],
+              "description": "---\nBody variants & field notes (moved out of the request body so the body is valid JSON — copy back into the body to use):\nmin 8 chars, letters + numbers\nmust match password"
             },
             {
               "name": "Resend OTP",
@@ -528,7 +531,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"phone\": \"+962791234567\", // full phone with country code\n  \"purpose\": \"register\" // \"register\" | \"forgot_password\"\n}",
+                  "raw": "{\n  \"phone\": \"+962791234567\",\n  \"purpose\": \"register\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -626,7 +629,8 @@
                   "cookie": [],
                   "body": "{\n  \"status\": \"error\",\n  \"message\": \"Phone number is already registered\",\n  \"code\": \"CONFLICT\"\n}"
                 }
-              ]
+              ],
+              "description": "---\nBody variants & field notes (moved out of the request body so the body is valid JSON — copy back into the body to use):\nfull phone with country code\n\"register\" | \"forgot_password\""
             }
           ]
         },
@@ -645,7 +649,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\\n  \"phone\": \"+962791234567\" // full phone with country code\\n}",
+                  "raw": "{\n  \"phone\": \"+962791234567\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -705,7 +709,8 @@
                   "cookie": [],
                   "body": "{\\n  \"message\": \"SMS_SENT\\n}\""
                 }
-              ]
+              ],
+              "description": "---\nBody variants & field notes (moved out of the request body so the body is valid JSON — copy back into the body to use):\nfull phone with country code"
             },
             {
               "name": "Reset Password via SMS",
@@ -719,7 +724,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\\n  \"phone\": \"+962791234567\", // full phone with country code\\n  \"resetCode\": \"123456\", // 6-digit code received via SMS\\n  \"newPassword\": \"NewPass@123!\" // new password (min 8 chars, upper+lower+number+special)\\n}",
+                  "raw": "{\n  \"phone\": \"+962791234567\",\n  \"resetCode\": \"123456\",\n  \"newPassword\": \"NewPass@123!\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -781,7 +786,8 @@
                   "cookie": [],
                   "body": "{\\n  \"message\": \"PASSWORD_RESET_SUCCESSFUL\\n}\""
                 }
-              ]
+              ],
+              "description": "---\nBody variants & field notes (moved out of the request body so the body is valid JSON — copy back into the body to use):\nfull phone with country code\n6-digit code received via SMS\nnew password (min 8 chars, upper+lower+number+special)"
             }
           ]
         },
@@ -828,7 +834,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "// Driver - account\n\n{\n  \"phone\": \"+962790000001\", // full phone with country code\n  \"password\": \"Test@1234\",\n  \"role\": \"driver\"\n}\n\n// Passenger - account\n\n\n// {\n//   \"phone\": \"+962780000001\", // full phone with country code\n//   \"password\": \"Test@1234\",\n//   \"role\": \"passenger\"\n// }\n\n// Admin - account\n\n// {\n//   \"phone\": \"+962700000099\", // full phone with country code\n//   \"password\": \"93k40@87UR!gY\",\n//   \"role\": \"admin\"\n// }\n\n\n",
+                  "raw": "{\n  \"phone\": \"+962790000001\",\n  \"password\": \"Test@1234\",\n  \"role\": \"driver\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -926,7 +932,8 @@
                   "cookie": [],
                   "body": "{\n  \"status\": \"error\",\n  \"message\": \"Invalid phone or password\",\n  \"code\": \"UNAUTHORIZED\"\n}"
                 }
-              ]
+              ],
+              "description": "---\nBody variants & field notes (moved out of the request body so the body is valid JSON — copy back into the body to use):\nDriver - account\nfull phone with country code\nPassenger - account\n{\n\"phone\": \"+962780000001\", // full phone with country code\n\"password\": \"Test@1234\",\n\"role\": \"passenger\"\n}\nAdmin - account\n{\n\"phone\": \"+962700000099\", // full phone with country code\n\"password\": \"93k40@87UR!gY\",\n\"role\": \"admin\"\n}"
             }
           ]
         },
@@ -969,7 +976,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"refresh_token\": \"{{refresh_token}}\" // obtained from login/register\n}",
+                  "raw": "{\n  \"refresh_token\": \"{{refresh_token}}\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -1067,7 +1074,8 @@
                   "cookie": [],
                   "body": "{\n  \"status\": \"error\",\n  \"message\": \"Refresh token has been revoked\",\n  \"code\": \"UNAUTHORIZED\"\n}"
                 }
-              ]
+              ],
+              "description": "---\nBody variants & field notes (moved out of the request body so the body is valid JSON — copy back into the body to use):\nobtained from login/register"
             },
             {
               "name": "Logout",
@@ -1110,7 +1118,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"refresh_token\": \"{{refresh_token}}\" // token to revoke\n}",
+                  "raw": "{\n  \"refresh_token\": \"{{refresh_token}}\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -1216,7 +1224,8 @@
                   "cookie": [],
                   "body": "{\n  \"status\": \"error\",\n  \"message\": \"Unauthorized\",\n  \"code\": \"UNAUTHORIZED\"\n}"
                 }
-              ]
+              ],
+              "description": "---\nBody variants & field notes (moved out of the request body so the body is valid JSON — copy back into the body to use):\ntoken to revoke"
             },
             {
               "name": "Change Password",
@@ -1433,7 +1442,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"phone\": \"+962791234565\" // full phone with country code\n}",
+                  "raw": "{\n  \"phone\": \"+962791234565\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -1531,7 +1540,8 @@
                   "cookie": [],
                   "body": "{\n  \"status\": \"error\",\n  \"message\": [\n    {\n      \"field\": \"phone\",\n      \"message\": \"Invalid phone number\",\n      \"value\": \"123\"\n    }\n  ],\n  \"code\": \"VALIDATION_ERROR\"\n}"
                 }
-              ]
+              ],
+              "description": "---\nBody variants & field notes (moved out of the request body so the body is valid JSON — copy back into the body to use):\nfull phone with country code"
             },
             {
               "name": "Step 2 - Verify OTP (Forgot Password)",
@@ -1575,7 +1585,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"phone\": \"+962791234565\", // full phone with country code\n  \"otp\": \"070350\" // 6-digit OTP sent via SMS\n}",
+                  "raw": "{\n  \"phone\": \"+962791234565\",\n  \"otp\": \"070350\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -1676,7 +1686,8 @@
                   "cookie": [],
                   "body": "{\n  \"status\": \"error\",\n  \"message\": \"OTP has expired. Please request a new one.\",\n  \"code\": \"BAD_REQUEST\"\n}"
                 }
-              ]
+              ],
+              "description": "---\nBody variants & field notes (moved out of the request body so the body is valid JSON — copy back into the body to use):\nfull phone with country code\n6-digit OTP sent via SMS"
             },
             {
               "name": "Step 3 - Reset Password",
@@ -1733,7 +1744,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"password\": \"NewPass@1234\", // min 8 chars, letters + numbers\n  \"confirmPassword\": \"NewPass@1234\" // must match password\n}",
+                  "raw": "{\n  \"password\": \"NewPass@1234\",\n  \"confirmPassword\": \"NewPass@1234\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -1862,7 +1873,8 @@
                   "cookie": [],
                   "body": "{\n  \"status\": \"error\",\n  \"message\": \"Reset token has already been used or expired\",\n  \"code\": \"UNAUTHORIZED\"\n}"
                 }
-              ]
+              ],
+              "description": "---\nBody variants & field notes (moved out of the request body so the body is valid JSON — copy back into the body to use):\nmin 8 chars, letters + numbers\nmust match password"
             },
             {
               "name": "Resend Forgot Password OTP",
@@ -1901,7 +1913,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"phone\": \"+962791234567\", // full phone with country code\n  \"purpose\": \"forgot_password\" // \"register\" | \"forgot_password\"\n}",
+                  "raw": "{\n  \"phone\": \"+962791234567\",\n  \"purpose\": \"forgot_password\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -1999,7 +2011,8 @@
                   "cookie": [],
                   "body": "{\n  \"status\": \"error\",\n  \"message\": \"Phone number is already registered\",\n  \"code\": \"CONFLICT\"\n}"
                 }
-              ]
+              ],
+              "description": "---\nBody variants & field notes (moved out of the request body so the body is valid JSON — copy back into the body to use):\nfull phone with country code\n\"register\" | \"forgot_password\""
             }
           ]
         },
@@ -2490,7 +2503,7 @@
                     ],
                     "body": {
                       "mode": "raw",
-                      "raw": "{\n  \"full_name\": \"Ali Ahmed\",              // optional string â€” updates users.full_name\n  \"national_id\": \"1234567890\",           // optional string\n  \"license_number\": \"L-12345\",           // optional string\n  \"license_expiry\": \"2028-06-30\",        // optional date-only\n  \"user_identification_front\": 101,      // optional â€” uploaded_images id (positive int)\n  \"user_identification_back\": 102,       // optional â€” uploaded_images id\n  \"lincese_front\": 103,                  // optional â€” uploaded_images id\n  \"lincese_back\": 104,                   // optional â€” uploaded_images id\n  \"personal_image_with_id\": 105,         // optional â€” uploaded_images id\n  \"vehicle\": {\n    \"manufacturer\": \"Toyota\",            // required string\n    \"model\": \"Camry\",                    // required string\n    \"vehicle_type\": \"sedan\",             // required â€” sedan | suv | van | bus | hatchback\n    \"model_year\": 2022,                  // optional int â€” within the last 10 years\n    \"plate_number\": \"ABC-123\",           // required string â€” unique in DB\n    \"code_number\": \"88-99\",              // optional string\n    \"color\": \"white\",                    // optional string\n    \"seats\": 4,                          // required int â€” 1..50\n    \"registration_doc_front\": 106,       // optional â€” uploaded_images id\n    \"registration_doc_back\": 107,        // optional â€” uploaded_images id\n    \"vehicle_photo_front\": 108,          // optional â€” uploaded_images id\n    \"vehicle_photo_back\": 109            // optional â€” uploaded_images id\n  }\n}",
+                      "raw": "{\n  \"full_name\": \"Ali Ahmed\",\n  \"national_id\": \"1234567890\",\n  \"license_number\": \"L-12345\",\n  \"license_expiry\": \"2028-06-30\",\n  \"user_identification_front\": 101,\n  \"user_identification_back\": 102,\n  \"lincese_front\": 103,\n  \"lincese_back\": 104,\n  \"personal_image_with_id\": 105,\n  \"vehicle\": {\n    \"manufacturer\": \"Toyota\",\n    \"model\": \"Camry\",\n    \"vehicle_type\": \"sedan\",\n    \"model_year\": 2022,\n    \"plate_number\": \"ABC-123\",\n    \"code_number\": \"88-99\",\n    \"color\": \"white\",\n    \"seats\": 4,\n    \"registration_doc_front\": 106,\n    \"registration_doc_back\": 107,\n    \"vehicle_photo_front\": 108,\n    \"vehicle_photo_back\": 109\n  }\n}",
                       "options": {
                         "raw": {
                           "language": "json"
@@ -2654,7 +2667,8 @@
                       "cookie": [],
                       "body": "{\n  \"status\": \"error\",\n  \"message\": \"This plate number is already registered to another vehicle.\",\n  \"code\": \"VALIDATION_ERROR\"\n}"
                     }
-                  ]
+                  ],
+                  "description": "---\nBody variants & field notes (moved out of the request body so the body is valid JSON — copy back into the body to use):\noptional string â€” updates users.full_name\noptional string\noptional string\noptional date-only\noptional â€” uploaded_images id (positive int)\noptional â€” uploaded_images id\noptional â€” uploaded_images id\noptional â€” uploaded_images id\noptional â€” uploaded_images id\nrequired string\nrequired string\nrequired â€” sedan | suv | van | bus | hatchback\noptional int â€” within the last 10 years\nrequired string â€” unique in DB\noptional string\noptional string\nrequired int â€” 1..50\noptional â€” uploaded_images id\noptional â€” uploaded_images id\noptional â€” uploaded_images id\noptional â€” uploaded_images id"
                 }
               ]
             },
@@ -2963,7 +2977,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"fullName\": \"Ahmad Mohammed\", // string\n  \"age\": 28, // integer 18+\n  \"gender\": \"male\", // \"male\" | \"female\"\n  \"nationalID\": \"N9998887\", // string\n  \"userIdentificationFront\": 1, // uploaded image id (int)\n  \"userIdentificationBack\": 2, // uploaded image id (int)\n  \"linceseFront\": 3, // uploaded license front image id (int)\n  \"linceseBack\": 4, // uploaded license back image id (int)\n  \"personalImageWithId\": 5 // uploaded photo-with-ID image id (int)\n}",
+                  "raw": "{\n  \"fullName\": \"Ahmad Mohammed\",\n  \"age\": 28,\n  \"gender\": \"male\",\n  \"nationalID\": \"N9998887\",\n  \"userIdentificationFront\": 1,\n  \"userIdentificationBack\": 2,\n  \"linceseFront\": 3,\n  \"linceseBack\": 4,\n  \"personalImageWithId\": 5\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -3092,7 +3106,8 @@
                   "cookie": [],
                   "body": "{\n  \"status\": \"error\",\n  \"message\": \"One or more image IDs are invalid\",\n  \"code\": \"BAD_REQUEST\"\n}"
                 }
-              ]
+              ],
+              "description": "---\nBody variants & field notes (moved out of the request body so the body is valid JSON — copy back into the body to use):\nstring\ninteger 18+\n\"male\" | \"female\"\nstring\nuploaded image id (int)\nuploaded image id (int)\nuploaded license front image id (int)\nuploaded license back image id (int)\nuploaded photo-with-ID image id (int)"
             },
             {
               "name": "Get Vehicle",
@@ -3266,7 +3281,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"vehicleType\": \"sedan\", // \"sedan\" | \"suv\" | \"van\" | \"bus\" | \"hatchback\"\n  \"manufacturer\": \"Toyota\", // string â‰¤ 80\n  \"model\": \"Camry\", // string â‰¤ 80\n  \"modelYear\": 2023, // integer (e.g. 2023)\n  \"color\": \"White\", // string â‰¤ 30\n  \"plateNumber\": \"ABC-1234\", // string (unique)\n  \"codeNumber\": \"1234567\", // string (unique, optional)\n  \"seats\": 4, // integer 1-50\n  \"registrationDocFront\": 1, // uploaded image id (int)\n  \"registrationDocBack\": 2, // uploaded image id (int)\n  \"vehiclePhotoFront\": 3, // uploaded image id (int)\n  \"vehiclePhotoBack\": 4 // uploaded image id (int)\n}",
+                  "raw": "{\n  \"vehicleType\": \"sedan\",\n  \"manufacturer\": \"Toyota\",\n  \"model\": \"Camry\",\n  \"modelYear\": 2023,\n  \"color\": \"White\",\n  \"plateNumber\": \"ABC-1234\",\n  \"codeNumber\": \"1234567\",\n  \"seats\": 4,\n  \"registrationDocFront\": 1,\n  \"registrationDocBack\": 2,\n  \"vehiclePhotoFront\": 3,\n  \"vehiclePhotoBack\": 4\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -3375,7 +3390,8 @@
                   "cookie": [],
                   "body": "{\n  \"status\": \"error\",\n  \"message\": \"A vehicle with this plate number already exists\",\n  \"code\": \"CONFLICT\"\n}"
                 }
-              ]
+              ],
+              "description": "---\nBody variants & field notes (moved out of the request body so the body is valid JSON — copy back into the body to use):\n\"sedan\" | \"suv\" | \"van\" | \"bus\" | \"hatchback\"\nstring â‰¤ 80\nstring â‰¤ 80\ninteger (e.g. 2023)\nstring â‰¤ 30\nstring (unique)\nstring (unique, optional)\ninteger 1-50\nuploaded image id (int)\nuploaded image id (int)\nuploaded image id (int)\nuploaded image id (int)"
             },
             {
               "name": "Get Full Driver Profile",
@@ -3705,7 +3721,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"color\": \"black\", // optional, string â‰¤ 30\n  \"seats\": 4 // optional, integer 1-50\n}",
+                  "raw": "{\n  \"color\": \"black\",\n  \"seats\": 4\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -3825,7 +3841,8 @@
                   "cookie": [],
                   "body": "{\n  \"status\": \"error\",\n  \"message\": \"You can only update your own vehicles\",\n  \"code\": \"FORBIDDEN\"\n}"
                 }
-              ]
+              ],
+              "description": "---\nBody variants & field notes (moved out of the request body so the body is valid JSON — copy back into the body to use):\noptional, string â‰¤ 30\noptional, integer 1-50"
             }
           ]
         },
@@ -6126,7 +6143,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"reason\": \"Personal emergency\",\n  \"note\": \"Will resume tomorrow\" // optional\n}",
+                  "raw": "{\n  \"reason\": \"Personal emergency\",\n  \"note\": \"Will resume tomorrow\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -6423,7 +6440,8 @@
                   "cookie": [],
                   "body": "{\n  \"status\": \"error\",\n  \"message\": \"Cancellation reason is required\",\n  \"code\": \"VALIDATION_ERROR\"\n}"
                 }
-              ]
+              ],
+              "description": "---\nBody variants & field notes (moved out of the request body so the body is valid JSON — copy back into the body to use):\noptional"
             },
             {
               "name": "Trip Passengers",
@@ -7555,7 +7573,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"booking_id\": \"{{booking_id}}\", // UUID (required)\n  \"ratee_id\": \"{{passenger_id}}\", // UUID of the rated user\n  \"stars\": 5, // integer 1-5 (required)\n  \"was_late\": false, // optional boolean, default false\n  \"late_minutes\": 0, // optional integer â‰¥ 0 (ignored if was_late false)\n  \"review\": \"Great passenger\", // optional string â‰¤ 500\n  \"tags\": [\"polite\"] // optional string[] e.g. [\"punctual\",\"clean_car\",\"safe_driving\",\"rude\",\"overcharged\"]\n}",
+                  "raw": "{\n  \"booking_id\": \"{{booking_id}}\",\n  \"ratee_id\": \"{{passenger_id}}\",\n  \"stars\": 5,\n  \"was_late\": false,\n  \"late_minutes\": 0,\n  \"review\": \"Great passenger\",\n  \"tags\": [\n    \"polite\"\n  ]\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -7672,7 +7690,8 @@
                   "cookie": [],
                   "body": "{\n  \"status\": \"error\",\n  \"message\": \"Rating already submitted for this booking\",\n  \"code\": \"RATING_ALREADY_SUBMITTED\"\n}"
                 }
-              ]
+              ],
+              "description": "---\nBody variants & field notes (moved out of the request body so the body is valid JSON — copy back into the body to use):\nUUID (required)\nUUID of the rated user\ninteger 1-5 (required)\noptional boolean, default false\noptional integer â‰¥ 0 (ignored if was_late false)\noptional string â‰¤ 500\noptional string[] e.g. [\"punctual\",\"clean_car\",\"safe_driving\",\"rude\",\"overcharged\"]"
             },
             {
               "name": "Get My Ratings",
@@ -7902,7 +7921,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"booking_id\": \"{{booking_id}}\", // UUID (optional)\n  \"accused_id\": \"{{passenger_id}}\", // UUID (required) â€” the reported user (â‰  caller)\n  \"category\": \"misconduct\", // \"no_show\" | \"lateness\" | \"misconduct\" | \"fraud\" | \"safety\" | \"overcharging\" | \"other\"\n  \"description\": \"Description here\", // string (required, non-empty)\n  \"evidence_urls\": [] // optional string[] https URLs\n}",
+                  "raw": "{\n  \"booking_id\": \"{{booking_id}}\",\n  \"accused_id\": \"{{passenger_id}}\",\n  \"category\": \"misconduct\",\n  \"description\": \"Description here\",\n  \"evidence_urls\": []\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -8019,7 +8038,8 @@
                   "cookie": [],
                   "body": "{\n  \"status\": \"error\",\n  \"message\": \"Description is required\",\n  \"code\": \"VALIDATION_ERROR\"\n}"
                 }
-              ]
+              ],
+              "description": "---\nBody variants & field notes (moved out of the request body so the body is valid JSON — copy back into the body to use):\nUUID (optional)\nUUID (required) â€” the reported user (â‰  caller)\n\"no_show\" | \"lateness\" | \"misconduct\" | \"fraud\" | \"safety\" | \"overcharging\" | \"other\"\nstring (required, non-empty)\noptional string[] https URLs"
             },
             {
               "name": "View My Complaints",
@@ -8573,7 +8593,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"plan_id\": \"{{plan_id}}\", // UUID (required)\n  \"payment_method_id\": \"{{payment_method_id}}\", // UUID (required)\n  \"screenshot_id\": \"{{screenshot_id}}\", // uploaded payment-proof image id (int)\n  \"resubmit\": false // boolean â€” true when re-submitting after rejection\n}",
+                  "raw": "{\n  \"plan_id\": \"{{plan_id}}\",\n  \"payment_method_id\": \"{{payment_method_id}}\",\n  \"screenshot_id\": \"{{screenshot_id}}\",\n  \"resubmit\": false\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -8668,7 +8688,8 @@
                   "cookie": [],
                   "body": "{\n  \"status\": \"error\",\n  \"message\": \"This national ID has already used the free plan.\",\n  \"code\": \"FREE_PLAN_ALREADY_USED\"\n}"
                 }
-              ]
+              ],
+              "description": "---\nBody variants & field notes (moved out of the request body so the body is valid JSON — copy back into the body to use):\nUUID (required)\nUUID (required)\nuploaded payment-proof image id (int)\nboolean â€” true when re-submitting after rejection"
             },
             {
               "name": "List My Subscriptions",
@@ -9083,7 +9104,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"offered_fare\": 15,               // number > 0 (JOD)\n  \"message\": \"On my way that route\" // optional string\n}",
+                  "raw": "{\n  \"offered_fare\": 15,\n  \"message\": \"On my way that route\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -9206,7 +9227,8 @@
                   "cookie": [],
                   "body": "{\n  \"status\": \"error\",\n  \"message\": [\n    {\"field\": \"destination_city\", \"message\": \"Destination city is required\"}\n  ],\n  \"code\": \"VALIDATION_ERROR\"\n}"
                 }
-              ]
+              ],
+              "description": "---\nBody variants & field notes (moved out of the request body so the body is valid JSON — copy back into the body to use):\nnumber > 0 (JOD)\noptional string"
             },
             {
               "name": "List Offers For Request",
@@ -9459,7 +9481,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{}   // no body needed",
+                  "raw": "{}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -9588,7 +9610,8 @@
                   "cookie": [],
                   "body": "{\n  \"status\": \"error\",\n  \"message\": \"Offer price has not been agreed yet\",\n  \"code\": \"OFFER_PRICE_NOT_AGREED\"\n}"
                 }
-              ]
+              ],
+              "description": "---\nBody variants & field notes (moved out of the request body so the body is valid JSON — copy back into the body to use):\nno body needed"
             },
             {
               "name": "Accept Ride Request (Driver)",
@@ -10418,7 +10441,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"seat_number\": 2 // integer â€” seat number to lock\n}",
+                  "raw": "{\n  \"seat_number\": 2\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -10522,7 +10545,8 @@
                   "cookie": [],
                   "body": "{\n  \"status\": \"error\",\n  \"message\": \"Seat is already locked by another passenger\",\n  \"code\": \"SEAT_ALREADY_LOCKED\"\n}"
                 }
-              ]
+              ],
+              "description": "---\nBody variants & field notes (moved out of the request body so the body is valid JSON — copy back into the body to use):\ninteger â€” seat number to lock"
             },
             {
               "name": "Lock Multiple Seats",
@@ -10561,7 +10585,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"seat_numbers\": [2, 3] // lock seats 2 and 3 together (all-or-nothing)\n}",
+                  "raw": "{\n  \"seat_numbers\": [\n    2,\n    3\n  ]\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -10665,7 +10689,8 @@
                   "cookie": [],
                   "body": "{\n  \"status\": \"error\",\n  \"message\": \"Seat is already locked by another passenger\",\n  \"code\": \"SEAT_ALREADY_LOCKED\"\n}"
                 }
-              ]
+              ],
+              "description": "---\nBody variants & field notes (moved out of the request body so the body is valid JSON — copy back into the body to use):\nlock seats 2 and 3 together (all-or-nothing)"
             },
             {
               "name": "Release Seat Lock",
@@ -11481,7 +11506,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"reason\": \"plan changed\" // string (required)\n}",
+                  "raw": "{\n  \"reason\": \"plan changed\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -11604,7 +11629,8 @@
                   "cookie": [],
                   "body": "{\n  \"status\": \"error\",\n  \"message\": \"Booking cannot be cancelled at this stage\",\n  \"code\": \"CONFLICT\"\n}"
                 }
-              ]
+              ],
+              "description": "---\nBody variants & field notes (moved out of the request body so the body is valid JSON — copy back into the body to use):\nstring (required)"
             },
             {
               "name": "Report Delay",
@@ -11653,7 +11679,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"party\": \"driver\",        // driver | passenger (must not be the reporter's own side)\n  \"delay_minutes\": 20,      // integer >= 1 <= 720\n  \"reason\": \"Traffic on Airport Road\"\n}",
+                  "raw": "{\n  \"party\": \"driver\",\n  \"delay_minutes\": 20,\n  \"reason\": \"Traffic on Airport Road\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -11725,7 +11751,8 @@
                   "cookie": [],
                   "body": "{\n  \"delay_event\": {\n    \"id\": \"d1a4b2c3-0000-4000-8000-00000000aa01\",\n    \"booking_id\": \"00000000-0000-4000-8000-0000000000b0\",\n    \"party\": \"driver\",\n    \"delay_minutes\": 20,\n    \"reason\": \"Traffic on Airport Road\",\n    \"reported_by\": \"07eccd0a-b14a-46a7-83e0-36cbeafcca87\",\n    \"created_at\": \"2026-08-22T09:10:00.000Z\"\n  }\n}"
                 }
-              ]
+              ],
+              "description": "---\nBody variants & field notes (moved out of the request body so the body is valid JSON — copy back into the body to use):\ndriver | passenger (must not be the reporter's own side)\ninteger >= 1 <= 720"
             },
             {
               "name": "List Delays",
@@ -11942,7 +11969,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"booking_id\": \"{{booking_id}}\", // UUID (required)\n  \"ratee_id\": \"{{driver_id}}\", // UUID of the rated user\n  \"stars\": 5, // integer 1-5 (required)\n  \"was_late\": false, // optional boolean, default false\n  \"late_minutes\": 0, // optional integer â‰¥ 0 (ignored if was_late false)\n  \"review\": \"Great driver\", // optional string â‰¤ 500\n  \"tags\": [] // optional string[] e.g. [\"punctual\",\"clean_car\",\"safe_driving\",\"rude\",\"overcharged\"]\n}",
+                  "raw": "{\n  \"booking_id\": \"{{booking_id}}\",\n  \"ratee_id\": \"{{driver_id}}\",\n  \"stars\": 5,\n  \"was_late\": false,\n  \"late_minutes\": 0,\n  \"review\": \"Great driver\",\n  \"tags\": []\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -12059,7 +12086,8 @@
                   "cookie": [],
                   "body": "{\n  \"status\": \"error\",\n  \"message\": \"Rating already submitted for this booking\",\n  \"code\": \"RATING_ALREADY_SUBMITTED\"\n}"
                 }
-              ]
+              ],
+              "description": "---\nBody variants & field notes (moved out of the request body so the body is valid JSON — copy back into the body to use):\nUUID (required)\nUUID of the rated user\ninteger 1-5 (required)\noptional boolean, default false\noptional integer â‰¥ 0 (ignored if was_late false)\noptional string â‰¤ 500\noptional string[] e.g. [\"punctual\",\"clean_car\",\"safe_driving\",\"rude\",\"overcharged\"]"
             },
             {
               "name": "Get My Ratings",
@@ -12255,7 +12283,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"booking_id\": \"{{booking_id}}\", // UUID (optional)\n  \"accused_id\": \"{{passenger_id}}\", // UUID (required) â€” the reported user (â‰  caller)\n  \"category\": \"misconduct\", // \"no_show\" | \"lateness\" | \"misconduct\" | \"fraud\" | \"safety\" | \"overcharging\" | \"other\"\n  \"description\": \"Description here\", // string (required, non-empty)\n  \"evidence_urls\": [] // optional string[] https URLs\n}",
+                  "raw": "{\n  \"booking_id\": \"{{booking_id}}\",\n  \"accused_id\": \"{{passenger_id}}\",\n  \"category\": \"misconduct\",\n  \"description\": \"Description here\",\n  \"evidence_urls\": []\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -12372,7 +12400,8 @@
                   "cookie": [],
                   "body": "{\n  \"status\": \"error\",\n  \"message\": \"Description is required\",\n  \"code\": \"VALIDATION_ERROR\"\n}"
                 }
-              ]
+              ],
+              "description": "---\nBody variants & field notes (moved out of the request body so the body is valid JSON — copy back into the body to use):\nUUID (optional)\nUUID (required) â€” the reported user (â‰  caller)\n\"no_show\" | \"lateness\" | \"misconduct\" | \"fraud\" | \"safety\" | \"overcharging\" | \"other\"\nstring (required, non-empty)\noptional string[] https URLs"
             },
             {
               "name": "View My Complaints",
@@ -12710,7 +12739,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"origin_city\": \"Amman\", // string\n  \"destination_city\": \"Irbid\", // string\n  \"label\": \"Work\" // optional string\n}",
+                  "raw": "{\n  \"origin_city\": \"Amman\",\n  \"destination_city\": \"Irbid\",\n  \"label\": \"Work\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -12830,7 +12859,8 @@
                   "cookie": [],
                   "body": "{\n  \"status\": \"error\",\n  \"message\": \"Route already favorited\",\n  \"code\": \"CONFLICT\"\n}"
                 }
-              ]
+              ],
+              "description": "---\nBody variants & field notes (moved out of the request body so the body is valid JSON — copy back into the body to use):\nstring\nstring\noptional string"
             },
             {
               "name": "Remove Favorite Route",
@@ -13167,7 +13197,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"driver_id\": \"{{driver_id}}\" // UUID (required)\n}",
+                  "raw": "{\n  \"driver_id\": \"{{driver_id}}\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -13287,7 +13317,8 @@
                   "cookie": [],
                   "body": "{\n  \"status\": \"error\",\n  \"message\": \"Driver already favorited\",\n  \"code\": \"CONFLICT\"\n}"
                 }
-              ]
+              ],
+              "description": "---\nBody variants & field notes (moved out of the request body so the body is valid JSON — copy back into the body to use):\nUUID (required)"
             },
             {
               "name": "Remove Favorite Driver",
@@ -13495,7 +13526,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"origin_city\": \"Amman\",             // required\n  \"destination_city\": \"Irbid\",        // required\n  \"origin_place\": \"Ras El Ain\",       // optional string max 255\n  \"destination_place\": \"Sweifieh\",    // optional string max 255\n  \"origin_lat\": 31.956,               // optional float -90..90\n  \"origin_lng\": 35.933,               // optional float -180..180\n  \"origin_time\": \"2026-08-23T08:53:36.583Z\",  // optional ISO datetime\n  \"arrival_deadline\": \"2026-08-23T08:53:36.583Z\", // optional ISO datetime\n  \"seats_needed\": 1,                  // optional int 1..8 (default 1)\n  \"max_budget\": 18,                   // optional number >=0 (JOD)\n  \"attributes_preferred\": {\"ac\": true}, // optional object\n  \"note\": \"Please call upon arrival, I have luggage\" // optional string max 1000\n}",
+                  "raw": "{\n  \"origin_city\": \"Amman\",\n  \"destination_city\": \"Irbid\",\n  \"origin_place\": \"Ras El Ain\",\n  \"destination_place\": \"Sweifieh\",\n  \"origin_lat\": 31.956,\n  \"origin_lng\": 35.933,\n  \"origin_time\": \"2026-08-23T08:53:36.583Z\",\n  \"arrival_deadline\": \"2026-08-23T08:53:36.583Z\",\n  \"seats_needed\": 1,\n  \"max_budget\": 18,\n  \"attributes_preferred\": {\n    \"ac\": true\n  },\n  \"note\": \"Please call upon arrival, I have luggage\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -13612,7 +13643,8 @@
                   "cookie": [],
                   "body": "{\n  \"status\": \"error\",\n  \"message\": [\n    {\"field\": \"destination_city\", \"message\": \"Destination city is required\"}\n  ],\n  \"code\": \"VALIDATION_ERROR\"\n}"
                 }
-              ]
+              ],
+              "description": "---\nBody variants & field notes (moved out of the request body so the body is valid JSON — copy back into the body to use):\nrequired\nrequired\noptional string max 255\noptional string max 255\noptional float -90..90\noptional float -180..180\noptional ISO datetime\noptional ISO datetime\noptional int 1..8 (default 1)\noptional number >=0 (JOD)\noptional object\noptional string max 1000"
             },
             {
               "name": "List Ride Requests (Board)",
@@ -13861,7 +13893,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"max_budget\": 25   // editable while open; or {\"action\": \"cancel\",\n  \"note\": \"Updated note\" // optional string max 1000\n}",
+                  "raw": "{\n  \"max_budget\": 25,\n  \"note\": \"Updated note\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -13931,7 +13963,8 @@
                   "cookie": [],
                   "body": "{\n  \"ride_request\": {\n    \"id\": \"5f2170b6-0e3a-4a2b-9f01-5d8f2f4f9a10\",\n    \"status\": \"cancelled\"\n  }\n}"
                 }
-              ]
+              ],
+              "description": "---\nBody variants & field notes (moved out of the request body so the body is valid JSON — copy back into the body to use):\nmax_budget is editable while the request is open\nto cancel instead send: {\"action\": \"cancel\"}\nnote is an optional string max 1000"
             },
             {
               "name": "Accept / Decline Offer",
@@ -13980,7 +14013,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"action\": \"accept\"   // accept | decline\n}",
+                  "raw": "{\n  \"action\": \"accept\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -14100,7 +14133,8 @@
                   "cookie": [],
                   "body": "{\n  \"status\": \"error\",\n  \"message\": \"Offer is no longer decidable (status: accepted)\",\n  \"code\": \"CONFLICT\"\n}"
                 }
-              ]
+              ],
+              "description": "---\nBody variants & field notes (moved out of the request body so the body is valid JSON — copy back into the body to use):\naccept | decline"
             },
             {
               "name": "Agree Offer Price",
@@ -14149,7 +14183,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"agreed_fare\": 16   // number > 0 (JOD)\n}",
+                  "raw": "{\n  \"agreed_fare\": 16\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -14221,7 +14255,8 @@
                   "cookie": [],
                   "body": "{\n  \"offer\": {\n    \"id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\",\n    \"request_id\": \"5f2170b6-0e3a-4a2b-9f01-5d8f2f4f9a10\",\n    \"offered_fare\": \"15.00\",\n    \"agreed_fare\": \"16.00\",\n    \"status\": \"sent\"\n  }\n}"
                 }
-              ]
+              ],
+              "description": "---\nBody variants & field notes (moved out of the request body so the body is valid JSON — copy back into the body to use):\nnumber > 0 (JOD)"
             },
             {
               "name": "Get Ride Request Matches",
@@ -14328,7 +14363,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"fullname\": \"Ahmad Masar\", // required, max 120 chars\n  \"national_id\": \"9871234567\", // required, 5-30 chars\n  \"age\": 28, // required, integer 18-100\n  \"home_address\": \"Amman, Jabal Amman\", // required\n  \"gender\": \"male\" // required: \"male\" | \"female\"\n}",
+                  "raw": "{\n  \"fullname\": \"Ahmad Masar\",\n  \"national_id\": \"9871234567\",\n  \"age\": 28,\n  \"home_address\": \"Amman, Jabal Amman\",\n  \"gender\": \"male\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -14349,7 +14384,8 @@
                 },
                 "description": "Fill the passenger profile after phone-number confirmation and password setup.\n\nRequires role `passenger`.\n\n**Body fields**\n- `fullname` *(string, required)* — full name, max 120 chars.\n- `national_id` *(string, required)* — national ID, 5-30 chars.\n- `age` *(number, required)* — integer between 18 and 100.\n- `home_address` *(string, required)* — home address.\n- `gender` *(string, required)* — `male` | `female`.\n\n**201** `{ passengerProfile }`. A second submission returns **409** once the profile is already filled."
               },
-              "response": []
+              "response": [],
+              "description": "---\nBody variants & field notes (moved out of the request body so the body is valid JSON — copy back into the body to use):\nrequired, max 120 chars\nrequired, 5-30 chars\nrequired, integer 18-100\nrequired\nrequired: \"male\" | \"female\""
             },
             {
               "name": "Get My Profile",
@@ -14499,7 +14535,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"preferred_gender\": \"female\",          // male | female | any\n  \"smoking_preference\": \"non_smoking\",   // no_preference | non_smoking | smoking_allowed\n  \"national_id\": \"9871234567\",           // 5-30 chars\n  \"home_address\": \"Amman, Jabal Amman\",  // string\n  \"saved_routes\": [\n    {\"label\": \"Home weekends\", \"origin\": \"Amman\", \"destination\": \"Irbid\"}\n  ],\n  \"emergency_contacts\": [\n    {\"name\": \"Mother\", \"phone\": \"+962791111111\"}\n  ]\n}",
+                  "raw": "{\n  \"preferred_gender\": \"female\",\n  \"smoking_preference\": \"non_smoking\",\n  \"national_id\": \"9871234567\",\n  \"home_address\": \"Amman, Jabal Amman\",\n  \"saved_routes\": [\n    {\n      \"label\": \"Home weekends\",\n      \"origin\": \"Amman\",\n      \"destination\": \"Irbid\"\n    }\n  ],\n  \"emergency_contacts\": [\n    {\n      \"name\": \"Mother\",\n      \"phone\": \"+962791111111\"\n    }\n  ]\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -14569,7 +14605,8 @@
                   "cookie": [],
                   "body": "{\n  \"passenger_profile\": {\n    \"id\": \"d947d357-aaf0-4898-a3f2-72c4d04efbad\",\n    \"preferred_gender\": \"female\",\n    \"smoking_preference\": \"non_smoking\",\n    \"updated_at\": \"2026-08-22T05:12:44.900Z\"\n  }\n}"
                 }
-              ]
+              ],
+              "description": "---\nBody variants & field notes (moved out of the request body so the body is valid JSON — copy back into the body to use):\nmale | female | any\nno_preference | non_smoking | smoking_allowed\n5-30 chars\nstring"
             },
             {
               "name": "Get Passenger Account Summary",
@@ -14848,7 +14885,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"name\": \"Basic\", // string\n  \"period_days\": 30, // integer â€” plan length in days\n  \"percentage_cut\": \"8.00\", // number (JOD % of fare) 0-100\n  \"cost\": \"100.00\", // number â‰¥ 0 (JOD)\n  \"status\": \"popular\", // \"active\" | \"popular\" | \"most_requested\" | \"inactive\"\n  \"features\": [\"no booking fees\"], // string[]\n  \"is_free\": false // boolean\n}",
+                  "raw": "{\n  \"name\": \"Basic\",\n  \"period_days\": 30,\n  \"percentage_cut\": \"8.00\",\n  \"cost\": \"100.00\",\n  \"status\": \"popular\",\n  \"features\": [\n    \"no booking fees\"\n  ],\n  \"is_free\": false\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -14946,7 +14983,8 @@
                   "cookie": [],
                   "body": "{\n  \"status\": \"error\",\n  \"message\": \"Name is required\",\n  \"code\": \"VALIDATION_ERROR\"\n}"
                 }
-              ]
+              ],
+              "description": "---\nBody variants & field notes (moved out of the request body so the body is valid JSON — copy back into the body to use):\nstring\ninteger â€” plan length in days\nnumber (JOD % of fare) 0-100\nnumber â‰¥ 0 (JOD)\n\"active\" | \"popular\" | \"most_requested\" | \"inactive\"\nstring[]\nboolean"
             },
             {
               "name": "Create Free Plan",
@@ -15128,7 +15166,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n//   \"name\": \"Free Trial Plus\",\n  \"free_offer\": { \"type\": \"trips\", \"value\": 15 }\n}",
+                  "raw": "{\n  \"free_offer\": {\n    \"type\": \"trips\",\n    \"value\": 15\n  }\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -15229,7 +15267,8 @@
                   "cookie": [],
                   "body": "{\n  \"status\": \"error\",\n  \"message\": \"Plan not found\",\n  \"code\": \"NOT_FOUND\"\n}"
                 }
-              ]
+              ],
+              "description": "---\nBody variants & field notes (moved out of the request body so the body is valid JSON — copy back into the body to use):\n\"name\": \"Free Trial Plus\","
             },
             {
               "name": "Deactivate Plan",
@@ -15491,7 +15530,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"name\": \"Bank of Jordan\", // string\n  \"account_number\": \"JO94BOJX0000000000\", // IBAN/account string\n  \"type\": \"bank_account\", // \"bank_account\" | ...\n  \"email\": \"payments@boj.com\" // optional string\n}",
+                  "raw": "{\n  \"name\": \"Bank of Jordan\",\n  \"account_number\": \"JO94BOJX0000000000\",\n  \"type\": \"bank_account\",\n  \"email\": \"payments@boj.com\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -15589,7 +15628,8 @@
                   "cookie": [],
                   "body": "{\n  \"status\": \"error\",\n  \"message\": \"Account number is required\",\n  \"code\": \"VALIDATION_ERROR\"\n}"
                 }
-              ]
+              ],
+              "description": "---\nBody variants & field notes (moved out of the request body so the body is valid JSON — copy back into the body to use):\nstring\nIBAN/account string\n\"bank_account\" | ...\noptional string"
             },
             {
               "name": "Update Payment Method",
@@ -15628,7 +15668,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"name\": \"Bank of Jordan - Corporate\", // string\n  \"type\": \"bank_account\" // \"bank_account\" | ...\n}",
+                  "raw": "{\n  \"name\": \"Bank of Jordan - Corporate\",\n  \"type\": \"bank_account\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -15729,7 +15769,8 @@
                   "cookie": [],
                   "body": "{\n  \"status\": \"error\",\n  \"message\": \"Payment method not found\",\n  \"code\": \"NOT_FOUND\"\n}"
                 }
-              ]
+              ],
+              "description": "---\nBody variants & field notes (moved out of the request body so the body is valid JSON — copy back into the body to use):\nstring\n\"bank_account\" | ..."
             },
             {
               "name": "Deactivate Payment Method",
@@ -16171,7 +16212,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"reason\": \"Payment proof is unclear. Please resubmit a clearer screenshot.\" // string (required)\n}",
+                  "raw": "{\n  \"reason\": \"Payment proof is unclear. Please resubmit a clearer screenshot.\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -16275,7 +16316,8 @@
                   "cookie": [],
                   "body": "{\n  \"status\": \"error\",\n  \"message\": \"This request has already been processed.\",\n  \"code\": \"REQUEST_ALREADY_PROCESSED\"\n}"
                 }
-              ]
+              ],
+              "description": "---\nBody variants & field notes (moved out of the request body so the body is valid JSON — copy back into the body to use):\nstring (required)"
             },
             {
               "name": "List All Payment Methods (direct)",
@@ -17369,7 +17411,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"reason\": \"Ø§Ù„ÙˆØ«Ø§Ø¦Ù‚ ØºÙŠØ± ÙˆØ§Ø¶Ø­Ø©\",         // string (required, max 2000 chars)\n  \"fields_to_fix\": [\"license\", \"vehicle_photo\"]  // required, non-empty, allowed keys only\n}",
+                  "raw": "{\n  \"reason\": \"Ø§Ù„ÙˆØ«Ø§Ø¦Ù‚ ØºÙŠØ± ÙˆØ§Ø¶Ø­Ø©\",\n  \"fields_to_fix\": [\n    \"license\",\n    \"vehicle_photo\"\n  ]\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -17551,7 +17593,8 @@
                   "cookie": [],
                   "body": "{\n  \"status\": \"error\",\n  \"message\": \"Driver not found\",\n  \"code\": \"NOT_FOUND\"\n}"
                 }
-              ]
+              ],
+              "description": "---\nBody variants & field notes (moved out of the request body so the body is valid JSON — copy back into the body to use):\nstring (required, max 2000 chars)\nrequired, non-empty, allowed keys only"
             },
             {
               "name": "Approve Vehicle Verification",
@@ -17778,7 +17821,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"reason\": \"Ø§Ù„ÙˆØ«Ø§Ø¦Ù‚ ØºÙŠØ± ÙˆØ§Ø¶Ø­Ø©\",         // string (required, max 2000 chars)\n  \"fields_to_fix\": [\"license\", \"vehicle_photo\"]  // required, non-empty, allowed keys only\n}",
+                  "raw": "{\n  \"reason\": \"Ø§Ù„ÙˆØ«Ø§Ø¦Ù‚ ØºÙŠØ± ÙˆØ§Ø¶Ø­Ø©\",\n  \"fields_to_fix\": [\n    \"license\",\n    \"vehicle_photo\"\n  ]\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -17960,7 +18003,8 @@
                   "cookie": [],
                   "body": "{\n  \"status\": \"error\",\n  \"message\": \"Vehicle not found\",\n  \"code\": \"NOT_FOUND\"\n}"
                 }
-              ]
+              ],
+              "description": "---\nBody variants & field notes (moved out of the request body so the body is valid JSON — copy back into the body to use):\nstring (required, max 2000 chars)\nrequired, non-empty, allowed keys only"
             }
           ]
         },
@@ -18156,7 +18200,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"status\": \"suspended\", // \"active\" | \"warned\" | \"suspended\" | \"banned\"\n  \"reason\": \"No-show rate above threshold\" // optional\n}",
+                  "raw": "{\n  \"status\": \"suspended\",\n  \"reason\": \"No-show rate above threshold\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -18279,7 +18323,8 @@
                   "cookie": [],
                   "body": "{\n  \"status\": \"error\",\n  \"message\": \"Invalid status\",\n  \"code\": \"VALIDATION_ERROR\"\n}"
                 }
-              ]
+              ],
+              "description": "---\nBody variants & field notes (moved out of the request body so the body is valid JSON — copy back into the body to use):\n\"active\" | \"warned\" | \"suspended\" | \"banned\"\noptional"
             }
           ]
         },
@@ -18333,7 +18378,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"action\": \"block\", // \"unpublish\" | \"block\" | \"restore\"\n  \"reason\": \"Duplicate listing\" // optional\n}",
+                  "raw": "{\n  \"action\": \"block\",\n  \"reason\": \"Duplicate listing\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -18456,7 +18501,8 @@
                   "cookie": [],
                   "body": "{\n  \"status\": \"error\",\n  \"message\": \"Trip not found\",\n  \"code\": \"NOT_FOUND\"\n}"
                 }
-              ]
+              ],
+              "description": "---\nBody variants & field notes (moved out of the request body so the body is valid JSON — copy back into the body to use):\n\"unpublish\" | \"block\" | \"restore\"\noptional"
             }
           ]
         },
@@ -18661,7 +18707,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"status\": \"resolved\", // \"reviewing\" | \"resolved\" | \"dismissed\"\n  \"resolution\": \"Driver refunded passenger manually\" // required when resolved\n}",
+                  "raw": "{\n  \"status\": \"resolved\",\n  \"resolution\": \"Driver refunded passenger manually\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -18784,7 +18830,8 @@
                   "cookie": [],
                   "body": "{\n  \"status\": \"error\",\n  \"message\": \"Complaint already resolved\",\n  \"code\": \"CONFLICT\"\n}"
                 }
-              ]
+              ],
+              "description": "---\nBody variants & field notes (moved out of the request body so the body is valid JSON — copy back into the body to use):\n\"reviewing\" | \"resolved\" | \"dismissed\"\nrequired when resolved"
             },
             {
               "name": "Complaint Stats",
@@ -18919,14 +18966,15 @@
                 "description": "Optional action against the accused (links complaintId). Follow with PUT Resolve Complaint.",
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"kind\": \"warning\", // warning | temporary | permanent\n  \"reason\": \"\",\n  \"duration\": \"3d\", // temporary only: 1d | 3d | 7d | custom\n  \"durationDays\": null, // custom only\n  \"notes\": \"\",\n  \"confirmReviewedLog\": true // permanent only, REQUIRED\n}",
+                  "raw": "{\n  \"kind\": \"warning\",\n  \"reason\": \"\",\n  \"duration\": \"3d\",\n  \"durationDays\": null,\n  \"notes\": \"\",\n  \"confirmReviewedLog\": true\n}",
                   "options": {
                     "raw": {
                       "language": "json"
                     }
                   }
                 }
-              }
+              },
+              "description": "---\nBody variants & field notes (moved out of the request body so the body is valid JSON — copy back into the body to use):\nwarning | temporary | permanent\ntemporary only: 1d | 3d | 7d | custom\ncustom only\npermanent only, REQUIRED"
             }
           ]
         },
@@ -18980,7 +19028,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"user_id\": \"{{user_id}}\", // UUID (required)\n  \"type\": \"warning\", // warning | suspension | ban (required)\n  \"reason\": \"\", // string (required)\n  \"details\": null, // optional notes\n  \"complaint_id\": null, // optional link\n  \"ends_at\": null, // ISO date — REQUIRED for suspension, FORBIDDEN for ban\n  \"confirm_reviewed_log\": true // REQUIRED for ban (checkbox in ban modal)\n}",
+                  "raw": "{\n  \"user_id\": \"{{user_id}}\",\n  \"type\": \"warning\",\n  \"reason\": \"\",\n  \"details\": null,\n  \"complaint_id\": null,\n  \"ends_at\": null,\n  \"confirm_reviewed_log\": true\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -19100,7 +19148,8 @@
                   "cookie": [],
                   "body": "{\n  \"status\": \"error\",\n  \"message\": \"Penalty type is required\",\n  \"code\": \"VALIDATION_ERROR\"\n}"
                 }
-              ]
+              ],
+              "description": "---\nBody variants & field notes (moved out of the request body so the body is valid JSON — copy back into the body to use):\nUUID (required)\nwarning | suspension | ban (required)\nstring (required)\noptional notes\noptional link\nISO date — REQUIRED for suspension, FORBIDDEN for ban\nREQUIRED for ban (checkbox in ban modal)"
             }
           ]
         },
@@ -19253,7 +19302,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"assigned_to\": \"a1b2c3d4-0000-4000-8000-00000000ee01\",  // staff user id (optional)\n  \"priority\": \"urgent\",                                    // low | medium | high | urgent (optional)\n  \"category\": \"complaint\"                                  // category change (optional)\n}",
+                  "raw": "{\n  \"assigned_to\": \"a1b2c3d4-0000-4000-8000-00000000ee01\",\n  \"priority\": \"urgent\",\n  \"category\": \"complaint\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -19323,7 +19372,8 @@
                   "cookie": [],
                   "body": "{\n  \"support_ticket\": {\n    \"id\": \"t1c2d3e4-0000-4000-8000-00000000cc01\",\n    \"assigned_to\": \"a1b2c3d4-0000-4000-8000-00000000ee01\",\n    \"priority\": \"urgent\"\n  }\n}"
                 }
-              ]
+              ],
+              "description": "---\nBody variants & field notes (moved out of the request body so the body is valid JSON — copy back into the body to use):\nstaff user id (optional)\nlow | medium | high | urgent (optional)\ncategory change (optional)"
             },
             {
               "name": "Update Status",
@@ -19372,7 +19422,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"status\": \"resolved\",                  // open | in_progress | resolved | closed\n  \"resolution_notes\": \"Refund issued\"    // required when resolving/closing\n}",
+                  "raw": "{\n  \"status\": \"resolved\",\n  \"resolution_notes\": \"Refund issued\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -19444,7 +19494,8 @@
                   "cookie": [],
                   "body": "{\n  \"support_ticket\": {\n    \"id\": \"t1c2d3e4-0000-4000-8000-00000000cc01\",\n    \"status\": \"resolved\",\n    \"resolution_notes\": \"Refund issued\"\n  }\n}"
                 }
-              ]
+              ],
+              "description": "---\nBody variants & field notes (moved out of the request body so the body is valid JSON — copy back into the body to use):\nopen | in_progress | resolved | closed\nrequired when resolving/closing"
             }
           ],
           "description": "Spec 009 US7 - staff handling of support tickets."
@@ -19588,7 +19639,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"resolution_note\": \"Contacted driver, false alarm\" // optional, max 500 chars\n}",
+                  "raw": "{\n  \"resolution_note\": \"Contacted driver, false alarm\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -19609,7 +19660,8 @@
                 },
                 "description": "Resolve an SOS event (admin only).\n\n**Path parameter**\n- `sos_id` *(UUID, required)*.\n\n**Body fields**\n- `resolution_note` *(string, optional)* â€” max 500 characters."
               },
-              "response": []
+              "response": [],
+              "description": "---\nBody variants & field notes (moved out of the request body so the body is valid JSON — copy back into the body to use):\noptional, max 500 chars"
             }
           ],
           "description": "Admin-only management of passenger-emitted SOS events."
@@ -21471,14 +21523,15 @@
                     "description": "Custom in-app notice to a driver (Figma: send-notification modal). Stored as ADMIN_NOTICE.",
                     "body": {
                       "mode": "raw",
-                      "raw": "{\n  \"title\": \"\",\n  \"body\": \"\",\n  \"type\": \"trip\" // trip | general | account | verification | package\n}",
+                      "raw": "{\n  \"title\": \"\",\n  \"body\": \"\",\n  \"type\": \"trip\"\n}",
                       "options": {
                         "raw": {
                           "language": "json"
                         }
                       }
                     }
-                  }
+                  },
+                  "description": "---\nBody variants & field notes (moved out of the request body so the body is valid JSON — copy back into the body to use):\ntrip | general | account | verification | package"
                 }
               ]
             },
@@ -22087,14 +22140,15 @@
                 "description": "",
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"title\": \"\",\n  \"body\": \"\",\n  \"type\": \"trip\" // trip | general | account | verification | package\n}",
+                  "raw": "{\n  \"title\": \"\",\n  \"body\": \"\",\n  \"type\": \"trip\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
                     }
                   }
                 }
-              }
+              },
+              "description": "---\nBody variants & field notes (moved out of the request body so the body is valid JSON — copy back into the body to use):\ntrip | general | account | verification | package"
             },
             {
               "name": "Warn Passenger",
@@ -22141,14 +22195,15 @@
                 "description": "",
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"reason\": \"late\", // misbehavior | late | repeat_cancel | driver_complaint | rules_violation | other\n  \"notes\": \"\"\n}",
+                  "raw": "{\n  \"reason\": \"late\",\n  \"notes\": \"\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
                     }
                   }
                 }
-              }
+              },
+              "description": "---\nBody variants & field notes (moved out of the request body so the body is valid JSON — copy back into the body to use):\nmisbehavior | late | repeat_cancel | driver_complaint | rules_violation | other"
             },
             {
               "name": "Suspend Passenger (Temporary)",
@@ -22196,14 +22251,15 @@
                 "description": "",
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"reason\": \"misbehavior\",\n  \"duration\": \"3d\", // 1d | 3d | 7d | custom\n  \"durationDays\": null, // required when custom (1-365)\n  \"notes\": \"\"\n}",
+                  "raw": "{\n  \"reason\": \"misbehavior\",\n  \"duration\": \"3d\",\n  \"durationDays\": null,\n  \"notes\": \"\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
                     }
                   }
                 }
-              }
+              },
+              "description": "---\nBody variants & field notes (moved out of the request body so the body is valid JSON — copy back into the body to use):\n1d | 3d | 7d | custom\nrequired when custom (1-365)"
             },
             {
               "name": "Ban Passenger (Permanent)",
@@ -22251,14 +22307,15 @@
                 "description": "",
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"reason\": \"tos_violation\", // dangerous_behavior | severe_repeat | repeat_cancel | tos_violation | rules_violation | other\n  \"notes\": \"\",\n  \"confirmReviewedLog\": true // REQUIRED checkbox\n}",
+                  "raw": "{\n  \"reason\": \"tos_violation\",\n  \"notes\": \"\",\n  \"confirmReviewedLog\": true\n}",
                   "options": {
                     "raw": {
                       "language": "json"
                     }
                   }
                 }
-              }
+              },
+              "description": "---\nBody variants & field notes (moved out of the request body so the body is valid JSON — copy back into the body to use):\ndangerous_behavior | severe_repeat | repeat_cancel | tos_violation | rules_violation | other\nREQUIRED checkbox"
             }
           ]
         },
@@ -22467,14 +22524,15 @@
                 "description": "Pending/confirmed only (409 otherwise). Frees seats, notifies passenger. Cash = no refund leg.",
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"reason\": \"passenger_request\", // passenger_request | booking_data_issue | policy_violation | unfulfillable | other\n  \"notes\": \"\"\n}",
+                  "raw": "{\n  \"reason\": \"passenger_request\",\n  \"notes\": \"\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
                     }
                   }
                 }
-              }
+              },
+              "description": "---\nBody variants & field notes (moved out of the request body so the body is valid JSON — copy back into the body to use):\npassenger_request | booking_data_issue | policy_violation | unfulfillable | other"
             }
           ]
         },
@@ -22841,14 +22899,15 @@
                 "description": "",
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"target_user_id\": \"\", // must be a party of the booking\n  \"kind\": \"warning\",\n  \"reason\": \"\",\n  \"duration\": \"3d\",\n  \"durationDays\": null,\n  \"notes\": \"\",\n  \"confirmReviewedLog\": true\n}",
+                  "raw": "{\n  \"target_user_id\": \"\",\n  \"kind\": \"warning\",\n  \"reason\": \"\",\n  \"duration\": \"3d\",\n  \"durationDays\": null,\n  \"notes\": \"\",\n  \"confirmReviewedLog\": true\n}",
                   "options": {
                     "raw": {
                       "language": "json"
                     }
                   }
                 }
-              }
+              },
+              "description": "---\nBody variants & field notes (moved out of the request body so the body is valid JSON — copy back into the body to use):\nmust be a party of the booking"
             }
           ]
         }
@@ -24405,7 +24464,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"category\": \"general\",           // general | booking_issue | payment_issue | complaint | other\n  \"subject\": \"Charged twice\",\n  \"description\": \"I was charged twice for booking MSR-A1B2C3.\",\n  \"priority\": \"high\",              // low | medium | high | urgent (default medium)\n  \"booking_id\": \"\",                // optional link\n  \"trip_id\": \"\"                    // optional link\n}",
+                  "raw": "{\n  \"category\": \"general\",\n  \"subject\": \"Charged twice\",\n  \"description\": \"I was charged twice for booking MSR-A1B2C3.\",\n  \"priority\": \"high\",\n  \"booking_id\": \"\",\n  \"trip_id\": \"\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -24522,7 +24581,8 @@
                   "cookie": [],
                   "body": "{\n  \"status\": \"error\",\n  \"message\": [\n    {\"field\": \"destination_city\", \"message\": \"Destination city is required\"}\n  ],\n  \"code\": \"VALIDATION_ERROR\"\n}"
                 }
-              ]
+              ],
+              "description": "---\nBody variants & field notes (moved out of the request body so the body is valid JSON — copy back into the body to use):\ngeneral | booking_issue | payment_issue | complaint | other\nlow | medium | high | urgent (default medium)\noptional link\noptional link"
             },
             {
               "name": "List My Tickets",

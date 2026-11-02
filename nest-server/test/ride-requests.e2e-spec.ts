@@ -447,7 +447,44 @@ describe('Ride request board', () => {
     expect(res.body.data.length).toBe(1);
     expect(res.body.data[0].driver_id).toBe(DRIVER1_ID);
     expect(res.body.data[0].request.origin_city).toBe('Amman');
+    expect(res.body.data[0].trip).toBeNull();
     expect(res.body.pagination.total).toBe(1);
+  });
+
+  it('embeds the accepted trip summary in driver offer rows', async () => {
+    const created = await createRideRequest(passenger1Token, {
+      destination_city: 'Karak',
+      origin_time: new Date(Date.now() + 8 * 3600 * 1000).toISOString(),
+      max_budget: 12,
+    });
+    const requestId = created.body.ride_request.id as string;
+
+    // type_of_trip "once" is the canonical value — regression: the accept
+    // validator used to reject it with 422.
+    const acc = await ctx.agent
+      .post(`/api/ride-requests/${requestId}/accept`)
+      .set('Authorization', `Bearer ${driver1Token}`)
+      .send({ type_of_trip: 'once' });
+    expect(acc.status).toBe(201);
+
+    const res = await ctx.agent
+      .get('/api/driver/offers?status=accepted')
+      .set('Authorization', `Bearer ${driver1Token}`);
+    expect(res.status).toBe(200);
+    const row = (res.body.data as Array<Record<string, unknown>>).find(
+      (o) => o.request_id === requestId,
+    );
+    expect(row).toBeTruthy();
+    const trip = row!.trip as Record<string, unknown>;
+    expect(trip.trip_id).toBe((acc.body.trip as Record<string, unknown>).id);
+    expect(trip.origin_city).toBe('Amman');
+    expect(trip.destination_city).toBe('Karak');
+    expect(Number(trip.available_seats)).toBe(2); // 4-seat vehicle: 3 passenger seats − 1 booked
+    expect(trip.status).toBe('published');
+
+    const saved = await ctx.prisma.trip.findUnique({ where: { id: trip.trip_id as string } });
+    expect(Number(trip.available_seats)).toBe(saved?.availableSeats);
+    expect(trip.status).toBe(saved?.status);
   });
 
   it('attaches accepted+priced offers to trips', async () => {
@@ -539,6 +576,12 @@ describe('Ride request board', () => {
     expect(booking.trip_id).toBe(tripId);
     expect(booking.status).toBe('confirmed');
     expect(Number(booking.pickup_lat)).toBeCloseTo(31.95, 4);
+    const acceptedTrip = res.body.trip as Record<string, unknown>;
+    expect(acceptedTrip.id).toBe(tripId);
+    // Response must reflect the post-booking trip state (stale-response fix).
+    const savedTrip = await ctx.prisma.trip.findUnique({ where: { id: String(tripId) } });
+    expect(Number(acceptedTrip.available_seats)).toBe(savedTrip?.availableSeats);
+    expect(acceptedTrip.status).toBe(savedTrip?.status);
 
     const saved = await ctx.prisma.booking.findUnique({ where: { id: booking.id as string } });
     expect(saved?.tripId).toBe(tripId);
@@ -600,6 +643,9 @@ describe('Ride request board', () => {
     expect(saved?.driverId).toBe(DRIVER1_ID);
     expect(saved?.destinationCity).toBe('Zarqa');
     expect(Number(saved?.availableSeats)).toBe(2);
+    // Response must reflect the post-booking trip state (stale-response fix).
+    expect(Number(trip.available_seats)).toBe(Number(saved?.availableSeats));
+    expect(trip.status).toBe(saved?.status);
   });
 });
 

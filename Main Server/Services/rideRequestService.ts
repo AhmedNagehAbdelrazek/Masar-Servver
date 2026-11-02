@@ -453,20 +453,46 @@ async function listDriverOffers(driverId, filters = {}) {
     limit,
   });
 
+  // Batch-load the trips referenced by these offers (every accepted offer
+  // carries one) so a driver's "trips accepted from ride requests" screen
+  // gets the trip summary in this single response instead of N follow-up
+  // GET /trips/:id calls.
+  const offerTripIds = [...new Set(rows.map((o) => o.tripId).filter((id) => id != null))];
+  const tripsById = new Map();
+  if (offerTripIds.length > 0) {
+    (await Trip.findAll({ where: { id: { [Op.in]: offerTripIds } } })).forEach((t) => tripsById.set(t.id, t));
+  }
+
   return {
-    data: rows.map((o) => ({
-      ...serializeOffer(o),
-      request: o.rideRequest
-        ? {
-            id: o.rideRequest.id,
-            origin_city: o.rideRequest.originCity,
-            destination_city: o.rideRequest.destinationCity,
-            origin_time: o.rideRequest.originTime,
-            seats_needed: o.rideRequest.seatsNeeded,
-            status: o.rideRequest.status,
-          }
-        : null,
-    })),
+    data: rows.map((o) => {
+      const offerTrip = o.tripId != null ? tripsById.get(o.tripId) : null;
+      return {
+        ...serializeOffer(o),
+        request: o.rideRequest
+          ? {
+              id: o.rideRequest.id,
+              origin_city: o.rideRequest.originCity,
+              destination_city: o.rideRequest.destinationCity,
+              origin_time: o.rideRequest.originTime,
+              seats_needed: o.rideRequest.seatsNeeded,
+              status: o.rideRequest.status,
+            }
+          : null,
+        trip: offerTrip
+          ? {
+              trip_id: offerTrip.id,
+              origin_city: offerTrip.originCity,
+              destination_city: offerTrip.destinationCity,
+              departure_time: offerTrip.departureTime,
+              fare_per_seat: Number(offerTrip.farePerSeat),
+              currency: offerTrip.currency || 'JOD',
+              total_seats: offerTrip.totalSeats,
+              available_seats: Number(offerTrip.availableSeats),
+              status: offerTrip.status,
+            }
+          : null,
+      };
+    }),
     pagination: buildPagination(count, page, limit),
   };
 }
@@ -1038,6 +1064,12 @@ async function acceptRideRequest(driverId, requestId, payload = {}) {
           : 0;
 
   const booking = await createDirectAcceptBooking(trip, request, fare, seatsNeeded);
+
+  // Re-read the trip so the response reflects the booking just written
+  // (claimed seats, published→full flip) instead of the pre-booking
+  // snapshot captured in resolveAcceptTrip.
+  const acceptedTrip = (await Trip.findByPk(trip.id)) || trip;
+
   const offer = await upsertAcceptedOffer(driverId, requestId, trip, fare, booking);
 
   request.status = RIDE_REQUEST_STATUS.ACCEPTED;
@@ -1105,13 +1137,13 @@ async function acceptRideRequest(driverId, requestId, payload = {}) {
 
   return {
     trip: {
-      id: trip.id,
-      origin_city: trip.originCity,
-      destination_city: trip.destinationCity,
-      departure_time: trip.departureTime,
-      fare_per_seat: Number(trip.farePerSeat),
-      available_seats: Number(trip.availableSeats),
-      status: trip.status,
+      id: acceptedTrip.id,
+      origin_city: acceptedTrip.originCity,
+      destination_city: acceptedTrip.destinationCity,
+      departure_time: acceptedTrip.departureTime,
+      fare_per_seat: Number(acceptedTrip.farePerSeat),
+      available_seats: Number(acceptedTrip.availableSeats),
+      status: acceptedTrip.status,
     },
     booking: {
       id: booking.id,

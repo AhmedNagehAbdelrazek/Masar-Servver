@@ -169,7 +169,7 @@ export const acceptRideRequestValidation: ValidationChain[] = [
     .isArray().withMessage(V.SEATS_MUST_BE_AN_ARRAY),
   body('type_of_trip')
     .optional()
-    .isIn(['one_way', 'repeated']).withMessage(V.TYPE_OF_TRIP_MUST_BE_ONE_WAY_OR_REPEATED),
+    .isIn(['once', 'repeated']).withMessage(V.TRIP_TYPE_MUST_BE_ONCE_OR_REPEATED),
   body('repeated_days')
     .optional()
     .isArray().withMessage(V.REPEATED_DAYS_MUST_BE_AN_ARRAY),

@@ -545,7 +545,42 @@ describe('GET /api/driver/offers - own sent offers', () => {
     expect(res.body.data.length).toBe(1);
     expect(res.body.data[0].driver_id).toBe(DRIVER1_ID);
     expect(res.body.data[0].request.origin_city).toBe('Amman');
+    expect(res.body.data[0].trip).toBeNull();
     expect(res.body.pagination.total).toBe(1);
+  });
+
+  it('should embed the accepted trip summary in offer rows', async () => {
+    const reqRes = await createRideRequest(passenger1Token, {
+      destination_city: 'Karak',
+      origin_time: new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString(),
+      max_budget: 12,
+    });
+    const requestId = reqRes.body.ride_request.id;
+
+    // type_of_trip "once" is the canonical value — regression: the accept
+    // validator used to reject it with 422.
+    const acc = await getAgent()
+      .post(`/api/ride-requests/${requestId}/accept`)
+      .set('Authorization', `Bearer ${driver1Token}`)
+      .send({ type_of_trip: 'once' });
+    expect(acc.status).toBe(201);
+
+    const res = await getAgent()
+      .get('/api/driver/offers?status=accepted')
+      .set('Authorization', `Bearer ${driver1Token}`);
+
+    expect(res.status).toBe(200);
+    const row = res.body.data.find((o) => o.request_id === requestId);
+    expect(row).toBeTruthy();
+    expect(row.trip.trip_id).toBe(acc.body.trip.id);
+    expect(row.trip.origin_city).toBe('Amman');
+    expect(row.trip.destination_city).toBe('Karak');
+    expect(Number(row.trip.available_seats)).toBe(2); // 4-seat vehicle: 3 passenger seats − 1 booked
+    expect(row.trip.status).toBe('published');
+
+    const saved = await Trip.findByPk(acc.body.trip.id);
+    expect(Number(row.trip.available_seats)).toBe(Number(saved.availableSeats));
+    expect(row.trip.status).toBe(saved.status);
   });
 });
 
@@ -713,6 +748,10 @@ describe('POST /api/ride-requests/:request_id/accept - direct acceptance', () =>
 
     expect(res.status).toBe(201);
     expect(res.body.trip.id).toBe(tripId);
+    // Response must reflect the post-booking trip state (stale-response fix).
+    const tripRow = await Trip.findByPk(tripId);
+    expect(Number(res.body.trip.available_seats)).toBe(Number(tripRow.availableSeats));
+    expect(res.body.trip.status).toBe(tripRow.status);
     expect(res.body.booking.trip_id).toBe(tripId);
     expect(res.body.booking.status).toBe('confirmed');
     expect(Number(res.body.booking.pickup_lat)).toBeCloseTo(31.95, 4);
@@ -779,5 +818,8 @@ describe('POST /api/ride-requests/:request_id/accept - trip creation fallback', 
     expect(trip.originCity).toBe('Amman');
     expect(trip.destinationCity).toBe('Zarqa');
     expect(Number(trip.availableSeats)).toBe(2);
+    // Response must reflect the post-booking trip state (stale-response fix).
+    expect(Number(res.body.trip.available_seats)).toBe(Number(trip.availableSeats));
+    expect(res.body.trip.status).toBe(trip.status);
   });
 });

@@ -1,0 +1,823 @@
+{
+  "info": {
+    "name": "Masar — Search & Ride-Request Flow E2E",
+    "description": "End-to-end verification of the driver↔passenger search and ride-request flow against a local dev server (base_url env var).\n\nChain: passenger+driver login → my-trips baseline → driver publishes a trip → passenger search finds it (filters + no-leak) → passenger posts a ride request → driver board lists it → driver accepts (creates a NEW trip + confirmed booking) → driver my-trips shows the accepted trip (default and ?status=published) → accept-created trip is publicly searchable → booking visible to both sides → accept-with-trip_id attach path → negatives (re-accept 409, passenger accept 403) → regression: type_of_trip \"once\" accepted (was 422) → full-trip edge (accepted booking fills the vehicle → status full; hidden from ?status=published) → accepted offers list embeds the current trip summary (single call, no N+1).\n\nIncludes fix-verification assertions: the accept response's trip.available_seats/status must match the database (stale-response fix), and type_of_trip \"once\" must be accepted (validator fix).\n\nNOTE: expects a clean trips/ride_requests/bookings state — if the driver already has a published trip on the same route, accept attaches to it instead of creating a new trip (by design) and the \"brand-NEW trip\" assertion fails. Reset the flow tables (trips, trip_seats, trip_stops, trip_attributes, bookings, ride_requests, request_offers, ratings, delay_events, notifications, recent_searches, audit_logs) before re-running.\n\nRun: postman collection run search_flow_e2e.json -e environments/local-e2e.json\nCredentials come from Main Server/seed-mock.ts (Test@1234).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "const DAY = 86400000;",
+          "const now = Date.now();",
+          "if (!pm.environment.get('search_date')) {",
+          "  const dayA = 3 + Math.floor(Math.random() * 7);",
+          "  pm.environment.set('search_date', new Date(now + DAY).toISOString().slice(0, 10));",
+          "  pm.environment.set('trip_a_departure', new Date(now + dayA * DAY).toISOString().slice(0, 10) + 'T08:00:00+03:00');",
+          "  pm.environment.set('request_1_origin_time', new Date(now + (dayA - 1) * DAY).toISOString());",
+          "  pm.environment.set('request_3_origin_time', new Date(now + (dayA + 1) * DAY).toISOString().slice(0, 10) + 'T10:00:00+03:00');",
+          "  pm.environment.set('request_4_origin_time', new Date(now + (dayA + 2) * DAY).toISOString().slice(0, 10) + 'T11:00:00+03:00');",
+          "}"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "0 Setup",
+      "item": [
+        {
+          "name": "Login Passenger (Rana)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"phone\": \"+962780000001\",\n  \"password\": \"Test@1234\",\n  \"role\": \"passenger\"\n}" },
+            "url": "{{base_url}}/auth/login"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Passenger login returns 200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('Login returns access_token', () => pm.expect(j.access_token).to.be.a('string').and.to.have.lengthOf.at.least(20));",
+                  "pm.environment.set('passenger_token', j.access_token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login Driver (Omar)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"phone\": \"+962790000001\",\n  \"password\": \"Test@1234\",\n  \"role\": \"driver\"\n}" },
+            "url": "{{base_url}}/auth/login"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Driver login returns 200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('Login returns access_token', () => pm.expect(j.access_token).to.be.a('string').and.to.have.lengthOf.at.least(20));",
+                  "pm.environment.set('driver_token', j.access_token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Driver - my-trips baseline (before publish)",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{driver_token}}", "type": "string" }] },
+            "url": "{{base_url}}/trips/driver/my-trips"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('my-trips baseline returns 200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('trips is an array', () => pm.expect(j.trips).to.be.an('array'));",
+                  "pm.environment.set('driver_trip_ids_before', JSON.stringify((j.trips || []).map(t => t.trip_id)));",
+                  "console.log('[flow] driver trips before this run:', (j.trips || []).length);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "1 Driver publishes a trip",
+      "item": [
+        {
+          "name": "Driver - Create Trip A (Amman→Irbid)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{driver_token}}", "type": "string" }] },
+            "body": { "mode": "raw", "raw": "{\n  \"origin_city\": \"Amman\",\n  \"origin_area\": \"Abdali\",\n  \"destination_city\": \"Irbid\",\n  \"destination_area\": \"University Street\",\n  \"departure_time\": \"{{trip_a_departure}}\",\n  \"type_of_trip\": \"once\",\n  \"fare_per_seat\": \"15.50\",\n  \"allowed_type\": \"all\",\n  \"seats\": [\n    { \"seat_number\": 1, \"type\": \"driver\" },\n    { \"seat_number\": 2, \"type\": \"available\" },\n    { \"seat_number\": 3, \"type\": \"available\" },\n    { \"seat_number\": 4, \"type\": \"unavailable\" },\n    { \"seat_number\": 5, \"type\": \"unavailable\" }\n  ],\n  \"instructions\": [\"No smoking please\"],\n  \"additional_instructions\": \"Bring water\",\n  \"stops\": [\n    { \"name\": \"Jerash\", \"city\": \"Jerash\", \"lat\": \"32.2800\", \"lng\": \"35.8900\", \"stop_type\": \"both\", \"stop_order\": 1 }\n  ]\n}" },
+            "url": "{{base_url}}/trips"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Trip created (201)', () => pm.response.to.have.status(201));",
+                  "const j = pm.response.json();",
+                  "pm.test('Response has trip_id', () => pm.expect(j.trip_id).to.be.a('string').and.to.have.lengthOf.at.least(10));",
+                  "pm.test('Trip is published', () => pm.expect(j.status).to.eql('published'));",
+                  "pm.test('Available seats = 2', () => pm.expect(Number(j.available_seats)).to.eql(2));",
+                  "pm.environment.set('trip_a_id', j.trip_id);",
+                  "console.log('[flow] trip_a_id =', j.trip_id);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "2 Passenger search",
+      "item": [
+        {
+          "name": "Passenger - Search finds the driver's trip",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{passenger_token}}", "type": "string" }] },
+            "url": "{{base_url}}/trips/search/available?origin_city=Amman&destination_city=Irbid&date={{search_date}}&seats=1"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Search returns 200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('Response has trips array', () => pm.expect(j.trips).to.be.an('array'));",
+                  "const found = (j.trips || []).filter(t => t.id === pm.environment.get('trip_a_id'));",
+                  "pm.test(\"Driver-created trip is found by passenger search\", () => pm.expect(found.length).to.eql(1));",
+                  "if (found.length) {",
+                  "  const t = found[0];",
+                  "  pm.test('Found trip is published', () => pm.expect(t.status).to.eql('published'));",
+                  "  pm.test('Driver profile attached', () => { pm.expect(t.driver).to.be.an('object'); pm.expect(t.driver.full_name).to.eql('Omar Al-Rashid'); });",
+                  "  pm.test('Vehicle attached', () => pm.expect(t.vehicle).to.be.an('object'));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Passenger - Search with filters (time+vehicle+gender+seats)",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{passenger_token}}", "type": "string" }] },
+            "url": "{{base_url}}/trips/search/available?origin_city=Amman&destination_city=Irbid&date={{search_date}}&time_from=06:00&time_to=23:00&vehicle_type=sedan&gender_preference=all&seats=1"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Filtered search returns 200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('Trip still found with time/vehicle/gender/seats filters', () => pm.expect((j.trips || []).map(t => t.id)).to.include(pm.environment.get('trip_a_id')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Passenger - Search other route (no leakage)",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{passenger_token}}", "type": "string" }] },
+            "url": "{{base_url}}/trips/search/available?origin_city=Zarqa&destination_city=Amman&date={{search_date}}&seats=1"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Search returns 200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('Trip A not returned for a different route', () => pm.expect((j.trips || []).map(t => t.id)).to.not.include(pm.environment.get('trip_a_id')));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "3 Ride request → driver accept → my-trips (NEW trip)",
+      "item": [
+        {
+          "name": "Passenger - Create ride request (Amman→Dead Sea)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{passenger_token}}", "type": "string" }] },
+            "body": { "mode": "raw", "raw": "{\n  \"origin_city\": \"Amman\",\n  \"origin_place\": \"Sweifieh\",\n  \"origin_lat\": 31.9520,\n  \"origin_lng\": 35.8620,\n  \"destination_city\": \"Dead Sea\",\n  \"destination_place\": \"Amman Beach\",\n  \"destination_lat\": 31.5874,\n  \"destination_lng\": 35.5569,\n  \"origin_time\": \"{{request_1_origin_time}}\",\n  \"seats_needed\": 1,\n  \"max_budget\": 8,\n  \"note\": \"E2E flow verification request\"\n}" },
+            "url": "{{base_url}}/ride-requests"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Ride request created (201)', () => pm.response.to.have.status(201));",
+                  "const j = pm.response.json();",
+                  "pm.test('ride_request payload returned', () => { pm.expect(j.ride_request).to.be.an('object'); pm.expect(j.ride_request.id).to.be.a('string'); });",
+                  "pm.test('Status is open', () => pm.expect(j.ride_request.status).to.eql('open'));",
+                  "pm.environment.set('request_1_id', j.ride_request.id);",
+                  "pm.environment.set('passenger_id', j.ride_request.passenger_id);",
+                  "console.log('[flow] request_1_id =', j.ride_request.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Passenger - Matches for the request",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{passenger_token}}", "type": "string" }] },
+            "url": "{{base_url}}/ride-requests/{{request_1_id}}/matches"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Matches returns 200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('matches is an array', () => pm.expect(j.matches).to.be.an('array'));",
+                  "pm.test('each match exposes trip_id / departure_time / available_seats', () => (j.matches || []).forEach(m => { pm.expect(m.trip_id).to.be.a('string'); pm.expect(m.departure_time).to.be.a('string'); pm.expect(Number(m.available_seats)).to.be.a('number'); }));",
+                  "console.warn('[DESIGN NOTE] /matches does NOT filter by route — it returns every published trip with seats inside a ±24h/+48h time window, ranked by route+time+seat+gender score. Route relevance affects ranking only.');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Driver - Request board lists the new request",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{driver_token}}", "type": "string" }] },
+            "url": "{{base_url}}/ride-requests?limit=50"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Board returns 200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('data is an array', () => pm.expect(j.data).to.be.an('array'));",
+                  "const row = (j.data || []).filter(r => r.id === pm.environment.get('request_1_id'));",
+                  "pm.test('New request is visible on the driver board', () => pm.expect(row.length).to.eql(1));",
+                  "if (row.length) { pm.test('Listed as open', () => pm.expect(row[0].status).to.eql('open')); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Driver - Accept request (creates a NEW trip)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{driver_token}}", "type": "string" }] },
+            "body": { "mode": "raw", "raw": "{}" },
+            "url": "{{base_url}}/ride-requests/{{request_1_id}}/accept"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Accept succeeds (200/201)', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
+                  "const j = pm.response.json();",
+                  "pm.test('trip block returned', () => pm.expect(j.trip).to.be.an('object'));",
+                  "const before = JSON.parse(pm.environment.get('driver_trip_ids_before') || '[]');",
+                  "const isNewTrip = before.indexOf(j.trip.id) === -1;",
+                  "pm.environment.set('accept_created_new', String(isNewTrip));",
+                  "pm.test('Accept created a brand-NEW trip (driver had no same-route published trip)', () => pm.expect(isNewTrip).to.eql(true));",
+                  "pm.test('New trip route matches the request (Amman→Dead Sea)', () => { pm.expect(j.trip.origin_city).to.eql('Amman'); pm.expect(j.trip.destination_city).to.eql('Dead Sea'); });",
+                  "pm.test('New trip is published', () => pm.expect(j.trip.status).to.eql('published'));",
+                  "pm.environment.set('accept_reported_seats', String(Number(j.trip.available_seats)));",
+                  "console.log('[fix check] accept response available_seats =', j.trip.available_seats, '— must equal the my-trips value (stale-response fix).');",
+                  "pm.test('Booking is confirmed on the new trip', () => { pm.expect(j.booking).to.be.an('object'); pm.expect(j.booking.status).to.eql('confirmed'); pm.expect(j.booking.trip_id).to.eql(j.trip.id); pm.expect(Number(j.booking.seats_booked)).to.eql(1); });",
+                  "pm.test('Booking belongs to the requesting passenger', () => pm.expect(j.booking.passenger_id).to.eql(pm.environment.get('passenger_id')));",
+                  "pm.test('Accept records an accepted offer', () => { pm.expect(j.offer).to.be.an('object'); pm.expect(j.offer.status).to.eql('accepted'); });",
+                  "pm.environment.set('trip_b_id', j.trip.id);",
+                  "pm.environment.set('booking_1_id', j.booking.id);",
+                  "console.log('[flow] trip_b_id =', j.trip.id, '| booking_1_id =', j.booking.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Driver - my-trips includes the accept-created trip (default)",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{driver_token}}", "type": "string" }] },
+            "url": "{{base_url}}/trips/driver/my-trips"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('my-trips returns 200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('trips is an array', () => pm.expect(j.trips).to.be.an('array'));",
+                  "const ids = (j.trips || []).map(t => t.trip_id);",
+                  "pm.test('ACCEPT-CREATED trip appears in my-trips', () => pm.expect(ids).to.include(pm.environment.get('trip_b_id')));",
+                  "pm.test('Driver-created trip also appears', () => pm.expect(ids).to.include(pm.environment.get('trip_a_id')));",
+                  "const b = (j.trips || []).find(t => t.trip_id === pm.environment.get('trip_b_id'));",
+                  "if (b) {",
+                  "  const reported = Number(pm.environment.get('accept_reported_seats'));",
+                  "  pm.test('accept response seat count matches my-trips DB truth (' + reported + ') — stale-response fix verified', () => pm.expect(reported).to.eql(Number(b.available_seats)));",
+                  "  pm.test('Accept-created trip is published in my-trips', () => pm.expect(b.status).to.eql('published'));",
+                  "  pm.test('seats and waypoints includes present', () => { pm.expect(b.seats).to.be.an('array'); pm.expect(b.waypoints).to.be.an('array'); });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Driver - my-trips?status=published includes it too",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{driver_token}}", "type": "string" }] },
+            "url": "{{base_url}}/trips/driver/my-trips?status=published"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Filtered my-trips returns 200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('ACCEPT-CREATED trip appears in ?status=published my-trips', () => pm.expect((j.trips || []).map(t => t.trip_id)).to.include(pm.environment.get('trip_b_id')));",
+                  "pm.test('All returned trips are published', () => (j.trips || []).forEach(t => pm.expect(t.status).to.eql('published')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Passenger - Search now finds the accept-created trip",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{passenger_token}}", "type": "string" }] },
+            "url": "{{base_url}}/trips/search/available?origin_city=Amman&destination_city=Dead%20Sea&date={{search_date}}&seats=1"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Search returns 200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('Accept-created trip is publicly searchable', () => pm.expect((j.trips || []).map(t => t.id)).to.include(pm.environment.get('trip_b_id')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Passenger - My bookings shows the confirmed booking",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{passenger_token}}", "type": "string" }] },
+            "url": "{{base_url}}/bookings?status=confirmed&limit=50"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('My bookings returns 200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "const row = (j.data || []).find(b => b.id === pm.environment.get('booking_1_id'));",
+                  "pm.test('Confirmed booking visible to passenger', () => pm.expect(row).to.be.an('object'));",
+                  "if (row) {",
+                  "  pm.test('Booking confirmed on the accept-created trip (Amman→Dead Sea)', () => { pm.expect(row.status).to.eql('confirmed'); pm.expect(row.trip.origin.city).to.eql('Amman'); pm.expect(row.trip.destination.city).to.eql('Dead Sea'); });",
+                  "}",
+                  "console.warn('[CONTRACT NOTE] passenger booking rows (serializePassengerDetail) have NO trip_id field — only a nested trip object. Driver booking rows (serializeListRow) DO expose trip_id. Clients must read the trip differently per role.');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Driver - Driver bookings shows the booking",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{driver_token}}", "type": "string" }] },
+            "url": "{{base_url}}/driver/bookings?status=confirmed&limit=50"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Driver bookings returns 200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('Confirmed booking visible to driver', () => pm.expect((j.data || []).map(b => b.id)).to.include(pm.environment.get('booking_1_id')));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "4 Accept with explicit trip_id (attach path)",
+      "item": [
+        {
+          "name": "Passenger - Create ride request 2 (Amman→Irbid)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{passenger_token}}", "type": "string" }] },
+            "body": { "mode": "raw", "raw": "{\n  \"origin_city\": \"Amman\",\n  \"destination_city\": \"Irbid\",\n  \"origin_time\": \"{{trip_a_departure}}\",\n  \"seats_needed\": 1,\n  \"max_budget\": 15,\n  \"note\": \"E2E attach-path verification\"\n}" },
+            "url": "{{base_url}}/ride-requests"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Ride request 2 created (201)', () => pm.response.to.have.status(201));",
+                  "const j = pm.response.json();",
+                  "pm.environment.set('request_2_id', j.ride_request.id);",
+                  "console.log('[flow] request_2_id =', j.ride_request.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Passenger - Matches rank the driver's trip first",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{passenger_token}}", "type": "string" }] },
+            "url": "{{base_url}}/ride-requests/{{request_2_id}}/matches"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Matches returns 200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('matches non-empty', () => pm.expect(j.matches.length).to.be.above(0));",
+                  "pm.test('Driver trip A ranked first', () => pm.expect(j.matches[0].trip_id).to.eql(pm.environment.get('trip_a_id')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Driver - Accept with trip_id attaches to existing trip",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{driver_token}}", "type": "string" }] },
+            "body": { "mode": "raw", "raw": "{\n  \"trip_id\": \"{{trip_a_id}}\"\n}" },
+            "url": "{{base_url}}/ride-requests/{{request_2_id}}/accept"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Accept succeeds (200/201)', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
+                  "const j = pm.response.json();",
+                  "pm.test('Attached to the existing trip A', () => pm.expect(j.trip.id).to.eql(pm.environment.get('trip_a_id')));",
+                  "pm.environment.set('attach_reported_seats', String(Number(j.trip.available_seats)));",
+                  "console.log('[fix check] attach-path accept reports available_seats =', j.trip.available_seats, '— must equal the my-trips value.');",
+                  "pm.test('Booking confirmed on trip A', () => { pm.expect(j.booking.status).to.eql('confirmed'); pm.expect(j.booking.trip_id).to.eql(pm.environment.get('trip_a_id')); });",
+                  "pm.environment.set('booking_2_id', j.booking.id);",
+                  "console.log('[flow] booking_2_id =', j.booking.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Driver - my-trips shows both trips after attach",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{driver_token}}", "type": "string" }] },
+            "url": "{{base_url}}/trips/driver/my-trips"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('my-trips returns 200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "const ids = (j.trips || []).map(t => t.trip_id);",
+                  "pm.test('Both trips present in my-trips', () => { pm.expect(ids).to.include(pm.environment.get('trip_a_id')); pm.expect(ids).to.include(pm.environment.get('trip_b_id')); });",
+                  "const a = (j.trips || []).find(t => t.trip_id === pm.environment.get('trip_a_id'));",
+                  "if (a) {",
+                  "  const reported = Number(pm.environment.get('attach_reported_seats'));",
+                  "  pm.test('Trip A remaining seats = accept response value (' + reported + ') — stale-response fix verified on attach path', () => pm.expect(Number(a.available_seats)).to.eql(reported));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "5 Negative / robustness",
+      "item": [
+        {
+          "name": "Driver - Re-accept an accepted request (409)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{driver_token}}", "type": "string" }] },
+            "body": { "mode": "raw", "raw": "{}" },
+            "url": "{{base_url}}/ride-requests/{{request_1_id}}/accept"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Re-accept rejected with 409', () => pm.response.to.have.status(409));",
+                  "const j = pm.response.json();",
+                  "pm.test('Error envelope present', () => pm.expect(j.status).to.eql('error'));",
+                  "pm.test('KNOWN GAP: wire code is generic CONFLICT — the specific reason travels only in the localized message', () => pm.expect(j.code).to.eql('CONFLICT'));",
+                  "console.warn('[API GAP] ApiErrors.conflict(key) drops the reason key: clients get code=CONFLICT + a localized Arabic message and cannot programmatically distinguish RIDE_REQUEST_NO_LONGER_ACCEPTING from other conflicts.');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Passenger - Cannot accept a ride request (403)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{passenger_token}}", "type": "string" }] },
+            "body": { "mode": "raw", "raw": "{}" },
+            "url": "{{base_url}}/ride-requests/{{request_2_id}}/accept"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Passenger blocked from accepting (403)', () => pm.response.to.have.status(403));",
+                  "const j = pm.response.json();",
+                  "pm.test('Error envelope present', () => pm.expect(j.status).to.eql('error'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Passenger - Create ride request 3 (Amman→Salt)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{passenger_token}}", "type": "string" }] },
+            "body": { "mode": "raw", "raw": "{\n  \"origin_city\": \"Amman\",\n  \"destination_city\": \"Salt\",\n  \"origin_time\": \"{{request_3_origin_time}}\",\n  \"seats_needed\": 1,\n  \"max_budget\": 5\n}" },
+            "url": "{{base_url}}/ride-requests"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Ride request 3 created (201)', () => pm.response.to.have.status(201));",
+                  "const j = pm.response.json();",
+                  "pm.environment.set('request_3_id', j.ride_request.id);",
+                  "console.log('[flow] request_3_id =', j.ride_request.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Driver - Accept with type_of_trip=once (regression: validator used to 422 it)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{driver_token}}", "type": "string" }] },
+            "body": { "mode": "raw", "raw": "{\n  \"type_of_trip\": \"once\"\n}" },
+            "url": "{{base_url}}/ride-requests/{{request_3_id}}/accept"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Accept with canonical type_of_trip \"once\" succeeds (200/201)', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
+                  "const j = pm.response.json();",
+                  "pm.test('trip block returned', () => pm.expect(j.trip).to.be.an('object'));",
+                  "const before = JSON.parse(pm.environment.get('driver_trip_ids_before') || '[]');",
+                  "pm.test('Created a brand-NEW trip (Amman→Salt)', () => { pm.expect(before.indexOf(j.trip.id)).to.eql(-1); pm.expect(j.trip.destination_city).to.eql('Salt'); });",
+                  "pm.test('Booking confirmed on the new trip', () => { pm.expect(j.booking.status).to.eql('confirmed'); pm.expect(j.booking.trip_id).to.eql(j.trip.id); });",
+                  "pm.environment.set('salt_trip_id', j.trip.id);",
+                  "console.log('[fix check] type_of_trip \"once\" is accepted — validator regression check passed. trip id:', j.trip.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Passenger - Ride request 3 is accepted (flow completed by the fix)",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{passenger_token}}", "type": "string" }] },
+            "url": "{{base_url}}/ride-requests?status=accepted"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Accepted list returns 200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('Ride request 3 (the former 422 case) is accepted', () => pm.expect((j.data || []).map(r => r.id)).to.include(pm.environment.get('request_3_id')));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "6 Full-trip edge — accepted booking that fills the vehicle",
+      "item": [
+        {
+          "name": "Passenger - Create ride request 4 (Amman→Zarqa, needs all 4 seats)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{passenger_token}}", "type": "string" }] },
+            "body": { "mode": "raw", "raw": "{\n  \"origin_city\": \"Amman\",\n  \"destination_city\": \"Zarqa\",\n  \"origin_time\": \"{{request_4_origin_time}}\",\n  \"seats_needed\": 4,\n  \"max_budget\": 6\n}" },
+            "url": "{{base_url}}/ride-requests"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Ride request 4 created (201)', () => pm.response.to.have.status(201));",
+                  "const j = pm.response.json();",
+                  "pm.environment.set('request_4_id', j.ride_request.id);",
+                  "console.log('[flow] request_4_id =', j.ride_request.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Driver - Accept fills the trip (status flips to full)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{driver_token}}", "type": "string" }] },
+            "body": { "mode": "raw", "raw": "{}" },
+            "url": "{{base_url}}/ride-requests/{{request_4_id}}/accept"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Accept succeeds (200/201)', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
+                  "const j = pm.response.json();",
+                  "pm.test('trip block returned', () => pm.expect(j.trip).to.be.an('object'));",
+                  "const before = JSON.parse(pm.environment.get('driver_trip_ids_before') || '[]');",
+                  "pm.test('Created a brand-NEW trip (Amman→Zarqa)', () => { pm.expect(before.indexOf(j.trip.id)).to.eql(-1); pm.expect(j.trip.destination_city).to.eql('Zarqa'); });",
+                  "pm.test('Response reports the post-booking status FULL (stale-response fix verified)', () => pm.expect(j.trip.status).to.eql('full'));",
+                  "pm.test('Response reports 0 remaining seats', () => pm.expect(Number(j.trip.available_seats)).to.eql(0));",
+                  "pm.test('Booking confirmed for all 4 seats', () => { pm.expect(j.booking.status).to.eql('confirmed'); pm.expect(Number(j.booking.seats_booked)).to.eql(4); pm.expect(j.booking.trip_id).to.eql(j.trip.id); });",
+                  "pm.environment.set('full_trip_id', j.trip.id);",
+                  "console.log('[flow] full_trip_id =', j.trip.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Driver - my-trips default shows the full trip",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{driver_token}}", "type": "string" }] },
+            "url": "{{base_url}}/trips/driver/my-trips"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('my-trips returns 200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "const f = (j.trips || []).find(t => t.trip_id === pm.environment.get('full_trip_id'));",
+                  "pm.test('Full trip appears in default my-trips', () => pm.expect(f).to.be.an('object'));",
+                  "if (f) {",
+                  "  pm.test('Listed with status full and 0 seats', () => { pm.expect(f.status).to.eql('full'); pm.expect(Number(f.available_seats)).to.eql(0); });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Driver - my-trips?status=published hides the full trip (client caveat)",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{driver_token}}", "type": "string" }] },
+            "url": "{{base_url}}/trips/driver/my-trips?status=published"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Filtered my-trips returns 200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('Full trip is NOT in ?status=published (status is exactly matched)', () => pm.expect((j.trips || []).map(t => t.trip_id)).to.not.include(pm.environment.get('full_trip_id')));",
+                  "console.warn('[CLIENT CAVEAT] an accepted trip that fills the vehicle becomes status=full and disappears from ?status=published. Upcoming-trips views must not rely on ?status=published alone — query unfiltered or published+full.');"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "7 Driver offers — embedded trip summary",
+      "item": [
+        {
+          "name": "Driver - Accepted offers embed the trip summary (single call, no N+1)",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{driver_token}}", "type": "string" }] },
+            "url": "{{base_url}}/driver/offers?status=accepted&limit=50"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Accepted offers returns 200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('data is an array', () => pm.expect(j.data).to.be.an('array'));",
+                  "const rows = j.data || [];",
+                  "pm.test('every row embeds a trip object or null', () => rows.forEach(r => pm.expect(r.trip === null || typeof r.trip === 'object').to.be.true));",
+                  "const byRequest = (id) => rows.find(r => r.request_id === id);",
+                  "const r1 = byRequest(pm.environment.get('request_1_id'));",
+                  "pm.test('request 1 row embeds the accept-created trip (Dead Sea, 3 seats)', () => { pm.expect(r1).to.be.an('object'); pm.expect(r1.trip.trip_id).to.eql(pm.environment.get('trip_b_id')); pm.expect(Number(r1.trip.available_seats)).to.eql(3); });",
+                  "const r2 = byRequest(pm.environment.get('request_2_id'));",
+                  "pm.test('request 2 (attach path) row embeds trip A (1 seat left)', () => { pm.expect(r2).to.be.an('object'); pm.expect(r2.trip.trip_id).to.eql(pm.environment.get('trip_a_id')); pm.expect(Number(r2.trip.available_seats)).to.eql(1); });",
+                  "const r3 = byRequest(pm.environment.get('request_3_id'));",
+                  "pm.test('request 3 (type_of_trip=once regression) row embeds its trip', () => { pm.expect(r3).to.be.an('object'); pm.expect(r3.trip.trip_id).to.eql(pm.environment.get('salt_trip_id')); });",
+                  "const r4 = byRequest(pm.environment.get('request_4_id'));",
+                  "pm.test('request 4 row embeds the FULL trip with current state (0 seats)', () => { pm.expect(r4).to.be.an('object'); pm.expect(r4.trip.trip_id).to.eql(pm.environment.get('full_trip_id')); pm.expect(r4.trip.status).to.eql('full'); pm.expect(Number(r4.trip.available_seats)).to.eql(0); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

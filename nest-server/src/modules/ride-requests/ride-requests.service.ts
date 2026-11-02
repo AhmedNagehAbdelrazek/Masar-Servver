@@ -515,6 +515,23 @@ export class RideRequestsService {
               seatsNeeded: true,
             },
           },
+          // Embedded trip summary so the driver's "trips accepted from ride
+          // requests" screen gets everything in this one response instead of
+          // N follow-up GET /trips/:id calls. Nullable — offers without a
+          // linked trip (e.g. merely sent) map to trip: null.
+          trip: {
+            select: {
+              id: true,
+              originCity: true,
+              destinationCity: true,
+              departureTime: true,
+              farePerSeat: true,
+              currency: true,
+              totalSeats: true,
+              availableSeats: true,
+              status: true,
+            },
+          },
         },
         orderBy: { createdAt: 'desc' },
         skip: offset,
@@ -534,6 +551,17 @@ export class RideRequestsService {
           status: string;
           seatsNeeded: number;
         } | null;
+        const trip = o.trip as unknown as {
+          id: string;
+          originCity: string;
+          destinationCity: string;
+          departureTime: Date;
+          farePerSeat: unknown;
+          currency: string | null;
+          totalSeats: number;
+          availableSeats: number;
+          status: string;
+        } | null;
         return {
           ...serializeOffer(o as unknown as OfferRow),
           request: request
@@ -544,6 +572,19 @@ export class RideRequestsService {
                 origin_time: request.originTime,
                 seats_needed: request.seatsNeeded,
                 status: request.status,
+              }
+            : null,
+          trip: trip
+            ? {
+                trip_id: trip.id,
+                origin_city: trip.originCity,
+                destination_city: trip.destinationCity,
+                departure_time: trip.departureTime,
+                fare_per_seat: trip.farePerSeat != null ? Number(trip.farePerSeat) : null,
+                currency: trip.currency ?? 'JOD',
+                total_seats: trip.totalSeats,
+                available_seats: Number(trip.availableSeats),
+                status: trip.status,
               }
             : null,
         };
@@ -954,7 +995,7 @@ export class RideRequestsService {
         seat_number: Number(seat.seat_number),
         type: seat.type as 'driver' | 'available' | 'unavailable',
       })),
-      type_of_trip: payload.type_of_trip === 'repeated' ? 'repeated' : 'one_way',
+      type_of_trip: payload.type_of_trip === 'repeated' ? 'repeated' : 'once',
       repeated_days: payload.repeated_days,
       repeated_end_date: payload.repeated_end_date,
       allowed_type: (payload.allowed_type ?? 'all') as 'all' | 'women_only' | 'men_only',
@@ -1196,6 +1237,15 @@ export class RideRequestsService {
             : 0;
 
     const booking = await this.createDirectAcceptBooking(trip, requestRow, fare, seatsNeeded);
+
+    // Re-read the trip so the response reflects the booking just written
+    // (claimed seats, published→full flip) instead of the pre-booking
+    // snapshot captured in resolveAcceptTrip.
+    const acceptedTrip =
+      ((await this.prisma.trip.findUnique({ where: { id: String(trip.id) } })) as unknown as
+        | AcceptTripRow
+        | null) ?? trip;
+
     const offer = await this.upsertAcceptedOffer(
       driverId,
       requestId,
@@ -1248,13 +1298,13 @@ export class RideRequestsService {
 
     return {
       trip: {
-        id: trip.id,
-        origin_city: trip.originCity,
-        destination_city: trip.destinationCity,
-        departure_time: trip.departureTime,
-        fare_per_seat: Number(trip.farePerSeat),
-        available_seats: Number(trip.availableSeats),
-        status: trip.status,
+        id: acceptedTrip.id,
+        origin_city: acceptedTrip.originCity,
+        destination_city: acceptedTrip.destinationCity,
+        departure_time: acceptedTrip.departureTime,
+        fare_per_seat: Number(acceptedTrip.farePerSeat),
+        available_seats: Number(acceptedTrip.availableSeats),
+        status: acceptedTrip.status,
       },
       booking: {
         id: booking.id,

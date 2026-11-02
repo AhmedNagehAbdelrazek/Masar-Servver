@@ -533,10 +533,10 @@
 **Watch out:** `404` missing; `403` if not on the caller's trip.
 
 ### [driver-3] GET /api/driver/offers — driver
-**Use:** driver "my bids" screen (ride-request offers sent).
+**Use:** driver "my bids" screen (ride-request offers sent) and the "trips accepted from ride requests" screen (`?status=accepted`).
 **Request:** query `{status (REQUEST_OFFER_STATUS filter), page, limit}`.
-**Response:** `200 {data: [offer + nested request{origin_city, destination_city, origin_time, seats_needed, status}], pagination}`.
-**Watch out:** stale offers expire first.
+**Response:** `200 {data: [offer + nested request{origin_city, destination_city, origin_time, seats_needed, status} + trip{trip_id, origin_city, destination_city, departure_time, fare_per_seat, currency, total_seats, available_seats, status} (null when the offer has no linked trip)], pagination}`.
+**Watch out:** stale offers expire first; the nested trip is the CURRENT trip state (batch-loaded), so seats/status reflect later bookings too.
 
 ### [driver-4] GET /api/driver/ratings — driver
 **Use:** driver ratings screen (summary + list).
