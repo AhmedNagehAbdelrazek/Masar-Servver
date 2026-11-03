@@ -118,6 +118,44 @@ export function normalizePhone(phone: string, countryCode?: string | null): stri
   return phone;
 }
 
+function isSmsProviderEnabled(): boolean {
+  return (process.env.SMS_PROVIDER || 'log').toLowerCase() === 'websmpp';
+}
+
+/** Expand a local number to E.164 using SMS_DEFAULT_COUNTRY_CODE. */
+function expandPhone(phone: string): string {
+  const trimmed = phone.trim();
+  if (trimmed.startsWith('+')) return trimmed;
+  if (trimmed.startsWith('00')) return `+${trimmed.slice(2)}`;
+  const cc = (process.env.SMS_DEFAULT_COUNTRY_CODE || '').replace(/\D/g, '');
+  if (cc && trimmed.startsWith('0')) return `+${cc}${trimmed.slice(1)}`;
+  return trimmed;
+}
+
+/**
+ * Deliver an OTP over SMS when the websmpp provider is enabled. In dev/log
+ * mode the code goes to the console so local flows still work.
+ */
+async function deliverOtpSms(
+  phone: string,
+  otp: string,
+  purpose: 'register' | 'forgot_password'
+): Promise<boolean> {
+  if (!isSmsProviderEnabled()) {
+    console.log(`[OTP] ${purpose} OTP for ${phone}: ${otp}`);
+    return true;
+  }
+
+  const result = await smsService.sendOtpSms(phone, otp, purpose);
+  if (!result.success) {
+    console.error(
+      `[authService] ${purpose} SMS failed for ${phone}: ${result.errorCode || result.error}`
+    );
+    return false;
+  }
+  return true;
+}
+
 // ===== REGISTRATION STEP 1: Phone + OTP =====
 
 export async function registerPhone(countryCode: string, phone: string, role: string): Promise<{ message: string }> {
@@ -137,7 +175,10 @@ export async function registerPhone(countryCode: string, phone: string, role: st
   // Store registration data (countryCode, role) alongside OTP for later use
   await setKey(`reg_data:${normalizedPhone}`, JSON.stringify({ countryCode, role }), REG_TOKEN_TTL);
 
-  console.log(`[OTP] Registration OTP for ${normalizedPhone}: ${otp}`);
+  const delivered = await deliverOtpSms(normalizedPhone, otp, 'register');
+  if (!delivered) {
+    throw ApiErrors.custom('SMS_SEND_FAILED', 502, 'SMS_SEND_FAILED');
+  }
 
   return { message: 'OTP_SENT' };
 }
@@ -514,47 +555,41 @@ export async function forgotPassword(phone: string): Promise<{ message: string }
   const otp: string = (otpService as unknown as { generateOTP: (phone: string) => string }).generateOTP(phone);
   await (otpService as unknown as { storeOTP: (phone: string, otp: string, purpose: string) => Promise<void> }).storeOTP(phone, otp, 'forgot_password');
 
-  console.log(`[OTP] Forgot password OTP for ${phone}: ${otp}`);
-
-  // Also send SMS with the reset code
-  // try {
-  //   await smsService.sendPasswordResetSms(phone, otp);
-  // } catch (err) {
-  //   console.warn('[authService] SMS send warning (non-fatal):', (err as Error).message);
-  // }
+  // Best-effort: an SMS failure must not reveal whether the number exists.
+  await deliverOtpSms(phone, otp, 'forgot_password');
 
   return { message: 'OTP_IF_REGISTERED' };
 }
 
 /**
  * Initiate password reset via SMS (external SMS provider).
- * Sends a 6-digit reset code to the user's phone through the external SMS provider.
- * No server-side state persistence - the code is sent via SMS only.
- * 
+ * Generates a random 6-digit code, stores it in Redis for 10 minutes, and
+ * sends it to the user's phone. The code is never returned in the response.
+ *
  * @param phone user's phone number (international format)
  * @returns message indicating SMS was sent
  */
-export async function forgotPasswordSms(phone: string): Promise<{ message: string; reset_code?: string }> {
-  // const user = await (User as unknown as { findOne: (opts: unknown) => Promise<unknown | null> }).findOne({ where: { phone } });
-  // if (!user) {
-  //   return { message: 'USER_NOT_FOUND' };
-  // }
+export async function forgotPasswordSms(phone: string): Promise<{ message: string }> {
+  const normalizedPhone: string = expandPhone(phone);
 
-  // Generate a 6-digit reset code
-  // const resetCode: string = crypto.randomInt(100000, 999999).toString();
-
-  // Store the reset code in Redis for verification (10 minutes TTL)
-  // await setKey(`reset_sms:${phone}:${resetCode}`, resetCode, 600);
-
-  // Send the reset code via SMS
-  try {
-    await smsService.sendPasswordResetSms(phone, '123456');
-  } catch (err) {
-    console.warn('[authService] SMS send warning (non-fatal):', (err as Error).message);
-    // Continue even if SMS fails - return the code for direct use
+  // Same response for unknown numbers (prevents phone enumeration).
+  const user = await (User as unknown as { findOne: (opts: unknown) => Promise<unknown | null> }).findOne({ where: { phone: normalizedPhone } });
+  if (!user) {
+    return { message: 'SMS_SENT' };
   }
 
-  return { message: 'SMS_SENT', reset_code: '123456' };
+  const resetCode: string = crypto.randomInt(100000, 1000000).toString();
+  const resetKey: string = `reset_sms:${normalizedPhone}:${resetCode}`;
+  await setKey(resetKey, resetCode, 600);
+
+  const result = await smsService.sendPasswordResetSms(normalizedPhone, resetCode);
+  if (!result.success) {
+    await deleteKey(resetKey);
+    console.error(`[authService] Password reset SMS failed: ${result.errorCode || result.error}`);
+    throw ApiErrors.custom('SMS_SEND_FAILED', 502, 'SMS_SEND_FAILED');
+  }
+
+  return { message: 'SMS_SENT' };
 }
 
 export async function verifyForgotPasswordOTP(phone: string, otp: string): Promise<{ reset_token: string; phone: string }> {
@@ -634,7 +669,8 @@ export async function resetPassword(authHeader: string | undefined, password: st
  */
 export async function resetPasswordSms(phone: string, resetCode: string, newPassword: string): Promise<{ message: string }> {
   // Verify the reset code from SMS
-  const resetTokenKey: string = `reset_sms:${phone}:${resetCode}`;
+  const normalizedPhone: string = expandPhone(phone);
+  const resetTokenKey: string = `reset_sms:${normalizedPhone}:${resetCode}`;
   const storedToken: string | null = await getKey(resetTokenKey);
 
   if (!storedToken) {
@@ -644,7 +680,7 @@ export async function resetPasswordSms(phone: string, resetCode: string, newPass
   // Consume the used reset code
   await deleteKey(resetTokenKey);
 
-  const user = await (User as unknown as { findOne: (opts: unknown) => Promise<(unknown & { id: string; phone: string; update: (data: unknown) => Promise<void> }) | null> }).findOne({ where: { phone } });
+  const user = await (User as unknown as { findOne: (opts: unknown) => Promise<(unknown & { id: string; phone: string; update: (data: unknown) => Promise<void> }) | null> }).findOne({ where: { phone: normalizedPhone } });
   if (!user) {
     throw ApiErrors.notFound('USER_NOT_FOUND');
   }
@@ -743,8 +779,17 @@ export async function resendOTP(phone: string, purpose: string): Promise<{ messa
   const otp: string = (otpService as unknown as { generateOTP: (phone: string) => string }).generateOTP(phone);
   await (otpService as unknown as { storeOTP: (phone: string, otp: string, purpose: string) => Promise<void> }).storeOTP(phone, otp, purpose);
 
-  const logLabel: string = purpose === 'forgot_password' ? 'Forgot password' : 'Registration';
-  console.log(`[OTP] ${logLabel} OTP for ${phone}: ${otp}`);
+  const delivered = await deliverOtpSms(
+    phone,
+    otp,
+    purpose === 'forgot_password' ? 'forgot_password' : 'register'
+  );
+
+  // Registration has no enumeration concern: surface a real delivery failure.
+  // Forgot-password keeps the generic response for unknown numbers.
+  if (!delivered && purpose !== 'forgot_password') {
+    throw ApiErrors.custom('SMS_SEND_FAILED', 502, 'SMS_SEND_FAILED');
+  }
 
   return { message: 'OTP_RESENT' };
 }

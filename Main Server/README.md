@@ -61,8 +61,11 @@ See `.env.example` for the full annotated list. Key groups:
 - **Redis** – `REDIS_HOST`, `REDIS_PORT`, `REDIS_PASSWORD`
 - **Uploads** – `UPLOAD_PROVIDER` (`cloudinary` | `local` | `s3`) plus the
   matching provider block; local files are served from `/uploads`
-- **Notifications** – `SMS_PROVIDER` (`twilio` | `log`), Twilio creds,
-  `FCM_SERVER_KEY`
+- **Notifications** – `SMS_PROVIDER` (`websmpp` | `twilio` | `log`); for
+  websmpp set `SMS_USERNAME`, `SMS_PASSWORD`, `SMS_SENDER_ID`,
+  `SMS_PROVIDER_BASE`, and optionally `SMS_DEFAULT_COUNTRY_CODE` (962);
+  Twilio creds or `FCM_SERVER_KEY` for the other channels. Verify with
+  `npm run sms:check`.
 - **Jobs** – cron expressions per job (`JOB_EXPIRY_SWEEP_CRON`,
   `JOB_REMINDER_CRON`, `JOB_LOW_BALANCE_WARNING_CRON`), optional
   `JOB_TIMEZONE`, catch-up tuning, `JOBS_INLINE=1` to disable the worker thread

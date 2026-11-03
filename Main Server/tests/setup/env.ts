@@ -1,4 +1,6 @@
 process.env.NODE_ENV = 'test';
+// Never call the real SMS gateway from tests.
+process.env.SMS_PROVIDER = 'log';
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-secret-key-for-jwt';
 process.env.JWT_EXPIRY = '1h';
 process.env.SALT_ROUNDS = '4';

@@ -150,7 +150,7 @@ Local dev ports: `4000:4000, 8000:8000, 5433:5432, 6379:6379`. Pins `masar-audit
 
 ### Env groups (see `Main Server/.env.example`)
 
-Server (`PORT,NODE_ENV`), Locale (`APP_LOCALE`), DB (`DATABASE_URL` or `DB_*`), JWT (`JWT_SECRET,JWT_EXPIRY,SALT_ROUNDS`), Redis (`REDIS_HOST,PORT,PASSWORD`), Uploads (`UPLOAD_PROVIDER` + provider block), Notifications (`SMS_PROVIDER twilio|log`, Twilio creds, `FCM_SERVER_KEY`), Jobs (`JOB_*_CRON`, `JOB_TIMEZONE`, `JOBS_INLINE`), Audit (`AUDIT_COLLECTOR_URL`), Tracking (`SOCKET_TRACKING_BASE_URL`).
+Server (`PORT,NODE_ENV`), Locale (`APP_LOCALE`), DB (`DATABASE_URL` or `DB_*`), JWT (`JWT_SECRET,JWT_EXPIRY,SALT_ROUNDS`), Redis (`REDIS_HOST,PORT,PASSWORD`), Uploads (`UPLOAD_PROVIDER` + provider block), Notifications (`SMS_PROVIDER websmpp|twilio|log`, `SMS_USERNAME`, `SMS_PASSWORD`, `SMS_SENDER_ID`, `SMS_PROVIDER_BASE`, `SMS_DEFAULT_COUNTRY_CODE`, Twilio creds, `FCM_SERVER_KEY`), Jobs (`JOB_*_CRON`, `JOB_TIMEZONE`, `JOBS_INLINE`), Audit (`AUDIT_COLLECTOR_URL`), Tracking (`SOCKET_TRACKING_BASE_URL`).
 
 ### Boot sequence (`server.ts`)
 

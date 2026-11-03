@@ -21,7 +21,7 @@ import { URL } from 'url';
  *
  * Message `type` parameter (from SMS_API.pdf):
  *  1 = English (160 chars per SMS)
- *  2 = Unicode (280 chars per SMS)
+ *  2 = Unicode (280 chars per SMS) — wire text must be UTF-16BE hex
  *  3 = Special characters (160 chars per SMS)
  *  4 = Arabic (70 chars per SMS)
  *
@@ -170,27 +170,63 @@ function sanitizeMessage(message: string): string {
   return message.replace(/[&#]/g, '-');
 }
 
+/**
+ * Type 2 (Unicode) expects UTF-16BE hex, per the SMS_API.pdf example
+ * ("testing unicode message" -> 00740065007300740069006E0067...).
+ */
+function encodeUnicodeText(message: string): string {
+  return Buffer.from(message, 'utf16le').swap16().toString('hex').toUpperCase();
+}
+
+/** Length as billed by the provider ([ ] { } | \ ~ ^ count twice). */
+function messageLength(message: string): number {
+  return message.split('').reduce(
+    (n, ch) => n + ('[]{}|\\~^'.includes(ch) ? 2 : 1),
+    0
+  );
+}
+
 function detectMessageType(message: string): string {
   const forced = (SMS_MESSAGE_TYPE || '').trim();
   if (['1', '2', '3', '4'].includes(forced)) return forced;
-  if (ARABIC_CHAR.test(message)) return MESSAGE_TYPE.ARABIC;
-  if (ASCII_ONLY.test(message)) return MESSAGE_TYPE.ENGLISH;
+
+  // Arabic/mixed content uses Unicode: the 70-char Arabic budget is too small
+  // for normal notification bodies, and Unicode carries Latin + Arabic safely.
+  // ASCII longer than one English SMS also moves to Unicode.
+  if (ARABIC_CHAR.test(message)) return MESSAGE_TYPE.UNICODE;
+  if (ASCII_ONLY.test(message)) {
+    return messageLength(message) <= TYPE_CHAR_LIMIT[MESSAGE_TYPE.ENGLISH]
+      ? MESSAGE_TYPE.ENGLISH
+      : MESSAGE_TYPE.UNICODE;
+  }
   return MESSAGE_TYPE.UNICODE;
 }
 
 /** Estimated parts count honoring the doubled-count characters. */
 function countMessageParts(message: string, type: string): number {
   const limit = TYPE_CHAR_LIMIT[type] ?? 160;
-  const length = message.split('').reduce(
-    (n, ch) => n + ('[]{}|\\~^'.includes(ch) ? 2 : 1),
-    0
-  );
-  return Math.ceil(length / limit);
+  return Math.ceil(messageLength(message) / limit);
 }
 
-/** Provider expects international format without the leading '+'. */
+/**
+ * Provider expects international format without '+' or a leading '00'.
+ * Local numbers (e.g. 0791234567) are expanded with SMS_DEFAULT_COUNTRY_CODE
+ * when that variable is configured (962 for Jordan).
+ */
 function normalizePhone(phone: string): string {
-  return phone.trim().replace(/^\+/, '');
+  let digits = phone.trim().replace(/[\s\-().]/g, '');
+  if (digits.startsWith('+')) {
+    digits = digits.slice(1);
+  } else if (digits.startsWith('00')) {
+    digits = digits.slice(2);
+  }
+
+  const defaultCc = (process.env.SMS_DEFAULT_COUNTRY_CODE || '').replace(/\D/g, '');
+  if (defaultCc && digits.startsWith('0')) {
+    digits = `${defaultCc}${digits.slice(1)}`;
+  }
+
+  return digits;
 }
 
 interface RawResponse {
@@ -263,6 +299,7 @@ export async function sendSms(
   try {
     const type = ['1', '2', '3', '4'].includes(opts.type || '') ? opts.type! : detectMessageType(message);
     const text = sanitizeMessage(message);
+    const wireText = type === MESSAGE_TYPE.UNICODE ? encodeUnicodeText(text) : text;
 
     const parts = countMessageParts(text, type);
     if (parts > 1) {
@@ -277,7 +314,7 @@ export async function sendSms(
     url.searchParams.append('sid', SMS_SENDER_ID);
     url.searchParams.append('mno', normalizePhone(phone));
     url.searchParams.append('type', type);
-    url.searchParams.append('text', text);
+    url.searchParams.append('text', wireText);
     url.searchParams.append('respformat', 'json');
 
     const { status, body } = await request(url.toString());
@@ -363,7 +400,9 @@ export async function checkSmsBalance(): Promise<SmsBalanceResponse> {
     url.searchParams.append('password', SMS_PASSWORD);
 
     const { status, body } = await request(url.toString());
-    const balanceMatch = body.match(/balance[=:\s]*(\d+(?:\.\d+)?)/i);
+    const balanceMatch =
+      body.match(/balance[=:\s]*(\d+(?:\.\d+)?)/i) ||
+      body.trim().match(/^(\d+(?:\.\d+)?)$/);
     if (!balanceMatch) {
       const message = body.trim() || `HTTP ${status}`;
       console.warn('[smsProvider] Unexpected balance response:', message);
@@ -544,8 +583,10 @@ export async function getHlrReport(
   batchId: string,
   mode: 'hlr' | 'mnp' = 'hlr'
 ): Promise<HlrReportResponse> {
-  if (!batchId || batchId.length !== 15) {
-    return { success: false, error: 'Batch id is required (must be 15 digits)' };
+  // The docs show both 15-digit (lookup response) and 19-digit (report JSON)
+  // batch ids, so accept the documented range instead of exact 15.
+  if (!batchId || !/^\d{15,20}$/.test(batchId)) {
+    return { success: false, error: 'Batch id is required (15-20 digits)' };
   }
   if (!hasCredentials()) {
     return { success: false, error: 'SMS credentials are not configured (SMS_USERNAME / SMS_PASSWORD)' };
@@ -582,17 +623,34 @@ export async function getHlrReport(
 }
 
 /**
+ * Send a one-time passcode. Unicode (type 2) is used deliberately: it covers
+ * both Arabic and Latin in one message, and the 280-character budget keeps
+ * these short codes in a single SMS part.
+ */
+export async function sendOtpSms(
+  phone: string,
+  otp: string,
+  purpose: 'register' | 'forgot_password' = 'register'
+): Promise<SmsSendResponse> {
+  const message =
+    purpose === 'forgot_password'
+      ? `رمز إعادة تعيين كلمة المرور في Masar Car: ${otp}. صالح لمدة 5 دقائق.`
+      : `رمز التحقق لحسابك في Masar Car: ${otp}. صالح لمدة 5 دقائق.`;
+  return sendSms(phone, message, { type: MESSAGE_TYPE.UNICODE });
+}
+
+/**
  * Send password reset SMS to a user's phone (thin - just sends SMS, no storage)
  * @param phone recipient phone number
  * @param resetCode the 6-digit reset code to send
  */
 export async function sendPasswordResetSms(phone: string, resetCode: string): Promise<SmsSendResponse> {
-  const message = `رمز إعادة تعيين كلمة المرور: ${resetCode}. للمنصة Masar Car. رسالة صالحة لمدة 10 دقائق.`;
-  return sendSms(phone, message);
+  return sendOtpSms(phone, resetCode, 'forgot_password');
 }
 
 export default {
   sendSms,
+  sendOtpSms,
   checkSmsStatus,
   checkSmsBalance,
   hlrLookup,

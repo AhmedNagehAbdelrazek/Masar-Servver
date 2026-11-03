@@ -3,7 +3,9 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
+  ServiceUnavailableException,
   UnauthorizedException,
   UnprocessableEntityException,
 } from '@nestjs/common';
@@ -17,6 +19,7 @@ import { RedisService } from '../../redis/redis.service.js';
 import { Prisma } from '../../generated/prisma/client.js';
 import { BalanceService } from '../balance/balance.service.js';
 import { NotificationSettingsService } from '../notifications/notification-settings.service.js';
+import { WebsmppSmsService } from '../sms/websmpp-sms.service.js';
 import { OtpService, TEST_PHONES } from './otp.service.js';
 
 const REFRESH_TOKEN_TTL = 7 * 24 * 3600;
@@ -80,6 +83,8 @@ export interface TokenPair {
 // them per request locale from the messages catalog.
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwt: JwtService,
@@ -88,6 +93,7 @@ export class AuthService {
     private readonly otp: OtpService,
     private readonly balance: BalanceService,
     private readonly notificationSettings: NotificationSettingsService,
+    private readonly sms: WebsmppSmsService,
   ) {}
 
   private get secret(): string {
@@ -134,6 +140,34 @@ export class AuthService {
     return phone;
   }
 
+  private isSmsProviderEnabled(): boolean {
+    return (process.env.SMS_PROVIDER ?? 'log').toLowerCase() === 'websmpp';
+  }
+
+  /**
+   * Deliver an OTP over SMS when the websmpp provider is enabled. In dev/log
+   * mode the code goes to the log so local flows still work.
+   */
+  private async deliverOtpSms(
+    phone: string,
+    otp: string,
+    purpose: 'register' | 'forgot_password',
+  ): Promise<boolean> {
+    if (!this.isSmsProviderEnabled()) {
+      this.logger.log(`[OTP] ${purpose} OTP for ${phone}: ${otp}`);
+      return true;
+    }
+
+    const result = await this.sms.sendOtpSms(phone, otp, purpose);
+    if (!result.success) {
+      this.logger.error(
+        `[auth] ${purpose} SMS failed for ${phone}: ${result.errorCode || result.error}`,
+      );
+      return false;
+    }
+    return true;
+  }
+
   async registerPhone(
     countryCode: string,
     phone: string,
@@ -160,6 +194,15 @@ export class AuthService {
       JSON.stringify({ countryCode, role }),
       REG_TOKEN_TTL,
     );
+
+    const delivered = await this.deliverOtpSms(normalizedPhone, otp, 'register');
+    if (!delivered) {
+      throw new ServiceUnavailableException({
+        message: 'SMS_SEND_FAILED',
+        code: 'SMS_SEND_FAILED',
+      });
+    }
+
     return { message: 'OTP_SENT' };
   }
 
@@ -434,6 +477,8 @@ export class AuthService {
     if (!user) return { message: 'OTP_IF_REGISTERED' };
     const otp = this.otp.generateOTP(phone);
     await this.otp.storeOTP(phone, otp, 'forgot_password');
+    // Best-effort: an SMS failure must not reveal whether the number exists.
+    await this.deliverOtpSms(phone, otp, 'forgot_password');
     return { message: 'OTP_IF_REGISTERED' };
   }
 
@@ -521,6 +566,19 @@ export class AuthService {
     await this.otp.deleteOTP(phone, purpose);
     const otp = this.otp.generateOTP(phone);
     await this.otp.storeOTP(phone, otp, purpose);
+
+    const delivered = await this.deliverOtpSms(
+      phone,
+      otp,
+      purpose === 'forgot_password' ? 'forgot_password' : 'register',
+    );
+    if (!delivered && purpose !== 'forgot_password') {
+      throw new ServiceUnavailableException({
+        message: 'SMS_SEND_FAILED',
+        code: 'SMS_SEND_FAILED',
+      });
+    }
+
     return { message: 'OTP_RESENT' };
   }
 
