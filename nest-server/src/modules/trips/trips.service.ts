@@ -120,6 +120,46 @@ export class TripsService {
     private readonly pickupService: PickupService,
   ) {}
 
+  /**
+   * Map trip id -> ride request ids that materialized a booking on it.
+   * RequestOffer is the link between a ride request and a trip/booking;
+   * a trip is "requested" when at least one accepted offer on it has a
+   * booking (direct accept and attach-offer flow both satisfy this).
+   */
+  private async rideRequestIdsByTrip(tripIds: string[]): Promise<Map<string, string[]>> {
+    const ids = [...new Set((tripIds || []).filter(Boolean))];
+    if (ids.length === 0) return new Map();
+
+    const offers = await this.prisma.requestOffer.findMany({
+      where: {
+        tripId: { in: ids },
+        status: 'accepted',
+        bookingId: { not: null },
+      },
+      select: { tripId: true, requestId: true },
+    });
+
+    const byTrip = new Map<string, string[]>();
+    for (const offer of offers) {
+      if (!offer.tripId || !offer.requestId) continue;
+      const requestIds = byTrip.get(offer.tripId) ?? [];
+      if (!requestIds.includes(offer.requestId)) requestIds.push(offer.requestId);
+      byTrip.set(offer.tripId, requestIds);
+    }
+    return byTrip;
+  }
+
+  private withRideRequestOrigin(
+    trip: Record<string, unknown>,
+    requestIds: string[],
+  ): Record<string, unknown> {
+    return {
+      ...trip,
+      is_requested_trip: requestIds.length > 0,
+      ride_request_ids: requestIds,
+    };
+  }
+
   private async hasRemainingFreeTrips(driverId: string): Promise<boolean> {
     const subscription = await this.prisma.driverSubscription.findFirst({
       where: { driverId, status: 'active', expiresAt: { gt: new Date() } },
@@ -506,6 +546,12 @@ export class TripsService {
       additional_instructions: t.additionalInstructions,
       created_at: t.createdAt,
     };
+
+    const requestIdsByTrip = await this.rideRequestIdsByTrip([tripId]);
+    const rideRequestIds = requestIdsByTrip.get(tripId) ?? [];
+    (out.trip as Record<string, unknown>).is_requested_trip = rideRequestIds.length > 0;
+    (out.trip as Record<string, unknown>).ride_request_ids = rideRequestIds;
+
     out.passengers = bookings.map((b) => {
       const passenger = b.passenger as Record<string, unknown> | null;
       return {
@@ -648,9 +694,12 @@ export class TripsService {
       },
       orderBy: { departureTime: 'asc' },
     });
+    const requestIdsByTrip = await this.rideRequestIdsByTrip(trips.map((trip) => trip.id));
+
     return trips.map((t) => {
       const seats = (t.seats as unknown as Record<string, unknown>[]) ?? [];
       const stops = (t.stops as unknown as Record<string, unknown>[]) ?? [];
+      const rideRequestIds = requestIdsByTrip.get(t.id) ?? [];
       return {
         trip_id: t.id,
         origin_city: t.originCity,
@@ -671,6 +720,8 @@ export class TripsService {
         instructions: t.driverInstructions,
         additional_instructions: t.additionalInstructions,
         status: t.status,
+        is_requested_trip: rideRequestIds.length > 0,
+        ride_request_ids: rideRequestIds,
         seats: seats.map((s) => ({
           seat_number: s.seatNumber,
           seat_type: s.seatType,
@@ -740,7 +791,15 @@ export class TripsService {
         seats: filters.seats,
       });
     }
-    return { trips, returningTrips };
+    const requestIdsByTrip = await this.rideRequestIdsByTrip(
+      [...trips, ...returningTrips].map((trip) => String(trip.id)),
+    );
+    const decorate = (arr: Record<string, unknown>[]): Record<string, unknown>[] =>
+      arr.map((trip) =>
+        this.withRideRequestOrigin(trip, requestIdsByTrip.get(String(trip.id)) ?? []),
+      );
+
+    return { trips: decorate(trips), returningTrips: decorate(returningTrips) };
   }
 
   private async fetchTripsForDate({

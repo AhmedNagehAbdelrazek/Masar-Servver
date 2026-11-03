@@ -741,6 +741,14 @@ describe('POST /api/ride-requests/:request_id/accept - direct acceptance', () =>
     expect(created.status).toBe(201);
     const requestId = created.body.ride_request.id;
 
+    const beforeSearch = await getAgent()
+      .get('/api/trips/search/available?origin_city=Amman&destination_city=Irbid')
+      .set('Authorization', `Bearer ${passenger2Token}`);
+    expect(beforeSearch.status).toBe(200);
+    const beforeTrip = beforeSearch.body.trips.find((t) => t.id === tripId);
+    expect(beforeTrip.is_requested_trip).toBe(false);
+    expect(beforeTrip.ride_request_ids).toEqual([]);
+
     const res = await getAgent()
       .post(`/api/ride-requests/${requestId}/accept`)
       .set('Authorization', `Bearer ${driver1Token}`)
@@ -768,6 +776,32 @@ describe('POST /api/ride-requests/:request_id/accept - direct acceptance', () =>
       .set('Authorization', `Bearer ${driver1Token}`);
     expect(route.status).toBe(200);
     expect(route.body.pickups.some((p) => p.booking_id === booking.id)).toBe(true);
+
+    expect(res.body.trip.is_requested_trip).toBe(true);
+    expect(res.body.trip.ride_request_ids).toContain(requestId);
+
+    const afterSearch = await getAgent()
+      .get('/api/trips/search/available?origin_city=Amman&destination_city=Irbid')
+      .set('Authorization', `Bearer ${passenger2Token}`);
+    expect(afterSearch.status).toBe(200);
+    const searchedTrip = afterSearch.body.trips.find((t) => t.id === tripId);
+    expect(searchedTrip.is_requested_trip).toBe(true);
+    expect(searchedTrip.ride_request_ids).toContain(requestId);
+
+    const detail = await getAgent()
+      .get(`/api/trips/${tripId}`)
+      .set('Authorization', `Bearer ${driver1Token}`);
+    expect(detail.status).toBe(200);
+    expect(detail.body.trip.is_requested_trip).toBe(true);
+    expect(detail.body.trip.ride_request_ids).toContain(requestId);
+
+    const myTrips = await getAgent()
+      .get('/api/trips/driver/my-trips?status=published')
+      .set('Authorization', `Bearer ${driver1Token}`);
+    expect(myTrips.status).toBe(200);
+    const myTrip = myTrips.body.trips.find((t) => t.trip_id === tripId);
+    expect(myTrip.is_requested_trip).toBe(true);
+    expect(myTrip.ride_request_ids).toContain(requestId);
   });
 
   it('accepts onto an explicit trip and rejects another driver trip', async () => {

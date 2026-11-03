@@ -100,6 +100,7 @@ export class TripsController {
                 : driver,
               vehicle: vehicle
                 ? {
+                    ...vehicle,
                     id: vehicle.id,
                     vehicle_type: (vehicle.vehicleType as string) ?? (vehicle.vehicle_type as string),
                     manufacturer: vehicle.manufacturer,

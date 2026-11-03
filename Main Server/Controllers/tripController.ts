@@ -85,6 +85,7 @@ const getAvailableTrips = catchAsync(async (req: Request, res: Response): Promis
       // Normalize vehicle keys if present
       if (json.vehicle) {
         json.vehicle = {
+          ...json.vehicle,
           id: json.vehicle.id,
           vehicle_type: json.vehicle.vehicleType || json.vehicle.vehicle_type,
           manufacturer: json.vehicle.manufacturer,

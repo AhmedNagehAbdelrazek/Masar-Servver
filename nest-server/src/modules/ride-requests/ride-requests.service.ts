@@ -1296,6 +1296,18 @@ export class RideRequestsService {
       this.logger.warn(`accept ride request notify failed: ${(err as Error).message}`);
     }
 
+    const linkedRequestOffers = await this.prisma.requestOffer.findMany({
+      where: {
+        tripId: acceptedTrip.id,
+        status: 'accepted',
+        bookingId: { not: null },
+      },
+      select: { requestId: true },
+    });
+    const rideRequestIds = [
+      ...new Set(linkedRequestOffers.map((row) => row.requestId).filter(Boolean)),
+    ];
+
     return {
       trip: {
         id: acceptedTrip.id,
@@ -1305,6 +1317,8 @@ export class RideRequestsService {
         fare_per_seat: Number(acceptedTrip.farePerSeat),
         available_seats: Number(acceptedTrip.availableSeats),
         status: acceptedTrip.status,
+        is_requested_trip: true,
+        ride_request_ids: rideRequestIds,
       },
       booking: {
         id: booking.id,

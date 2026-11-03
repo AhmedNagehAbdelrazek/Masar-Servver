@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { Op } from 'sequelize';
 import { ApiErrors } from '../utils/ApiError';
-import { TRIP_STATUS, GENDER_PREFERENCE, BOOKING_STATUS, FREE_OFFER_TYPE, PENALTY_TYPES, PENALTY_CATEGORY, PENALTY_SEVERITY, CANCELLATION_ESCALATION, TRIP_DURATION_HOURS, SEAT_TYPE } from '../config/constants';
+import { TRIP_STATUS, GENDER_PREFERENCE, BOOKING_STATUS, FREE_OFFER_TYPE, PENALTY_TYPES, PENALTY_CATEGORY, PENALTY_SEVERITY, CANCELLATION_ESCALATION, TRIP_DURATION_HOURS, SEAT_TYPE, REQUEST_OFFER_STATUS } from '../config/constants';
 import commissionService from './commissionService';
 import notificationService from './notificationService';
 import realtimeService from './realtimeService';
@@ -22,7 +22,46 @@ import {
   jordanStartOfToday,
 } from '../utils/time';
 import { hasFreeTripsOffer, freeTripsLimit } from '../utils/freeTrips';
-import { Trip, TripSeat, TripStop, TripAttribute, Vehicle, User, Booking, DriverSubscription, SubscriptionPlan, Penalty } from '../Models';
+import { Trip, TripSeat, TripStop, TripAttribute, Vehicle, User, Booking, DriverSubscription, SubscriptionPlan, Penalty, RequestOffer } from '../Models';
+
+/**
+ * Map trip id -> ride request ids whose ride materialized a booking on it.
+ * The RequestOffer row is the link between a ride request and a trip/booking;
+ * a trip is considered "requested" when at least one accepted offer on it has
+ * a booking (direct accept and attach-offer flow both satisfy this).
+ */
+async function rideRequestIdsByTrip(tripIds) {
+  const ids = [...new Set((tripIds || []).filter(Boolean))];
+  if (ids.length === 0) return new Map();
+
+  const offers = await RequestOffer.findAll({
+    where: {
+      tripId: { [Op.in]: ids },
+      status: REQUEST_OFFER_STATUS.ACCEPTED,
+      bookingId: { [Op.ne]: null },
+    },
+    attributes: ['tripId', 'requestId'],
+    raw: true,
+  });
+
+  const byTrip = new Map();
+  for (const offer of offers) {
+    if (!offer.tripId || !offer.requestId) continue;
+    const requestIds = byTrip.get(offer.tripId) || [];
+    if (!requestIds.includes(offer.requestId)) requestIds.push(offer.requestId);
+    byTrip.set(offer.tripId, requestIds);
+  }
+  return byTrip;
+}
+
+function withRideRequestOrigin(trip, requestIds = []) {
+  const json = typeof trip.toJSON === 'function' ? trip.toJSON() : trip;
+  return {
+    ...json,
+    is_requested_trip: requestIds.length > 0,
+    ride_request_ids: requestIds,
+  };
+}
 
 /**
  * US3 minimum-balance gate. Rejects with NO_ACTIVE_PLAN when the driver has
@@ -586,6 +625,11 @@ const getTripById = async (tripId) => {
     created_at: data.createdAt,
   };
 
+  const requestIdsByTrip = await rideRequestIdsByTrip([data.id]);
+  const rideRequestIds = requestIdsByTrip.get(data.id) || [];
+  data.trip.is_requested_trip = rideRequestIds.length > 0;
+  data.trip.ride_request_ids = rideRequestIds;
+
   data.passengers = confirmedBookings.map((b) => ({
     booking_id: b.id,
     passenger: b.passenger
@@ -779,6 +823,8 @@ const getDriverTrips = async (driverId : string, status : string | null ) => {
     order: [['departure_time', 'ASC']],
   });
 
+  const requestIdsByTrip = await rideRequestIdsByTrip(trips.map((trip) => trip.id));
+
   return trips.map((trip) => ({
     trip_id: trip.id,
     origin_city: trip.originCity,
@@ -799,6 +845,8 @@ const getDriverTrips = async (driverId : string, status : string | null ) => {
     instructions: trip.driverInstructions,
     additional_instructions: trip.additionalInstructions,
     status: trip.status,
+    is_requested_trip: (requestIdsByTrip.get(trip.id) || []).length > 0,
+    ride_request_ids: requestIdsByTrip.get(trip.id) || [],
     seats: (trip.seats || []).map((s) => ({
       seat_number: s.seatNumber,
       seat_type: s.seatType,
@@ -1063,13 +1111,20 @@ const getAvailableTrips = async (filters = {}) => {
     });
   }
 
+  // Mark trips that materialized at least one ride request. The RequestOffer
+  // link is the source of truth; no extra Trip column is needed.
+  const requestIdsByTrip = await rideRequestIdsByTrip([...trips, ...returningTrips].map((trip) => trip.id));
+  const decorate = (arr) =>
+    arr.map((trip) => withRideRequestOrigin(trip, requestIdsByTrip.get(trip.id) || []));
+
+  const serializedTrips = decorate(trips);
+  const serializedReturningTrips = decorate(returningTrips);
+
   // Backward compat: callers that expect an array still get trips,
   // but we also attach returningTrips as a property for new controller.
   // Returning an object shape is the new contract for the controller.
-  const result = trips;
-  result.returningTrips = returningTrips;
-  // Also return object form for explicit destructuring
-  return { trips, returningTrips };
+  serializedTrips.returningTrips = serializedReturningTrips;
+  return { trips: serializedTrips, returningTrips: serializedReturningTrips };
 };
 
 /**

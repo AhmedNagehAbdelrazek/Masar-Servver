@@ -155,19 +155,19 @@
 ### [trip-2] GET /api/trips/driver/my-trips — driver
 **Use:** driver my-trips / history screen.
 **Request:** query `{status (optional trip-status filter)}`.
-**Response:** `200 {trips: [{trip_id, origin_city, destination_city, departure_time, fare_per_seat, status, seats[], waypoints[]}]}`.
-**Watch out:** statuses are swept current first; no pagination.
+**Response:** `200 {trips: [{trip_id, origin_city, destination_city, departure_time, fare_per_seat, status, is_requested_trip, ride_request_ids[], seats[], waypoints[]}]}`.
+**Watch out:** statuses are swept current first; no pagination. `is_requested_trip` is `true` when at least one accepted ride request materialized a booking on the trip; `ride_request_ids` lists those requests.
 
 ### [trip-3] GET /api/trips/search/available — any signed-in user
 **Use:** passenger search screen (also powers round-trip `returning_trips`).
 **Request:** query `{origin_city, destination_city, gender_preference ("all"|"women_only"|"men_only"), time_from/time_to ("HH:MM"), vehicle_type, seats (min), date, return_date (all optional)}`.
-**Response:** `200 {trips: [{trip + driver{id, full_name, rating, avatar} + vehicle}], returning_trips: [...]}`.
-**Watch out:** records a `RecentSearch` for passengers; `date` is the range start.
+**Response:** `200 {trips: [{trip + driver{id, full_name, rating, avatar} + vehicle, is_requested_trip, ride_request_ids[]}], returning_trips: [...]}`.
+**Watch out:** records a `RecentSearch` for passengers; `date` is the range start. Search is hard-coded to `published` with `availableSeats > 0`; `is_requested_trip`/`ride_request_ids` identify trips that materialized a ride request.
 
 ### [trip-4] GET /api/trips/:trip_id — any signed-in user
 **Use:** trip-detail screen (driver, vehicle, seats, confirmed passengers).
 **Request:** params `{trip_id}`.
-**Response:** `200` full trip object (see `tripService.getTripById`).
+**Response:** `200` full trip object (see `tripService.getTripById`); `trip.is_requested_trip` and `trip.ride_request_ids[]` identify ride-request-originated trips.
 **Watch out:** participant gate is currently commented out — any signed-in user can read; `404` if missing.
 
 ### [trip-5] GET /api/trips/:trip_id/options — any signed-in user
