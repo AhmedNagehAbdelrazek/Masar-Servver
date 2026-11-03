@@ -613,7 +613,7 @@
 ### [driver-16] GET /api/driver/home — driver
 **Use:** driver home on app open (subscription, next trip, today summary).
 **Request:** none.
-**Response:** `200 {driver: {...}, subscription|null, next_trip|null, summary: {completed_trips_today, reserved_seats_for_next_trip, trips_today}, recent_bookings: []}`.
+**Response:** `200 {driver: {..., gender, vehicle_seats_number}|..., subscription|null, next_trip|null, summary: {completed_trips_today, reserved_seats_for_next_trip, trips_today}, recent_bookings: []}`.
 **Watch out:** `403` unless verified and active; sweeps stale trips first.
 
 ### [driver-17] GET /api/driver/subscription — driver

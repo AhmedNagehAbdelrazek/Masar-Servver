@@ -31,7 +31,9 @@ As a driver, when I open the app, I see my home screen with my subscription stat
     "full_name": "أحمد",
     "profile_picture_url": "https://...",
     "rating": 4.8,
-    "total_trips_completed": 142
+    "total_trips_completed": 142,
+    "gender": "male",
+    "vehicle_seats_number": 4
   },
   "subscription": {
     "tier": "pro",
@@ -134,7 +136,7 @@ As a driver, when I open the app, I see my home screen with my subscription stat
 
 | Field | Description |
 |-------|-------------|
-| `driver` | Driver's basic profile info. |
+| `driver` | Driver's basic profile info: `id`, `full_name`, `profile_picture_url`, `rating`, `total_trips_completed`, `gender`, `vehicle_seats_number` (the driver's vehicle seat count, same name as the dashboard; `null` when no vehicle exists). It is always present, even when `next_trip` is `null`. |
 | `subscription` | Current subscription tier, price, expiry, and days remaining. |
 | `next_trip` | The driver's next upcoming trip (the earliest departure time in the future). If none, this field is `null`. Contains full details and the list of passengers with booked seats. |
 | `next_trip.can_start` | Boolean indicating whether the "Start Ride" button should be enabled (trip is published and departure time is within ±1 hour, or already overdue but not marked ongoing). |

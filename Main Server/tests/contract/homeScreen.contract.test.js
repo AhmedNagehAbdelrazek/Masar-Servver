@@ -147,6 +147,8 @@ describe('Contract: GET /api/driver/home', () => {
     expect('profile_picture_url' in res.body.driver).toBe(true);
     expect(typeof res.body.driver.rating).toBe('number');
     expect(typeof res.body.driver.total_trips_completed).toBe('number');
+    expect(res.body.driver.gender).toBe('male');
+    expect(res.body.driver.vehicle_seats_number).toBe(4);
 
     // subscription
     expect(typeof res.body.subscription.tier).toBe('string');

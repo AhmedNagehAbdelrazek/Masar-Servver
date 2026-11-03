@@ -172,6 +172,8 @@ describe('GET /api/driver/home', () => {
     expect(res.body.driver.full_name).toBe('Driver 51');
     expect(res.body.driver.rating).toBe(4.5);
     expect(res.body.driver.total_trips_completed).toBe(10);
+    expect(res.body.driver.gender).toBe('male');
+    expect(res.body.driver.vehicle_seats_number).toBe(4);
     expect(res.body.subscription.tier).toBe('basic');
     expect(res.body.subscription.price).toBe(100);
     expect(res.body.subscription.days_remaining).toBeGreaterThan(0);
@@ -321,6 +323,8 @@ describe('GET /api/driver/home', () => {
     expect(typeof res.body.driver.full_name).toBe('string');
     expect(typeof res.body.driver.rating).toBe('number');
     expect(typeof res.body.driver.total_trips_completed).toBe('number');
+    expect(res.body.driver.gender).toBe('male');
+    expect(res.body.driver.vehicle_seats_number).toBe(4);
     expect(typeof res.body.subscription.tier).toBe('string');
     expect(typeof res.body.subscription.price).toBe('number');
     expect(res.body.subscription.currency).toBe('JOD');
@@ -360,6 +364,8 @@ describe('GET /api/driver/home', () => {
     expect(empty.status).toBe(200);
     expect(empty.body.next_trip).toBeNull();
     expect(empty.body.recent_bookings).toEqual([]);
+    // Vehicle seat count is available even without an upcoming trip.
+    expect(empty.body.driver.vehicle_seats_number).toBe(4);
     expect(empty.body.subscription.tier).toBe('free');
     expect(empty.body.subscription.price).toBe(0);
     expect(empty.body.subscription.currency).toBe('JOD');

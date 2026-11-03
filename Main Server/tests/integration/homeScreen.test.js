@@ -160,6 +160,8 @@ describe('US1 - Home screen', () => {
     expect(res.body.driver.full_name).toBe('Driver 51');
     expect(res.body.driver.rating).toBe(4.5);
     expect(res.body.driver.total_trips_completed).toBe(10);
+    expect(res.body.driver.gender).toBe('male');
+    expect(res.body.driver.vehicle_seats_number).toBe(4);
     expect(res.body.subscription.tier).toBe('basic');
     expect(res.body.subscription.price).toBe(100);
     expect(res.body.subscription.days_remaining).toBeGreaterThan(0);

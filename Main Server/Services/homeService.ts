@@ -29,7 +29,7 @@ function sweepStaleTrips(tripIds) {
 const HOUR_MS = 60 * 60 * 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-function toDriverSection(user, profile) {
+function toDriverSection(user, profile, vehicle) {
   return {
     id: user.id,
     full_name: user.fullName,
@@ -37,6 +37,9 @@ function toDriverSection(user, profile) {
     rating: Number(user.avgRating || 0),
     total_trips_completed: Number((profile && profile.totalTrips) || 0),
     gender: user.gender ?? null,
+    // Same field name as the dashboard account block, so the home screen can
+    // render the vehicle's seat count even when there is no next trip.
+    vehicle_seats_number: vehicle ? vehicle.seats : null,
   };
 }
 
@@ -177,7 +180,7 @@ async function buildHome(driverId) {
   const todayWindow = { [Op.gte]: todayStart, [Op.lt]: tomorrowStart };
   const now = new Date();
 
-  const [subscription, nextTrip, completedToday, tripsToday, recentBookings] = await Promise.all([
+  const [subscription, nextTrip, vehicle, completedToday, tripsToday, recentBookings] = await Promise.all([
     toSubscriptionSection(driverId),
     Trip.findOne({
       where: {
@@ -199,6 +202,7 @@ async function buildHome(driverId) {
       ],
       order: [['departure_time', 'ASC']],
     }),
+    Vehicle.findOne({ where: { driverId } }),
     Trip.count({ where: { driverId, status: TRIP_STATUS.COMPLETED, departureTime: todayWindow } }),
     Trip.count({ where: { driverId, departureTime: todayWindow } }),
     toRecentBookings(driverId),
@@ -207,7 +211,7 @@ async function buildHome(driverId) {
   const nextTripPayload = toNextTrip(nextTrip);
 
   return {
-    driver: toDriverSection(user, profile),
+    driver: toDriverSection(user, profile, vehicle),
     subscription,
     next_trip: nextTripPayload,
     summary: {

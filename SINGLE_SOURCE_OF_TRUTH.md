@@ -416,7 +416,7 @@ Started by `startJobs()` after boot (`jobs/index.js`). Worker thread (`worker.js
 
 ### 007 — Driver Home API
 
-**What it does:** `GET /api/driver/home` single payload (profile, subscription tier/price/currency/expiry/days_remaining + `free_trips{max,used,remaining}`, next trip earliest `published|full` incl. overdue + passengers + `can_start`, summary `completed_today|reserved_next|trips_today`, recent 5 bookings); `POST /trips/:id/start` (±1h incl. overdue, `published/full→in_progress`, balance gate, `TRIP_STARTED` notify + `tracking_link`); `GET /trips/:id` + passengers/seat_numbers (PII gated); `GET /driver/subscription` (current+history).
+**What it does:** `GET /api/driver/home` single payload (profile incl. `gender` + `vehicle_seats_number`, subscription tier/price/currency/expiry/days_remaining + `free_trips{max,used,remaining}`, next trip earliest `published|full` incl. overdue + passengers + `can_start`, summary `completed_today|reserved_next|trips_today`, recent 5 bookings); `POST /trips/:id/start` (±1h incl. overdue, `published/full→in_progress`, balance gate, `TRIP_STARTED` notify + `tracking_link`); `GET /trips/:id` + passengers/seat_numbers (PII gated); `GET /driver/subscription` (current+history).
 **Decisions:** new `homeService` (not `dashboardService` reuse); `seat_numbers=[seatNumber]` derived; `next_trip ORDER departure ASC LIMIT 1`; `can_start = status∈{published,full} AND departure-now<=1h`; Redis `driver_home:{id}` 30s, invalidate on start; verified + `status∈{active,warned}` else 403; 290ms uncached / 108ms cached.
 
 ### 008 — Trip Details / Cancel / Notification Settings

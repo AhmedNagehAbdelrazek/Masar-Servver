@@ -167,31 +167,33 @@ export class HomeService {
     const tomorrowStart = new Date(todayStart.getTime() + DAY_MS);
     const now = new Date();
 
-    const [subscription, nextTrip, completedToday, tripsToday, recentBookings] = await Promise.all([
-      this.toSubscriptionSection(driverId),
-      this.prisma.trip.findFirst({
-        where: {
-          driverId,
-          status: { in: ['published', 'full'] },
-          departureTime: { gt: now },
-        },
-        include: {
-          vehicle: true,
-          bookings: {
-            where: { status: 'confirmed' },
-            include: { passenger: { select: { id: true, fullName: true } } },
+    const [subscription, nextTrip, vehicle, completedToday, tripsToday, recentBookings] =
+      await Promise.all([
+        this.toSubscriptionSection(driverId),
+        this.prisma.trip.findFirst({
+          where: {
+            driverId,
+            status: { in: ['published', 'full'] },
+            departureTime: { gt: now },
           },
-        },
-        orderBy: { departureTime: 'asc' },
-      }),
-      this.prisma.trip.count({
-        where: { driverId, status: 'completed', departureTime: { gte: todayStart, lt: tomorrowStart } },
-      }),
-      this.prisma.trip.count({
-        where: { driverId, departureTime: { gte: todayStart, lt: tomorrowStart } },
-      }),
-      this.toRecentBookings(driverId),
-    ]);
+          include: {
+            vehicle: true,
+            bookings: {
+              where: { status: 'confirmed' },
+              include: { passenger: { select: { id: true, fullName: true } } },
+            },
+          },
+          orderBy: { departureTime: 'asc' },
+        }),
+        this.prisma.vehicle.findFirst({ where: { driverId } }),
+        this.prisma.trip.count({
+          where: { driverId, status: 'completed', departureTime: { gte: todayStart, lt: tomorrowStart } },
+        }),
+        this.prisma.trip.count({
+          where: { driverId, departureTime: { gte: todayStart, lt: tomorrowStart } },
+        }),
+        this.toRecentBookings(driverId),
+      ]);
 
     const nextTripPayload = this.toNextTrip(nextTrip as unknown as Record<string, unknown> | null);
     return {
@@ -202,6 +204,9 @@ export class HomeService {
         rating: Number(user.avgRating ?? 0),
         total_trips_completed: Number(profile?.totalTrips ?? 0),
         gender: user.gender ?? null,
+        // Same field name as the dashboard account block, so the home screen
+        // can render the vehicle's seat count even when there is no next trip.
+        vehicle_seats_number: vehicle?.seats ?? null,
       },
       subscription,
       next_trip: nextTripPayload,

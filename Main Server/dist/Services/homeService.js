@@ -38,7 +38,7 @@ function sweepStaleTrips(tripIds) {
 }
 const HOUR_MS = 60 * 60 * 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
-function toDriverSection(user, profile) {
+function toDriverSection(user, profile, vehicle) {
     return {
         id: user.id,
         full_name: user.fullName,
@@ -46,6 +46,9 @@ function toDriverSection(user, profile) {
         rating: Number(user.avgRating || 0),
         total_trips_completed: Number((profile && profile.totalTrips) || 0),
         gender: user.gender ?? null,
+        // Same field name as the dashboard account block, so the home screen can
+        // render the vehicle's seat count even when there is no next trip.
+        vehicle_seats_number: vehicle ? vehicle.seats : null,
     };
 }
 /**
@@ -59,7 +62,7 @@ function freeTripsFor(sub) {
     const used = Number(sub.freeTripsUsed) || 0;
     return { max: limit, used, remaining: Math.max(0, limit - used) };
 }
-function toSubscriptionSection(driverId) {
+async function toSubscriptionSection(driverId) {
     const current = await balanceService_1.default.findCurrentSubscription(driverId);
     if (!current) {
         return { tier: 'free', price: 0, currency: 'JOD', expires_at: null, days_remaining: 0, free_trips: null, is_active: false };
@@ -177,7 +180,7 @@ async function buildHome(driverId) {
     const tomorrowStart = new Date(todayStart.getTime() + DAY_MS);
     const todayWindow = { [sequelize_1.Op.gte]: todayStart, [sequelize_1.Op.lt]: tomorrowStart };
     const now = new Date();
-    const [subscription, nextTrip, completedToday, tripsToday, recentBookings] = await Promise.all([
+    const [subscription, nextTrip, vehicle, completedToday, tripsToday, recentBookings] = await Promise.all([
         toSubscriptionSection(driverId),
         Models_1.Trip.findOne({
             where: {
@@ -199,13 +202,14 @@ async function buildHome(driverId) {
             ],
             order: [['departure_time', 'ASC']],
         }),
+        Models_1.Vehicle.findOne({ where: { driverId } }),
         Models_1.Trip.count({ where: { driverId, status: constants_1.TRIP_STATUS.COMPLETED, departureTime: todayWindow } }),
         Models_1.Trip.count({ where: { driverId, departureTime: todayWindow } }),
         toRecentBookings(driverId),
     ]);
     const nextTripPayload = toNextTrip(nextTrip);
     return {
-        driver: toDriverSection(user, profile),
+        driver: toDriverSection(user, profile, vehicle),
         subscription,
         next_trip: nextTripPayload,
         summary: {

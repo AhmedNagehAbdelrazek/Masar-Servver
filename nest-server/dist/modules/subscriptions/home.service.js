@@ -147,7 +147,7 @@ let HomeService = HomeService_1 = class HomeService {
         const todayStart = jordanStartOfToday();
         const tomorrowStart = new Date(todayStart.getTime() + DAY_MS);
         const now = new Date();
-        const [subscription, nextTrip, completedToday, tripsToday, recentBookings] = await Promise.all([
+        const [subscription, nextTrip, vehicle, completedToday, tripsToday, recentBookings] = await Promise.all([
             this.toSubscriptionSection(driverId),
             this.prisma.trip.findFirst({
                 where: {
@@ -164,6 +164,7 @@ let HomeService = HomeService_1 = class HomeService {
                 },
                 orderBy: { departureTime: 'asc' },
             }),
+            this.prisma.vehicle.findFirst({ where: { driverId } }),
             this.prisma.trip.count({
                 where: { driverId, status: 'completed', departureTime: { gte: todayStart, lt: tomorrowStart } },
             }),
@@ -181,6 +182,7 @@ let HomeService = HomeService_1 = class HomeService {
                 rating: Number(user.avgRating ?? 0),
                 total_trips_completed: Number(profile?.totalTrips ?? 0),
                 gender: user.gender ?? null,
+                vehicle_seats_number: vehicle?.seats ?? null,
             },
             subscription,
             next_trip: nextTripPayload,
