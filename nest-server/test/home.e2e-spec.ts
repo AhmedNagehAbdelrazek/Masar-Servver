@@ -181,17 +181,148 @@ describe('GET /api/driver/home', () => {
     expect(res.body.next_trip.trip_id).toBe(trip.id);
     expect(res.body.next_trip.can_start).toBe(true);
     expect(res.body.next_trip.passengers).toEqual([
-      {
+      expect.objectContaining({
         booking_id: booking.id,
+        passenger_id: PASSENGER_ID,
         passenger_name: 'Passenger One',
+        passenger_phone: '+962795511103',
         seats_booked: 1,
         seat_numbers: [2],
-      },
+        agreed_fare: 5,
+        status: 'confirmed',
+        pickup: expect.objectContaining({ status: 'pending' }),
+        created_at: expect.any(String),
+      }),
     ]);
     expect(res.body.next_trip.booked_seats_count).toBe(1);
     expect(res.body.summary.reserved_seats_for_next_trip).toBe(1);
     expect(res.body.recent_bookings.length).toBe(1);
     expect(res.body.recent_bookings[0].seat_numbers).toEqual([2]);
+  });
+
+  it('includes all next-trip details (locations, stops, route, instructions and pickup)', async () => {
+    const trip = await ctx.prisma.trip.create({
+      data: {
+        driverId: DRIVER_ID,
+        vehicleId: VEHICLE_ID,
+        originCity: 'Amman',
+        originArea: 'Abdoun',
+        originAddress: '13 Abdoun St',
+        originLat: 31.95,
+        originLng: 35.87,
+        destinationCity: 'Irbid',
+        destinationArea: 'Downtown',
+        destinationAddress: '1 University St',
+        destinationLat: 32.55,
+        destinationLng: 35.85,
+        departureTime: future(90),
+        arrivalTime: future(180),
+        totalSeats: 4,
+        availableSeats: 3,
+        farePerSeat: 5,
+        currency: 'JOD',
+        genderPreference: 'all',
+        driverInstructions: ['no smoking'],
+        additionalInstructions: 'Be on time',
+        routePolyline: 'encoded-polyline',
+        routeDistanceM: 80000,
+        routeDurationS: 5400,
+        routeStatus: 'ready',
+        routeVersion: 3,
+        routeComputedAt: new Date(),
+      },
+    });
+    await ctx.prisma.tripStop.createMany({
+      data: [
+        { tripId: trip.id, stopOrder: 1, stopName: 'Sweileh', city: 'Amman', lat: 31.96, lng: 35.88, stopType: 'pickup' },
+        { tripId: trip.id, stopOrder: 2, stopName: 'Jerash', city: 'Jerash', lat: 32.28, lng: 35.9, stopType: 'dropoff' },
+      ],
+    });
+    await ctx.prisma.tripAttribute.createMany({
+      data: [
+        { tripId: trip.id, attrKey: 'wifi', attrValue: 'true' },
+        { tripId: trip.id, attrKey: 'music', attrValue: 'false' },
+      ],
+    });
+    const booking = await addBooking(trip.id, {
+      pickupType: 'custom',
+      pickupPlace: 'Sweileh circle',
+      pickupLabel: 'Sweileh',
+      pickupCity: 'Amman',
+      pickupArea: 'Sweileh',
+      pickupLat: 31.96,
+      pickupLng: 35.88,
+      pickupOrder: 1,
+      pickupStatus: 'pending',
+      detourSeconds: 120,
+    });
+
+    const res = await ctx.agent
+      .get('/api/driver/home')
+      .set('Authorization', `Bearer ${driverToken}`);
+
+    expect(res.status).toBe(200);
+    const next = res.body.next_trip;
+    expect(next.trip_id).toBe(trip.id);
+    expect(next.origin_address).toBe('13 Abdoun St');
+    expect(next.origin_lat).toBe(31.95);
+    expect(next.origin_lng).toBe(35.87);
+    expect(next.destination_address).toBe('1 University St');
+    expect(next.destination_lat).toBe(32.55);
+    expect(next.destination_lng).toBe(35.85);
+    expect(next.arrival_time).toBeTruthy();
+    expect(next.is_recurring).toBe(false);
+    expect(next.gender_preference).toBe('all');
+    expect(next.attributes).toEqual(
+      expect.arrayContaining([
+        { key: 'wifi', value: true },
+        { key: 'music', value: false },
+      ]),
+    );
+    expect(next.stops).toHaveLength(2);
+    expect(next.stops[0]).toMatchObject({
+      stop_order: 1,
+      stop_name: 'Sweileh',
+      city: 'Amman',
+      lat: 31.96,
+      lng: 35.88,
+      stop_type: 'pickup',
+    });
+    expect(next.waypoints[0]).toEqual({ stop_name: 'Sweileh', stop_lat: 31.96, stop_lng: 35.88 });
+    expect(next.instructions).toEqual(['no smoking']);
+    expect(next.additional_instructions).toBe('Be on time');
+    expect(next.created_at).toBeTruthy();
+    expect(next.route).toMatchObject({
+      status: 'ready',
+      version: 3,
+      polyline: 'encoded-polyline',
+      distance_m: 80000,
+      duration_s: 5400,
+    });
+    expect(next.vehicle).toMatchObject({
+      vehicle_id: VEHICLE_ID,
+      vehicle_type: 'sedan',
+      make_model: 'Hyundai Elantra',
+    });
+    expect(next.passengers[0]).toMatchObject({
+      booking_id: booking.id,
+      passenger_id: PASSENGER_ID,
+      passenger_phone: '+962795511103',
+      agreed_fare: 5,
+      status: 'confirmed',
+      pickup: {
+        type: 'custom',
+        place: 'Sweileh circle',
+        label: 'Sweileh',
+        city: 'Amman',
+        area: 'Sweileh',
+        lat: 31.96,
+        lng: 35.88,
+        order: 1,
+        status: 'pending',
+        detour_seconds: 120,
+      },
+    });
   });
 
   it('returns can_start false when more than an hour away', async () => {
@@ -528,6 +659,135 @@ describe('GET /api/profile/passenger/home', () => {
       destination_city: 'Zarqa',
     });
     expect(res.body.last_trips).toEqual([]);
+  });
+
+  it('includes all next-trip details (locations, stops, route and pickup)', async () => {
+    const booking = await makeBooking(HOME_PASS1_ID);
+    await ctx.prisma.trip.update({
+      where: { id: booking.tripId },
+      data: {
+        originArea: 'Abdoun',
+        originAddress: '13 Abdoun St',
+        originLat: 31.95,
+        originLng: 35.87,
+        destinationArea: 'Downtown',
+        destinationAddress: '1 University St',
+        destinationLat: 32.55,
+        destinationLng: 35.85,
+        arrivalTime: new Date(Date.now() + 25 * 3600 * 1000),
+        genderPreference: 'all',
+        driverInstructions: ['no smoking'],
+        additionalInstructions: 'Be on time',
+        routePolyline: 'encoded-polyline',
+        routeDistanceM: 80000,
+        routeDurationS: 5400,
+        routeStatus: 'ready',
+        routeVersion: 2,
+        routeComputedAt: new Date(),
+      },
+    });
+    await ctx.prisma.tripStop.createMany({
+      data: [
+        { tripId: booking.tripId, stopOrder: 1, stopName: 'Sweileh', city: 'Amman', lat: 31.96, lng: 35.88, stopType: 'pickup' },
+      ],
+    });
+    await ctx.prisma.tripAttribute.createMany({
+      data: [{ tripId: booking.tripId, attrKey: 'wifi', attrValue: 'true' }],
+    });
+    await ctx.prisma.booking.update({
+      where: { id: booking.id },
+      data: {
+        pickupType: 'custom',
+        pickupPlace: 'Sweileh circle',
+        pickupLabel: 'Sweileh',
+        pickupCity: 'Amman',
+        pickupArea: 'Sweileh',
+        pickupLat: 31.96,
+        pickupLng: 35.88,
+        pickupOrder: 1,
+        pickupStatus: 'pending',
+        detourSeconds: 90,
+      },
+    });
+
+    const res = await ctx.agent
+      .get('/api/profile/passenger/home')
+      .set('Authorization', `Bearer ${passengerToken}`);
+
+    expect(res.status).toBe(200);
+    const next = res.body.next_booking;
+    expect(next.booking_id).toBe(booking.id);
+    expect(next.seat_numbers).toEqual([2]);
+    expect(next.pickup).toMatchObject({
+      type: 'custom',
+      place: 'Sweileh circle',
+      label: 'Sweileh',
+      city: 'Amman',
+      area: 'Sweileh',
+      lat: 31.96,
+      lng: 35.88,
+      order: 1,
+      status: 'pending',
+      detour_seconds: 90,
+    });
+    expect(next.created_at).toBeTruthy();
+    expect(next.driver).toMatchObject({
+      id: HOME_DRIVER_ID,
+      full_name: 'Home Driver',
+      phone: '+962795511201',
+    });
+    expect(next.vehicle).toMatchObject({
+      vehicle_id: HOME_VEHICLE_ID,
+      type: 'sedan',
+      make_model: 'Toyota Camry',
+      year: 2022,
+      plate: 'HOM-101',
+      color: 'White',
+      seats: 4,
+      total_seats: 4,
+    });
+    expect(next.trip.origin).toMatchObject({
+      city: 'Amman',
+      area: 'Abdoun',
+      address: '13 Abdoun St',
+    });
+    expect(next.trip.origin.lat).toBeCloseTo(31.95, 5);
+    expect(next.trip.origin.lng).toBeCloseTo(35.87, 5);
+    expect(next.trip.destination).toMatchObject({
+      city: 'Irbid',
+      area: 'Downtown',
+      address: '1 University St',
+    });
+    expect(next.trip.arrival_time).toBeTruthy();
+    expect(next.trip.fare_per_seat).toBe(15);
+    expect(next.trip.total_profit).toBe(0);
+    expect(next.trip.currency).toBe('JOD');
+    expect(next.trip.total_seats).toBe(4);
+    expect(next.trip.available_seats).toBe(3);
+    expect(next.trip.status).toBe('published');
+    expect(next.trip.is_recurring).toBe(false);
+    expect(next.trip.gender_preference).toBe('all');
+    expect(next.trip.attributes).toEqual([{ key: 'wifi', value: true }]);
+    expect(next.trip.stops).toHaveLength(1);
+    expect(next.trip.stops[0]).toMatchObject({
+      stop_order: 1,
+      stop_name: 'Sweileh',
+      city: 'Amman',
+      lat: 31.96,
+      lng: 35.88,
+      stop_type: 'pickup',
+    });
+    expect(next.trip.waypoints[0]).toEqual({ stop_name: 'Sweileh', stop_lat: 31.96, stop_lng: 35.88 });
+    expect(next.trip.instructions).toEqual(['no smoking']);
+    expect(next.trip.additional_instructions).toBe('Be on time');
+    expect(next.trip.created_at).toBeTruthy();
+    expect(next.trip.route).toMatchObject({
+      status: 'ready',
+      version: 2,
+      polyline: 'encoded-polyline',
+      distance_m: 80000,
+      duration_s: 5400,
+    });
   });
 
   it('moves departed bookings to last_trips', async () => {

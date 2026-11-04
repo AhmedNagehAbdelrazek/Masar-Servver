@@ -46,33 +46,88 @@ As a driver, when I open the app, I see my home screen with my subscription stat
     "trip_id": "t_456",
     "origin_city": "عمان",
     "origin_area": "صويح",
+    "origin_address": "13 Abdoun St",
+    "origin_lat": 31.95,
+    "origin_lng": 35.87,
     "destination_city": "إربد",
     "destination_area": "عرش الكل",
+    "destination_address": "1 University St",
+    "destination_lat": 32.55,
+    "destination_lng": 35.85,
     "departure_time": "2026-08-11T08:30:00Z",
+    "arrival_time": "2026-08-11T10:00:00Z",
     "fare_per_seat": 5.00,
+    "total_profit": 15.00,
     "currency": "JOD",
     "total_seats": 4,
     "available_seats": 0,
     "booked_seats_count": 3,
+    "is_recurring": false,
+    "recurrence_days": [],
+    "recurrence_end_date": null,
+    "gender_preference": "all",
+    "attributes": [{ "key": "wifi", "value": true }],
+    "stops": [
+      {
+        "stop_id": "s_1",
+        "stop_order": 1,
+        "stop_name": "Sweileh",
+        "city": "Amman",
+        "address": "Sweileh circle",
+        "lat": 31.96,
+        "lng": 35.88,
+        "stop_type": "pickup",
+        "estimated_arrival": "2026-08-11T08:45:00Z"
+      }
+    ],
+    "waypoints": [{ "stop_name": "Sweileh", "stop_lat": 31.96, "stop_lng": 35.88 }],
+    "instructions": ["no smoking"],
+    "additional_instructions": "Be on time",
+    "created_at": "2026-08-10T12:00:00Z",
+    "route": {
+      "status": "ready",
+      "version": 2,
+      "polyline": "encoded-polyline",
+      "distance_m": 80000,
+      "duration_s": 5400,
+      "computed_at": "2026-08-10T12:01:00Z"
+    },
     "vehicle": {
+      "vehicle_id": "v_123",
+      "vehicle_type": "sedan",
       "make_model": "Hyundai Elantra",
       "year": 2021,
       "plate_number": "ABC-1234",
-      "color": "White"
+      "color": "White",
+      "seats": 4
     },
     "status": "published",   // published, ongoing, completed
     "passengers": [
       {
         "booking_id": "b_789",
+        "passenger_id": "u_321",
         "passenger_name": "محمد خالد",
+        "passenger_phone": "+962790000000",
         "seats_booked": 2,
-        "seat_numbers": [2, 3]
-      },
-      {
-        "booking_id": "b_790",
-        "passenger_name": "سارة أحمد",
-        "seats_booked": 1,
-        "seat_numbers": [4]
+        "seat_numbers": [2, 3],
+        "agreed_fare": 10.00,
+        "status": "confirmed",
+        "pickup": {
+          "type": "custom",
+          "stop_id": null,
+          "place": "Sweileh circle",
+          "label": "Sweileh",
+          "city": "Amman",
+          "area": "Sweileh",
+          "lat": 31.96,
+          "lng": 35.88,
+          "order": 1,
+          "status": "pending",
+          "detour_seconds": 120,
+          "arrived_at": null,
+          "picked_up_at": null
+        },
+        "created_at": "2026-08-10T18:00:00Z"
       }
     ],
     "can_start": true   // True if the trip is published and departure time is near (within 1 hour) or already past but not started.
@@ -138,7 +193,7 @@ As a driver, when I open the app, I see my home screen with my subscription stat
 |-------|-------------|
 | `driver` | Driver's basic profile info: `id`, `full_name`, `profile_picture_url`, `rating`, `total_trips_completed`, `gender`, `vehicle_seats_number` (the driver's vehicle seat count, same name as the dashboard; `null` when no vehicle exists). It is always present, even when `next_trip` is `null`. |
 | `subscription` | Current subscription tier, price, expiry, and days remaining. |
-| `next_trip` | The driver's next upcoming trip (the earliest departure time in the future). If none, this field is `null`. Contains full details and the list of passengers with booked seats. |
+| `next_trip` | The driver's next upcoming trip (the earliest departure time in the future). If none, this field is `null`. Contains the full trip details: origin/destination (city, area, address, lat/lng), departure/arrival times, fare, seats, recurrence and gender settings, attributes, stops/waypoints, driver instructions, route (polyline/distance/duration/status/version), vehicle, and the list of confirmed passengers with their seat numbers and pickup details. |
 | `next_trip.can_start` | Boolean indicating whether the "Start Ride" button should be enabled (trip is published and departure time is within ±1 hour, or already overdue but not marked ongoing). |
 | `summary` | Quick stats: completed trips today, reserved seats for the next trip (if any), and total trips scheduled for today (including completed and pending). |
 | `recent_bookings` | Last 5 bookings (across all trips) ordered by `created_at DESC`. Shows passenger name, trip info, seats, and status. |

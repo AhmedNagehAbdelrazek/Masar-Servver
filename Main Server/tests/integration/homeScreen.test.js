@@ -5,6 +5,8 @@ const {
   Vehicle,
   Trip,
   TripSeat,
+  TripStop,
+  TripAttribute,
   Booking,
   SubscriptionPlan,
   DriverSubscription,
@@ -123,6 +125,8 @@ async function addBooking(tripId, passengerId, { seatNumber = 2, seatsBooked = 1
 beforeEach(async () => {
   await Booking.destroy({ where: {}, force: true });
   await TripSeat.destroy({ where: {}, force: true });
+  await TripStop.destroy({ where: {}, force: true });
+  await TripAttribute.destroy({ where: {}, force: true });
   await Trip.destroy({ where: {}, force: true });
   await DriverSubscription.destroy({ where: {}, force: true });
   await SubscriptionPlan.destroy({ where: {}, force: true });
@@ -180,6 +184,129 @@ describe('US1 - Home screen', () => {
     expect(res.body.summary.reserved_seats_for_next_trip).toBe(1);
     expect(res.body.recent_bookings).toHaveLength(1);
     expect(res.body.recent_bookings[0].seat_numbers).toEqual([2]);
+  });
+
+  it('includes all next-trip details (locations, stops, route, instructions and pickup)', async () => {
+    await seedActiveSubscription(DRIVER_ID);
+    const trip = await Trip.create({
+      driverId: DRIVER_ID,
+      vehicleId: VEHICLE_ID,
+      originCity: 'Amman',
+      originArea: 'Abdoun',
+      originAddress: '13 Abdoun St',
+      originLat: 31.95,
+      originLng: 35.87,
+      destinationCity: 'Irbid',
+      destinationArea: 'Downtown',
+      destinationAddress: '1 University St',
+      destinationLat: 32.55,
+      destinationLng: 35.85,
+      departureTime: future(90),
+      arrivalTime: future(180),
+      totalSeats: 4,
+      availableSeats: 3,
+      farePerSeat: 5,
+      currency: 'JOD',
+      isRecurring: false,
+      genderPreference: 'all',
+      driverInstructions: ['no smoking'],
+      additionalInstructions: 'Be on time',
+      routePolyline: 'encoded-polyline',
+      routeDistanceM: 80000,
+      routeDurationS: 5400,
+      routeStatus: 'ready',
+      routeVersion: 3,
+      routeComputedAt: new Date(),
+      status: TRIP_STATUS.PUBLISHED,
+    });
+    await TripStop.bulkCreate([
+      { tripId: trip.id, stopOrder: 1, stopName: 'Sweileh', city: 'Amman', lat: 31.96, lng: 35.88, stopType: 'pickup' },
+      { tripId: trip.id, stopOrder: 2, stopName: 'Jerash', city: 'Jerash', lat: 32.28, lng: 35.9, stopType: 'dropoff' },
+    ]);
+    await TripAttribute.bulkCreate([
+      { tripId: trip.id, attrKey: 'wifi', attrValue: 'true' },
+      { tripId: trip.id, attrKey: 'music', attrValue: 'false' },
+    ]);
+    const booking = await addBooking(trip.id, PASSENGER_ID, { seatNumber: 2 });
+    await booking.update({
+      pickupType: 'custom',
+      pickupPlace: 'Sweileh circle',
+      pickupLabel: 'Sweileh',
+      pickupCity: 'Amman',
+      pickupArea: 'Sweileh',
+      pickupLat: 31.96,
+      pickupLng: 35.88,
+      pickupOrder: 1,
+      pickupStatus: 'pending',
+      detourSeconds: 120,
+    });
+
+    const res = await getAgent()
+      .get('/api/driver/home')
+      .set('Authorization', `Bearer ${driverToken}`);
+
+    expect(res.status).toBe(200);
+    const next = res.body.next_trip;
+    expect(next.trip_id).toBe(trip.id);
+    expect(next.origin_address).toBe('13 Abdoun St');
+    expect(next.origin_lat).toBe(31.95);
+    expect(next.origin_lng).toBe(35.87);
+    expect(next.destination_address).toBe('1 University St');
+    expect(next.destination_lat).toBe(32.55);
+    expect(next.destination_lng).toBe(35.85);
+    expect(next.arrival_time).toBeTruthy();
+    expect(next.is_recurring).toBe(false);
+    expect(next.gender_preference).toBe('all');
+    expect(next.attributes).toEqual(
+      expect.arrayContaining([
+        { key: 'wifi', value: true },
+        { key: 'music', value: false },
+      ]),
+    );
+    expect(next.stops).toHaveLength(2);
+    expect(next.stops[0]).toMatchObject({
+      stop_order: 1,
+      stop_name: 'Sweileh',
+      city: 'Amman',
+      lat: 31.96,
+      lng: 35.88,
+      stop_type: 'pickup',
+    });
+    expect(next.waypoints[0]).toEqual({ stop_name: 'Sweileh', stop_lat: 31.96, stop_lng: 35.88 });
+    expect(next.instructions).toEqual(['no smoking']);
+    expect(next.additional_instructions).toBe('Be on time');
+    expect(next.created_at).toBeTruthy();
+    expect(next.route).toMatchObject({
+      status: 'ready',
+      version: 3,
+      polyline: 'encoded-polyline',
+      distance_m: 80000,
+      duration_s: 5400,
+    });
+    expect(next.vehicle).toMatchObject({
+      vehicle_id: VEHICLE_ID,
+      vehicle_type: 'sedan',
+      make_model: 'Hyundai Elantra',
+    });
+    expect(next.passengers[0]).toMatchObject({
+      booking_id: booking.id,
+      passenger_id: PASSENGER_ID,
+      passenger_phone: '+962710000253',
+      agreed_fare: 5,
+      status: 'confirmed',
+      pickup: {
+        type: 'custom',
+        place: 'Sweileh circle',
+        label: 'Sweileh',
+        city: 'Amman',
+        area: 'Sweileh',
+        lat: 31.96,
+        lng: 35.88,
+        order: 1,
+        status: 'pending',
+        detour_seconds: 120,
+      },
+    });
   });
 
   it('returns can_start false for a trip more than one hour away', async () => {

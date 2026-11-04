@@ -507,7 +507,7 @@
 ### [profile-4] GET /api/profile/passenger/home — passenger
 **Use:** app launch — next booking + recent trips.
 **Request:** none.
-**Response:** `200 {passenger{id, full_name, rating}, next_booking{booking_id, trip, driver, vehicle}|null, last_searched_trips[5], last_trips[5]}`.
+**Response:** `200 {passenger{id, full_name, rating}, next_booking{booking_id, seat_numbers, pickup, trip{full details incl. stops/route}, driver, vehicle}|null, last_searched_trips[5], last_trips[5]}`.
 **Watch out:** never cached; sweeps expired trips first.
 
 ### [rate-1] POST /api/ratings — passenger, driver
@@ -613,7 +613,7 @@
 ### [driver-16] GET /api/driver/home — driver
 **Use:** driver home on app open (subscription, next trip, today summary).
 **Request:** none.
-**Response:** `200 {driver: {..., gender, vehicle_seats_number}|..., subscription|null, next_trip|null, summary: {completed_trips_today, reserved_seats_for_next_trip, trips_today}, recent_bookings: []}`.
+**Response:** `200 {driver: {..., gender, vehicle_seats_number}|..., subscription|null, next_trip{full details incl. stops/route/passengers}|null, summary: {completed_trips_today, reserved_seats_for_next_trip, trips_today}, recent_bookings: []}`.
 **Watch out:** `403` unless verified and active; sweeps stale trips first.
 
 ### [driver-17] GET /api/driver/subscription — driver

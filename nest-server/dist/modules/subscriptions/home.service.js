@@ -26,6 +26,99 @@ function freeTripsFor(sub) {
     const used = Number(sub.freeTripsUsed) || 0;
     return { max: limit, used, remaining: Math.max(0, limit - used) };
 }
+function toNumber(value) {
+    if (value === null || value === undefined)
+        return null;
+    const n = Number(value);
+    return Number.isFinite(n) ? n : null;
+}
+function toTripStops(stops) {
+    return stops.map((s) => ({
+        stop_id: s.id,
+        stop_order: s.stopOrder,
+        stop_name: s.stopName,
+        city: s.city,
+        address: s.address,
+        lat: toNumber(s.lat ?? s.stopLat),
+        lng: toNumber(s.lng ?? s.stopLng),
+        stop_type: s.stopType,
+        estimated_arrival: s.estimatedArrival,
+    }));
+}
+function toTripAttributes(attributes) {
+    return attributes.map((a) => ({ key: a.attrKey, value: a.attrValue === 'true' }));
+}
+function toRouteSection(trip) {
+    return {
+        status: trip.routeStatus || 'pending',
+        version: Number(trip.routeVersion) || 0,
+        polyline: trip.routePolyline ?? null,
+        distance_m: toNumber(trip.routeDistanceM),
+        duration_s: toNumber(trip.routeDurationS),
+        computed_at: trip.routeComputedAt ?? null,
+    };
+}
+function toPickupSection(booking) {
+    return {
+        type: booking.pickupType ?? null,
+        stop_id: booking.pickupStopId ?? null,
+        place: booking.pickupPlace ?? null,
+        label: booking.pickupLabel ?? null,
+        city: booking.pickupCity ?? null,
+        area: booking.pickupArea ?? null,
+        lat: toNumber(booking.pickupLat),
+        lng: toNumber(booking.pickupLng),
+        order: booking.pickupOrder ?? null,
+        status: booking.pickupStatus ?? 'pending',
+        detour_seconds: toNumber(booking.detourSeconds),
+        arrived_at: booking.arrivedAt ?? null,
+        picked_up_at: booking.pickedUpAt ?? null,
+    };
+}
+function toTripDetails(trip) {
+    const stops = trip.stops ?? [];
+    const attributes = trip.attributes ?? [];
+    return {
+        trip_id: trip.id,
+        origin: {
+            city: trip.originCity,
+            area: trip.originArea,
+            address: trip.originAddress ?? null,
+            lat: toNumber(trip.originLat),
+            lng: toNumber(trip.originLng),
+        },
+        destination: {
+            city: trip.destinationCity,
+            area: trip.destinationArea,
+            address: trip.destinationAddress ?? null,
+            lat: toNumber(trip.destinationLat),
+            lng: toNumber(trip.destinationLng),
+        },
+        departure_time: trip.departureTime,
+        arrival_time: trip.arrivalTime ?? null,
+        fare_per_seat: Number(trip.farePerSeat),
+        total_profit: Number(trip.totalProfit) || 0,
+        currency: trip.currency || 'JOD',
+        total_seats: trip.totalSeats,
+        available_seats: trip.availableSeats,
+        status: trip.status,
+        is_recurring: Boolean(trip.isRecurring),
+        recurrence_days: trip.recurrenceDays ?? [],
+        recurrence_end_date: trip.recurrenceEndDate ?? null,
+        gender_preference: trip.genderPreference || 'all',
+        attributes: toTripAttributes(attributes),
+        stops: toTripStops(stops),
+        waypoints: stops.map((s) => ({
+            stop_name: s.stopName,
+            stop_lat: toNumber(s.lat ?? s.stopLat),
+            stop_lng: toNumber(s.lng ?? s.stopLng),
+        })),
+        instructions: trip.driverInstructions ?? [],
+        additional_instructions: trip.additionalInstructions ?? null,
+        created_at: trip.createdAt ?? null,
+        route: toRouteSection(trip),
+    };
+}
 let HomeService = HomeService_1 = class HomeService {
     prisma;
     balance;
@@ -70,6 +163,8 @@ let HomeService = HomeService_1 = class HomeService {
         if (!trip)
             return null;
         const bookings = trip.bookings ?? [];
+        const stops = trip.stops ?? [];
+        const attributes = trip.attributes ?? [];
         const bookedSeatsCount = bookings.reduce((sum, b) => sum + Number(b.seatsBooked ?? 0), 0);
         const canStart = ['published', 'full'].includes(trip.status) &&
             new Date(trip.departureTime).getTime() - Date.now() <= HOUR_MS;
@@ -78,17 +173,41 @@ let HomeService = HomeService_1 = class HomeService {
             trip_id: trip.id,
             origin_city: trip.originCity,
             origin_area: trip.originArea,
+            origin_address: trip.originAddress ?? null,
+            origin_lat: toNumber(trip.originLat),
+            origin_lng: toNumber(trip.originLng),
             destination_city: trip.destinationCity,
             destination_area: trip.destinationArea,
+            destination_address: trip.destinationAddress ?? null,
+            destination_lat: toNumber(trip.destinationLat),
+            destination_lng: toNumber(trip.destinationLng),
             departure_time: trip.departureTime,
+            arrival_time: trip.arrivalTime ?? null,
             fare_per_seat: Number(trip.farePerSeat),
             total_profit: Number(trip.totalProfit) || 0,
             currency: trip.currency || 'JOD',
             total_seats: trip.totalSeats,
             available_seats: trip.availableSeats,
             booked_seats_count: bookedSeatsCount,
+            is_recurring: Boolean(trip.isRecurring),
+            recurrence_days: trip.recurrenceDays ?? [],
+            recurrence_end_date: trip.recurrenceEndDate ?? null,
+            gender_preference: trip.genderPreference || 'all',
+            attributes: toTripAttributes(attributes),
+            stops: toTripStops(stops),
+            waypoints: stops.map((s) => ({
+                stop_name: s.stopName,
+                stop_lat: toNumber(s.lat ?? s.stopLat),
+                stop_lng: toNumber(s.lng ?? s.stopLng),
+            })),
+            instructions: trip.driverInstructions ?? [],
+            additional_instructions: trip.additionalInstructions ?? null,
+            created_at: trip.createdAt ?? null,
+            route: toRouteSection(trip),
             vehicle: vehicle
                 ? {
+                    vehicle_id: vehicle.id,
+                    vehicle_type: vehicle.vehicleType,
                     make_model: [vehicle.manufacturer, vehicle.model].filter(Boolean).join(' '),
                     year: vehicle.modelYear,
                     plate_number: vehicle.plateNumber,
@@ -101,9 +220,15 @@ let HomeService = HomeService_1 = class HomeService {
                 const passenger = b.passenger;
                 return {
                     booking_id: b.id,
+                    passenger_id: passenger?.id ?? null,
                     passenger_name: passenger ? passenger.fullName : 'Unknown',
+                    passenger_phone: passenger?.phone ?? null,
                     seats_booked: b.seatsBooked,
                     seat_numbers: seatNumbersFor(b),
+                    agreed_fare: Number(b.agreedFare),
+                    status: b.status,
+                    pickup: toPickupSection(b),
+                    created_at: b.createdAt,
                 };
             }),
             can_start: canStart,
@@ -157,9 +282,11 @@ let HomeService = HomeService_1 = class HomeService {
                 },
                 include: {
                     vehicle: true,
+                    stops: { orderBy: { stopOrder: 'asc' } },
+                    attributes: true,
                     bookings: {
                         where: { status: 'confirmed' },
-                        include: { passenger: { select: { id: true, fullName: true } } },
+                        include: { passenger: { select: { id: true, fullName: true, phone: true } } },
                     },
                 },
                 orderBy: { departureTime: 'asc' },
@@ -243,8 +370,12 @@ let HomeService = HomeService_1 = class HomeService {
             include: {
                 trip: {
                     include: {
-                        driver: { select: { id: true, fullName: true, avgRating: true, avatarUrl: true } },
-                        vehicle: { select: { id: true, vehicleType: true, plateNumber: true, seats: true } },
+                        driver: {
+                            select: { id: true, fullName: true, phone: true, avgRating: true, avatarUrl: true },
+                        },
+                        vehicle: true,
+                        stops: { orderBy: { stopOrder: 'asc' } },
+                        attributes: true,
                     },
                 },
             },
@@ -302,18 +433,17 @@ let HomeService = HomeService_1 = class HomeService {
                     reference_code: nb.referenceCode,
                     status: nb.status,
                     seats_booked: nb.seatsBooked,
+                    seat_numbers: seatNumbersFor(nb),
                     agreed_fare: Number(nb.agreedFare),
                     currency: nb.currency ?? 'JOD',
-                    trip: {
-                        trip_id: nb.trip.id,
-                        origin: { city: nb.trip.originCity, area: nb.trip.originArea },
-                        destination: { city: nb.trip.destinationCity, area: nb.trip.destinationArea },
-                        departure_time: nb.trip.departureTime,
-                    },
+                    pickup: toPickupSection(nb),
+                    created_at: nb.createdAt,
+                    trip: toTripDetails(nb.trip),
                     driver: nb.trip.driver
                         ? {
                             id: nb.trip.driver.id,
                             full_name: nb.trip.driver.fullName,
+                            phone: nb.trip.driver.phone,
                             rating: Number(nb.trip.driver.avgRating) || 0,
                             image: nb.trip.driver.avatarUrl,
                         }
@@ -322,8 +452,14 @@ let HomeService = HomeService_1 = class HomeService {
                         ? {
                             vehicle_id: nb.trip.vehicle.id,
                             type: nb.trip.vehicle.vehicleType,
+                            make_model: [nb.trip.vehicle.manufacturer, nb.trip.vehicle.model]
+                                .filter(Boolean)
+                                .join(' '),
+                            year: nb.trip.vehicle.modelYear,
                             plate: nb.trip.vehicle.plateNumber,
+                            color: nb.trip.vehicle.color,
                             seats: nb.trip.vehicle.seats,
+                            total_seats: nb.trip.vehicle.seats,
                         }
                         : null,
                 },
