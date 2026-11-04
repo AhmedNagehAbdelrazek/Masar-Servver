@@ -268,6 +268,61 @@ export const searchAvailableTripsValidation: ValidationChain[] = [
     .trim()
     .isLength({ max: 100 }).withMessage(V.DESTINATION_CITY_MUST_BE_AT_MOST_100_CHARACTERS),
 
+  // Optional proximity search (spec 013 P1). Coordinates take precedence over
+  // city strings; the city values remain as the fallback when coordinates are
+  // missing.
+  query('origin_lat')
+    .optional()
+    .isDecimal().withMessage(V.ORIGIN_LATITUDE_MUST_BE_A_DECIMAL)
+    .custom((value: unknown) => {
+      const lat = parseFloat(String(value));
+      if (lat < -90 || lat > 90) throw new Error(V.ORIGIN_LATITUDE_MUST_BE_BETWEEN_90_AND_90);
+      return true;
+    }),
+
+  query('origin_lng')
+    .optional()
+    .isDecimal().withMessage(V.ORIGIN_LONGITUDE_MUST_BE_A_DECIMAL)
+    .custom((value: unknown) => {
+      const lng = parseFloat(String(value));
+      if (lng < -180 || lng > 180) throw new Error(V.ORIGIN_LONGITUDE_MUST_BE_BETWEEN_180_AND_180);
+      return true;
+    }),
+
+  query('destination_lat')
+    .optional()
+    .isDecimal().withMessage(V.DESTINATION_LATITUDE_MUST_BE_A_DECIMAL)
+    .custom((value: unknown) => {
+      const lat = parseFloat(String(value));
+      if (lat < -90 || lat > 90) throw new Error(V.DESTINATION_LATITUDE_MUST_BE_BETWEEN_90_AND_90);
+      return true;
+    }),
+
+  query('destination_lng')
+    .optional()
+    .isDecimal().withMessage(V.DESTINATION_LONGITUDE_MUST_BE_A_DECIMAL)
+    .custom((value: unknown) => {
+      const lng = parseFloat(String(value));
+      if (lng < -180 || lng > 180) throw new Error(V.DESTINATION_LONGITUDE_MUST_BE_BETWEEN_180_AND_180);
+      return true;
+    }),
+
+  query('origin_radius_m')
+    .optional()
+    .isInt({ min: 100, max: 10000 }).withMessage(V.SEARCH_ORIGIN_RADIUS_MUST_BE_AN_INTEGER_BETWEEN_100_AND_10000),
+
+  query('destination_radius_m')
+    .optional()
+    .isInt({ min: 100, max: 10000 }).withMessage(V.SEARCH_DESTINATION_RADIUS_MUST_BE_AN_INTEGER_BETWEEN_100_AND_10000),
+
+  query('include_enroute')
+    .optional()
+    .isIn(['true', 'false', '1', '0', 'yes', 'no', 'on', 'off']).withMessage(V.SEARCH_INCLUDE_ENROUTE_MUST_BE_A_BOOLEAN),
+
+  query('sort')
+    .optional()
+    .isIn(['best_match', 'departure_time', 'distance']).withMessage(V.SEARCH_SORT_MUST_BE_ONE_OF_BEST_MATCH_DEPARTURE_TIME_DISTANCE),
+
   // query('date')
   //   .optional()
   //   .isDate().withMessage(V.DATE_MUST_BE_A_VALID_DATE_YYYY_MM_DD)

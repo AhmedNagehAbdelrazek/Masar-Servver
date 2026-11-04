@@ -220,6 +220,9 @@ model Trip {
   @@index([driverId, departureTime], map: "idx_trips_driver_departure")
   @@index([originCity, destinationCity, departureTime], map: "idx_trips_origin_dest")
   @@index([status], map: "idx_trips_status")
+  @@index([status, departureTime], map: "idx_trips_status_departure")
+  @@index([originLat, originLng], map: "idx_trips_origin_geo")
+  @@index([destinationLat, destinationLng], map: "idx_trips_destination_geo")
   @@map("trips")
 }
 
@@ -254,6 +257,7 @@ model TripStop {
 
   @@unique([tripId, stopOrder])
   @@index([tripId], map: "idx_trip_stops_trip")
+  @@index([lat, lng], map: "idx_trip_stops_geo")
   @@map("trip_stops")
 }
 

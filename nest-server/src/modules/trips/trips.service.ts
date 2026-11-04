@@ -35,9 +35,18 @@ import { hasTripDeparted } from './trip-schedule.js';
 import type { TripExpiryService } from './trip-expiry.service.js';
 import { TripExpiryService as TripExpiryServiceToken } from './trip-expiry.service.js';
 import { getMapsConfig } from '../maps/maps.config.js';
+import { GeoService } from '../maps/geo.service.js';
 import { PickupService } from '../maps/pickup.service.js';
 import { RouteService } from '../maps/route.service.js';
+import { getSearchConfig } from '../../config/search.config.js';
 import { assertNoOverlappingTrip } from './trip-overlap.js';
+import {
+  matchTrip,
+  type SearchAnchor,
+  type SearchPoint,
+  type SearchSort,
+  type TripMatchResult,
+} from './trip-search.matcher.js';
 import type { CreateTripDto } from './dto/create-trip.dto.js';
 
 // Express parity: service-level validation failures use the generic
@@ -56,6 +65,58 @@ function toNumber(value: unknown): number | null {
   if (value === null || value === undefined) return null;
   const n = Number(value);
   return Number.isFinite(n) ? n : null;
+}
+
+function parseSearchPoint(
+  lat: unknown,
+  lng: unknown,
+  field: 'origin' | 'destination',
+): SearchPoint | null {
+  if ((lat === null || lat === undefined || lat === '') && (lng === null || lng === undefined || lng === '')) {
+    return null;
+  }
+  if (lat === null || lat === undefined || lat === '' || lng === null || lng === undefined || lng === '') {
+    throw validationError(
+      'LAT_AND_LNG_ARE_REQUIRED',
+      'LAT_AND_LNG_ARE_REQUIRED',
+      [{ field: `${field}_lat` }, { field: `${field}_lng` }],
+    );
+  }
+  const a = Number(lat);
+  const b = Number(lng);
+  if (!Number.isFinite(a) || !Number.isFinite(b)) {
+    throw validationError('INVALID_COORDINATES', 'INVALID_COORDINATES', [
+      { field: `${field}_lat` },
+      { field: `${field}_lng` },
+    ]);
+  }
+  return { lat: a, lng: b };
+}
+
+function clampRadius(value: number | undefined, fallback: number, max: number): number {
+  const n = value == null ? fallback : Number(value);
+  if (!Number.isFinite(n)) return fallback;
+  return Math.max(100, Math.min(Math.round(n), max));
+}
+
+function anchorToJson(anchor: SearchAnchor): Record<string, unknown> {
+  return {
+    kind: anchor.kind,
+    distance_m: anchor.distanceM != null ? Math.round(anchor.distanceM) : null,
+    along_route_m: anchor.alongM != null ? Math.round(anchor.alongM) : null,
+    lat: anchor.lat,
+    lng: anchor.lng,
+    ...(anchor.stopId ? { stop_id: anchor.stopId } : {}),
+    ...(anchor.stopName ? { stop_name: anchor.stopName } : {}),
+  };
+}
+
+function matchToJson(match: TripMatchResult): Record<string, unknown> {
+  return {
+    origin: anchorToJson(match.origin),
+    destination: anchorToJson(match.destination),
+    score: match.score,
+  };
 }
 
 interface StopInput {
@@ -119,6 +180,7 @@ export class TripsService {
     private readonly expiry: TripExpiryService,
     private readonly routeService: RouteService,
     private readonly pickupService: PickupService,
+    private readonly geo: GeoService,
   ) {}
 
   /**
@@ -749,6 +811,14 @@ export class TripsService {
   async getAvailableTrips(filters: {
     originCity?: string;
     destinationCity?: string;
+    originLat?: string | number;
+    originLng?: string | number;
+    destinationLat?: string | number;
+    destinationLng?: string | number;
+    originRadiusM?: number;
+    destinationRadiusM?: number;
+    includeEnroute?: boolean;
+    sort?: SearchSort;
     date?: string;
     returnDate?: string;
     genderPreference?: string | null;
@@ -756,7 +826,11 @@ export class TripsService {
     timeTo?: string;
     vehicleType?: string;
     seats?: unknown;
-  }): Promise<{ trips: Record<string, unknown>[]; returningTrips: Record<string, unknown>[] }> {
+  }): Promise<{
+    trips: Record<string, unknown>[];
+    returningTrips: Record<string, unknown>[];
+    search: Record<string, unknown>;
+  }> {
     const { date, returnDate } = filters;
     if (date) {
       const queryDate = parseJordanDayStart(date);
@@ -777,44 +851,190 @@ export class TripsService {
       throw validationError('TIME_FROM_AFTER_TIME_TO', 'TIME_FROM_AFTER_TIME_TO');
     }
 
-    const trips = await this.fetchTripsForDate({
-      targetDate: date ?? null,
-      originCity: filters.originCity,
-      destinationCity: filters.destinationCity,
-      genderPreference: filters.genderPreference,
-      timeFrom: filters.timeFrom,
-      timeTo: filters.timeTo,
-      vehicleType: filters.vehicleType,
-      seats: filters.seats,
-    });
-    let returningTrips: Record<string, unknown>[] = [];
-    if (returnDate && filters.originCity && filters.destinationCity) {
-      returningTrips = await this.fetchTripsForDate({
-        targetDate: returnDate,
-        originCity: filters.destinationCity,
-        destinationCity: filters.originCity,
+    const cfg = getSearchConfig();
+    const originPoint = parseSearchPoint(filters.originLat, filters.originLng, 'origin');
+    const destinationPoint = parseSearchPoint(
+      filters.destinationLat,
+      filters.destinationLng,
+      'destination',
+    );
+    const hasGeo = Boolean(originPoint || destinationPoint);
+    const requestedOriginRadius = clampRadius(
+      filters.originRadiusM,
+      cfg.pickupRadiusM,
+      cfg.maxRadiusM,
+    );
+    const requestedDestinationRadius = clampRadius(
+      filters.destinationRadiusM,
+      cfg.dropoffRadiusM,
+      cfg.maxRadiusM,
+    );
+    const includeEnroute = filters.includeEnroute ?? cfg.includeEnroute;
+    const sort: SearchSort = filters.sort ?? (hasGeo ? 'best_match' : 'departure_time');
+
+    const run = (params: {
+      targetDate: string | null;
+      originCity?: string;
+      destinationCity?: string;
+      originPoint: SearchPoint | null;
+      destinationPoint: SearchPoint | null;
+      originRadiusM: number;
+      destinationRadiusM: number;
+    }): Promise<{ trips: Record<string, unknown>[]; candidateCount: number }> =>
+      this.fetchTripsForDate({
+        ...params,
+        includeEnroute,
+        sort,
         genderPreference: filters.genderPreference,
         timeFrom: filters.timeFrom,
         timeTo: filters.timeTo,
         vehicleType: filters.vehicleType,
         seats: filters.seats,
       });
+
+    let usedOriginRadius = requestedOriginRadius;
+    let usedDestinationRadius = requestedDestinationRadius;
+    const canReturn = Boolean(
+      returnDate &&
+        ((filters.originCity && filters.destinationCity) ||
+          (originPoint && destinationPoint)),
+    );
+
+    let outbound = await run({
+      targetDate: date ?? null,
+      originCity: filters.originCity,
+      destinationCity: filters.destinationCity,
+      originPoint,
+      destinationPoint,
+      originRadiusM: usedOriginRadius,
+      destinationRadiusM: usedDestinationRadius,
+    });
+
+    let returning = { trips: [] as Record<string, unknown>[], candidateCount: 0 };
+    if (canReturn && returnDate) {
+      returning = await run({
+        targetDate: returnDate,
+        originCity: filters.destinationCity,
+        destinationCity: filters.originCity,
+        originPoint: destinationPoint,
+        destinationPoint: originPoint,
+        originRadiusM: usedDestinationRadius,
+        destinationRadiusM: usedOriginRadius,
+      });
     }
+
+    let widened = false;
+    if (
+      cfg.autoWiden &&
+      hasGeo &&
+      outbound.trips.length === 0 &&
+      returning.trips.length === 0
+    ) {
+      const widerOrigin = originPoint
+        ? clampRadius(requestedOriginRadius * cfg.widenFactor, requestedOriginRadius, cfg.maxRadiusM)
+        : requestedOriginRadius;
+      const widerDestination = destinationPoint
+        ? clampRadius(
+            requestedDestinationRadius * cfg.widenFactor,
+            requestedDestinationRadius,
+            cfg.maxRadiusM,
+          )
+        : requestedDestinationRadius;
+      if (
+        widerOrigin !== requestedOriginRadius ||
+        widerDestination !== requestedDestinationRadius
+      ) {
+        usedOriginRadius = widerOrigin;
+        usedDestinationRadius = widerDestination;
+        outbound = await run({
+          targetDate: date ?? null,
+          originCity: filters.originCity,
+          destinationCity: filters.destinationCity,
+          originPoint,
+          destinationPoint,
+          originRadiusM: usedOriginRadius,
+          destinationRadiusM: usedDestinationRadius,
+        });
+        if (canReturn && returnDate) {
+          returning = await run({
+            targetDate: returnDate,
+            originCity: filters.destinationCity,
+            destinationCity: filters.originCity,
+            originPoint: destinationPoint,
+            destinationPoint: originPoint,
+            originRadiusM: usedDestinationRadius,
+            destinationRadiusM: usedOriginRadius,
+          });
+        }
+        widened = outbound.trips.length + returning.trips.length > 0;
+      }
+    }
+
     const requestIdsByTrip = await this.rideRequestIdsByTrip(
-      [...trips, ...returningTrips].map((trip) => String(trip.id)),
+      [...outbound.trips, ...returning.trips].map((trip) => String(trip.id)),
     );
     const decorate = (arr: Record<string, unknown>[]): Record<string, unknown>[] =>
       arr.map((trip) =>
         this.withRideRequestOrigin(trip, requestIdsByTrip.get(String(trip.id)) ?? []),
       );
 
-    return { trips: decorate(trips), returningTrips: decorate(returningTrips) };
+    return {
+      trips: decorate(outbound.trips),
+      returningTrips: decorate(returning.trips),
+      search: {
+        origin_radius_m: usedOriginRadius,
+        destination_radius_m: usedDestinationRadius,
+        widened,
+        candidate_count: outbound.candidateCount + returning.candidateCount,
+        enroute_enabled: Boolean(includeEnroute && cfg.includeEnroute && hasGeo),
+      },
+    };
+  }
+
+  /**
+   * City text fallback (no coordinates for this side). Matches the end city,
+   * the area label, or a stop city so area-level and legacy data still work.
+   * The matcher re-checks the text and the stop direction.
+   */
+  private citySearchWhere(
+    side: 'origin' | 'destination',
+    value: string,
+  ): Record<string, unknown> {
+    const stopTypes = side === 'origin' ? ['pickup', 'both'] : ['dropoff', 'both'];
+    const endpoint =
+      side === 'origin'
+        ? { originCity: { equals: value, mode: 'insensitive' as const } }
+        : { destinationCity: { equals: value, mode: 'insensitive' as const } };
+    const area =
+      side === 'origin'
+        ? { originArea: { equals: value, mode: 'insensitive' as const } }
+        : { destinationArea: { equals: value, mode: 'insensitive' as const } };
+    return {
+      OR: [
+        endpoint,
+        area,
+        {
+          stops: {
+            some: {
+              city: { equals: value, mode: 'insensitive' as const },
+              OR: [{ stopType: { in: stopTypes } }, { stopType: null }],
+            },
+          },
+        },
+      ],
+    };
   }
 
   private async fetchTripsForDate({
     targetDate,
     originCity,
     destinationCity,
+    originPoint,
+    destinationPoint,
+    originRadiusM,
+    destinationRadiusM,
+    includeEnroute,
+    sort,
     genderPreference,
     timeFrom,
     timeTo,
@@ -824,16 +1044,24 @@ export class TripsService {
     targetDate: string | null;
     originCity?: string;
     destinationCity?: string;
+    originPoint: SearchPoint | null;
+    destinationPoint: SearchPoint | null;
+    originRadiusM: number;
+    destinationRadiusM: number;
+    includeEnroute: boolean;
+    sort: SearchSort;
     genderPreference?: string | null;
     timeFrom?: string;
     timeTo?: string;
     vehicleType?: string;
     seats?: unknown;
-  }): Promise<Record<string, unknown>[]> {
+  }): Promise<{ trips: Record<string, unknown>[]; candidateCount: number }> {
     const seatCount = Number(seats);
     const hasDate = Boolean(targetDate);
     const dayStart = hasDate ? jordanDateOnly(parseJordanDayStart(targetDate)) : null;
     const now = new Date();
+    const cfg = getSearchConfig();
+    const hasGeo = Boolean(originPoint || destinationPoint);
 
     type TripWhere = Record<string, unknown>;
     const andConditions: TripWhere[] = [];
@@ -868,6 +1096,12 @@ export class TripsService {
         ],
       });
     }
+    if (originCity && !originPoint) {
+      andConditions.push(this.citySearchWhere('origin', originCity));
+    }
+    if (destinationCity && !destinationPoint) {
+      andConditions.push(this.citySearchWhere('destination', destinationCity));
+    }
 
     const rows = await this.prisma.trip.findMany({
       where: {
@@ -875,8 +1109,6 @@ export class TripsService {
         isModerated: false,
         availableSeats:
           Number.isFinite(seatCount) && seatCount > 0 ? { gte: seatCount } : { gt: 0 },
-        ...(originCity ? { originCity } : {}),
-        ...(destinationCity ? { destinationCity } : {}),
         ...(genderPreference && genderPreference !== 'all'
           ? { genderPreference: { in: [genderPreference as never] } }
           : {}),
@@ -885,21 +1117,46 @@ export class TripsService {
       },
       include: {
         seats: { where: { seatType: 'available' } },
-        stops: true,
+        stops: { orderBy: { stopOrder: 'asc' } },
         vehicle: true,
         driver: { select: { id: true, fullName: true, avgRating: true, avatarUrl: true, gender: true } },
       },
       orderBy: { departureTime: 'asc' },
+      take: cfg.maxCandidates + 1,
     });
+    if (rows.length > cfg.maxCandidates) {
+      this.logger.warn(
+        `trip search candidate cap reached (${cfg.maxCandidates}); refine the search filters`,
+      );
+    }
+    const candidateRows = rows.length > cfg.maxCandidates ? rows.slice(0, cfg.maxCandidates) : rows;
 
     // Vehicle-type filter as INNER join: drop rows whose vehicle was filtered out.
     const withVehicle = vehicleType
-      ? rows.filter(
+      ? candidateRows.filter(
           (r) =>
             r.vehicle !== null &&
             (r.vehicle as unknown as { vehicleType: string }).vehicleType === vehicleType,
         )
-      : rows;
+      : candidateRows;
+
+    const searchOptions = {
+      origin: originPoint,
+      destination: destinationPoint,
+      originCity: originPoint ? null : (originCity ?? null),
+      destinationCity: destinationPoint ? null : (destinationCity ?? null),
+      originRadiusM,
+      destinationRadiusM,
+      corridorM: cfg.corridorM,
+      includeEnroute: includeEnroute && cfg.includeEnroute,
+      allowCustomDropoff: cfg.allowCustomDropoff,
+      minRideM: cfg.minRideM,
+    };
+    const matched: { row: (typeof candidateRows)[number]; match: TripMatchResult }[] = [];
+    for (const row of withVehicle) {
+      const match = matchTrip(row, searchOptions, this.geo);
+      if (match) matched.push({ row, match });
+    }
 
     const anchor = dayStart ?? jordanStartOfToday();
     const toMin = (hhmm: string): number => {
@@ -909,7 +1166,7 @@ export class TripsService {
     const fromMin = timeFrom ? toMin(timeFrom) : null;
     const toMinVal = timeTo ? toMin(timeTo) : null;
 
-    const kept = withVehicle.filter((t) => {
+    const kept = matched.filter(({ row: t }) => {
       const depMs = new Date(t.departureTime).getTime();
       if (!t.isRecurring && depMs <= now.getTime()) return false;
       if (t.isRecurring && dayStart) {
@@ -935,18 +1192,37 @@ export class TripsService {
       return true;
     });
 
+    type MatchedRow = (typeof kept)[number];
     const anchorFromMs =
       fromMin !== null ? anchor.getTime() + fromMin * 60000 : null;
-    kept.sort((a, b) => {
+    const timeCompare = (a: MatchedRow, b: MatchedRow): number => {
       if (fromMin !== null && toMinVal !== null && anchorFromMs !== null) {
-        const da = Math.abs(new Date(a.departureTime).getTime() - anchorFromMs);
-        const db = Math.abs(new Date(b.departureTime).getTime() - anchorFromMs);
+        const da = Math.abs(new Date(a.row.departureTime).getTime() - anchorFromMs);
+        const db = Math.abs(new Date(b.row.departureTime).getTime() - anchorFromMs);
         if (da !== db) return da - db;
       }
-      return new Date(a.departureTime).getTime() - new Date(b.departureTime).getTime();
-    });
+      return (
+        new Date(a.row.departureTime).getTime() - new Date(b.row.departureTime).getTime()
+      );
+    };
 
-    return kept as unknown as Record<string, unknown>[];
+    if (hasGeo && sort === 'best_match') {
+      kept.sort((a, b) => b.match.score - a.match.score || timeCompare(a, b));
+    } else if (hasGeo && sort === 'distance') {
+      const distanceOf = (m: TripMatchResult): number =>
+        (m.origin.distanceM ?? originRadiusM) + (m.destination.distanceM ?? destinationRadiusM);
+      kept.sort((a, b) => distanceOf(a.match) - distanceOf(b.match) || timeCompare(a, b));
+    } else {
+      kept.sort(timeCompare);
+    }
+
+    return {
+      trips: kept.map(({ row, match }) => ({
+        ...(row as unknown as Record<string, unknown>),
+        search_match: matchToJson(match),
+      })),
+      candidateCount: Math.min(rows.length, cfg.maxCandidates),
+    };
   }
 
   async cancelTrip(

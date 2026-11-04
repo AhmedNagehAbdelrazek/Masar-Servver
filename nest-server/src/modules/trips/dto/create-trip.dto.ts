@@ -1,7 +1,8 @@
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
   ArrayMinSize,
   IsArray,
+  IsBoolean,
   IsDefined,
   IsIn,
   IsInt,
@@ -430,6 +431,55 @@ export class TripSearchQuery {
   @MaxLength(100)
   @TrimString()
   destination_city?: string;
+
+  // Optional proximity search (spec 013 P1). Coordinates take precedence over
+  // city strings; the city values remain as the fallback when coordinates are
+  // missing.
+  @IsOptional()
+  @IsLat()
+  origin_lat?: string | number;
+
+  @IsOptional()
+  @IsLng()
+  origin_lng?: string | number;
+
+  @IsOptional()
+  @IsLat()
+  destination_lat?: string | number;
+
+  @IsOptional()
+  @IsLng()
+  destination_lng?: string | number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(100)
+  @Max(10000)
+  @Type(() => Number)
+  origin_radius_m?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(100)
+  @Max(10000)
+  @Type(() => Number)
+  destination_radius_m?: number;
+
+  @IsOptional()
+  @Transform(({ value }) => {
+    if (value === undefined || value === null || value === '') return undefined;
+    if (typeof value === 'boolean') return value;
+    const normalized = String(value).toLowerCase();
+    if (['true', '1', 'yes', 'on'].includes(normalized)) return true;
+    if (['false', '0', 'no', 'off'].includes(normalized)) return false;
+    return value;
+  })
+  @IsBoolean()
+  include_enroute?: boolean;
+
+  @IsOptional()
+  @IsIn(['best_match', 'departure_time', 'distance'])
+  sort?: 'best_match' | 'departure_time' | 'distance';
 
   @IsOptional()
   @IsString()

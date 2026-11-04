@@ -40,9 +40,17 @@ const getDriverTrips = catchAsync(async (req: Request, res: Response): Promise<v
 
 const getAvailableTrips = catchAsync(async (req: Request, res: Response): Promise<void> => {
   const authReq = req as AuthRequest;
-  const { origin_city, destination_city, date, return_date, gender_preference, time_from, time_to, vehicle_type, seats } = req.query as {
+  const { origin_city, destination_city, origin_lat, origin_lng, destination_lat, destination_lng, origin_radius_m, destination_radius_m, include_enroute, sort, date, return_date, gender_preference, time_from, time_to, vehicle_type, seats } = req.query as {
     origin_city?: string;
     destination_city?: string;
+    origin_lat?: string;
+    origin_lng?: string;
+    destination_lat?: string;
+    destination_lng?: string;
+    origin_radius_m?: string;
+    destination_radius_m?: string;
+    include_enroute?: string;
+    sort?: string;
     date?: string;
     return_date?: string;
     gender_preference?: string;
@@ -54,6 +62,14 @@ const getAvailableTrips = catchAsync(async (req: Request, res: Response): Promis
   const result: any = await (tripService as unknown as { getAvailableTrips: (opts: unknown) => Promise<any> }).getAvailableTrips({
     originCity: origin_city,
     destinationCity: destination_city,
+    originLat: origin_lat,
+    originLng: origin_lng,
+    destinationLat: destination_lat,
+    destinationLng: destination_lng,
+    originRadiusM: origin_radius_m,
+    destinationRadiusM: destination_radius_m,
+    includeEnroute: include_enroute,
+    sort,
     date,
     returnDate: return_date,
     genderPreference: gender_preference,
@@ -101,19 +117,19 @@ const getAvailableTrips = catchAsync(async (req: Request, res: Response): Promis
 
   const serializedTrips = serializeWithDriver(trips);
   const serializedReturning = serializeWithDriver(returningTrips);
-  console.log("user",authReq.user);
-  console.log("user role",authReq?.user?.role);
-  console.log("origin_city",origin_city);
-  console.log("destination_city",destination_city);
+  const search = Array.isArray(result) ? undefined : result.search;
   if (authReq.user && authReq.user.role === ROLES.PASSENGER && origin_city && destination_city) {
-    console.log('[tripController] record search');
     try {
       await recentSearchService.recordSearch(String(authReq.user.id), origin_city, destination_city);
     } catch (err) {
       console.warn('[tripController] record search failed:', (err as Error).message);
     }
   }
-  successResponse(res, { trips: serializedTrips, returning_trips: serializedReturning });
+  successResponse(res, {
+    trips: serializedTrips,
+    returning_trips: serializedReturning,
+    ...(search ? { search } : {}),
+  });
 });
 
 const startTrip = catchAsync(async (req: Request, res: Response): Promise<void> => {
