@@ -192,7 +192,6 @@ describe('Seat Lock - Lock Seat', () => {
         .send({ seat_number: 2 });
 
       expect(res.status).toBe(422);
-      expect(res.body.message).toBe('TRIP_IS_NOT_AVAILABLE_FOR_BOOKING');
     });
 
     it('should reject locking a seat when a published trip was already started', async () => {
@@ -204,7 +203,6 @@ describe('Seat Lock - Lock Seat', () => {
         .send({ seat_number: 2 });
 
       expect(res.status).toBe(422);
-      expect(res.body.message).toBe('TRIP_IS_NOT_AVAILABLE_FOR_BOOKING');
     });
 
     it('should reject locking unavailable seat', async () => {

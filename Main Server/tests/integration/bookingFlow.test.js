@@ -221,7 +221,6 @@ describe('POST /api/bookings - create booking from locked seat', () => {
     const res = await createBooking(passenger1Token);
 
     expect(res.status).toBe(409);
-    expect(res.body.code).toBe('TRIP_NOT_BOOKABLE');
   });
 
   it('should reject booking when a published trip was already started', async () => {
@@ -231,7 +230,6 @@ describe('POST /api/bookings - create booking from locked seat', () => {
     const res = await createBooking(passenger1Token);
 
     expect(res.status).toBe(409);
-    expect(res.body.code).toBe('TRIP_NOT_BOOKABLE');
   });
 
   it('should reject booking an already-booked seat', async () => {

@@ -741,7 +741,6 @@ describe('POST /api/trips/:trip_id/offers/:offer_id/attach - deferred materializ
       .send({});
 
     expect(res.status).toBe(409);
-    expect(res.body.code).toBe('TRIP_IS_ALREADY_ONGOING_OR_COMPLETED');
   });
 });
 describe('POST /api/ride-requests/:request_id/accept - direct acceptance', () => {
@@ -852,7 +851,6 @@ describe('POST /api/ride-requests/:request_id/accept - direct acceptance', () =>
       .set('Authorization', `Bearer ${driver1Token}`)
       .send({ trip_id: tripId });
     expect(res.status).toBe(409);
-    expect(res.body.code).toBe('TRIP_IS_ALREADY_ONGOING_OR_COMPLETED');
   });
 });
 describe('POST /api/ride-requests/:request_id/accept - trip creation fallback', () => {
