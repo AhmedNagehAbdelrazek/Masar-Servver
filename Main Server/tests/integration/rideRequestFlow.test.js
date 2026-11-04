@@ -727,6 +727,22 @@ describe('POST /api/trips/:trip_id/offers/:offer_id/attach - deferred materializ
 
     expect(res.status).toBe(409);
   });
+
+  it('should reject attaching when departure has passed but the trip was never started', async () => {
+    await acceptAndAgree(18);
+    await Trip.update(
+      { departureTime: new Date(Date.now() - 5 * 60 * 1000) },
+      { where: { id: tripId } }
+    );
+
+    const res = await getAgent()
+      .post(`/api/trips/${tripId}/offers/${offerId}/attach`)
+      .set('Authorization', `Bearer ${driver1Token}`)
+      .send({});
+
+    expect(res.status).toBe(409);
+    expect(res.body.code).toBe('TRIP_IS_ALREADY_ONGOING_OR_COMPLETED');
+  });
 });
 describe('POST /api/ride-requests/:request_id/accept - direct acceptance', () => {
   it('accepts bodyless, materializes a booking on the driver trip, and adds the pickup to the route', async () => {
@@ -820,6 +836,23 @@ describe('POST /api/ride-requests/:request_id/accept - direct acceptance', () =>
       .send({ trip_id: tripId });
     expect(res.status).toBe(201);
     expect(res.body.trip.id).toBe(tripId);
+  });
+
+  it('rejects explicit acceptance onto a trip whose departure has passed', async () => {
+    const created = await createRideRequest(passenger2Token);
+    const requestId = created.body.ride_request.id;
+
+    await Trip.update(
+      { departureTime: new Date(Date.now() - 5 * 60 * 1000) },
+      { where: { id: tripId } }
+    );
+
+    const res = await getAgent()
+      .post(`/api/ride-requests/${requestId}/accept`)
+      .set('Authorization', `Bearer ${driver1Token}`)
+      .send({ trip_id: tripId });
+    expect(res.status).toBe(409);
+    expect(res.body.code).toBe('TRIP_IS_ALREADY_ONGOING_OR_COMPLETED');
   });
 });
 describe('POST /api/ride-requests/:request_id/accept - trip creation fallback', () => {

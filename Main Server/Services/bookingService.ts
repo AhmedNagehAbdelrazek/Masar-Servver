@@ -3,6 +3,7 @@ import { Op } from 'sequelize';
 import { Booking, Trip, User, TripSeat, TripStop, Rating, Vehicle, DriverProfile, sequelize } from '../Models';
 import { ApiErrors } from '../utils/ApiError';
 import { parsePagination, buildPagination } from '../utils/pagination';
+import { hasTripDeparted } from '../utils/tripSchedule';
 import { maskPhone } from '../utils/masking';
 import { REDIS_KEYS } from '../utils/redisKeys';
 import { deleteKey } from '../config/redis';
@@ -299,7 +300,7 @@ async function createBooking(passengerId, payload) {
     include: [{ model: TripStop, as: 'stops' }],
   });
   if (!trip) throw ApiErrors.notFound('TRIP_NOT_FOUND');
-  if (![TRIP_STATUS.PUBLISHED, TRIP_STATUS.FULL].includes(trip.status)) {
+  if (![TRIP_STATUS.PUBLISHED, TRIP_STATUS.FULL].includes(trip.status) || hasTripDeparted(trip)) {
     throw ApiErrors.conflict('TRIP_NOT_BOOKABLE');
   }
 
@@ -470,7 +471,7 @@ async function createBooking(passengerId, payload) {
 
   const booking = await sequelize.transaction(async (t) => {
     const freshTrip = await Trip.findByPk(trip_id, { transaction: t, lock: t.LOCK.UPDATE });
-    if (![TRIP_STATUS.PUBLISHED, TRIP_STATUS.FULL].includes(freshTrip.status)) {
+    if (![TRIP_STATUS.PUBLISHED, TRIP_STATUS.FULL].includes(freshTrip.status) || hasTripDeparted(freshTrip)) {
       throw ApiErrors.conflict('TRIP_NOT_BOOKABLE');
     }
 

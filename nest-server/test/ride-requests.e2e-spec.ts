@@ -657,6 +657,49 @@ describe('Ride request board', () => {
     expect((res.body.trip as Record<string, unknown>).id).toBe(tripId);
   });
 
+  it('rejects explicit acceptance onto a trip whose departure has passed', async () => {
+    const created = await createRideRequest(passenger1Token);
+    const requestId = created.body.ride_request.id as string;
+    await ctx.prisma.trip.update({
+      where: { id: tripId },
+      data: { departureTime: new Date(Date.now() - 60 * 1000) },
+    });
+
+    const res = await ctx.agent
+      .post(`/api/ride-requests/${requestId}/accept`)
+      .set('Authorization', `Bearer ${driver1Token}`)
+      .send({ trip_id: tripId });
+    expect(res.status).toBe(409);
+    expect(res.body.code).toBe('TRIP_IS_ALREADY_ONGOING_OR_COMPLETED');
+  });
+
+  it('rejects attaching an accepted offer to a trip whose departure has passed', async () => {
+    const created = await createRideRequest(passenger1Token);
+    const requestId = created.body.ride_request.id as string;
+    const offer = await submitOffer(driver1Token, requestId);
+    const offerId = offer.body.offer.id as string;
+
+    await ctx.agent
+      .put(`/api/offers/${offerId}`)
+      .set('Authorization', `Bearer ${passenger1Token}`)
+      .send({ action: 'accept' });
+    await ctx.agent
+      .put(`/api/offers/${offerId}/price`)
+      .set('Authorization', `Bearer ${passenger1Token}`)
+      .send({ agreed_fare: 18 });
+    await ctx.prisma.trip.update({
+      where: { id: tripId },
+      data: { departureTime: new Date(Date.now() - 60 * 1000) },
+    });
+
+    const res = await ctx.agent
+      .post(`/api/trips/${tripId}/offers/${offerId}/attach`)
+      .set('Authorization', `Bearer ${driver1Token}`)
+      .send({});
+    expect(res.status).toBe(409);
+    expect(res.body.code).toBe('TRIP_IS_ALREADY_ONGOING_OR_COMPLETED');
+  });
+
   it('creates a new trip when the driver has no matching trip', async () => {
     const created = await createRideRequest(passenger1Token, {
       destination_city: 'Zarqa',

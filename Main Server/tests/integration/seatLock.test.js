@@ -180,6 +180,33 @@ describe('Seat Lock - Lock Seat', () => {
       expect(res.body.seat_number).toBe(3);
     });
 
+    it('should reject locking a seat after the trip departure has passed', async () => {
+      await Trip.update(
+        { departureTime: new Date(Date.now() - 60 * 1000) },
+        { where: { id: tripId } }
+      );
+
+      const res = await getAgent()
+        .post(`/api/trips/${tripId}/seats/lock`)
+        .set('Authorization', `Bearer ${passenger1Token}`)
+        .send({ seat_number: 2 });
+
+      expect(res.status).toBe(422);
+      expect(res.body.message).toBe('TRIP_IS_NOT_AVAILABLE_FOR_BOOKING');
+    });
+
+    it('should reject locking a seat when a published trip was already started', async () => {
+      await Trip.update({ startedAt: new Date() }, { where: { id: tripId } });
+
+      const res = await getAgent()
+        .post(`/api/trips/${tripId}/seats/lock`)
+        .set('Authorization', `Bearer ${passenger1Token}`)
+        .send({ seat_number: 2 });
+
+      expect(res.status).toBe(422);
+      expect(res.body.message).toBe('TRIP_IS_NOT_AVAILABLE_FOR_BOOKING');
+    });
+
     it('should reject locking unavailable seat', async () => {
       const res = await getAgent()
         .post(`/api/trips/${tripId}/seats/lock`)

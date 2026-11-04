@@ -18,6 +18,7 @@ import { RedisService } from '../../redis/redis.service.js';
 import { NotificationsService, type NotifyUser } from '../notifications/notifications.service.js';
 import { HomeService } from '../subscriptions/home.service.js';
 import { TripsService } from '../trips/trips.service.js';
+import { hasTripDeparted } from '../trips/trip-schedule.js';
 import { RouteService } from '../maps/route.service.js';
 import type { CreateTripDto } from '../trips/dto/create-trip.dto.js';
 
@@ -776,7 +777,7 @@ export class RideRequestsService {
         code: 'FORBIDDEN',
       });
     }
-    if (!['published', 'full'].includes(trip.status)) {
+    if (!['published', 'full'].includes(trip.status) || hasTripDeparted(trip)) {
       throw new ConflictException({
         message: 'TRIP_IS_ALREADY_ONGOING_OR_COMPLETED',
         code: 'TRIP_IS_ALREADY_ONGOING_OR_COMPLETED',
@@ -894,7 +895,7 @@ export class RideRequestsService {
           code: 'FORBIDDEN',
         });
       }
-      if (!['published', 'full'].includes(trip.status)) {
+      if (!['published', 'full'].includes(trip.status) || hasTripDeparted(trip)) {
         throw new ConflictException({
           message: 'TRIP_IS_ALREADY_ONGOING_OR_COMPLETED',
           code: 'TRIP_IS_ALREADY_ONGOING_OR_COMPLETED',
@@ -1061,7 +1062,7 @@ export class RideRequestsService {
 
     const booking = await this.prisma.$transaction(async (tx) => {
       const freshTrip = await tx.trip.findUnique({ where: { id: trip.id } });
-      if (!freshTrip || !['published', 'full'].includes(freshTrip.status)) {
+      if (!freshTrip || !['published', 'full'].includes(freshTrip.status) || hasTripDeparted(freshTrip)) {
         throw new ConflictException({ message: 'TRIP_NOT_BOOKABLE', code: 'TRIP_NOT_BOOKABLE' });
       }
 

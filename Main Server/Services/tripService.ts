@@ -1,6 +1,7 @@
 // @ts-nocheck
 import { Op } from 'sequelize';
 import { ApiErrors } from '../utils/ApiError';
+import { hasTripDeparted } from '../utils/tripSchedule';
 import { TRIP_STATUS, GENDER_PREFERENCE, BOOKING_STATUS, FREE_OFFER_TYPE, PENALTY_TYPES, PENALTY_CATEGORY, PENALTY_SEVERITY, CANCELLATION_ESCALATION, TRIP_DURATION_HOURS, SEAT_TYPE, REQUEST_OFFER_STATUS } from '../config/constants';
 import commissionService from './commissionService';
 import notificationService from './notificationService';
@@ -694,11 +695,11 @@ const getTripById = async (tripId) => {
  */
 const getTripOptions = async (tripId) => {
   const trip = await Trip.findByPk(tripId, {
-    attributes: ['id', 'status', 'availableSeats'],
+    attributes: ['id', 'status', 'availableSeats', 'departureTime', 'isRecurring', 'startedAt', 'completedAt'],
     include: [{ model: TripStop, as: 'stops' }],
   });
   if (!trip) throw ApiErrors.notFound('TRIP_NOT_FOUND');
-  if (![TRIP_STATUS.PUBLISHED, TRIP_STATUS.FULL].includes(trip.status)) {
+  if (![TRIP_STATUS.PUBLISHED, TRIP_STATUS.FULL].includes(trip.status) || hasTripDeparted(trip)) {
     throw ApiErrors.conflict('TRIP_NOT_BOOKABLE');
   }
 

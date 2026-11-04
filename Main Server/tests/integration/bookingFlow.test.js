@@ -211,6 +211,29 @@ describe('POST /api/bookings - create booking from locked seat', () => {
     expect(res.status).toBe(422);
   });
 
+  it('should reject booking after departure even with a held seat lock', async () => {
+    await lockSeat(passenger1Token, 2);
+    await Trip.update(
+      { departureTime: new Date(Date.now() - 60 * 1000) },
+      { where: { id: tripId } }
+    );
+
+    const res = await createBooking(passenger1Token);
+
+    expect(res.status).toBe(409);
+    expect(res.body.code).toBe('TRIP_NOT_BOOKABLE');
+  });
+
+  it('should reject booking when a published trip was already started', async () => {
+    await lockSeat(passenger1Token, 2);
+    await Trip.update({ startedAt: new Date() }, { where: { id: tripId } });
+
+    const res = await createBooking(passenger1Token);
+
+    expect(res.status).toBe(409);
+    expect(res.body.code).toBe('TRIP_NOT_BOOKABLE');
+  });
+
   it('should reject booking an already-booked seat', async () => {
     await lockSeat(passenger1Token, 2);
     await createBooking(passenger1Token);

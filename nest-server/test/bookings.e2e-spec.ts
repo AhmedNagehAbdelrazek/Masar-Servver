@@ -646,4 +646,28 @@ describe('Multi-seat bookings', () => {
     expect((await ctx.prisma.trip.findUnique({ where: { id: tripId } }))?.availableSeats).toBe(2);
     expect((await lockSeats({ seat_number: 2 })).status).toBe(200);
   });
+
+  it('rejects booking once the departure time has passed even with a held lock', async () => {
+    expect((await lockSeats({ seat_numbers: [2] })).status).toBe(200);
+    await ctx.prisma.trip.update({
+      where: { id: tripId },
+      data: { departureTime: new Date(Date.now() - 60 * 1000) },
+    });
+
+    const res = await book({ seat_numbers: [2], agreed_fare: 15.0 });
+    expect(res.status).toBe(409);
+    expect(res.body.code).toBe('TRIP_NOT_BOOKABLE');
+  });
+
+  it('rejects booking when a published trip was already started', async () => {
+    expect((await lockSeats({ seat_numbers: [2] })).status).toBe(200);
+    await ctx.prisma.trip.update({
+      where: { id: tripId },
+      data: { startedAt: new Date() },
+    });
+
+    const res = await book({ seat_numbers: [2], agreed_fare: 15.0 });
+    expect(res.status).toBe(409);
+    expect(res.body.code).toBe('TRIP_NOT_BOOKABLE');
+  });
 });

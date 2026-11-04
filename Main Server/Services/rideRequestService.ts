@@ -2,6 +2,7 @@
 import { Op } from 'sequelize';
 import { ApiErrors } from '../utils/ApiError';
 import { parsePagination, buildPagination } from '../utils/pagination';
+import { hasTripDeparted } from '../utils/tripSchedule';
 import { maskPhone } from '../utils/masking';
 import auditService from './auditService';
 import notificationService from './notificationService';
@@ -658,7 +659,7 @@ async function attachOfferToTrip(driverId, tripId, offerId, payload = {}) {
   if (trip.driverId !== driverId) {
     throw ApiErrors.forbidden('YOU_CAN_ONLY_ATTACH_OFFERS_TO_YOUR_OWN_TRIPS');
   }
-  if (![TRIP_STATUS.PUBLISHED, TRIP_STATUS.FULL].includes(trip.status)) {
+  if (![TRIP_STATUS.PUBLISHED, TRIP_STATUS.FULL].includes(trip.status) || hasTripDeparted(trip)) {
     throw ApiErrors.conflict('TRIP_IS_ALREADY_ONGOING_OR_COMPLETED');
   }
 
@@ -790,7 +791,7 @@ async function resolveAcceptTrip(driverId, request, payload, seatsNeeded) {
     if (trip.driverId !== driverId) {
       throw ApiErrors.forbidden('YOU_CAN_ONLY_ATTACH_RIDES_TO_YOUR_OWN_TRIPS');
     }
-    if (![TRIP_STATUS.PUBLISHED, TRIP_STATUS.FULL].includes(trip.status)) {
+    if (![TRIP_STATUS.PUBLISHED, TRIP_STATUS.FULL].includes(trip.status) || hasTripDeparted(trip)) {
       throw ApiErrors.conflict('TRIP_IS_ALREADY_ONGOING_OR_COMPLETED');
     }
     if (Number(trip.availableSeats) < seatsNeeded) {
@@ -918,7 +919,7 @@ async function createDirectAcceptBooking(trip, request, fare, seatsNeeded) {
 
   const booking = await sequelize.transaction(async (transaction) => {
     const freshTrip = await Trip.findByPk(trip.id, { transaction, lock: transaction.LOCK.UPDATE });
-    if (!freshTrip || ![TRIP_STATUS.PUBLISHED, TRIP_STATUS.FULL].includes(freshTrip.status)) {
+    if (!freshTrip || ![TRIP_STATUS.PUBLISHED, TRIP_STATUS.FULL].includes(freshTrip.status) || hasTripDeparted(freshTrip)) {
       throw ApiErrors.conflict('TRIP_NOT_BOOKABLE');
     }
 

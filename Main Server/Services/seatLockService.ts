@@ -2,6 +2,7 @@
 import { Trip, TripSeat } from '../Models';
 import { ApiErrors } from '../utils/ApiError';
 import { acquireSeatLock, checkSeatLock, releaseSeatLock } from '../utils/seatLock';
+import { hasTripDeparted } from '../utils/tripSchedule';
 import { TRIP_STATUS, SEAT_TYPE } from '../config/constants';
 import auditService from './auditService';
 
@@ -32,7 +33,7 @@ const lockSeats = async (tripId, seatNumbers, passengerId) => {
   // Verify trip exists and is published
   const trip = await Trip.findByPk(tripId);
   if (!trip) throw ApiErrors.notFound('TRIP_NOT_FOUND');
-  if (trip.status !== TRIP_STATUS.PUBLISHED) {
+  if (trip.status !== TRIP_STATUS.PUBLISHED || hasTripDeparted(trip)) {
     throw ApiErrors.validation('TRIP_IS_NOT_AVAILABLE_FOR_BOOKING');
   }
 

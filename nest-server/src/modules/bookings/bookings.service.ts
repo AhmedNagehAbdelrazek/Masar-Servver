@@ -21,6 +21,7 @@ import { PickupService } from '../maps/pickup.service.js';
 import { RouteService } from '../maps/route.service.js';
 import { NotificationsService, type NotifyUser } from '../notifications/notifications.service.js';
 import { HomeService } from '../subscriptions/home.service.js';
+import { hasTripDeparted } from '../trips/trip-schedule.js';
 import { TripExpiryService } from '../trips/trip-expiry.service.js';
 
 function validationError(code: string, message: string): UnprocessableEntityException {
@@ -517,7 +518,7 @@ export class BookingsService {
       include: { stops: true },
     });
     if (!trip) throw new NotFoundException({ message: 'TRIP_NOT_FOUND', code: 'TRIP_NOT_FOUND' });
-    if (!['published', 'full'].includes(trip.status)) {
+    if (!['published', 'full'].includes(trip.status) || hasTripDeparted(trip)) {
       throw new ConflictException({ message: 'TRIP_NOT_BOOKABLE', code: 'TRIP_NOT_BOOKABLE' });
     }
     if (payload.agreed_fare === undefined || Number(payload.agreed_fare) !== Number(trip.farePerSeat)) {
@@ -690,7 +691,7 @@ export class BookingsService {
 
     const booking = await withSerializableRetry(this.prisma, async (tx) => {
       const freshTrip = await tx.trip.findUnique({ where: { id: trip.id } });
-      if (!freshTrip || !['published', 'full'].includes(freshTrip.status)) {
+      if (!freshTrip || !['published', 'full'].includes(freshTrip.status) || hasTripDeparted(freshTrip)) {
         throw new ConflictException({ message: 'TRIP_NOT_BOOKABLE', code: 'TRIP_NOT_BOOKABLE' });
       }
       const remaining = Number(freshTrip.availableSeats) - requestedSeats;
@@ -1283,8 +1284,16 @@ export class BookingsService {
     if (booking.status !== 'confirmed') {
       throw new ConflictException({ message: 'BOOKING_IS_NOT_CONFIRMED', code: 'BOOKING_IS_NOT_CONFIRMED' });
     }
-    const trip = booking.trip as unknown as { status: string; departureTime: Date; driverId: string; originCity: string; destinationCity: string };
-    this.pickup.assertBookable({ status: trip.status });
+    const trip = booking.trip as unknown as {
+      status: string;
+      departureTime: Date;
+      startedAt: Date | null;
+      completedAt: Date | null;
+      driverId: string;
+      originCity: string;
+      destinationCity: string;
+    };
+    this.pickup.assertBookable(trip);
 
     const cutoffMs = getMapsConfig().pickupEditCutoffMinutes * 60 * 1000;
     if (new Date(trip.departureTime).getTime() - Date.now() < cutoffMs) {

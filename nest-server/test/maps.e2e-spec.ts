@@ -450,5 +450,16 @@ describe('Contract: maps', () => {
     expect(far.status).toBe(200);
     expect(far.body.accepted).toBe(false);
     expect(far.body.reason).toBe('PICKUP_TOO_FAR_FROM_ROUTE');
+
+    await ctx.prisma.trip.update({
+      where: { id: tripId },
+      data: { departureTime: new Date(Date.now() - 60 * 1000) },
+    });
+    const departed = await ctx.agent
+      .post(`/api/trips/${tripId}/pickup-preview`)
+      .set('Authorization', `Bearer ${passengerToken}`)
+      .send({ lat: 32.25, lng: 35.8793 });
+    expect(departed.status).toBe(409);
+    expect(departed.body.code).toBe('TRIP_NOT_BOOKABLE');
   });
 });

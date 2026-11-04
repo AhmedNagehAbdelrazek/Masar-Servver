@@ -5,6 +5,7 @@ import { Trip, TripStop } from '../Models';
 import { ApiErrors } from '../utils/ApiError';
 import { TRIP_STATUS, PICKUP_TYPE } from '../config/constants';
 import mapsConfig from '../config/maps';
+import { hasTripDeparted } from '../utils/tripSchedule';
 import { decode, distanceFromRouteM, alongRouteM } from './geo';
 import { buildWaypoints, resolveRoute } from './routeService';
 
@@ -21,6 +22,9 @@ async function loadStop(tripId, stopId) {
 async function validatePickup(tripId, input, { languageCode = 'ar' } = {}) {
   const trip = await Trip.findByPk(tripId, { include: [{ model: TripStop, as: 'stops' }] });
   if (!trip) throw ApiErrors.notFound('TRIP_NOT_FOUND');
+  // Preview, booking and pickup edits share the same window: once the trip
+  // has started or its departure has passed, no pickup can be added/changed.
+  assertBookable(trip);
 
   const type = (input && input.pickup_type) || (input && input.stopId ? PICKUP_TYPE.STOP : PICKUP_TYPE.CUSTOM);
   if (type === PICKUP_TYPE.STOP) {
@@ -83,7 +87,7 @@ async function validatePickup(tripId, input, { languageCode = 'ar' } = {}) {
 
 // Trip must still be open for booking-side validation.
 function assertBookable(trip) {
-  if (![TRIP_STATUS.PUBLISHED, TRIP_STATUS.FULL].includes(trip.status)) {
+  if (![TRIP_STATUS.PUBLISHED, TRIP_STATUS.FULL].includes(trip.status) || hasTripDeparted(trip)) {
     throw ApiErrors.conflict('TRIP_NOT_BOOKABLE');
   }
 }

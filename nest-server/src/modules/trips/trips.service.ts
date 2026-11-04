@@ -31,6 +31,7 @@ import { HomeService } from '../subscriptions/home.service.js';
 import { RecentSearchService } from '../subscriptions/recent-search.service.js';
 import { SeatLockService } from './seat-lock.service.js';
 import { TRIP_START_WINDOW_MS } from './trip.constants.js';
+import { hasTripDeparted } from './trip-schedule.js';
 import type { TripExpiryService } from './trip-expiry.service.js';
 import { TripExpiryService as TripExpiryServiceToken } from './trip-expiry.service.js';
 import { getMapsConfig } from '../maps/maps.config.js';
@@ -580,10 +581,18 @@ export class TripsService {
   async getTripOptions(tripId: string): Promise<Record<string, unknown>> {
     const trip = await this.prisma.trip.findUnique({
       where: { id: tripId },
-      select: { id: true, status: true, availableSeats: true },
+      select: {
+        id: true,
+        status: true,
+        availableSeats: true,
+        departureTime: true,
+        isRecurring: true,
+        startedAt: true,
+        completedAt: true,
+      },
     });
     if (!trip) throw new NotFoundException({ message: 'TRIP_NOT_FOUND', code: 'TRIP_NOT_FOUND' });
-    if (!['published', 'full'].includes(trip.status)) {
+    if (!['published', 'full'].includes(trip.status) || hasTripDeparted(trip)) {
       throw new ConflictException({ message: 'TRIP_NOT_BOOKABLE', code: 'TRIP_NOT_BOOKABLE' });
     }
     const stops = await this.prisma.tripStop.findMany({

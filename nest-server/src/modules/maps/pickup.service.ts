@@ -5,6 +5,7 @@ import {
   UnprocessableEntityException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service.js';
+import { hasTripDeparted } from '../trips/trip-schedule.js';
 import { GeoService } from './geo.service.js';
 import { getMapsConfig } from './maps.config.js';
 import { RouteService } from './route.service.js';
@@ -35,8 +36,13 @@ export class PickupService {
     private readonly geo: GeoService,
   ) {}
 
-  assertBookable(trip: { status: string }): void {
-    if (!['published', 'full'].includes(trip.status)) {
+  assertBookable(trip: {
+    status: string;
+    departureTime: Date | string;
+    startedAt?: Date | string | null;
+    completedAt?: Date | string | null;
+  }): void {
+    if (!['published', 'full'].includes(trip.status) || hasTripDeparted(trip)) {
       throw new ConflictException({ message: 'TRIP_NOT_BOOKABLE', code: 'TRIP_NOT_BOOKABLE' });
     }
   }
@@ -57,6 +63,9 @@ export class PickupService {
       include: { stops: true },
     });
     if (!trip) throw new NotFoundException({ message: 'TRIP_NOT_FOUND', code: 'TRIP_NOT_FOUND' });
+    // Preview, booking and pickup edits share the same window: once the trip
+    // has started or its departure has passed, no pickup can be added/changed.
+    this.assertBookable(trip);
 
     const type = input.pickup_type ?? (input.pickup_stop_id ? 'stop' : 'custom');
     if (type === 'stop') {

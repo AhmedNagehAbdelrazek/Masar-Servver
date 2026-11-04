@@ -171,6 +171,26 @@ describe('Seat locks', () => {
     expect((await lock({ seat_number: 99 })).status).toBe(404);
   });
 
+  it('rejects locking seats once the departure time has passed', async () => {
+    await ctx.prisma.trip.update({
+      where: { id: tripId },
+      data: { departureTime: new Date(Date.now() - 60 * 1000) },
+    });
+    const res = await lock({ seat_number: 2 });
+    expect(res.status).toBe(422);
+    expect(res.body.code).toBe('VALIDATION_ERROR');
+  });
+
+  it('rejects locking seats when a published trip was already started', async () => {
+    await ctx.prisma.trip.update({
+      where: { id: tripId },
+      data: { startedAt: new Date() },
+    });
+    const res = await lock({ seat_number: 2 });
+    expect(res.status).toBe(422);
+    expect(res.body.code).toBe('VALIDATION_ERROR');
+  });
+
   it('requires auth and a real trip', async () => {
     expect((await ctx.agent.post(`/api/trips/${tripId}/seats/lock`).send({ seat_number: 2 })).status).toBe(
       401,
