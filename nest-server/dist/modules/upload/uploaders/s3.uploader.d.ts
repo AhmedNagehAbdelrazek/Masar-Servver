@@ -4,10 +4,13 @@ export declare function assertS3Configured(logger?: Logger): void;
 export declare class S3Uploader implements Uploader {
     private readonly bucket;
     private readonly region;
+    private readonly endpoint?;
     private readonly baseUrl;
+    private readonly forcePathStyle;
     private clientInstance?;
     constructor();
     private client;
+    private publicUrl;
     upload(buffer: Buffer, opts?: UploadOptions): Promise<{
         url: string;
         filename: string;

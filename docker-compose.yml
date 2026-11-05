@@ -63,7 +63,7 @@ services:
       REDIS_PORT: 6379
       JWT_EXPIRY: 24h
       SALT_ROUNDS: 12
-      UPLOAD_PROVIDER: local
+      # Upload provider comes from ./main-server/.env (UPLOAD_PROVIDER=local|s3|cloudinary).
       AUDIT_COLLECTOR_URL: http://audit-collector:4000
     depends_on:
       db:

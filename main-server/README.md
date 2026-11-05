@@ -60,7 +60,10 @@ See `.env.example` for the full annotated list. Key groups:
 - **JWT** – `JWT_SECRET`, `JWT_EXPIRY`, `SALT_ROUNDS`
 - **Redis** – `REDIS_HOST`, `REDIS_PORT`, `REDIS_PASSWORD`
 - **Uploads** – `UPLOAD_PROVIDER` (`cloudinary` | `local` | `s3`) plus the
-  matching provider block; local files are served from `/uploads`
+  matching provider block; local files are served from `/uploads`. For
+  S3-compatible stores (Garage/MinIO) set `S3_ENDPOINT`,
+  `S3_FORCE_PATH_STYLE=true`, and `S3_BASE_URL` (public read URL). See
+  [`../GARAGE_STORAGE.md`](../GARAGE_STORAGE.md).
 - **Notifications** – `SMS_PROVIDER` (`websmpp` | `twilio` | `log`); for
   websmpp set `SMS_USERNAME`, `SMS_PASSWORD`, `SMS_SENDER_ID`,
   `SMS_PROVIDER_BASE`, and optionally `SMS_DEFAULT_COUNTRY_CODE` (962);
