@@ -427,11 +427,20 @@ function toNextBookingPayload(booking) {
     booking_id: booking.id,
     reference_code: booking.referenceCode,
     status: booking.status,
+    payment_status: booking.paymentStatus,
     seats_booked: booking.seatsBooked,
     seat_numbers: seatNumbersFor(booking),
     agreed_fare: Number(booking.agreedFare),
     currency: booking.currency || 'JOD',
     pickup: toPickupSection(booking),
+    dropoff_place: booking.dropoffPlace || null,
+    dropoff_lat: toNumber(booking.dropoffLat),
+    dropoff_lng: toNumber(booking.dropoffLng),
+    dropoff_order: booking.dropoffOrder != null ? Number(booking.dropoffOrder) : null,
+    dropoff_deadline: booking.dropoffDeadline || null,
+    cancellation_reason: booking.cancellationReason || null,
+    cancelled_at: booking.cancelledAt || null,
+    completed_at: booking.completedAt || null,
     created_at: booking.createdat || booking.createdAt || null,
     trip: toTripDetails(trip),
     driver: driver
@@ -462,16 +471,57 @@ function toLastTripPayload(booking) {
   const trip = booking.trip;
   if (!trip) return null;
   const ratingRow = (booking.ratings || [])[0];
+  const driver = trip.driver || null;
+  const vehicle = trip.vehicle || null;
   return {
     booking_id: booking.id,
+    reference_code: booking.referenceCode,
+    status: booking.status,
+    payment_status: booking.paymentStatus,
+    seats_booked: booking.seatsBooked,
+    seat_numbers: seatNumbersFor(booking),
+    agreed_fare: Number(booking.agreedFare),
+    currency: booking.currency || 'JOD',
+    pickup: toPickupSection(booking),
+    dropoff_place: booking.dropoffPlace || null,
+    dropoff_lat: toNumber(booking.dropoffLat),
+    dropoff_lng: toNumber(booking.dropoffLng),
+    dropoff_order: booking.dropoffOrder != null ? Number(booking.dropoffOrder) : null,
+    dropoff_deadline: booking.dropoffDeadline || null,
+    cancellation_reason: booking.cancellationReason || null,
+    cancelled_at: booking.cancelledAt || null,
+    completed_at: booking.completedAt || null,
+    booking_created_at: booking.createdat || booking.createdAt || null,
+    // Legacy summary fields kept for existing clients.
     trip_id: trip.id,
     origin: { city: trip.originCity, area: trip.originArea },
     destination: { city: trip.destinationCity, area: trip.destinationArea },
     departure_time: trip.departureTime,
-    status: booking.status,
     satisfaction_rating: ratingRow ? Number(ratingRow.stars) : null,
     trip_cost: Number(booking.agreedFare),
-    currency: booking.currency || 'JOD',
+    // Full trip + driver/vehicle details.
+    trip: toTripDetails(trip),
+    driver: driver
+      ? {
+          id: driver.id,
+          full_name: driver.fullName,
+          phone: driver.phone,
+          rating: Number(driver.avgRating) || 0,
+          image: driver.avatarUrl,
+        }
+      : null,
+    vehicle: vehicle
+      ? {
+          vehicle_id: vehicle.id,
+          type: vehicle.vehicleType,
+          make_model: [vehicle.manufacturer, vehicle.model].filter(Boolean).join(' '),
+          year: vehicle.modelYear,
+          plate: vehicle.plateNumber,
+          color: vehicle.color,
+          seats: vehicle.seats,
+          total_seats: vehicle.seats,
+        }
+      : null,
   };
 }
 
@@ -523,6 +573,8 @@ async function buildPassengerHome(passengerId) {
           include: [
             { model: User, as: 'driver', attributes: TRIP_DRIVER_ATTRS },
             { model: Vehicle, as: 'vehicle', attributes: VEHICLE_ATTRS },
+            { model: TripStop, as: 'stops', separate: true, order: [['stopOrder', 'ASC']] },
+            { model: TripAttribute, as: 'attributes', separate: true },
           ],
         },
         { model: Rating, as: 'ratings', attributes: ['stars'], where: { raterId: passengerId }, required: false },
@@ -582,6 +634,6 @@ async function invalidateHomeForTrip(tripId, driverId) {
   }
 }
 
-module.exports = { getHome, invalidateHomeCache, getSubscription, getPassengerHome, invalidatePassengerHome, invalidateHomeForTrip };
-export { getHome, invalidateHomeCache, getSubscription, getPassengerHome, invalidatePassengerHome, invalidateHomeForTrip };
+module.exports = { getHome, invalidateHomeCache, getSubscription, getPassengerHome, invalidatePassengerHome, invalidateHomeForTrip, toTripDetails };
+export { getHome, invalidateHomeCache, getSubscription, getPassengerHome, invalidatePassengerHome, invalidateHomeForTrip, toTripDetails };
 export default module.exports;

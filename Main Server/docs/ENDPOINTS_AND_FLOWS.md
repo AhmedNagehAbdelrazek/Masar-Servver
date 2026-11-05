@@ -339,8 +339,8 @@
 ### [book-1] GET /api/bookings — passenger
 **Use:** My Trips list (upcoming + history).
 **Request:** query `{status ("pending"|"confirmed"|"cancelled"|"completed"|"no_show", optional), trip_id (optional), page (≥1), limit (1–100)}`.
-**Response:** `200 {data: [{id, reference_code, status, seats_booked, seat_numbers, agreed_fare, trip{...}, pickup_*, dropoff_*}], pagination}`.
-**Watch out:** expired trips are swept and statuses synced before filtering.
+**Response:** `200 {data: [{id, reference_code, status, payment_status, seats_booked, seat_numbers, agreed_fare, currency, pickup, dropoff_*, cancellation_*, trip{trip_id, origin{city,area,address,lat,lng}, destination{city,area,address,lat,lng}, departure_time, arrival_time, fare_per_seat, total_seats, available_seats, status, recurring/gender settings, attributes, stops, waypoints, instructions, route, legacy price/route_points/meeting_point}, driver, vehicle{id, type, make_model, year, plate, color, seats}}], pagination}`.
+**Watch out:** expired trips are swept and statuses synced before filtering. Each row carries the complete trip details, not just a summary.
 
 ### [book-2] POST /api/bookings — passenger
 **Use:** "Book" button after locking seats.
@@ -351,7 +351,7 @@
 ### [book-3] GET /api/bookings/:booking_id — passenger
 **Use:** booking detail / tracking entry screen.
 **Request:** params `{booking_id}`.
-**Response:** `200 {booking: {...same detail as book-2...}}`.
+**Response:** `200 {booking: {...same detail as book-2, with full trip details (addresses, lat/lng, arrival, seats, recurring/gender settings, attributes, stops/waypoints, instructions, route), driver summary and full vehicle details...}}`.
 **Watch out:** `403` not the owner; `404` missing.
 
 ### [book-4] GET /api/bookings/:booking_id/driver-profile — passenger, driver, admin
@@ -507,8 +507,8 @@
 ### [profile-4] GET /api/profile/passenger/home — passenger
 **Use:** app launch — next booking + recent trips.
 **Request:** none.
-**Response:** `200 {passenger{id, full_name, rating}, next_booking{booking_id, seat_numbers, pickup, trip{full details incl. stops/route}, driver, vehicle}|null, last_searched_trips[5], last_trips[5]}`.
-**Watch out:** never cached; sweeps expired trips first.
+**Response:** `200 {passenger{id, full_name, rating}, next_booking{booking_id, reference_code, status, payment_status, seat_numbers, agreed_fare, pickup, dropoff_*, trip{full details incl. addresses/lat/lng, stops/waypoints, attributes, instructions, route}, driver, vehicle}|null, last_searched_trips[5], last_trips[5]}`.
+**Watch out:** never cached; sweeps expired trips first. `last_trips` rows include full booking fields (`reference_code`, `payment_status`, seat numbers, pickup/dropoff/cancellation/completion timestamps) plus the same full `trip`, `driver` and `vehicle` blocks as `next_booking`.
 
 ### [rate-1] POST /api/ratings — passenger, driver
 **Use:** rate the other party after the ride (both directions).

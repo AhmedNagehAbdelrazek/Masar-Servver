@@ -354,17 +354,113 @@ describe('Passenger booking list', () => {
     expect(other.body.data.length).toBe(0);
   });
 
-  it('shows vehicle and route on detail', async () => {
+  it('shows full trip details on list and detail', async () => {
     const driverToken = generateAccessToken({ id: DRIVER_ID, role: 'driver' });
     const tripId = await createTripViaApi(ctx, driverToken);
     const booking = await lockAndBook(ctx, passengerToken, tripId);
+
+    await ctx.prisma.trip.update({
+      where: { id: tripId },
+      data: {
+        originArea: 'Abdoun',
+        originAddress: '13 Abdoun St',
+        originLat: 31.95,
+        originLng: 35.87,
+        destinationArea: 'Downtown',
+        destinationAddress: '1 University St',
+        destinationLat: 32.55,
+        destinationLng: 35.85,
+        driverInstructions: ['no smoking'],
+        additionalInstructions: 'Be on time',
+        routePolyline: 'encoded-polyline',
+        routeDistanceM: 80000,
+        routeDurationS: 5400,
+        routeStatus: 'ready',
+        routeVersion: 4,
+      },
+    });
+    await ctx.prisma.tripStop.create({
+      data: {
+        tripId,
+        stopOrder: 1,
+        stopName: 'Sweileh',
+        city: 'Amman',
+        lat: 31.96,
+        lng: 35.88,
+        stopType: 'pickup',
+      },
+    });
+    await ctx.prisma.tripAttribute.create({
+      data: { tripId, attrKey: 'wifi', attrValue: 'true' },
+    });
+
+    const list = await ctx.agent
+      .get('/api/bookings')
+      .set('Authorization', `Bearer ${passengerToken}`);
+    expect(list.status).toBe(200);
+    const row = list.body.data[0] as Record<string, unknown>;
+    const rowTrip = row.trip as Record<string, unknown>;
+    expect(rowTrip.origin).toMatchObject({
+      city: 'Amman',
+      area: 'Abdoun',
+      address: '13 Abdoun St',
+    });
+    expect(rowTrip.destination).toMatchObject({
+      city: 'Irbid',
+      area: 'Downtown',
+      address: '1 University St',
+    });
+    expect(rowTrip.fare_per_seat).toBe(15);
+    expect(rowTrip.total_seats).toBe(4);
+    expect(rowTrip.available_seats).toBe(1);
+    expect(rowTrip.attributes).toEqual([{ key: 'wifi', value: true }]);
+    expect(rowTrip.stops).toHaveLength(1);
+    expect((rowTrip.waypoints as Record<string, unknown>[])[0]).toEqual({
+      stop_name: 'Sweileh',
+      stop_lat: 31.96,
+      stop_lng: 35.88,
+    });
+    expect(rowTrip.instructions).toEqual(['no smoking']);
+    expect(rowTrip.additional_instructions).toBe('Be on time');
+    expect(rowTrip.route).toMatchObject({
+      status: 'ready',
+      version: 4,
+      polyline: 'encoded-polyline',
+      distance_m: 80000,
+      duration_s: 5400,
+    });
+    expect((row.vehicle as Record<string, unknown>).make_model).toBe('Toyota Camry');
+    expect((row.vehicle as Record<string, unknown>).color).toBe('White');
 
     const res = await ctx.agent
       .get(`/api/bookings/${booking.id}`)
       .set('Authorization', `Bearer ${passengerToken}`);
     expect(res.status).toBe(200);
-    expect((res.body.booking.vehicle as Record<string, unknown>).type).toBe('sedan');
-    expect((res.body.booking.trip as Record<string, unknown>).origin).toMatchObject({ city: 'Amman' });
+    const detail = res.body.booking as Record<string, unknown>;
+    expect(detail.vehicle).toMatchObject({
+      type: 'sedan',
+      make_model: 'Toyota Camry',
+      year: 2023,
+      plate: 'OPS-101',
+      color: 'White',
+      seats: 4,
+      total_seats: 4,
+    });
+    expect((detail.trip as Record<string, unknown>).origin).toMatchObject({
+      city: 'Amman',
+      area: 'Abdoun',
+      address: '13 Abdoun St',
+    });
+    expect((detail.trip as Record<string, unknown>).route).toMatchObject({
+      status: 'ready',
+      version: 4,
+    });
+    // Legacy aliases still present for existing clients.
+    expect((detail.trip as Record<string, unknown>).price).toBe(15);
+    expect((detail.trip as Record<string, unknown>).route_points).toHaveLength(1);
+    expect((detail.trip as Record<string, unknown>).meeting_point).toMatchObject({
+      stop_name: 'Sweileh',
+    });
   });
 });
 

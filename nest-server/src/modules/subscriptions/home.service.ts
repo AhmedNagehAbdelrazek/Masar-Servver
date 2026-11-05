@@ -2,6 +2,14 @@ import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { jordanStartOfToday } from '../../common/utils/jordan-time.js';
 import { seatNumbersFor } from '../../common/utils/seat-numbers.js';
 import { freeTripsLimit, hasFreeTripsOffer } from '../../common/utils/free-trips.js';
+import {
+  serializePickupSection,
+  serializeTripAttributes,
+  serializeTripDetails,
+  serializeTripRoute,
+  serializeTripStops,
+  toNumberOrNull,
+} from '../../common/utils/trip-details.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { RealtimeGateway } from '../../realtime/realtime.gateway.js';
 import { BalanceService } from '../balance/balance.service.js';
@@ -26,104 +34,6 @@ function freeTripsFor(sub: SubscriptionLike | null): { max: number; used: number
   const limit = freeTripsLimit({ freeOffer: sub.freeOffer as never });
   const used = Number(sub.freeTripsUsed) || 0;
   return { max: limit, used, remaining: Math.max(0, limit - used) };
-}
-
-function toNumber(value: unknown): number | null {
-  if (value === null || value === undefined) return null;
-  const n = Number(value);
-  return Number.isFinite(n) ? n : null;
-}
-
-function toTripStops(stops: Record<string, unknown>[]): Record<string, unknown>[] {
-  return stops.map((s) => ({
-    stop_id: s.id,
-    stop_order: s.stopOrder,
-    stop_name: s.stopName,
-    city: s.city,
-    address: s.address,
-    lat: toNumber(s.lat ?? s.stopLat),
-    lng: toNumber(s.lng ?? s.stopLng),
-    stop_type: s.stopType,
-    estimated_arrival: s.estimatedArrival,
-  }));
-}
-
-function toTripAttributes(attributes: Record<string, unknown>[]): Record<string, unknown>[] {
-  return attributes.map((a) => ({ key: a.attrKey, value: a.attrValue === 'true' }));
-}
-
-function toRouteSection(trip: Record<string, unknown>): Record<string, unknown> {
-  return {
-    status: (trip.routeStatus as string) || 'pending',
-    version: Number(trip.routeVersion) || 0,
-    polyline: trip.routePolyline ?? null,
-    distance_m: toNumber(trip.routeDistanceM),
-    duration_s: toNumber(trip.routeDurationS),
-    computed_at: trip.routeComputedAt ?? null,
-  };
-}
-
-function toPickupSection(booking: Record<string, unknown>): Record<string, unknown> {
-  return {
-    type: booking.pickupType ?? null,
-    stop_id: booking.pickupStopId ?? null,
-    place: booking.pickupPlace ?? null,
-    label: booking.pickupLabel ?? null,
-    city: booking.pickupCity ?? null,
-    area: booking.pickupArea ?? null,
-    lat: toNumber(booking.pickupLat),
-    lng: toNumber(booking.pickupLng),
-    order: booking.pickupOrder ?? null,
-    status: booking.pickupStatus ?? 'pending',
-    detour_seconds: toNumber(booking.detourSeconds),
-    arrived_at: booking.arrivedAt ?? null,
-    picked_up_at: booking.pickedUpAt ?? null,
-  };
-}
-
-function toTripDetails(trip: Record<string, unknown>): Record<string, unknown> {
-  const stops = (trip.stops as Record<string, unknown>[] | undefined) ?? [];
-  const attributes = (trip.attributes as Record<string, unknown>[] | undefined) ?? [];
-  return {
-    trip_id: trip.id,
-    origin: {
-      city: trip.originCity,
-      area: trip.originArea,
-      address: trip.originAddress ?? null,
-      lat: toNumber(trip.originLat),
-      lng: toNumber(trip.originLng),
-    },
-    destination: {
-      city: trip.destinationCity,
-      area: trip.destinationArea,
-      address: trip.destinationAddress ?? null,
-      lat: toNumber(trip.destinationLat),
-      lng: toNumber(trip.destinationLng),
-    },
-    departure_time: trip.departureTime,
-    arrival_time: trip.arrivalTime ?? null,
-    fare_per_seat: Number(trip.farePerSeat),
-    total_profit: Number(trip.totalProfit) || 0,
-    currency: (trip.currency as string) || 'JOD',
-    total_seats: trip.totalSeats,
-    available_seats: trip.availableSeats,
-    status: trip.status,
-    is_recurring: Boolean(trip.isRecurring),
-    recurrence_days: (trip.recurrenceDays as number[] | undefined) ?? [],
-    recurrence_end_date: trip.recurrenceEndDate ?? null,
-    gender_preference: (trip.genderPreference as string) || 'all',
-    attributes: toTripAttributes(attributes),
-    stops: toTripStops(stops),
-    waypoints: stops.map((s) => ({
-      stop_name: s.stopName,
-      stop_lat: toNumber(s.lat ?? s.stopLat),
-      stop_lng: toNumber(s.lng ?? s.stopLng),
-    })),
-    instructions: (trip.driverInstructions as string[] | undefined) ?? [],
-    additional_instructions: trip.additionalInstructions ?? null,
-    created_at: trip.createdAt ?? null,
-    route: toRouteSection(trip),
-  };
 }
 
 // Port of Main Server/Services/homeService.ts (driver + passenger home,
@@ -191,13 +101,13 @@ export class HomeService {
       origin_city: trip.originCity,
       origin_area: trip.originArea,
       origin_address: trip.originAddress ?? null,
-      origin_lat: toNumber(trip.originLat),
-      origin_lng: toNumber(trip.originLng),
+      origin_lat: toNumberOrNull(trip.originLat),
+      origin_lng: toNumberOrNull(trip.originLng),
       destination_city: trip.destinationCity,
       destination_area: trip.destinationArea,
       destination_address: trip.destinationAddress ?? null,
-      destination_lat: toNumber(trip.destinationLat),
-      destination_lng: toNumber(trip.destinationLng),
+      destination_lat: toNumberOrNull(trip.destinationLat),
+      destination_lng: toNumberOrNull(trip.destinationLng),
       departure_time: trip.departureTime,
       arrival_time: trip.arrivalTime ?? null,
       fare_per_seat: Number(trip.farePerSeat),
@@ -210,17 +120,17 @@ export class HomeService {
       recurrence_days: (trip.recurrenceDays as number[] | undefined) ?? [],
       recurrence_end_date: trip.recurrenceEndDate ?? null,
       gender_preference: (trip.genderPreference as string) || 'all',
-      attributes: toTripAttributes(attributes),
-      stops: toTripStops(stops),
+      attributes: serializeTripAttributes(attributes),
+      stops: serializeTripStops(stops),
       waypoints: stops.map((s) => ({
         stop_name: s.stopName,
-        stop_lat: toNumber(s.lat ?? s.stopLat),
-        stop_lng: toNumber(s.lng ?? s.stopLng),
+        stop_lat: toNumberOrNull(s.lat ?? s.stopLat),
+        stop_lng: toNumberOrNull(s.lng ?? s.stopLng),
       })),
       instructions: (trip.driverInstructions as string[] | undefined) ?? [],
       additional_instructions: trip.additionalInstructions ?? null,
       created_at: trip.createdAt ?? null,
-      route: toRouteSection(trip),
+      route: serializeTripRoute(trip),
       vehicle: vehicle
         ? {
             vehicle_id: vehicle.id,
@@ -244,7 +154,7 @@ export class HomeService {
           seat_numbers: seatNumbersFor(b as never),
           agreed_fare: Number(b.agreedFare),
           status: b.status,
-          pickup: toPickupSection(b),
+          pickup: serializePickupSection(b),
           created_at: b.createdAt,
         };
       }),
@@ -425,8 +335,23 @@ export class HomeService {
         include: {
           trip: {
             include: {
-              driver: { select: { id: true, fullName: true, avgRating: true, avatarUrl: true } },
-              vehicle: { select: { id: true, vehicleType: true, plateNumber: true, seats: true } },
+              driver: {
+                select: { id: true, fullName: true, phone: true, avgRating: true, avatarUrl: true },
+              },
+              vehicle: {
+                select: {
+                  id: true,
+                  vehicleType: true,
+                  manufacturer: true,
+                  model: true,
+                  modelYear: true,
+                  plateNumber: true,
+                  color: true,
+                  seats: true,
+                },
+              },
+              stops: { orderBy: { stopOrder: 'asc' } },
+              attributes: true,
             },
           },
           ratings: { select: { stars: true }, where: { raterId: passengerId } },
@@ -445,25 +370,68 @@ export class HomeService {
       )
       .slice(0, 5)
       .map((b) => {
-        const trip = b.trip as unknown as {
+        const trip = b.trip as unknown as Record<string, unknown> & {
           id: string;
           originCity: string;
           originArea: string | null;
           destinationCity: string;
           destinationArea: string | null;
           departureTime: Date;
+          driver?: Record<string, unknown> | null;
+          vehicle?: Record<string, unknown> | null;
         };
         const ratings = (b as unknown as { ratings: { stars: number }[] }).ratings ?? [];
+        const driver = trip.driver ?? null;
+        const vehicle = trip.vehicle ?? null;
         return {
           booking_id: b.id,
+          reference_code: b.referenceCode,
+          status: b.status,
+          payment_status: b.paymentStatus,
+          seats_booked: b.seatsBooked,
+          seat_numbers: seatNumbersFor(b),
+          agreed_fare: Number(b.agreedFare),
+          currency: b.currency ?? 'JOD',
+          pickup: serializePickupSection(b as unknown as Record<string, unknown>),
+          dropoff_place: b.dropoffPlace,
+          dropoff_lat: toNumberOrNull(b.dropoffLat),
+          dropoff_lng: toNumberOrNull(b.dropoffLng),
+          dropoff_order: b.dropoffOrder != null ? Number(b.dropoffOrder) : null,
+          dropoff_deadline: b.dropoffDeadline,
+          cancellation_reason: b.cancellationReason,
+          cancelled_at: b.cancelledAt,
+          completed_at: b.completedAt,
+          booking_created_at: b.createdAt,
+          // Legacy summary fields kept for existing clients.
           trip_id: trip.id,
           origin: { city: trip.originCity, area: trip.originArea },
           destination: { city: trip.destinationCity, area: trip.destinationArea },
           departure_time: trip.departureTime,
-          status: b.status,
           satisfaction_rating: ratings[0] ? Number(ratings[0].stars) : null,
           trip_cost: Number(b.agreedFare),
-          currency: b.currency ?? 'JOD',
+          // Full trip + driver/vehicle details.
+          trip: serializeTripDetails(trip),
+          driver: driver
+            ? {
+                id: driver.id,
+                full_name: driver.fullName,
+                phone: driver.phone,
+                rating: Number(driver.avgRating) || 0,
+                image: driver.avatarUrl,
+              }
+            : null,
+          vehicle: vehicle
+            ? {
+                vehicle_id: vehicle.id,
+                type: vehicle.vehicleType,
+                make_model: [vehicle.manufacturer, vehicle.model].filter(Boolean).join(' '),
+                year: vehicle.modelYear,
+                plate: vehicle.plateNumber,
+                color: vehicle.color,
+                seats: vehicle.seats,
+                total_seats: vehicle.seats,
+              }
+            : null,
         };
       });
 
@@ -471,10 +439,19 @@ export class HomeService {
       id: string;
       referenceCode: string;
       status: string;
+      paymentStatus: string | null;
       seatsBooked: number;
       seatNumbers: number[] | null;
       agreedFare: unknown;
       currency: string | null;
+      dropoffPlace: string | null;
+      dropoffLat: unknown;
+      dropoffLng: unknown;
+      dropoffOrder: number | null;
+      dropoffDeadline: Date | null;
+      cancellationReason: string | null;
+      cancelledAt: Date | null;
+      completedAt: Date | null;
       pickupType: string | null;
       pickupStopId: string | null;
       pickupPlace: string | null;
@@ -549,13 +526,22 @@ export class HomeService {
             booking_id: nb.id,
             reference_code: nb.referenceCode,
             status: nb.status,
+            payment_status: nb.paymentStatus,
             seats_booked: nb.seatsBooked,
             seat_numbers: seatNumbersFor(nb as unknown as never),
             agreed_fare: Number(nb.agreedFare),
             currency: nb.currency ?? 'JOD',
-            pickup: toPickupSection(nb as unknown as Record<string, unknown>),
+            pickup: serializePickupSection(nb as unknown as Record<string, unknown>),
+            dropoff_place: nb.dropoffPlace,
+            dropoff_lat: toNumberOrNull(nb.dropoffLat),
+            dropoff_lng: toNumberOrNull(nb.dropoffLng),
+            dropoff_order: nb.dropoffOrder != null ? Number(nb.dropoffOrder) : null,
+            dropoff_deadline: nb.dropoffDeadline,
+            cancellation_reason: nb.cancellationReason,
+            cancelled_at: nb.cancelledAt,
+            completed_at: nb.completedAt,
             created_at: nb.createdAt,
-            trip: toTripDetails(nb.trip as unknown as Record<string, unknown>),
+            trip: serializeTripDetails(nb.trip as unknown as Record<string, unknown>),
             driver: nb.trip.driver
               ? {
                   id: nb.trip.driver.id,

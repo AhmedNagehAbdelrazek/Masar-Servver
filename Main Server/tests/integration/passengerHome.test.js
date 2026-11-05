@@ -267,13 +267,36 @@ describe('US7 - passenger home', () => {
     });
   });
 
-  it('moves a booking to last_trips once the trip departs', async () => {
+  it('moves a booking to last_trips with full trip details once the trip departs', async () => {
     const created = await makeBooking(passenger1Token);
     const bookingId = created.body.booking.id;
 
     await Trip.update(
-      { departureTime: new Date(Date.now() - 60 * 60 * 1000) },
+      {
+        departureTime: new Date(Date.now() - 60 * 60 * 1000),
+        originArea: 'Abdoun',
+        originAddress: '13 Abdoun St',
+        destinationArea: 'Downtown',
+        destinationAddress: '1 University St',
+        status: 'completed',
+        driverInstructions: ['no smoking'],
+        additionalInstructions: 'Be on time',
+        routePolyline: 'encoded-polyline',
+        routeDistanceM: 80000,
+        routeDurationS: 5400,
+        routeStatus: 'ready',
+        routeVersion: 3,
+      },
       { where: { id: tripId } }
+    );
+    await TripStop.create({
+      tripId, stopOrder: 1, stopName: 'Sweileh', city: 'Amman',
+      lat: 31.96, lng: 35.88, stopType: 'pickup',
+    });
+    await TripAttribute.create({ tripId, attrKey: 'wifi', attrValue: 'true' });
+    await Booking.update(
+      { status: 'completed', paymentStatus: 'paid_cash' },
+      { where: { id: bookingId } }
     );
 
     const res = await getAgent()
@@ -283,8 +306,35 @@ describe('US7 - passenger home', () => {
     expect(res.status).toBe(200);
     expect(res.body.next_booking).toBeNull();
     expect(res.body.last_trips.length).toBe(1);
-    expect(res.body.last_trips[0].booking_id).toBe(bookingId);
-    expect(res.body.last_trips[0].trip_cost).toBe(15);
-    expect(res.body.last_trips[0].currency).toBe('JOD');
+    const last = res.body.last_trips[0];
+    expect(last.booking_id).toBe(bookingId);
+    expect(last.trip_cost).toBe(15);
+    expect(last.currency).toBe('JOD');
+    expect(last.reference_code).toMatch(/^MSR-/);
+    expect(last.payment_status).toBe('paid_cash');
+    expect(last.seat_numbers).toEqual([2]);
+    expect(last.trip.origin).toMatchObject({ city: 'Amman', area: 'Abdoun', address: '13 Abdoun St' });
+    expect(last.trip.destination).toMatchObject({
+      city: 'Irbid', area: 'Downtown', address: '1 University St',
+    });
+    expect(last.trip.fare_per_seat).toBe(15);
+    expect(last.trip.total_seats).toBe(4);
+    expect(last.trip.available_seats).toBe(1);
+    expect(last.trip.status).toBe('completed');
+    expect(last.trip.attributes).toEqual([{ key: 'wifi', value: true }]);
+    expect(last.trip.stops).toHaveLength(1);
+    expect(last.trip.waypoints[0]).toEqual({
+      stop_name: 'Sweileh', stop_lat: 31.96, stop_lng: 35.88,
+    });
+    expect(last.trip.instructions).toEqual(['no smoking']);
+    expect(last.trip.additional_instructions).toBe('Be on time');
+    expect(last.trip.route).toMatchObject({
+      status: 'ready', version: 3, polyline: 'encoded-polyline',
+      distance_m: 80000, duration_s: 5400,
+    });
+    expect(last.driver).toMatchObject({ id: DRIVER_ID, full_name: 'Home Driver' });
+    expect(last.vehicle).toMatchObject({
+      vehicle_id: VEHICLE_ID, type: 'sedan', make_model: 'Toyota Camry', plate: 'HOM-101',
+    });
   });
 });

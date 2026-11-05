@@ -1,5 +1,5 @@
 const { getAgent } = require('../setup/setup');
-const { User, Vehicle, TripSeat, Trip, Booking, Rating, SubscriptionPlan, DriverSubscription } = require('../../Models');
+const { User, Vehicle, TripSeat, Trip, TripStop, TripAttribute, Booking, Rating, SubscriptionPlan, DriverSubscription } = require('../../Models');
 const { generateAccessToken } = require('../setup/helpers');
 const { SUBSCRIPTION_STATUS } = require('../../config/constants');
 
@@ -149,16 +149,80 @@ describe('US4 - enriched passenger booking list', () => {
     expect(res.body.data.length).toBe(0);
   });
 
-  it('detail includes vehicle and trip route points', async () => {
+  it('list and detail include full trip, driver and vehicle details', async () => {
     const created = await createBooking(passenger1Token);
     const bookingId = created.body.booking.id;
+
+    await Trip.update(
+      {
+        originArea: 'Abdoun',
+        originAddress: '13 Abdoun St',
+        originLat: 31.95,
+        originLng: 35.87,
+        destinationArea: 'Downtown',
+        destinationAddress: '1 University St',
+        destinationLat: 32.55,
+        destinationLng: 35.85,
+        driverInstructions: ['no smoking'],
+        additionalInstructions: 'Be on time',
+        routePolyline: 'encoded-polyline',
+        routeDistanceM: 80000,
+        routeDurationS: 5400,
+        routeStatus: 'ready',
+        routeVersion: 4,
+      },
+      { where: { id: tripId } }
+    );
+    await TripStop.create({
+      tripId, stopOrder: 1, stopName: 'Sweileh', city: 'Amman',
+      lat: 31.96, lng: 35.88, stopType: 'pickup',
+    });
+    await TripAttribute.create({ tripId, attrKey: 'wifi', attrValue: 'true' });
+
+    const list = await getAgent()
+      .get('/api/bookings')
+      .set('Authorization', `Bearer ${passenger1Token}`);
+    expect(list.status).toBe(200);
+    const row = list.body.data[0];
+    expect(row.trip.origin).toMatchObject({
+      city: 'Amman', area: 'Abdoun', address: '13 Abdoun St',
+    });
+    expect(row.trip.destination).toMatchObject({
+      city: 'Irbid', area: 'Downtown', address: '1 University St',
+    });
+    expect(row.trip.fare_per_seat).toBe(15);
+    expect(row.trip.total_seats).toBe(4);
+    expect(row.trip.available_seats).toBe(1);
+    expect(row.trip.attributes).toEqual([{ key: 'wifi', value: true }]);
+    expect(row.trip.stops).toHaveLength(1);
+    expect(row.trip.waypoints[0]).toEqual({
+      stop_name: 'Sweileh', stop_lat: 31.96, stop_lng: 35.88,
+    });
+    expect(row.trip.instructions).toEqual(['no smoking']);
+    expect(row.trip.additional_instructions).toBe('Be on time');
+    expect(row.trip.route).toMatchObject({
+      status: 'ready', version: 4, polyline: 'encoded-polyline',
+      distance_m: 80000, duration_s: 5400,
+    });
+    expect(row.vehicle.make_model).toBe('Toyota Camry');
+    expect(row.vehicle.color).toBe('White');
 
     const res = await getAgent()
       .get(`/api/bookings/${bookingId}`)
       .set('Authorization', `Bearer ${passenger1Token}`);
 
     expect(res.status).toBe(200);
-    expect(res.body.booking.vehicle).toMatchObject({ type: 'sedan' });
-    expect(res.body.booking.trip.origin).toMatchObject({ city: 'Amman' });
+    expect(res.body.booking.vehicle).toMatchObject({
+      type: 'sedan', make_model: 'Toyota Camry', year: 2023,
+      plate: 'LST-101', color: 'White', seats: 4, total_seats: 4,
+    });
+    expect(res.body.booking.trip.origin).toMatchObject({
+      city: 'Amman', area: 'Abdoun', address: '13 Abdoun St',
+    });
+    expect(res.body.booking.trip.route).toMatchObject({ status: 'ready', version: 4 });
+    // Legacy aliases still present for existing clients.
+    expect(res.body.booking.trip.price).toBe(15);
+    expect(res.body.booking.trip.route_points).toHaveLength(1);
+    expect(res.body.booking.trip.meeting_point).toMatchObject({ stop_name: 'Sweileh' });
   });
 });

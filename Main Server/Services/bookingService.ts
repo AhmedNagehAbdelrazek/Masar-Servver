@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { Op } from 'sequelize';
-import { Booking, Trip, User, TripSeat, TripStop, Rating, Vehicle, DriverProfile, sequelize } from '../Models';
+import { Booking, Trip, User, TripSeat, TripStop, TripAttribute, Rating, Vehicle, DriverProfile, sequelize } from '../Models';
 import { ApiErrors } from '../utils/ApiError';
 import { parsePagination, buildPagination } from '../utils/pagination';
 import { hasTripDeparted } from '../utils/tripSchedule';
@@ -14,7 +14,7 @@ import pickupService from './pickupService';
 import routeService from './routeService';
 import mapsConfig from '../config/maps';
 import { generateReferenceCode } from '../utils/referenceCode';
-import homeService from './homeService';
+import homeService, { toTripDetails } from './homeService';
 import realtimeService from './realtimeService';
 import { BOOKING_STATUS, PAYMENT_STATUS, TRIP_STATUS, SEAT_TYPE, USER_STATUS, STOP_TYPE, PICKUP_TYPE, PICKUP_STATUS } from '../config/constants';
 import { parseOptionalTimezoneAware } from '../utils/time';
@@ -613,8 +613,9 @@ async function createBooking(passengerId, payload) {
   const fullTrip = await Trip.findByPk(trip_id, {
     include: [
       { model: User, as: 'driver', attributes: ['id', 'fullName', 'phone', 'avgRating', 'avatarUrl'] },
-      { model: TripStop, as: 'stops' },
-      { model: Vehicle, as: 'vehicle', attributes: ['id', 'vehicleType', 'plateNumber', 'seats'] },
+      { model: TripStop, as: 'stops', separate: true, order: [['stopOrder', 'ASC']] },
+      { model: TripAttribute, as: 'attributes', separate: true },
+      { model: Vehicle, as: 'vehicle', attributes: ['id', 'vehicleType', 'manufacturer', 'model', 'modelYear', 'plateNumber', 'color', 'seats'] },
     ],
   });
   return serializePassengerDetail(booking, fullTrip, user);
@@ -648,12 +649,9 @@ function serializePassengerDetail(booking, trip, passenger) {
     booking_created_at: booking.createdat || booking.createdAt,
     trip: trip
       ? {
-          origin: trip.originCity,
-          destination: trip.destinationCity,
-          price: Number(trip.farePerSeat),
-          status: trip.status,
-          departure_time: trip.departureTime,
           ...tripLocationData(trip),
+          price: Number(trip.farePerSeat),
+          ...toTripDetails(trip),
         }
       : null,
     driver:
@@ -670,8 +668,12 @@ function serializePassengerDetail(booking, trip, passenger) {
       ? {
           vehicle_id: tripVehicle.id,
           type: tripVehicle.vehicleType,
+          make_model: [tripVehicle.manufacturer, tripVehicle.model].filter(Boolean).join(' '),
+          year: tripVehicle.modelYear,
           plate: tripVehicle.plateNumber,
+          color: tripVehicle.color,
           seats: tripVehicle.seats,
+          total_seats: tripVehicle.seats,
         }
       : null,
     passenger: passenger
@@ -740,11 +742,11 @@ async function listForPassenger(passengerId, filters = {}) {
       {
         model: Trip,
         as: 'trip',
-        attributes: ['id', 'driverId', 'originCity', 'originArea', 'originLat', 'departureTime', 'originLng', 'destinationCity', 'destinationArea', 'destinationLat', 'destinationLng', 'farePerSeat', 'status'],
         include: [
           { model: User, as: 'driver', attributes: ['id', 'fullName', 'phone', 'avgRating', 'avatarUrl'] },
-          { model: TripStop, as: 'stops' },
-          { model: Vehicle, as: 'vehicle', attributes: ['id', 'vehicleType', 'plateNumber', 'seats'] },
+          { model: TripStop, as: 'stops', separate: true, order: [['stopOrder', 'ASC']] },
+          { model: TripAttribute, as: 'attributes', separate: true },
+          { model: Vehicle, as: 'vehicle', attributes: ['id', 'vehicleType', 'manufacturer', 'model', 'modelYear', 'plateNumber', 'color', 'seats'] },
         ],
       },
       { model: Rating, as: 'ratings', attributes: ['stars'], where: { raterId: passengerId }, required: false },
@@ -767,11 +769,11 @@ async function getForPassenger(passengerId, bookingId) {
         {
           model: Trip,
           as: 'trip',
-          attributes: ['id', 'driverId', 'originCity', 'originArea', 'originLat', 'originLng', 'destinationCity', 'destinationArea', 'destinationLat', 'destinationLng', 'farePerSeat', 'departureTime', 'status'],
           include: [
             { model: User, as: 'driver', attributes: ['id', 'fullName', 'phone', 'avgRating', 'avatarUrl'] },
-            { model: TripStop, as: 'stops' },
-            { model: Vehicle, as: 'vehicle', attributes: ['id', 'vehicleType', 'plateNumber', 'seats'] },
+            { model: TripStop, as: 'stops', separate: true, order: [['stopOrder', 'ASC']] },
+            { model: TripAttribute, as: 'attributes', separate: true },
+            { model: Vehicle, as: 'vehicle', attributes: ['id', 'vehicleType', 'manufacturer', 'model', 'modelYear', 'plateNumber', 'color', 'seats'] },
           ],
         },
         { model: User, as: 'passenger', attributes: ['id', 'fullName'] },

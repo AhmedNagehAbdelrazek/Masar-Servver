@@ -10,8 +10,8 @@ import {
 import { maskPhone } from '../../common/utils/masking.js';
 import { buildPagination, parsePagination } from '../../common/utils/pagination.js';
 import { generateReferenceCode as generateRefCode } from '../../common/utils/reference-code.js';
-import { seatNumbersFor } from '../../common/utils/seat-numbers.js';
 import { parseOptionalTimezoneAware } from '../../common/utils/time.js';
+import { serializeTripDetails, toNumberOrNull } from '../../common/utils/trip-details.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { withSerializableRetry } from '../../prisma/transaction.js';
 import { RealtimeGateway } from '../../realtime/realtime.gateway.js';
@@ -26,12 +26,6 @@ import { TripExpiryService } from '../trips/trip-expiry.service.js';
 
 function validationError(code: string, message: string): UnprocessableEntityException {
   return new UnprocessableEntityException({ message, code });
-}
-
-function toNumberOrNull(value: unknown): number | null {
-  if (value === null || value === undefined) return null;
-  const n = Number(value);
-  return Number.isFinite(n) ? n : null;
 }
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -256,15 +250,12 @@ export class BookingsService {
       booking_created_at: booking.createdAt,
       trip: trip
         ? {
-            origin: trip.originCity,
-            destination: trip.destinationCity,
-            price: Number(trip.farePerSeat),
-            status: trip.status,
-            departure_time: trip.departureTime,
             ...tripLocationData(
               trip as never,
               ((trip.stops as StopRow[] | undefined) ?? []) as StopRow[],
             ),
+            price: Number(trip.farePerSeat),
+            ...serializeTripDetails(trip),
           }
         : null,
       driver:
@@ -281,8 +272,14 @@ export class BookingsService {
         ? {
             vehicle_id: tripVehicle.id,
             type: tripVehicle.vehicleType,
+            make_model: [tripVehicle.manufacturer, tripVehicle.model]
+              .filter(Boolean)
+              .join(' '),
+            year: tripVehicle.modelYear,
             plate: tripVehicle.plateNumber,
+            color: tripVehicle.color,
             seats: tripVehicle.seats,
+            total_seats: tripVehicle.seats,
           }
         : null,
       passenger: passenger ? { id: passenger.id, full_name: passenger.fullName } : null,
@@ -839,8 +836,9 @@ export class BookingsService {
       where: { id: trip.id },
       include: {
         driver: { select: { id: true, fullName: true, phone: true, avgRating: true, avatarUrl: true } },
-        stops: true,
-        vehicle: { select: { id: true, vehicleType: true, plateNumber: true, seats: true } },
+        stops: { orderBy: { stopOrder: 'asc' } },
+        attributes: true,
+        vehicle: true,
       },
     });
     return this.serializePassengerDetail(
@@ -876,22 +874,16 @@ export class BookingsService {
         where: where as never,
         include: {
           trip: {
-            select: {
-              id: true,
-              driverId: true,
-              originCity: true,
-              originArea: true,
-              originLat: true,
-              originLng: true,
-              destinationCity: true,
-              destinationArea: true,
-              destinationLat: true,
-              destinationLng: true,
-              farePerSeat: true,
-              status: true,
-              departureTime: true,
+            include: {
+              driver: {
+                select: { id: true, fullName: true, phone: true, avgRating: true, avatarUrl: true },
+              },
+              vehicle: true,
+              stops: { orderBy: { stopOrder: 'asc' } },
+              attributes: true,
             },
           },
+          ratings: { select: { stars: true }, where: { raterId: passengerId } },
         },
         orderBy: { trip: { departureTime: 'asc' } },
         skip: offset,
@@ -899,55 +891,8 @@ export class BookingsService {
       }),
       this.prisma.booking.count({ where: where as never }),
     ]);
-    const tripIds = [...new Set(rows.map((r) => r.tripId))];
-    const [drivers, stopsMap, vehicles, ratings] = await Promise.all([
-      this.prisma.user.findMany({
-        where: {
-          id: {
-            in: [...new Set(rows.map((r) => (r.trip as unknown as { driverId: string }).driverId))],
-          },
-        },
-        select: { id: true, fullName: true, phone: true, avgRating: true, avatarUrl: true },
-      }),
-      this.prisma.tripStop.findMany({ where: { tripId: { in: tripIds } } }),
-      this.prisma.vehicle.findMany({
-        where: { driverId: { in: [...new Set(rows.map((r) => (r.trip as unknown as { driverId: string }).driverId))] } },
-        select: { id: true, driverId: true, vehicleType: true, plateNumber: true, seats: true },
-      }),
-      this.prisma.rating.findMany({
-        where: { raterId: passengerId, bookingId: { in: rows.map((r) => r.id) } },
-        select: { bookingId: true, stars: true },
-      }),
-    ]);
-    const driverMap = new Map(drivers.map((d) => [d.id, d]));
-    const stopsByTrip = new Map<string, StopRow[]>();
-    for (const s of stopsMap) {
-      const list = stopsByTrip.get(s.tripId) ?? [];
-      list.push(s as unknown as StopRow);
-      stopsByTrip.set(s.tripId, list);
-    }
-    const vehicleByDriver = new Map(vehicles.map((v) => [v.driverId, v]));
-    const ratingByBooking = new Map(ratings.map((r) => [r.bookingId, r.stars]));
     return {
-      data: rows.map((b) => {
-        const trip = b.trip as unknown as Record<string, unknown>;
-        const driver = driverMap.get(trip.driverId as string) as unknown as
-          | Record<string, unknown>
-          | undefined;
-        return this.serializePassengerDetail(
-          {
-            ...(b as unknown as Record<string, unknown>),
-            ratings: ratingByBooking.has(b.id) ? [{ stars: ratingByBooking.get(b.id) }] : [],
-          } as never,
-          {
-            ...trip,
-            driver: driver ?? null,
-            stops: stopsByTrip.get(b.tripId) ?? [],
-            vehicle: vehicleByDriver.get(trip.driverId as string) ?? null,
-          } as never,
-          null,
-        );
-      }),
+      data: rows.map((b) => this.serializePassengerDetail(b as never)),
       pagination: buildPagination(count, page, limit),
     };
   }
@@ -961,46 +906,20 @@ export class BookingsService {
         where: { id: bookingId },
         include: {
           trip: {
-            select: {
-              id: true,
-              driverId: true,
-              originCity: true,
-              originArea: true,
-              originLat: true,
-              originLng: true,
-              destinationCity: true,
-              destinationArea: true,
-              destinationLat: true,
-              destinationLng: true,
-              farePerSeat: true,
-              departureTime: true,
-              status: true,
+            include: {
+              driver: {
+                select: { id: true, fullName: true, phone: true, avgRating: true, avatarUrl: true },
+              },
+              vehicle: true,
+              stops: { orderBy: { stopOrder: 'asc' } },
+              attributes: true,
             },
           },
           passenger: { select: { id: true, fullName: true } },
+          ratings: { select: { stars: true }, where: { raterId: passengerId } },
         },
       });
-      if (!b) return null;
-      const [driver, stops, vehicle, ratings] = await Promise.all([
-        this.prisma.user.findUnique({
-          where: { id: (b.trip as unknown as { driverId: string }).driverId },
-          select: { id: true, fullName: true, phone: true, avgRating: true, avatarUrl: true },
-        }),
-        this.prisma.tripStop.findMany({ where: { tripId: b.tripId } }),
-        this.prisma.vehicle.findFirst({
-          where: { driverId: (b.trip as unknown as { driverId: string }).driverId },
-          select: { id: true, vehicleType: true, plateNumber: true, seats: true },
-        }),
-        this.prisma.rating.findMany({
-          where: { bookingId: b.id, raterId: passengerId },
-          select: { stars: true },
-        }),
-      ]);
-      return {
-        ...(b as unknown as Record<string, unknown>),
-        trip: { ...(b.trip as unknown as Record<string, unknown>), driver, stops, vehicle },
-        ratings,
-      };
+      return (b as unknown as Record<string, unknown> | null) ?? null;
     };
     let booking = await fetchBooking();
     if (!booking) throw new NotFoundException({ message: 'BOOKING_NOT_FOUND', code: 'BOOKING_NOT_FOUND' });
