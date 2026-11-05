@@ -45,7 +45,7 @@ export async function createTestApp() {
     app.useStaticAssets(join(process.env.LOCAL_UPLOAD_DIR ?? join(process.cwd(), 'uploads')), {
         prefix: '/uploads/',
     });
-    app.setGlobalPrefix('api/v2');
+    app.setGlobalPrefix(process.env.API_PREFIX || 'api/v2');
     app.useGlobalPipes(new ApiValidationPipe());
     app.useGlobalFilters(new HttpExceptionFilter());
     app.useGlobalInterceptors(new ResponseInterceptor(), new LocalizeInterceptor(), app.get(AuditInterceptor));

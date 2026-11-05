@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { cert, getApps, initializeApp, type App } from 'firebase-admin/app';
 import { getMessaging } from 'firebase-admin/messaging';
 
-// Port of Main Server/Services/notificationService/channels/push.ts
+// Port of main-server/Services/notificationService/channels/push.ts
 // (FCM HTTP v1 via firebase-admin). Best-effort, never throws; falls back to
 // a dev log when credentials or the user's fcmToken are missing.
 export interface PushUser {

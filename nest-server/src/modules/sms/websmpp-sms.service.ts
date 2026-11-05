@@ -5,7 +5,7 @@ import { URL } from 'url';
 
 /**
  * SMS provider — Advance Messaging Systems (Broadnet) "websmpp" HTTP API.
- * Port of Main Server/Services/smsService.ts.
+ * Port of main-server/Services/smsService.ts.
  *
  * Provider documentation: SMS_API.pdf and HLR_API.pdf (repository root).
  *

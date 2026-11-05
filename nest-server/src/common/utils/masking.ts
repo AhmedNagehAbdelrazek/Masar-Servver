@@ -1,4 +1,4 @@
-// Port of Main Server/utils/masking.ts (verbatim).
+// Port of main-server/utils/masking.ts (verbatim).
 export function maskPhone(phone: string | number | null | undefined): string | null {
   if (!phone && phone !== 0) return null;
   const str = String(phone).trim();

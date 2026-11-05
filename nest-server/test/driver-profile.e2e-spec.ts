@@ -1,4 +1,4 @@
-// 1:1 port of Main Server/tests/integration/driverProfileSettings.test.js,
+// 1:1 port of main-server/tests/integration/driverProfileSettings.test.js,
 // integration/driverPersonalData.test.js (personal-data parts) and
 // contract/driverProfileSettings.contract.test.js (Wave 3.2/3.3).
 // Trips/ratings fixtures use direct Prisma rows (POST /api/trips is Wave 5).

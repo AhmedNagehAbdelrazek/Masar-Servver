@@ -1,4 +1,4 @@
-// 1:1 port of Main Server/tests/integration/notifications.test.js,
+// 1:1 port of main-server/tests/integration/notifications.test.js,
 // tests/integration/notificationSettings.test.js and
 // tests/contract/notifications.contract.test.js (Wave 2.1).
 // PUT /:id/read no longer carries the stray settings-array validator in

@@ -6,7 +6,7 @@
 -- explicit `CAST(... AS "SosStatus")`, which 42704s on a Sequelize-managed
 -- DB (`type "public.SosStatus" does not exist`) and crashed the Nest process
 -- via the SOS escalation job. The schema now declares every value set as
--- String (allowed values enforced app-side from Main Server/config/constants.ts).
+-- String (allowed values enforced app-side from main-server/config/constants.ts).
 --
 -- This migration converts all enum columns to VARCHAR (preserving values via
 -- `USING ...::text`) and drops the baseline enum types. It is safe on BOTH

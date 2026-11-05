@@ -128,7 +128,7 @@ function tripLocationData(
   };
 }
 
-// Port of Main Server/Services/bookingService.ts.
+// Port of main-server/Services/bookingService.ts.
 @Injectable()
 export class BookingsService {
   private readonly logger = new Logger(BookingsService.name);

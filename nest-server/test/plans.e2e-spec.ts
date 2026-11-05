@@ -1,4 +1,4 @@
-// 1:1 port of Main Server/tests/integration/plan.test.js,
+// 1:1 port of main-server/tests/integration/plan.test.js,
 // tests/integration/paymentMethods.test.js and tests/contract/plan.contract.test.js
 // (Wave 1.2). One deliberate correction: the Express contract test "should return
 // 200 with plans array shape" expects the FREE plan in GET /api/plans, but the

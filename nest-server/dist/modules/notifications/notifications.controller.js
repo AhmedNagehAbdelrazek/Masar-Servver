@@ -43,10 +43,16 @@ let NotificationsController = class NotificationsController {
         }));
         return { data, pagination: buildPagination(count, page, limit) };
     }
+    markAllRead(user) {
+        return this.notifications.markAllRead(user?.id ?? '');
+    }
     markRead(notificationId, user) {
         return this.notifications
             .markRead(user?.id ?? '', notificationId)
             .then((n) => ({ notification: { id: n.id, is_read: n.isRead } }));
+    }
+    deleteAll(user) {
+        return this.notifications.deleteAll(user?.id ?? '');
     }
     registerDevice(dto, user) {
         return this.notifications
@@ -68,6 +74,13 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], NotificationsController.prototype, "listNotifications", null);
 __decorate([
+    Put('read-all'),
+    __param(0, CurrentUser()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], NotificationsController.prototype, "markAllRead", null);
+__decorate([
     Put(':notification_id/read'),
     __param(0, Param('notification_id')),
     __param(1, CurrentUser()),
@@ -75,6 +88,13 @@ __decorate([
     __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", Promise)
 ], NotificationsController.prototype, "markRead", null);
+__decorate([
+    Delete(),
+    __param(0, CurrentUser()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], NotificationsController.prototype, "deleteAll", null);
 __decorate([
     Post('device'),
     HttpCode(HttpStatus.OK),

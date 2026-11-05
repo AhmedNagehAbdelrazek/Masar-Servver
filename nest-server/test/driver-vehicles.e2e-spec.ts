@@ -1,4 +1,4 @@
-// 1:1 port of Main Server/tests/integration/driverProfileVehicles.test.js
+// 1:1 port of main-server/tests/integration/driverProfileVehicles.test.js
 // (Wave 3.1): driver aggregate profile + vehicles CRUD.
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { resetTestState } from '../src/test/db.js';

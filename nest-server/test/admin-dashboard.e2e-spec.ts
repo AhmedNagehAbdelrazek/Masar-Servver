@@ -1,5 +1,5 @@
 // Admin dashboard US1 (summary + partials), US2 (drivers directory) and US5
-// (shared reservation listings). 1:1 port of Main Server tests:
+// (shared reservation listings). 1:1 port of main-server tests:
 // - tests/integration/adminDashboardSummary.test.js
 // - tests/integration/adminDashboardDrivers.test.js
 // - tests/integration/adminSharedListings.test.js

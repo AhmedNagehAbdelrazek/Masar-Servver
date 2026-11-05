@@ -2,7 +2,7 @@ import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { createHash } from 'node:crypto';
 import { getMapsConfig } from './maps.config.js';
 
-// Port of Main Server/Services/mapsClient.ts: thin fetch wrapper over Google
+// Port of main-server/Services/mapsClient.ts: thin fetch wrapper over Google
 // Routes + Geocoding with mock corridor, retries, timeouts and usage counts.
 // MAPS_MOCK defaults true — no network until billing is enabled.
 export interface RoutePoint {

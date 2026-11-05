@@ -1,4 +1,4 @@
-// 1:1 port of Main Server/tests/integration/i18nMessages.test.js.
+// 1:1 port of main-server/tests/integration/i18nMessages.test.js.
 // APP_LOCALE is 'en' by default in tests (.env.test); each case pins its own
 // mode explicitly via ?lang / Accept-Language.
 // DEVIATION (verified): the last case asserts the Nest rendering. Express's

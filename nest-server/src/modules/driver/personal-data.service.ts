@@ -3,7 +3,7 @@ import { ensureOperational, ensureReadable, loadDriverUser } from '../../common/
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { canEditVerification } from './verification-state.js';
 
-// Port of Main Server/Services/personalDataService.ts.
+// Port of main-server/Services/personalDataService.ts.
 export const EDITABLE_ANYTIME = ['display_name', 'phone', 'age', 'avatar_url'];
 
 export const LOCKED_WHEN_VERIFIED = [

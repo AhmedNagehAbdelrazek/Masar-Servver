@@ -10,7 +10,7 @@ import { PrismaService } from '../../prisma/prisma.service.js';
 import { NotificationsService } from '../notifications/notifications.service.js';
 import type { NotifyUser } from '../notifications/notifications.service.js';
 
-// Port of Main Server/Services/deletionRequestService.ts.
+// Port of main-server/Services/deletionRequestService.ts.
 export function addBusinessDays(from: Date, days: number): Date {
   const date = new Date(from.getTime());
   let remaining = days;

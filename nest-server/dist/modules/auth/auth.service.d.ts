@@ -4,6 +4,7 @@ import { PrismaService } from '../../prisma/prisma.service.js';
 import { RedisService } from '../../redis/redis.service.js';
 import { BalanceService } from '../balance/balance.service.js';
 import { NotificationSettingsService } from '../notifications/notification-settings.service.js';
+import { WebsmppSmsService } from '../sms/websmpp-sms.service.js';
 import { OtpService } from './otp.service.js';
 export interface AuthUserShape {
     id: string;
@@ -25,7 +26,9 @@ export declare class AuthService {
     private readonly otp;
     private readonly balance;
     private readonly notificationSettings;
-    constructor(prisma: PrismaService, jwt: JwtService, config: ConfigService, redis: RedisService, otp: OtpService, balance: BalanceService, notificationSettings: NotificationSettingsService);
+    private readonly sms;
+    private readonly logger;
+    constructor(prisma: PrismaService, jwt: JwtService, config: ConfigService, redis: RedisService, otp: OtpService, balance: BalanceService, notificationSettings: NotificationSettingsService, sms: WebsmppSmsService);
     private get secret();
     private get accessExpiry();
     generateAccessToken(id: string, role: string): string;
@@ -36,6 +39,8 @@ export declare class AuthService {
     generateRegistrationToken(phone: string, role: string, countryCode?: string | null): string;
     generateResetToken(phone: string): string;
     normalizePhone(phone: string, countryCode?: string | null): string;
+    private isSmsProviderEnabled;
+    private deliverOtpSms;
     registerPhone(countryCode: string, phone: string, role: string): Promise<{
         message: string;
     }>;

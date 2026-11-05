@@ -93,6 +93,14 @@ export declare class TripPassengersQuery {
 export declare class TripSearchQuery {
     origin_city?: string;
     destination_city?: string;
+    origin_lat?: string | number;
+    origin_lng?: string | number;
+    destination_lat?: string | number;
+    destination_lng?: string | number;
+    origin_radius_m?: number;
+    destination_radius_m?: number;
+    include_enroute?: boolean;
+    sort?: 'best_match' | 'departure_time' | 'distance';
     date?: string;
     return_date?: string;
     gender_preference?: string;

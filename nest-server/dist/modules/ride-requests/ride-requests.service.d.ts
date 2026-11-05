@@ -4,15 +4,37 @@ import { RedisService } from '../../redis/redis.service.js';
 import { NotificationsService } from '../notifications/notifications.service.js';
 import { HomeService } from '../subscriptions/home.service.js';
 import { TripsService } from '../trips/trips.service.js';
+import { RouteService } from '../maps/route.service.js';
+interface AcceptRideRequestPayload {
+    trip_id?: string;
+    fare_per_seat?: string | number;
+    vehicle_id?: string;
+    seats?: Array<{
+        seat_number: number | string;
+        type: 'driver' | 'available' | 'unavailable';
+    }>;
+    type_of_trip?: string;
+    repeated_days?: number[];
+    repeated_end_date?: string;
+    allowed_type?: string;
+    instructions?: string[];
+    additional_instructions?: string;
+    pickup_point?: Record<string, unknown>;
+    dropoff_point?: Record<string, unknown>;
+    waypoints?: Record<string, unknown>[];
+    stops?: Record<string, unknown>[];
+    origin_time?: string;
+}
 export declare class RideRequestsService {
     private readonly prisma;
     private readonly notifications;
     private readonly home;
     private readonly redis;
     private readonly realtime;
+    private readonly routes;
     private readonly tripsService;
     private readonly logger;
-    constructor(prisma: PrismaService, notifications: NotificationsService, home: HomeService, redis: RedisService, realtime: RealtimeGateway, tripsService: TripsService);
+    constructor(prisma: PrismaService, notifications: NotificationsService, home: HomeService, redis: RedisService, realtime: RealtimeGateway, routes: RouteService, tripsService: TripsService);
     expireStale(): Promise<void>;
     private computeExpiresAt;
     createRideRequest(userId: string, payload: {
@@ -87,24 +109,11 @@ export declare class RideRequestsService {
         booking: Record<string, unknown>;
         offer: Record<string, unknown>;
     }>;
-    acceptRideRequest(driverId: string, requestId: string, payload: {
-        fare_per_seat: string | number;
-        seats: Array<{
-            seat_number: number;
-            type: "driver" | "available" | "unavailable";
-        }>;
-        type_of_trip?: string;
-        repeated_days?: number[];
-        repeated_end_date?: string;
-        allowed_type?: string;
-        instructions?: string[];
-        additional_instructions?: string;
-        pickup_point?: Record<string, unknown>;
-        dropoff_point?: Record<string, unknown>;
-        waypoints?: Record<string, unknown>[];
-        stops?: Record<string, unknown>[];
-        origin_time?: string;
-    }): Promise<{
+    private resolveAcceptTrip;
+    private createTripFromRideRequest;
+    private createDirectAcceptBooking;
+    private upsertAcceptedOffer;
+    acceptRideRequest(driverId: string, requestId: string, payload?: AcceptRideRequestPayload): Promise<{
         trip: Record<string, unknown>;
         booking: Record<string, unknown>;
         offer: Record<string, unknown>;
@@ -118,3 +127,4 @@ export declare class RideRequestsService {
         matches: Record<string, unknown>[];
     }>;
 }
+export {};

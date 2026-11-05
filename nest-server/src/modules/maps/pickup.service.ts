@@ -26,7 +26,7 @@ export interface PickupCheck {
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-// Port of Main Server/Services/pickupService.ts. Rejections never throw
+// Port of main-server/Services/pickupService.ts. Rejections never throw
 // (they return accepted:false); only bad trip/stop references throw.
 @Injectable()
 export class PickupService {

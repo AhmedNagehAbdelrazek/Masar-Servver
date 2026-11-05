@@ -9,6 +9,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 };
 import { ConflictException, Injectable, NotFoundException, UnprocessableEntityException, } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service.js';
+import { hasTripDeparted } from '../trips/trip-schedule.js';
 import { GeoService } from './geo.service.js';
 import { getMapsConfig } from './maps.config.js';
 import { RouteService } from './route.service.js';
@@ -23,7 +24,7 @@ let PickupService = class PickupService {
         this.geo = geo;
     }
     assertBookable(trip) {
-        if (!['published', 'full'].includes(trip.status)) {
+        if (!['published', 'full'].includes(trip.status) || hasTripDeparted(trip)) {
             throw new ConflictException({ message: 'TRIP_NOT_BOOKABLE', code: 'TRIP_NOT_BOOKABLE' });
         }
     }
@@ -34,6 +35,7 @@ let PickupService = class PickupService {
         });
         if (!trip)
             throw new NotFoundException({ message: 'TRIP_NOT_FOUND', code: 'TRIP_NOT_FOUND' });
+        this.assertBookable(trip);
         const type = input.pickup_type ?? (input.pickup_stop_id ? 'stop' : 'custom');
         if (type === 'stop') {
             const stopId = input.pickup_stop_id;

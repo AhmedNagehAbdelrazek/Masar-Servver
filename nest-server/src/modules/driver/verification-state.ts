@@ -1,7 +1,7 @@
 import { ConflictException, ForbiddenException } from '@nestjs/common';
 
 // Pure verification state-machine rules, ported from
-// Main Server/Services/driverVerificationService.ts so unit tests cover
+// main-server/Services/driverVerificationService.ts so unit tests cover
 // transitions without a database.
 export type VerificationStatus = 'unverified' | 'pending' | 'rejected' | 'approved';
 

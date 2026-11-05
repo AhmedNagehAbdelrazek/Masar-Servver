@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service.js';
 
-// Port of Main Server/Services/statsService.ts (lifetime driver statistics).
+// Port of main-server/Services/statsService.ts (lifetime driver statistics).
 @Injectable()
 export class StatsService {
   constructor(private readonly prisma: PrismaService) {}

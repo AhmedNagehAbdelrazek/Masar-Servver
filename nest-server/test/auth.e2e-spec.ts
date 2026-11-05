@@ -1,4 +1,4 @@
-// 1:1 port of Main Server/tests/integration/auth.test.js (Wave 2.2).
+// 1:1 port of main-server/tests/integration/auth.test.js (Wave 2.2).
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { resetTestState } from '../src/test/db.js';
 import { createTestApp, type TestContext } from '../src/test/test-app.js';

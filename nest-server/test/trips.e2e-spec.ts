@@ -1,4 +1,4 @@
-// 1:1 port of Main Server/tests/integration/trip.test.js (Wave 5.1).
+// 1:1 port of main-server/tests/integration/trip.test.js (Wave 5.1).
 // VERIFIED DEVIATIONS (Express fails 4/35 of its own file):
 // - GET detail asserts the CURRENT nested shape (the flat originCity assert
 //   is stale — the service deletes those keys).

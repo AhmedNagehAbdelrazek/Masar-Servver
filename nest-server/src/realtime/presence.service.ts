@@ -4,7 +4,7 @@ import type { RealtimeGateway } from './realtime.gateway.js';
 import { RealtimeGateway as RealtimeGatewayToken } from './realtime.gateway.js';
 import { RealtimeMetricsService } from './realtime-metrics.service.js';
 
-// Port of Main Server/Services/presenceService.ts: 60s TTL online flag with
+// Port of main-server/Services/presenceService.ts: 60s TTL online flag with
 // a 60s grace timer before marking offline (cancelled by reconnect).
 export const PRESENCE_TTL_SECONDS = 60;
 const GRACE_MS = 60 * 1000;

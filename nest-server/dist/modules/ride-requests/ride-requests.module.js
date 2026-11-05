@@ -6,6 +6,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 };
 import { forwardRef, Module } from '@nestjs/common';
 import { RealtimeModule } from '../../realtime/realtime.module.js';
+import { MapsModule } from '../maps/maps.module.js';
 import { NotificationsModule } from '../notifications/notifications.module.js';
 import { SubscriptionsModule } from '../subscriptions/subscriptions.module.js';
 import { TripsModule } from '../trips/trips.module.js';
@@ -16,7 +17,7 @@ let RideRequestsModule = class RideRequestsModule {
 };
 RideRequestsModule = __decorate([
     Module({
-        imports: [NotificationsModule, SubscriptionsModule, RealtimeModule, forwardRef(() => TripsModule)],
+        imports: [NotificationsModule, SubscriptionsModule, RealtimeModule, MapsModule, forwardRef(() => TripsModule)],
         controllers: [RideRequestsController, OffersController],
         providers: [RideRequestsService],
         exports: [RideRequestsService],

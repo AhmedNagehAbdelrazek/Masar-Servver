@@ -1,5 +1,5 @@
 // Port of NOTIFICATION_TYPE / NOTIFICATION_CATEGORIES / NOTIFICATION_GROUP_LABELS /
-// NOTIFICATION_TYPE_LABELS from Main Server/config/constants.ts.
+// NOTIFICATION_TYPE_LABELS from main-server/config/constants.ts.
 export const NOTIFICATION_TYPE = {
   BOOKING_CONFIRMED: 'booking_confirmed',
   BOOKING_CANCELLED: 'booking_cancelled',

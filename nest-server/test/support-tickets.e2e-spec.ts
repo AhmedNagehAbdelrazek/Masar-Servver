@@ -1,5 +1,5 @@
 // Support tickets: create/list/detail/messages/staff updates/status flow.
-// 1:1 port of Main Server/tests/integration/supportTickets.test.js (Wave 6.3).
+// 1:1 port of main-server/tests/integration/supportTickets.test.js (Wave 6.3).
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { resetTestState } from '../src/test/db.js';
 import { generateAccessToken } from '../src/test/jwt.js';

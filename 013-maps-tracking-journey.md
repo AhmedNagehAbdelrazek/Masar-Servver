@@ -284,7 +284,7 @@ Also:
 
 ### 6.4 Environment variables to add (INF5, INF6)
 
-Add to `Main Server/.env.example`, `docker-compose.yml` (`main-server` environment) and the secrets store:
+Add to `main-server/.env.example`, `docker-compose.yml` (`main-server` environment) and the secrets store:
 
 ```
 # Google Maps

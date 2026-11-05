@@ -1,4 +1,4 @@
-// 1:1 port of Main Server/tests/integration/passengerProfiles.test.js and
+// 1:1 port of main-server/tests/integration/passengerProfiles.test.js and
 // tests/integration/passengerAccountSummary.test.js (Wave 2.3).
 // passengerHome tests need homeService — Wave 4.
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';

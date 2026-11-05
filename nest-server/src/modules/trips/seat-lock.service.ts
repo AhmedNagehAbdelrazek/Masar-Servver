@@ -14,7 +14,7 @@ function validationError(message: string): UnprocessableEntityException {
   return new UnprocessableEntityException({ message, code: 'VALIDATION_ERROR' });
 }
 
-// Port of Main Server/Services/seatLockService.ts + utils/seatLock.ts.
+// Port of main-server/Services/seatLockService.ts + utils/seatLock.ts.
 // Redis key seat_lock:{tripId}:{seatNumber} = JSON {passenger_id, locked_at,
 // expires_at}, EX 300 NX. All-or-nothing multi-lock with rollback.
 export const SEAT_LOCK_TTL = 300;

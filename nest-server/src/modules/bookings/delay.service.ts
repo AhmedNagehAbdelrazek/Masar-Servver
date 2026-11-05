@@ -9,7 +9,7 @@ import { buildPagination, parsePagination } from '../../common/utils/pagination.
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { NotificationsService, type NotifyUser } from '../notifications/notifications.service.js';
 
-// Port of Main Server/Services/delayService.ts.
+// Port of main-server/Services/delayService.ts.
 function serializeDelay(event: {
   id: string;
   bookingId: string;

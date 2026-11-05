@@ -4,7 +4,7 @@ import { PrismaService } from '../../prisma/prisma.service.js';
 import { withSerializableRetry } from '../../prisma/transaction.js';
 import { NotificationsService } from '../notifications/notifications.service.js';
 
-// Port of Main Server/Services/balanceService.ts — the single gateway for
+// Port of main-server/Services/balanceService.ts — the single gateway for
 // EVERY balance mutation. NOTE: Sequelize row-level locks (LOCK.UPDATE) have
 // no Prisma equivalent; mutations run in transactions without explicit
 // FOR UPDATE. Documented deviation, acceptable for the workload.

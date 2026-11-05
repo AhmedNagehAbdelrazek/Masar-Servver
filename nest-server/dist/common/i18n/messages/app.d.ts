@@ -135,6 +135,14 @@ export declare const APP_MESSAGES: {
         readonly en: "OTP resent successfully";
         readonly ar: "تم إعادة إرسال رمز التحقق بنجاح";
     };
+    readonly SMS_SENT: {
+        readonly en: "SMS sent successfully";
+        readonly ar: "تم إرسال الرسالة النصية بنجاح";
+    };
+    readonly SMS_SEND_FAILED: {
+        readonly en: "Could not send the SMS. Please try again.";
+        readonly ar: "تعذر إرسال الرسالة النصية. يرجى المحاولة مرة أخرى.";
+    };
     readonly OTP_IF_REGISTERED: {
         readonly en: "If the phone number is registered, an OTP has been sent";
         readonly ar: "إذا كان رقم الهاتف مسجلاً، فقد تم إرسال رمز التحقق";

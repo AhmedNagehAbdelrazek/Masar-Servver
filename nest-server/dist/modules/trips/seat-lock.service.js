@@ -11,6 +11,7 @@ var SeatLockService_1;
 import { ConflictException, ForbiddenException, Injectable, Logger, NotFoundException, UnprocessableEntityException, } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { RedisService } from '../../redis/redis.service.js';
+import { hasTripDeparted } from './trip-schedule.js';
 function validationError(message) {
     return new UnprocessableEntityException({ message, code: 'VALIDATION_ERROR' });
 }
@@ -64,7 +65,7 @@ let SeatLockService = SeatLockService_1 = class SeatLockService {
         const trip = await this.prisma.trip.findUnique({ where: { id: tripId } });
         if (!trip)
             throw new NotFoundException({ message: 'TRIP_NOT_FOUND', code: 'TRIP_NOT_FOUND' });
-        if (trip.status !== 'published') {
+        if (trip.status !== 'published' || hasTripDeparted(trip)) {
             throw validationError('TRIP_IS_NOT_AVAILABLE_FOR_BOOKING');
         }
         const seats = await this.prisma.tripSeat.findMany({ where: { tripId } });

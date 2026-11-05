@@ -1,4 +1,4 @@
-// 1:1 port of Main Server/tests/integration/bookingFlow.test.js,
+// 1:1 port of main-server/tests/integration/bookingFlow.test.js,
 // bookingMultiSeat.test.js, bookingSeatNumbers.test.js and
 // contract/booking.contract.test.js (Wave 5.3).
 import { randomUUID } from 'node:crypto';

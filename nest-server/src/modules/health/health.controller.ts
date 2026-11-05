@@ -16,7 +16,7 @@ export class HealthController {
     return { status: 'ok', timestamp: new Date().toISOString(), uptime: process.uptime() };
   }
 
-  // Port of Main Server/Controllers/realtimeHealthController.ts: serves the
+  // Port of main-server/Controllers/realtimeHealthController.ts: serves the
   // realtime metrics snapshot (same shape as Express getSnapshot).
   @Get('health/realtime')
   realtime(): RealtimeSnapshot {

@@ -13,7 +13,7 @@ export interface SettingEntry {
   enabled_push?: boolean;
 }
 
-// Port of Main Server/Services/notificationSettingService.ts
+// Port of main-server/Services/notificationSettingService.ts
 @Injectable()
 export class NotificationSettingsService {
   constructor(private readonly prisma: PrismaService) {}

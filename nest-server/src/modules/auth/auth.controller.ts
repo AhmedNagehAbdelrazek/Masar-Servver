@@ -17,7 +17,7 @@ import { RegisterPhoneDto } from './dto/register-phone.dto.js';
 import { LogoutDto, PhoneDto, RefreshDto, ResendOtpDto } from './dto/simple-auth.dto.js';
 import { VerifyOtpDto } from './dto/verify-otp.dto.js';
 
-// Full parity with Main Server/Routes/authRoutes.ts mounted at /api/auth.
+// Full parity with main-server/Routes/authRoutes.ts mounted at /api/auth.
 @Controller('auth')
 export class AuthController {
   constructor(private readonly auth: AuthService) {}

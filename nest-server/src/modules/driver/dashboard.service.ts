@@ -4,7 +4,7 @@ import { RedisService } from '../../redis/redis.service.js';
 
 const DASHBOARD_TTL = 30;
 
-// Port of Main Server/Services/dashboardService.ts (Redis-cached 30s).
+// Port of main-server/Services/dashboardService.ts (Redis-cached 30s).
 @Injectable()
 export class DashboardService {
   private readonly logger = new Logger(DashboardService.name);

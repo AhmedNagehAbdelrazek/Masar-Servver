@@ -1,4 +1,4 @@
-// 1:1 port of Main Server/tests/integration/penalties.test.js,
+// 1:1 port of main-server/tests/integration/penalties.test.js,
 // integration/earningsStats.test.js, integration/dashboard.test.js and
 // contract/penalties + earningsStats (Wave 3.3).
 import { randomUUID } from 'node:crypto';

@@ -1,4 +1,4 @@
-// Port of Main Server/tests/integration/historyJobs.test.js (jobs + retention)
+// Port of main-server/tests/integration/historyJobs.test.js (jobs + retention)
 // plus the deferred expiry-sweep test from tests/integration/subscription.test.js
 // ("US4 - Expiry transition" → Wave 7 jobs per test/subscriptions.e2e-spec.ts).
 // Job bodies run through the Nest JobsService; the SOS trigger runs through

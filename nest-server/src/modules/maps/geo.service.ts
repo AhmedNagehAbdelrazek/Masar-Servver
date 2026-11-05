@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import polyline from '@mapbox/polyline';
 
-// Port of Main Server/Services/geo.ts: haversine, polyline codec, segment
+// Port of main-server/Services/geo.ts: haversine, polyline codec, segment
 // projection, route distance/ordering, Douglas-Peucker simplify.
 export type LatLng = [number, number];
 

@@ -6,8 +6,10 @@ import { HomeService } from '../subscriptions/home.service.js';
 import { RecentSearchService } from '../subscriptions/recent-search.service.js';
 import { SeatLockService } from './seat-lock.service.js';
 import type { TripExpiryService } from './trip-expiry.service.js';
+import { GeoService } from '../maps/geo.service.js';
 import { PickupService } from '../maps/pickup.service.js';
 import { RouteService } from '../maps/route.service.js';
+import { type SearchSort } from './trip-search.matcher.js';
 import type { CreateTripDto } from './dto/create-trip.dto.js';
 export declare class TripsService {
     private readonly prisma;
@@ -20,8 +22,11 @@ export declare class TripsService {
     private readonly expiry;
     private readonly routeService;
     private readonly pickupService;
+    private readonly geo;
     private readonly logger;
-    constructor(prisma: PrismaService, commission: CommissionService, seatLocks: SeatLockService, recentSearch: RecentSearchService, notifications: NotificationsService, home: HomeService, realtime: RealtimeGateway, expiry: TripExpiryService, routeService: RouteService, pickupService: PickupService);
+    constructor(prisma: PrismaService, commission: CommissionService, seatLocks: SeatLockService, recentSearch: RecentSearchService, notifications: NotificationsService, home: HomeService, realtime: RealtimeGateway, expiry: TripExpiryService, routeService: RouteService, pickupService: PickupService, geo: GeoService);
+    private rideRequestIdsByTrip;
+    private withRideRequestOrigin;
     private hasRemainingFreeTrips;
     private assertFreeTripsAvailable;
     private assertCanPublish;
@@ -41,6 +46,14 @@ export declare class TripsService {
     getAvailableTrips(filters: {
         originCity?: string;
         destinationCity?: string;
+        originLat?: string | number;
+        originLng?: string | number;
+        destinationLat?: string | number;
+        destinationLng?: string | number;
+        originRadiusM?: number;
+        destinationRadiusM?: number;
+        includeEnroute?: boolean;
+        sort?: SearchSort;
         date?: string;
         returnDate?: string;
         genderPreference?: string | null;
@@ -51,7 +64,9 @@ export declare class TripsService {
     }): Promise<{
         trips: Record<string, unknown>[];
         returningTrips: Record<string, unknown>[];
+        search: Record<string, unknown>;
     }>;
+    private citySearchWhere;
     private fetchTripsForDate;
     cancelTrip(driverId: string, tripId: string): Promise<{
         trip: {

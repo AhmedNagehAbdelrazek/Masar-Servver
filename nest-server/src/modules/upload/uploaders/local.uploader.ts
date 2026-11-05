@@ -3,7 +3,7 @@ import { existsSync, mkdirSync, promises as fs } from 'node:fs';
 import { extname, join, resolve } from 'node:path';
 import type { Uploader, UploadOptions } from './uploader.interface.js';
 
-// Port of Main Server/Services/uploaders/local.ts
+// Port of main-server/Services/uploaders/local.ts
 export class LocalUploader implements Uploader {
   private readonly uploadDir: string;
   private readonly baseUrl: string;

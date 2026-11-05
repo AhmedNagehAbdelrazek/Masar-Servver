@@ -22,7 +22,7 @@ export interface SendOptions {
   data?: Record<string, unknown>;
 }
 
-// Port of Main Server/Services/notificationService/index.ts.
+// Port of main-server/Services/notificationService/index.ts.
 // Delivery is best-effort and never throws (except the notFound/forbidden
 // read guards, which mirror the Express API errors).
 @Injectable()

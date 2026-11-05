@@ -1,5 +1,5 @@
 // Vitest setup file: loads .env.test before any app module is imported.
-// Mirrors Main Server/tests/setup/env.ts (NODE_ENV=test, APP_LOCALE=en).
+// Mirrors main-server/tests/setup/env.ts (NODE_ENV=test, APP_LOCALE=en).
 import { config } from 'dotenv';
 import { join } from 'node:path';
 

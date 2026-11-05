@@ -10,7 +10,7 @@ import { SosService } from '../modules/sos/sos.service.js';
 import { CommissionService } from '../modules/subscriptions/commission.service.js';
 import { TripExpiryService } from '../modules/trips/trip-expiry.service.js';
 
-// Nest port of Main Server/jobs/* (9 schedules). Schedule strings match
+// Nest port of main-server/jobs/* (9 schedules). Schedule strings match
 // jobs/index.ts exactly. Overlap guard + `jobs:lastrun:*` keys (3d TTL)
 // mirror the Express scheduler semantics. Cron handlers are safe no-ops in
 // test env (NODE_ENV=test never ran jobs in Express either); the public

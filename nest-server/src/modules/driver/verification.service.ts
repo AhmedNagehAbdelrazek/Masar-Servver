@@ -5,7 +5,7 @@ import { buildPagination, parsePagination } from '../../common/utils/pagination.
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { NotificationsService } from '../notifications/notifications.service.js';
 
-// Port of Main Server/Services/verificationService.ts: status-change audit,
+// Port of main-server/Services/verificationService.ts: status-change audit,
 // admin alerts, admin queue, and the four admin approve/reject operations.
 // The admin HTTP surface lives in AdminVerificationController (registered
 // early for the driver resubmit flow; Wave 7 must not duplicate it).

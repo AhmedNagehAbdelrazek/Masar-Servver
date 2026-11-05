@@ -5,7 +5,7 @@ import { PrismaService } from '../../prisma/prisma.service.js';
 const PERIODS = ['day', 'week', 'month'] as const;
 export type EarningsPeriod = (typeof PERIODS)[number];
 
-// Port of Main Server/Services/earningsService.ts: completed-booking earnings
+// Port of main-server/Services/earningsService.ts: completed-booking earnings
 // grouped by Postgres date_trunc buckets. period/from/to validated by DTO;
 // the trunc/format fragments are allowlisted here (never raw user input).
 @Injectable()

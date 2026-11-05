@@ -199,6 +199,11 @@ let NotificationsService = NotificationsService_1 = class NotificationsService {
         await this.emitCount(userId);
         return { marked: res.count };
     }
+    async deleteAll(userId) {
+        const res = await this.prisma.notification.deleteMany({ where: { userId } });
+        await this.emitCount(userId);
+        return { deleted: res.count };
+    }
     async registerDevice(userId, fcmToken) {
         const token = fcmToken.trim();
         const user = await this.prisma.user.findUnique({ where: { id: userId } });

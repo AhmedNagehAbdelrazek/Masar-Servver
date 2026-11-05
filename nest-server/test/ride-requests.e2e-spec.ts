@@ -1,4 +1,4 @@
-// 1:1 port of Main Server/tests/integration/rideRequestFlow.test.js,
+// 1:1 port of main-server/tests/integration/rideRequestFlow.test.js,
 // rideRequestMatches.test.js and contract/rideRequests.contract.test.js
 // (Wave 5.4).
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';

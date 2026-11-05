@@ -97,7 +97,7 @@ function serializeTicket(ticket: TicketRow, includeMessages = false): Record<str
   return base;
 }
 
-// Port of Main Server/Services/supportTicketService.ts.
+// Port of main-server/Services/supportTicketService.ts.
 @Injectable()
 export class SupportTicketsService {
   private readonly logger = new Logger(SupportTicketsService.name);

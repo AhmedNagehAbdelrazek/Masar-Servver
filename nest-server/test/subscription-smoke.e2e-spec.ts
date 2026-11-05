@@ -1,4 +1,4 @@
-// 1:1 port of Main Server/tests/integration/subscriptionSmoke.test.js (Wave 5.2).
+// 1:1 port of main-server/tests/integration/subscriptionSmoke.test.js (Wave 5.2).
 // DEVIATION (verified): Express fails its own file — GET /api/payment-methods
 // without auth returns 401, but the test expects 200. The port authenticates.
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';

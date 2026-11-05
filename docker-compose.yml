@@ -45,10 +45,10 @@ services:
 
   main-server:
     build:
-      context: ./Main Server
+      context: ./main-server
       dockerfile: Dockerfile
     env_file:
-      - ./Main Server/.env
+      - ./main-server/.env
     environment:
       NODE_ENV: production
       PORT: 8000
@@ -87,7 +87,7 @@ services:
     # SALT_ROUNDS stay identical so tokens/admin/seeds match). Connection and
     # versioning settings are overridden below.
     env_file:
-      - ./Main Server/.env
+      - ./main-server/.env
     environment:
       NODE_ENV: production
       PORT: 8001

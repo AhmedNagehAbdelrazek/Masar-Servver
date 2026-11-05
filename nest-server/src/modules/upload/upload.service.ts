@@ -21,7 +21,7 @@ export interface UploadResult {
   provider: string | null;
 }
 
-// Port of Main Server/Services/uploadService.ts: sha256 dedup via
+// Port of main-server/Services/uploadService.ts: sha256 dedup via
 // UploadedImage.hash, provider dispatch via UPLOAD_PROVIDER.
 @Injectable()
 export class UploadService implements OnModuleInit {

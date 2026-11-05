@@ -9,7 +9,7 @@ export interface AuthUser {
   role: string;
 }
 
-// Port of Main Server/middlewares/protect.ts:
+// Port of main-server/middlewares/protect.ts:
 // Bearer access token only (type === 'access'), Redis blacklist check.
 @Injectable()
 export class JwtAuthGuard implements CanActivate {

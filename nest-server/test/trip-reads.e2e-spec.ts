@@ -1,4 +1,4 @@
-// 1:1 port of Main Server/tests/integration/tripOptions.test.js and
+// 1:1 port of main-server/tests/integration/tripOptions.test.js and
 // tripPassengers.test.js (Wave 5.1).
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { resetTestState } from '../src/test/db.js';

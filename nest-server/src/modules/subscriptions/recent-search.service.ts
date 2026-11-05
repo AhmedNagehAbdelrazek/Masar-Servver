@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { RedisService } from '../../redis/redis.service.js';
 
-// Port of Main Server/Services/recentSearchService.ts.
+// Port of main-server/Services/recentSearchService.ts.
 @Injectable()
 export class RecentSearchService {
   private readonly logger = new Logger(RecentSearchService.name);

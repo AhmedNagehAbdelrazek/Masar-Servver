@@ -27,7 +27,7 @@ function validationError(code: string, message: string): UnprocessableEntityExce
   return new UnprocessableEntityException({ message, code });
 }
 
-// Temporary schema-drift guard: production app_db created by Main Server
+// Temporary schema-drift guard: production app_db created by main-server
 // (Sequelize underscored:true) has driver_profiles.national_i_d while
 // Prisma expects national_id (fixed by migration 033). If the column
 // rename hasn't applied yet, fall back to a query without the join
@@ -53,7 +53,7 @@ interface SubscriptionRow {
   freeTripsUsed: number;
 }
 
-// Port of Main Server/Services/subscriptionService.ts.
+// Port of main-server/Services/subscriptionService.ts.
 // DEVIATION (verified): Express forbids manual free-plan subscription outright
 // (FREE_PLAN_NOT_SUBSCRIBABLE), but its own integration test demands a
 // one-time free activation per national ID (and fails 11/12 against Express).

@@ -1,4 +1,4 @@
-// 1:1 port of Main Server/tests/integration/tripSearchFilters.test.js and
+// 1:1 port of main-server/tests/integration/tripSearchFilters.test.js and
 // tripSearchTimeWindow.test.js (Wave 5.1). Dates anchor to Asia/Amman.
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { resetTestState } from '../src/test/db.js';

@@ -1,7 +1,7 @@
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service.js';
 
-// Port of Main Server/utils/userAccess.ts.
+// Port of main-server/utils/userAccess.ts.
 export async function loadDriverUser(
   prisma: PrismaService,
   userId: string,

@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 
-// Nest port of Main Server/Services/realtimeMetrics.ts: per-process
+// Nest port of main-server/Services/realtimeMetrics.ts: per-process
 // observability for the realtime surface. Snapshot shape matches Express
 // `GET /api/health/realtime` (see contracts/metrics-contracts.md).
 //

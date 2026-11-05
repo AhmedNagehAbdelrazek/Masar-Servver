@@ -55,6 +55,14 @@ let TripsController = class TripsController {
             .getAvailableTrips({
             originCity: query.origin_city,
             destinationCity: query.destination_city,
+            originLat: query.origin_lat,
+            originLng: query.origin_lng,
+            destinationLat: query.destination_lat,
+            destinationLng: query.destination_lng,
+            originRadiusM: query.origin_radius_m,
+            destinationRadiusM: query.destination_radius_m,
+            includeEnroute: query.include_enroute,
+            sort: query.sort,
             date: query.date,
             returnDate: query.return_date,
             genderPreference: query.gender_preference ?? null,
@@ -63,7 +71,7 @@ let TripsController = class TripsController {
             vehicleType: query.vehicle_type,
             seats: query.seats,
         })
-            .then(async ({ trips, returningTrips }) => {
+            .then(async ({ trips, returningTrips, search }) => {
             const serializeWithDriver = (arr) => arr.map((t) => {
                 const driver = t.driver;
                 const vehicle = t.vehicle;
@@ -81,6 +89,7 @@ let TripsController = class TripsController {
                         : driver,
                     vehicle: vehicle
                         ? {
+                            ...vehicle,
                             id: vehicle.id,
                             vehicle_type: vehicle.vehicleType ?? vehicle.vehicle_type,
                             manufacturer: vehicle.manufacturer,
@@ -102,7 +111,11 @@ let TripsController = class TripsController {
                 catch {
                 }
             }
-            return { trips: serializeWithDriver(trips), returning_trips: serializeWithDriver(returningTrips) };
+            return {
+                trips: serializeWithDriver(trips),
+                returning_trips: serializeWithDriver(returningTrips),
+                search,
+            };
         });
     }
     getTripById(params) {

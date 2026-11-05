@@ -59,7 +59,7 @@ function validationError(message: string): UnprocessableEntityException {
   return new UnprocessableEntityException({ message, code: 'VALIDATION_FAILED' });
 }
 
-// Port of Main Server/Services/sosService.ts: SOS trigger (realtime) +
+// Port of main-server/Services/sosService.ts: SOS trigger (realtime) +
 // admin list/ack/resolve + the 60s escalation sweep (wired by Wave 7 jobs).
 @Injectable()
 export class SosService {

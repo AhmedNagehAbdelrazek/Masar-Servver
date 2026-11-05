@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service.js';
 
-// Boot seed (mirrors Main Server/seed.ts: admin + two test accounts).
+// Boot seed (mirrors main-server/seed.ts: admin + two test accounts).
 // Idempotent and non-destructive: existing rows are left untouched —
 // in particular passwords are NEVER overwritten (Express seed.ts re-hashed
 // on every run; the boot seed must be safe to run on a live database).

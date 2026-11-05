@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException, UnprocessableEntityException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service.js';
 
-// Port of Main Server/Services/passengerProfileService.ts (minus
+// Port of main-server/Services/passengerProfileService.ts (minus
 // getPassengerHome, which needs homeService — Wave 4).
 @Injectable()
 export class ProfileService {

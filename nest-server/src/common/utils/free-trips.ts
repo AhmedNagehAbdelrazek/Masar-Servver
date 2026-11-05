@@ -1,4 +1,4 @@
-// Port of Main Server/utils/freeTrips.ts (verbatim logic).
+// Port of main-server/utils/freeTrips.ts (verbatim logic).
 export interface FreeOffer {
   type?: string;
   value?: number | string;

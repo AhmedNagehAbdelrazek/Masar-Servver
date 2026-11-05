@@ -1,4 +1,4 @@
-// 1:1 port of Main Server/tests/integration/commission.test.js and
+// 1:1 port of main-server/tests/integration/commission.test.js and
 // contract/commission.contract.test.js (Wave 5.2 — trips now exist).
 import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';

@@ -1,5 +1,5 @@
 // Port of TEMPLATES + interpolate from
-// Main Server/Services/notificationService/index.ts (verbatim texts).
+// main-server/Services/notificationService/index.ts (verbatim texts).
 export interface TemplateEntry {
   title: string;
   body: string;

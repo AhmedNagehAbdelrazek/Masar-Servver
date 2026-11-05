@@ -1,4 +1,4 @@
-// 1:1 port of Main Server/tests/integration/favorites.test.js (Wave 1.4).
+// 1:1 port of main-server/tests/integration/favorites.test.js (Wave 1.4).
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { resetTestState } from '../src/test/db.js';
 import { generateAccessToken } from '../src/test/jwt.js';

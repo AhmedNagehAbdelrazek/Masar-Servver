@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import twilio from 'twilio';
 import { WebsmppSmsService } from '../../sms/websmpp-sms.service.js';
 
-// Port of Main Server/Services/notificationService/channels/sms.ts.
+// Port of main-server/Services/notificationService/channels/sms.ts.
 // SMS_PROVIDER=websmpp uses the Advance Messaging Systems (Broadnet) gateway
 // (see SMS_API.pdf / HLR_API.pdf; requires SMS_USERNAME / SMS_PASSWORD /
 // SMS_SENDER_ID). SMS_PROVIDER=twilio uses Twilio; anything else (default

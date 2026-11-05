@@ -45,6 +45,9 @@ export declare class NotificationsService {
     markAllRead(userId: string): Promise<{
         marked: number;
     }>;
+    deleteAll(userId: string): Promise<{
+        deleted: number;
+    }>;
     registerDevice(userId: string, fcmToken: string): Promise<{
         registered: true;
     }>;

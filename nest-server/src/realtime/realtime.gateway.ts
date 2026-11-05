@@ -64,7 +64,7 @@ function authError(code: string, reason = 'Authentication failed.'): Error & { c
 
 const STAFF_ROLES = ['admin', 'support', 'moderator'];
 
-// Nest-native port of Main Server/socketServer.ts + sockets/*.
+// Nest-native port of main-server/socketServer.ts + sockets/*.
 // Rooms: user:{id}, role:{role}, trip:{id}, booking:{id}, support:{id}.
 // Redis adapter wiring happens in main.ts bootstrap (skipped in test env).
 @WebSocketGateway({
@@ -257,7 +257,7 @@ export class RealtimeGateway implements OnGatewayInit, OnGatewayConnection, OnGa
     }
   }
 
-  // Port of Main Server/sockets/chatSocket.ts: booking + support-ticket chat.
+  // Port of main-server/sockets/chatSocket.ts: booking + support-ticket chat.
   @UseGuards(WsJwtGuard)
   @SubscribeMessage('chat:join')
   async chatJoin(
@@ -413,7 +413,7 @@ export class RealtimeGateway implements OnGatewayInit, OnGatewayConnection, OnGa
     }
   }
 
-  // Port of Main Server/sockets/sosSocket.ts. Repeat triggers reuse the
+  // Port of main-server/sockets/sosSocket.ts. Repeat triggers reuse the
   // active event without consuming rate limit.
   @UseGuards(WsJwtGuard)
   @SubscribeMessage('sos:trigger')
@@ -446,7 +446,7 @@ export class RealtimeGateway implements OnGatewayInit, OnGatewayConnection, OnGa
     }
   }
 
-  // Port of Main Server/sockets/notificationSocket.ts: mark one/all read,
+  // Port of main-server/sockets/notificationSocket.ts: mark one/all read,
   // then push the refreshed `notification:count` badge (pushCount covers the
   // connect-time badge; the service emitCount covers REST reads).
   @UseGuards(WsJwtGuard)
@@ -480,7 +480,7 @@ export class RealtimeGateway implements OnGatewayInit, OnGatewayConnection, OnGa
     }
   }
 
-  // Port of Main Server/sockets/enforcementSocket.ts: minimal acknowledgement.
+  // Port of main-server/sockets/enforcementSocket.ts: minimal acknowledgement.
   @UseGuards(WsJwtGuard)
   @SubscribeMessage('enforcement:ack')
   enforcementAck(@ConnectedSocket() client: AuthedSocket): unknown {
@@ -496,7 +496,7 @@ export class RealtimeGateway implements OnGatewayInit, OnGatewayConnection, OnGa
     return null;
   }
 
-  // Port of Main Server/sockets/adminSocket.ts. Staff-only (admin/support/
+  // Port of main-server/sockets/adminSocket.ts. Staff-only (admin/support/
   // moderator); everyone else gets FORBIDDEN without touching the ticket.
   @UseGuards(WsJwtGuard)
   @SubscribeMessage('admin:ticket_assign')

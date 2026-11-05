@@ -1,6 +1,6 @@
 # Nest.js Migration — Status & Tracker
 
-Parallel port of `Main Server/` (Express 5 + Sequelize 6) to Nest 12 + Prisma 7.
+Parallel port of `main-server/` (Express 5 + Sequelize 6) to Nest 12 + Prisma 7.
 Express stays live on `PORT=3000`; Nest defaults to `PORT=3001`.
 `audit-server/` is out of scope (consumed as-is).
 
@@ -118,14 +118,14 @@ text params).
 
 ## Next steps (per module)
 
-1. DTOs ← `Main Server/utils/validators/*` (24 files) with `class-validator`.
-2. Service logic ← `Main Server/Services/*`, Sequelize → Prisma
+1. DTOs ← `main-server/utils/validators/*` (24 files) with `class-validator`.
+2. Service logic ← `main-server/Services/*`, Sequelize → Prisma
    (`findByPk→findUnique`, `include→include`, transactions → `$transaction`).
 3. Split giants: `tripService` → Trips/Stops/Seats/SeatLock; `bookingService` as-is;
    `notificationService` → channels (Twilio/FCM/in-app).
 4. Realtime: 7 socket handlers, `@socket.io/redis-adapter` with ioredis pub/sub.
-5. Jobs: port bodies from `Main Server/jobs/*` (keep `jobs:lastrun:*` overlap-guard).
-6. Tests: `@nestjs/testing` + supertest e2e mirroring `Main Server/tests/*`
+5. Jobs: port bodies from `main-server/jobs/*` (keep `jobs:lastrun:*` overlap-guard).
+6. Tests: `@nestjs/testing` + supertest e2e mirroring `main-server/tests/*`
    (unit/integration/contract, ≥80% gate, in-memory Redis mock pattern).
 7. Cutover: baseline migration on staging copy → row-count check →
    `prisma migrate deploy` → strangler proxy Express→Nest per prefix →

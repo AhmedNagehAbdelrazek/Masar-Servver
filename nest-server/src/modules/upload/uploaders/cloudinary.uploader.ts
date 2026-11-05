@@ -1,7 +1,7 @@
 import { v2 as cloudinary } from 'cloudinary';
 import type { Uploader, UploadOptions } from './uploader.interface.js';
 
-// Port of Main Server/Services/uploaders/cloudinary.ts
+// Port of main-server/Services/uploaders/cloudinary.ts
 export class CloudinaryUploader implements Uploader {
   private readonly folder: string;
 

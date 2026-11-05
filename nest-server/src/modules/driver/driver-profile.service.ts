@@ -49,7 +49,7 @@ function deriveBadges({
   return badges;
 }
 
-// Port of Main Server/Services/driverProfileService.ts.
+// Port of main-server/Services/driverProfileService.ts.
 @Injectable()
 export class DriverProfileService {
   constructor(

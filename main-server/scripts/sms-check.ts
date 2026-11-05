@@ -1,5 +1,5 @@
 /**
- * Manual SMS gateway smoke test (run from the `Main Server` directory).
+ * Manual SMS gateway smoke test (run from the `main-server` directory).
  *
  *   npx tsx scripts/sms-check.ts
  *   npx tsx scripts/sms-check.ts 9627XXXXXXXX "Test from Masar"

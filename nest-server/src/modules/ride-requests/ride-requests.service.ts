@@ -199,7 +199,7 @@ function serializeRideRequest(
   return out;
 }
 
-// Port of Main Server/Services/rideRequestService.ts.
+// Port of main-server/Services/rideRequestService.ts.
 @Injectable()
 export class RideRequestsService {
   private readonly logger = new Logger(RideRequestsService.name);

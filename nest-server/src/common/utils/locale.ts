@@ -1,4 +1,4 @@
-// Port of Main Server/utils/i18n.ts locale resolution (ar default, en supported, both).
+// Port of main-server/utils/i18n.ts locale resolution (ar default, en supported, both).
 export type LocaleMode = 'ar' | 'en' | 'both';
 
 export function resolveLocaleMode(req: {

@@ -15,7 +15,7 @@ export interface ResolvedRoute {
 const WAYPOINT_LIMIT = 25;
 const NAV_LINK_WAYPOINT_LIMIT = 9;
 
-// Port of Main Server/Services/routeService.ts.
+// Port of main-server/Services/routeService.ts.
 @Injectable()
 export class RouteService {
   private readonly logger = new Logger(RouteService.name);

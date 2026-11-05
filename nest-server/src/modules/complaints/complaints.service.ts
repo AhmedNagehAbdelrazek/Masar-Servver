@@ -95,7 +95,7 @@ function validationError(field: string, message: string): UnprocessableEntityExc
   });
 }
 
-// Port of Main Server/Services/complaintService.ts
+// Port of main-server/Services/complaintService.ts
 @Injectable()
 export class ComplaintsService {
   constructor(

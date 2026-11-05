@@ -1,4 +1,4 @@
-// Port of Main Server/utils/i18n.ts + utils/httpResponse.ts localizePayload.
+// Port of main-server/utils/i18n.ts + utils/httpResponse.ts localizePayload.
 // Catalogs are verbatim copies of config/messages/{app,validation}.ts.
 import { APP_MESSAGES } from './messages/app.js';
 import { VALIDATION_MESSAGES } from './messages/validation.js';

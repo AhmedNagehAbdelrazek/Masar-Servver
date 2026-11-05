@@ -7,7 +7,8 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
-import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException, UnauthorizedException, UnprocessableEntityException, } from '@nestjs/common';
+var AuthService_1;
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, Logger, NotFoundException, ServiceUnavailableException, UnauthorizedException, UnprocessableEntityException, } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import bcrypt from 'bcrypt';
@@ -18,6 +19,7 @@ import { RedisService } from '../../redis/redis.service.js';
 import { Prisma } from '../../generated/prisma/client.js';
 import { BalanceService } from '../balance/balance.service.js';
 import { NotificationSettingsService } from '../notifications/notification-settings.service.js';
+import { WebsmppSmsService } from '../sms/websmpp-sms.service.js';
 import { OtpService, TEST_PHONES } from './otp.service.js';
 const REFRESH_TOKEN_TTL = 7 * 24 * 3600;
 const REG_TOKEN_TTL = 600;
@@ -52,7 +54,7 @@ function assertPasswordsMatch(password, confirmPassword) {
         throw validationFailed('confirmPassword', 'Passwords do not match');
     }
 }
-let AuthService = class AuthService {
+let AuthService = AuthService_1 = class AuthService {
     prisma;
     jwt;
     config;
@@ -60,7 +62,9 @@ let AuthService = class AuthService {
     otp;
     balance;
     notificationSettings;
-    constructor(prisma, jwt, config, redis, otp, balance, notificationSettings) {
+    sms;
+    logger = new Logger(AuthService_1.name);
+    constructor(prisma, jwt, config, redis, otp, balance, notificationSettings, sms) {
         this.prisma = prisma;
         this.jwt = jwt;
         this.config = config;
@@ -68,6 +72,7 @@ let AuthService = class AuthService {
         this.otp = otp;
         this.balance = balance;
         this.notificationSettings = notificationSettings;
+        this.sms = sms;
     }
     get secret() {
         return this.config.get('jwt.secret', 'dev-secret-change-in-production');
@@ -109,6 +114,21 @@ let AuthService = class AuthService {
             return result.fullPhone;
         return phone;
     }
+    isSmsProviderEnabled() {
+        return (process.env.SMS_PROVIDER ?? 'log').toLowerCase() === 'websmpp';
+    }
+    async deliverOtpSms(phone, otp, purpose) {
+        if (!this.isSmsProviderEnabled()) {
+            this.logger.log(`[OTP] ${purpose} OTP for ${phone}: ${otp}`);
+            return true;
+        }
+        const result = await this.sms.sendOtpSms(phone, otp, purpose);
+        if (!result.success) {
+            this.logger.error(`[auth] ${purpose} SMS failed for ${phone}: ${result.errorCode || result.error}`);
+            return false;
+        }
+        return true;
+    }
     async registerPhone(countryCode, phone, role) {
         const checked = validatePhone(countryCode, phone);
         if (!checked.valid) {
@@ -127,6 +147,13 @@ let AuthService = class AuthService {
         const otp = this.otp.generateOTP(normalizedPhone);
         await this.otp.storeOTP(normalizedPhone, otp, 'register');
         await this.redis.setKey(`reg_data:${normalizedPhone}`, JSON.stringify({ countryCode, role }), REG_TOKEN_TTL);
+        const delivered = await this.deliverOtpSms(normalizedPhone, otp, 'register');
+        if (!delivered) {
+            throw new ServiceUnavailableException({
+                message: 'SMS_SEND_FAILED',
+                code: 'SMS_SEND_FAILED',
+            });
+        }
         return { message: 'OTP_SENT' };
     }
     async verifyRegistrationOTP(phone, otp) {
@@ -379,6 +406,7 @@ let AuthService = class AuthService {
             return { message: 'OTP_IF_REGISTERED' };
         const otp = this.otp.generateOTP(phone);
         await this.otp.storeOTP(phone, otp, 'forgot_password');
+        await this.deliverOtpSms(phone, otp, 'forgot_password');
         return { message: 'OTP_IF_REGISTERED' };
     }
     async verifyForgotPasswordOTP(phone, otp) {
@@ -462,6 +490,13 @@ let AuthService = class AuthService {
         await this.otp.deleteOTP(phone, purpose);
         const otp = this.otp.generateOTP(phone);
         await this.otp.storeOTP(phone, otp, purpose);
+        const delivered = await this.deliverOtpSms(phone, otp, purpose === 'forgot_password' ? 'forgot_password' : 'register');
+        if (!delivered && purpose !== 'forgot_password') {
+            throw new ServiceUnavailableException({
+                message: 'SMS_SEND_FAILED',
+                code: 'SMS_SEND_FAILED',
+            });
+        }
         return { message: 'OTP_RESENT' };
     }
     async submitDriverProfile(userId, data) {
@@ -610,7 +645,7 @@ let AuthService = class AuthService {
         };
     }
 };
-AuthService = __decorate([
+AuthService = AuthService_1 = __decorate([
     Injectable(),
     __metadata("design:paramtypes", [PrismaService,
         JwtService,
@@ -618,7 +653,8 @@ AuthService = __decorate([
         RedisService,
         OtpService,
         BalanceService,
-        NotificationSettingsService])
+        NotificationSettingsService,
+        WebsmppSmsService])
 ], AuthService);
 export { AuthService };
 //# sourceMappingURL=auth.service.js.map

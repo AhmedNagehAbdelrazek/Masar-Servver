@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { RealtimeGateway } from '../../realtime/realtime.gateway.js';
 import { RealtimeMetricsService } from '../../realtime/realtime-metrics.service.js';
 
-// Port of Main Server/Services/enforcementService.ts: immediate session
+// Port of main-server/Services/enforcementService.ts: immediate session
 // revocation on suspension/ban. Best-effort, never throws into callers.
 @Injectable()
 export class EnforcementService {

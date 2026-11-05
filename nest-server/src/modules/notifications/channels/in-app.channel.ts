@@ -4,7 +4,7 @@ import type { RealtimeGateway } from '../../../realtime/realtime.gateway.js';
 import { RealtimeGateway as RealtimeGatewayToken } from '../../../realtime/realtime.gateway.js';
 import { RealtimeMetricsService } from '../../../realtime/realtime-metrics.service.js';
 
-// Port of Main Server/Services/notificationService/channels/inApp.ts:
+// Port of main-server/Services/notificationService/channels/inApp.ts:
 // persistence-before-broadcast, `notification:new` + refreshed
 // `notification:count` badge to the user's room.
 export interface InAppUser {

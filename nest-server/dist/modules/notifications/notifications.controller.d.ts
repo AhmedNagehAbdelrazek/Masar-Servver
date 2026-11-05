@@ -8,11 +8,17 @@ export declare class NotificationsController {
         data: Record<string, unknown>[];
         pagination: Record<string, unknown>;
     }>;
+    markAllRead(user?: AuthUser): Promise<{
+        marked: number;
+    }>;
     markRead(notificationId: string, user?: AuthUser): Promise<{
         notification: {
             id: string;
             is_read: boolean;
         };
+    }>;
+    deleteAll(user?: AuthUser): Promise<{
+        deleted: number;
     }>;
     registerDevice(dto: RegisterDeviceDto, user?: AuthUser): Promise<{
         device: {

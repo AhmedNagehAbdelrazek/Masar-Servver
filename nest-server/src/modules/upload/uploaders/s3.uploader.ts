@@ -16,7 +16,7 @@ export function assertS3Configured(logger: Logger = new Logger(S3Uploader.name))
   }
 }
 
-// Port of Main Server/Services/uploaders/s3.ts
+// Port of main-server/Services/uploaders/s3.ts
 export class S3Uploader implements Uploader {
   private readonly bucket: string;
   private readonly region: string;

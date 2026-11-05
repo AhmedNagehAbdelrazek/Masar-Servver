@@ -12,7 +12,7 @@ import type { CreatePaymentMethodDto, UpdatePaymentMethodDto } from './dto/payme
 import type { CreatePlanDto } from './dto/create-plan.dto.js';
 import type { UpdatePlanDto } from './dto/update-plan.dto.js';
 
-// Port of Main Server/Services/planService.ts (plans + payment methods).
+// Port of main-server/Services/planService.ts (plans + payment methods).
 // Audit writes go through the global AuditInterceptor (best-effort); the
 // explicit auditService.track calls are intentionally not duplicated.
 const PLANS_ACTIVE_KEY = 'plans:active';

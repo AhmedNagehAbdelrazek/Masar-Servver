@@ -5,7 +5,7 @@ import {
   guardVerificationSubmission,
 } from './verification-state.js';
 
-// 1:1 port of Main Server/tests/unit/verificationStateMachine.test.ts
+// 1:1 port of main-server/tests/unit/verificationStateMachine.test.ts
 // (state-machine part; recordStatusChange is covered by e2e transition asserts).
 const UNVERIFIED = 'unverified';
 const PENDING = 'pending';

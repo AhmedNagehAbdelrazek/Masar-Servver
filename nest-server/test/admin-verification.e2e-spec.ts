@@ -1,4 +1,4 @@
-// 1:1 port of Main Server/tests/integration/adminVerification.test.js (Wave 3.2).
+// 1:1 port of main-server/tests/integration/adminVerification.test.js (Wave 3.2).
 // The admin verification endpoints are registered early (needed by the driver
 // resubmit flow); Wave 7 admin module must not duplicate these paths.
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';

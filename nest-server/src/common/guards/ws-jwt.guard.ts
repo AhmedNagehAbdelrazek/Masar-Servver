@@ -6,7 +6,7 @@ import { Socket } from 'socket.io';
 import { RedisService } from '../../redis/redis.service.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
 
-// Port of Main Server/middlewares/socketAuth.ts:
+// Port of main-server/middlewares/socketAuth.ts:
 // token from auth.token || query.token, type === 'access',
 // Redis blacklist, User must exist and not be banned/suspended.
 @Injectable()

@@ -7,7 +7,7 @@ import {
 } from 'class-validator';
 
 // Port of validateFreeOffer/validateFreeOfferShape in
-// Main Server/utils/validators/planValidator.ts:
+// main-server/utils/validators/planValidator.ts:
 // - when the sibling is_free === true, free_offer is REQUIRED and must be
 //   {type: 'trips'|'credit', value: positive number}
 // - otherwise a provided object is still shape-checked; absent/null passes.

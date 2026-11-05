@@ -5,7 +5,7 @@ import { BalanceService, round, type BlockingNotify } from '../balance/balance.s
 
 type Tx = Prisma.TransactionClient;
 
-// Port of Main Server/Services/commissionService.ts.
+// Port of main-server/Services/commissionService.ts.
 @Injectable()
 export class CommissionService {
   constructor(

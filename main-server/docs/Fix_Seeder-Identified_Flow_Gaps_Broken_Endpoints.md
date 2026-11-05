@@ -2,7 +2,7 @@
 
 ## 1. Overview
 
-This specification addresses **13 critical, high, and hygiene issues** discovered while running the mock data seeder (`Main Server/seed-mock.js`). These gaps prevent the platform from functioning end-to-end, break core marketplace loops, and expose security vulnerabilities.
+This specification addresses **13 critical, high, and hygiene issues** discovered while running the mock data seeder (`main-server/seed-mock.js`). These gaps prevent the platform from functioning end-to-end, break core marketplace loops, and expose security vulnerabilities.
 
 **Priority:** Critical – must be fixed before any user-facing testing.
 

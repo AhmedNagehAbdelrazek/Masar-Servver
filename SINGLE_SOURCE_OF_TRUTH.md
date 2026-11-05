@@ -1,9 +1,9 @@
 # Masar Server — Single Source of Truth
 
 > This file is the canonical reference for the Masar ride-sharing backend.
-> If anything conflicts with `specs/*`, `Main Server/docs/*`, or code comments, **this file wins** until it is updated. Keep it in sync when you change behavior.
+> If anything conflicts with `specs/*`, `main-server/docs/*`, or code comments, **this file wins** until it is updated. Keep it in sync when you change behavior.
 >
-> Last consolidated: 2026-10-02 — covers specs 001–012, `Main Server/` (TypeScript/Express), `audit-server/`, docker compose, and all cross-cutting decisions.
+> Last consolidated: 2026-10-02 — covers specs 001–012, `main-server/` (TypeScript/Express), `audit-server/`, docker compose, and all cross-cutting decisions.
 
 ---
 
@@ -41,12 +41,12 @@ Two deployables:
 
 | Service | Folder | Port | Responsibility |
 |---|---|---|---|
-| `main-server` | `Main Server/` | 8000 | All business logic: auth, trips, bookings, ride-requests/offers, subscriptions, driver/passenger flows, admin, chat/SOS/tracking REST + Socket.IO |
+| `main-server` | `main-server/` | 8000 | All business logic: auth, trips, bookings, ride-requests/offers, subscriptions, driver/passenger flows, admin, chat/SOS/tracking REST + Socket.IO |
 | `audit-collector` | `audit-server/` | 4000 | Isolated audit ingest/query sidecar. Buffered batch inserts into separate `audit` DB |
 | `db` | postgres:16 | 5432 (5433 on host via override) | Hosts **both** `app_db` and `audit` databases |
 | `redis` | redis:7 | 6379 | Seat locks, presence, rate limits, pub/sub for sockets, home caches |
 
-Clients: Flutter mobile + web. Postman collection at `Main Server/postman/masar_api_collection.json`. Socket guides in `Main Server/docs/Flutter_Socket_*`.
+Clients: Flutter mobile + web. Postman collection at `main-server/postman/masar_api_collection.json`. Socket guides in `main-server/docs/Flutter_Socket_*`.
 
 ---
 
@@ -60,7 +60,7 @@ Masar Servver/
   docker-compose.override.yml        -> local dev ports (name: masar-local)
   package.json / pnpm-workspace.yaml -> root test tooling only
   specs/001..012/                    -> speckit: spec.md, plan.md, data-model.md, tasks.md, contracts/
-  Main Server/                       -> primary API + Socket.IO (@workspace/api-server)
+  main-server/                       -> primary API + Socket.IO (@workspace/api-server)
     app.ts / server.ts / socketServer.ts
     config/      database, redis, cloudinary, audit, constants, phoneCodes, messages/ar|en
     Controllers/ ~28  adminDashboard, adminModeration, adminPlan, adminVerification,
@@ -97,7 +97,7 @@ Masar Servver/
 
 | Concern | Decision | Notes |
 |---|---|---|
-| Runtime | Node 20+, TypeScript, CommonJS (`"type":"commonjs"`), `tsc` + `tsx watch` | `Main Server/app.ts` is Express factory, `server.ts` is boot |
+| Runtime | Node 20+, TypeScript, CommonJS (`"type":"commonjs"`), `tsc` + `tsx watch` | `main-server/app.ts` is Express factory, `server.ts` is boot |
 | API | Express 5, routers under `/api` via `Routes/index.ts` | Thin controllers (`catchAsync`) → Services (transactions) → Sequelize |
 | DB | PostgreSQL 16, Sequelize 6, `underscored:true`, literal `createdat/updatedat`, UUID PKs, `sync({force:false})` + versioned migrations | Both `app_db` + `audit` on same PG host, different DB names |
 | Realtime | Socket.IO 4, JWT handshake (`middlewares/socketAuth.ts`), rooms `user:<id>` + `role:<role>`, Redis adapter, 2-min recovery | 7 socket modules; realtime tier must be persistent container, never Vercel serverless |
@@ -142,13 +142,13 @@ These apply to **all** features unless a spec explicitly overrides:
 - `db: postgres:16`, volume `audit_pgdata`, `pg_isready` healthcheck.
 - `redis: redis:7`, volume `redis_data`.
 - `audit-collector`: build `./audit-server`, `PORT 4000`, `DATABASE_URL=postgresql://postgres:postgres@db:5432/audit`, `REDIS_URL=redis://6379`, health `/health`.
-- `main-server`: build `./Main Server`, `env_file: ./Main Server/.env` + overrides `PORT 8000, DB_*=postgres/postgres/app_db/db/5432, REDIS_HOST redis, JWT_EXPIRY 24h, SALT_ROUNDS 12, UPLOAD_PROVIDER local, AUDIT_COLLECTOR_URL=http://audit-collector:4000`, volume `main_uploads:/app/uploads`, health `/api/healthz`.
+- `main-server`: build `./main-server`, `env_file: ./main-server/.env` + overrides `PORT 8000, DB_*=postgres/postgres/app_db/db/5432, REDIS_HOST redis, JWT_EXPIRY 24h, SALT_ROUNDS 12, UPLOAD_PROVIDER local, AUDIT_COLLECTOR_URL=http://audit-collector:4000`, volume `main_uploads:/app/uploads`, health `/api/healthz`.
 
 ### docker-compose.override.yml (`name: masar-local`)
 
 Local dev ports: `4000:4000, 8000:8000, 5433:5432, 6379:6379`. Pins `masar-audit-server:local`, `masar-main-server:local`.
 
-### Env groups (see `Main Server/.env.example`)
+### Env groups (see `main-server/.env.example`)
 
 Server (`PORT,NODE_ENV`), Locale (`APP_LOCALE`), DB (`DATABASE_URL` or `DB_*`), JWT (`JWT_SECRET,JWT_EXPIRY,SALT_ROUNDS`), Redis (`REDIS_HOST,PORT,PASSWORD`), Uploads (`UPLOAD_PROVIDER` + provider block), Notifications (`SMS_PROVIDER websmpp|twilio|log`, `SMS_USERNAME`, `SMS_PASSWORD`, `SMS_SENDER_ID`, `SMS_PROVIDER_BASE`, `SMS_DEFAULT_COUNTRY_CODE`, Twilio creds, `FCM_SERVER_KEY`), Jobs (`JOB_*_CRON`, `JOB_TIMEZONE`, `JOBS_INLINE`), Audit (`AUDIT_COLLECTOR_URL`), Tracking (`SOCKET_TRACKING_BASE_URL`).
 
@@ -160,7 +160,7 @@ Server (`PORT,NODE_ENV`), Locale (`APP_LOCALE`), DB (`DATABASE_URL` or `DB_*`), 
 
 ## 6. Domain Model (Sequelize)
 
-All in `Main Server/Models/`. Conventions: `underscored:true`, UUID PK, `createdat/updatedat`.
+All in `main-server/Models/`. Conventions: `underscored:true`, UUID PK, `createdat/updatedat`.
 
 ### Identity & profiles
 
@@ -220,7 +220,7 @@ All in `Main Server/Models/`. Conventions: `underscored:true`, UUID PK, `created
 
 ## 7. Constants / Options / Enumerations
 
-Source: `Main Server/config/constants.ts` (368 lines). This is the **options registry** — do not hardcode these strings elsewhere.
+Source: `main-server/config/constants.ts` (368 lines). This is the **options registry** — do not hardcode these strings elsewhere.
 
 | Group | Options |
 |---|---|
@@ -458,7 +458,7 @@ Started by `startJobs()` after boot (`jobs/index.js`). Worker thread (`worker.js
 
 ## 17. Route Mount Table
 
-All under `/api` (`Main Server/Routes/index.ts`):
+All under `/api` (`main-server/Routes/index.ts`):
 
 | Mount | Router | Area |
 |---|---|---|
@@ -492,7 +492,7 @@ All under `/api` (`Main Server/Routes/index.ts`):
 
 ## 18. Migrations History
 
-`Main Server/migrations/versions/` — run via `db:migrate`, preview via `db:migrate:preview`, generate via `db:migrate:generate`:
+`main-server/migrations/versions/` — run via `db:migrate`, preview via `db:migrate:preview`, generate via `db:migrate:generate`:
 
 | Version | Content |
 |---|---|

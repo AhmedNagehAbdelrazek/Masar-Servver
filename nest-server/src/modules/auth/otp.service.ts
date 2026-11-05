@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { randomBytes } from 'node:crypto';
 import { RedisService } from '../../redis/redis.service.js';
 
-// Port of Main Server/Services/otpService.ts.
+// Port of main-server/Services/otpService.ts.
 export const OTP_TTL = 300; // 5 minutes
 export const OTP_MAX_ATTEMPTS = 3;
 

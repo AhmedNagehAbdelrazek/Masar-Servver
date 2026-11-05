@@ -1,4 +1,4 @@
-// 1:1 port of Main Server/tests/integration/delays.test.js,
+// 1:1 port of main-server/tests/integration/delays.test.js,
 // passengerBookingList.test.js, driverBookings.test.js (read parts),
 // driverReveal.test.js and contract/booking.contract.test.js (Wave 5.3).
 import { randomUUID } from 'node:crypto';

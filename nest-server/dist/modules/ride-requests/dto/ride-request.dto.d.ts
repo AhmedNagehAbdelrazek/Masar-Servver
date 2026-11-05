@@ -56,9 +56,10 @@ export declare class AttachOfferBody {
     dropoff_deadline?: string;
 }
 export declare class AcceptRideRequestBody {
-    fare_per_seat: number;
+    trip_id?: string;
+    fare_per_seat?: number;
     vehicle_id?: string;
-    seats: Array<{
+    seats?: Array<{
         seat_number: number;
         type: 'driver' | 'available' | 'unavailable';
     }>;

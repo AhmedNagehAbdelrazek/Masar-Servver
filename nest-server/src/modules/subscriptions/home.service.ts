@@ -36,7 +36,7 @@ function freeTripsFor(sub: SubscriptionLike | null): { max: number; used: number
   return { max: limit, used, remaining: Math.max(0, limit - used) };
 }
 
-// Port of Main Server/Services/homeService.ts (driver + passenger home,
+// Port of main-server/Services/homeService.ts (driver + passenger home,
 // driver subscription page). NOTE: the pre-home tripExpiry sweep is skipped —
 // tripExpiryService arrives with Wave 5; all fixtures use future trips, and
 // the call is best-effort in Express too.

@@ -1,4 +1,4 @@
-// 1:1 port of Main Server/tests/integration/upload.test.js (Wave 1.1).
+// 1:1 port of main-server/tests/integration/upload.test.js (Wave 1.1).
 import { existsSync, mkdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';

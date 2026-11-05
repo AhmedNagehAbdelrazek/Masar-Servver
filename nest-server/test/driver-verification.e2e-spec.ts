@@ -1,4 +1,4 @@
-// 1:1 port of Main Server/tests/integration/driverVerification.test.js (Wave 3.2).
+// 1:1 port of main-server/tests/integration/driverVerification.test.js (Wave 3.2).
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { resetTestState } from '../src/test/db.js';
 import { generateAccessToken } from '../src/test/jwt.js';

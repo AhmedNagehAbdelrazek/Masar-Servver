@@ -3,7 +3,7 @@ import { Reflector } from '@nestjs/core';
 import { ROLES_KEY } from '../decorators/roles.decorator.js';
 import { AuthUser } from './jwt-auth.guard.js';
 
-// Port of Main Server/middlewares/roleGuard.ts
+// Port of main-server/middlewares/roleGuard.ts
 @Injectable()
 export class RolesGuard implements CanActivate {
   constructor(private readonly reflector: Reflector) {}

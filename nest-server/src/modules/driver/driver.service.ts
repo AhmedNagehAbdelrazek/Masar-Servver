@@ -17,7 +17,7 @@ function toDateOnly(value: Date | string | null | undefined): string | null {
 }
 
 // Driver aggregate endpoints. Ported incrementally from
-// Main Server/Controllers/driverController.ts + Services.
+// main-server/Controllers/driverController.ts + Services.
 // Bookings/offers arrive with Wave 5 services; home/subscription with Wave 4.
 @Injectable()
 export class DriverService {

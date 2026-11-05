@@ -1,4 +1,4 @@
-// Port of Main Server/utils/sanitize.ts: minimal content hygiene shared by
+// Port of main-server/utils/sanitize.ts: minimal content hygiene shared by
 // chat and moderation flows. Strips HTML/script, enforces max length, masks
 // a small blocklist with asterisks.
 export const MAX_MESSAGE_LENGTH = 4000;

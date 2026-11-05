@@ -1,4 +1,4 @@
-// 1:1 port of Main Server/tests/integration/homeScreen.test.js,
+// 1:1 port of main-server/tests/integration/homeScreen.test.js,
 // integration/passengerHome.test.js, contract/homeScreen + home (Wave 4.2).
 // Trip/booking fixtures use direct Prisma rows (POST /api/trips + seat-lock
 // + POST /api/bookings arrive with Wave 5); payload assertions are identical.

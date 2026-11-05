@@ -1,4 +1,4 @@
-// 1:1 port of Main Server/tests/integration/tripProfitSeatHistory.test.js.
+// 1:1 port of main-server/tests/integration/tripProfitSeatHistory.test.js.
 // Covers trip total_profit (fare x sellable seats) on create/detail/driver
 // list/update plus seat was_available history across booking. No prior Nest
 // spec asserted total_profit or was_available (verified via grep).

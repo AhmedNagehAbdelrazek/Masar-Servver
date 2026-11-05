@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { buildPagination, parsePagination } from './pagination.js';
 import { resolveLocaleMode } from './locale.js';
 
-// Port parity checks for Main Server/utils/{pagination,i18n}.ts behavior.
+// Port parity checks for main-server/utils/{pagination,i18n}.ts behavior.
 describe('pagination', () => {
   it('parses defaults', () => {
     expect(parsePagination({})).toEqual({ page: 1, limit: 20, offset: 0 });

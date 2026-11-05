@@ -1,4 +1,4 @@
-// Port of Main Server/Services/uploaders/* contract:
+// Port of main-server/Services/uploaders/* contract:
 // upload(buffer, {mimetype, originalname}) -> {url, filename}; delete(filename).
 export interface UploadOptions {
   mimetype?: string;

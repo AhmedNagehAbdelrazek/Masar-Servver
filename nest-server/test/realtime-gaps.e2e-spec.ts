@@ -1,7 +1,7 @@
 // Socket.IO parity gaps: notification read/read_all + count-on-connect,
 // presence ISO shape, force_disconnect emission, realtime metrics snapshot,
 // expired-token handshake code, admin ticket role gating, enforcement:ack.
-// Ports Main Server sockets/notificationSocket.ts, enforcementSocket.ts,
+// Ports main-server sockets/notificationSocket.ts, enforcementSocket.ts,
 // adminSocket.ts, presenceSocket.ts and socketServer.ts semantics.
 import { AddressInfo } from 'node:net';
 import { sign } from 'jsonwebtoken';

@@ -1,4 +1,4 @@
-// 1:1 port of Main Server/tests/contract/trip.contract.test.js and
+// 1:1 port of main-server/tests/contract/trip.contract.test.js and
 // tripDetails.contract.test.js (Wave 5.1).
 // VERIFIED DEVIATIONS (both contract files fail against Express itself):
 // - tripDetails.contract expects the OLD flat shape (originCity top-level)

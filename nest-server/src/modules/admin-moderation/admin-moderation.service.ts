@@ -4,7 +4,7 @@ import { maskPhone } from '../../common/utils/masking.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import type { AdminUserListQuery, UpdateUserStatusDto } from './dto/admin-moderation.dto.js';
 
-// Port of the user section of Main Server/Controllers/adminModerationController.ts
+// Port of the user section of main-server/Controllers/adminModerationController.ts
 // (listUsers, updateUserStatus). Audit tracking is covered by the global
 // AuditInterceptor; the status-change notification is kept verbatim.
 @Injectable()

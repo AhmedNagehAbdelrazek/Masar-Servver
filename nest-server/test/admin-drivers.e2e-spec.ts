@@ -1,5 +1,5 @@
 // Admin dashboard US3 (driver dossier tabs) and US4 (standing actions,
-// direct status writes, document approve/reject). 1:1 port of Main Server tests:
+// direct status writes, document approve/reject). 1:1 port of main-server tests:
 // - tests/integration/adminDriverDossier.test.js
 // - tests/integration/adminDriverActions.test.js
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';

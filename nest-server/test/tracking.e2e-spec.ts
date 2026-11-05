@@ -1,6 +1,6 @@
 // Live tracking over Socket.IO: join rules, ingest + broadcast, batch/age
 // caps, once-only proximity alerts. 1:1 port of
-// Main Server/tests/integration/trackingLive.test.js (Wave 5.5).
+// main-server/tests/integration/trackingLive.test.js (Wave 5.5).
 // Sockets need a live port: the app listens on an ephemeral port per file.
 import { AddressInfo } from 'node:net';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';

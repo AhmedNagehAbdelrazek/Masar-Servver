@@ -1,4 +1,4 @@
-// Port of the Jordan-day helpers from Main Server/utils/time.ts.
+// Port of the Jordan-day helpers from main-server/utils/time.ts.
 // Server-local midnight is wrong for local users; the home "today" window is
 // anchored to Asia/Amman midnight instead.
 export const JORDAN_OFFSET_MS = 3 * 60 * 60 * 1000;

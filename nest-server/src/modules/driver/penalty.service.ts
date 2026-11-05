@@ -9,7 +9,7 @@ const STATUS_BY_TYPE: Record<string, string> = {
   ban: 'banned',
 };
 
-// Port of Main Server/Services/penaltyService.ts. listForDriver serves the
+// Port of main-server/Services/penaltyService.ts. listForDriver serves the
 // driver endpoint now; issue() serves the admin endpoint (wired to
 // POST /api/admin/penalties by AdminPenaltiesController).
 @Injectable()

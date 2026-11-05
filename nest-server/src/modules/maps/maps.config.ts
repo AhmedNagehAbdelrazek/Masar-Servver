@@ -1,4 +1,4 @@
-// Port of Main Server/config/maps.ts (flat loader, fail-soft).
+// Port of main-server/config/maps.ts (flat loader, fail-soft).
 // Read lazily via getMapsConfig() so importing this module never throws at
 // boot (the Express throw only fires when MAPS_MOCK=false without a key).
 function num(v: string | undefined, d: number): number {

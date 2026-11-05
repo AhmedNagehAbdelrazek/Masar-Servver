@@ -55,7 +55,7 @@ function forbidden(message: string): ForbiddenException {
   return new ForbiddenException({ message, code: 'FORBIDDEN' });
 }
 
-// Port of Main Server/Services/messageService.ts: booking chat (driver <->
+// Port of main-server/Services/messageService.ts: booking chat (driver <->
 // passenger) + support ticket chat persistence and realtime broadcast.
 // Messages persist BEFORE broadcast so nothing is lost for offline clients.
 @Injectable()

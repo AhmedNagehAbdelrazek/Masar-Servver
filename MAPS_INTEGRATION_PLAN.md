@@ -2,7 +2,7 @@
 
 > Source: `013-maps-tracking-journey.md` (Spec 013, v1 business + backend breakdown).
 > Companion to `SINGLE_SOURCE_OF_TRUTH.md`. When approved, merge decisions into SSOT.
-> Scope: `Main Server/` only (Express 5 + Sequelize 6 + Socket.IO 4). Flutter client work is tracked as dependency only.
+> Scope: `main-server/` only (Express 5 + Sequelize 6 + Socket.IO 4). Flutter client work is tracked as dependency only.
 > Status: Draft for build. Billing is **not** enabled yet, so Phase 0 runs in `MAPS_MOCK=true` mode.
 > Decided: tracking-eligible status = `in_progress` (O6 resolved as `in_progress`, see §1).
 
@@ -36,13 +36,13 @@ Google Maps Platform uses **API keys only** — there is no key/secret pair. Sec
 
 | Key | Env / where it lives | Application restriction | API restriction |
 |---|---|---|---|
-| Server (backend only) | `GOOGLE_MAPS_SERVER_API_KEY` in `Main Server/.env` + secrets store / CI secrets. **Never commit, never ship to client.** | IP address of backend egress IPs | Routes API, Geocoding API only |
+| Server (backend only) | `GOOGLE_MAPS_SERVER_API_KEY` in `main-server/.env` + secrets store / CI secrets. **Never commit, never ship to client.** | IP address of backend egress IPs | Routes API, Geocoding API only |
 | Android | Flutter `AndroidManifest` / build config. **Not** in backend `.env`. | Android apps: package name + SHA-1 for debug, release, **and Play App Signing** | Maps SDK for Android, Places API (New) |
 | iOS | Flutter iOS config. **Not** in backend `.env`. | iOS apps: bundle ID | Maps SDK for iOS, Places API (New) |
 | Web | Flutter web + admin dashboard config. **Not** in backend `.env`. | HTTP referrers (Flutter web + admin domains) | Maps JavaScript API, Places API (New) |
 | Optional | `GOOGLE_MAPS_MAP_ID` | none | Cloud-based styling / advanced markers |
 
-Current state: `Main Server/.env.example` has no Maps vars and `config/constants.ts` has no `MAPS`/`TRACKING` block. That is added in §4.
+Current state: `main-server/.env.example` has no Maps vars and `config/constants.ts` has no `MAPS`/`TRACKING` block. That is added in §4.
 
 ### 2.2 GCP setup (INF1-INF4)
 
@@ -89,7 +89,7 @@ Invoke-RestMethod -Method Post -Uri "https://routes.googleapis.com/directions/v2
 
 ### 3.1 Env vars to add (INF5)
 
-Add to `Main Server/.env.example`, `docker-compose.yml` (`main-server` environment docs), and secrets store:
+Add to `main-server/.env.example`, `docker-compose.yml` (`main-server` environment docs), and secrets store:
 
 ```env
 # Google Maps
@@ -120,7 +120,7 @@ JOB_ROUTE_RETRY_CRON=*/2 * * * *
 JOB_PATH_COMPACT_CRON=*/10 * * * *
 ```
 
-Values are starting points to tune, not business rules. Client keys stay in Flutter build config, never in backend `.env`. Real server key goes only in `Main Server/.env` locally + secret manager + CI secrets.
+Values are starting points to tune, not business rules. Client keys stay in Flutter build config, never in backend `.env`. Real server key goes only in `main-server/.env` locally + secret manager + CI secrets.
 
 ### 3.2 Config files (INF6)
 
@@ -310,7 +310,7 @@ Commands: `pnpm test`, `test:unit`, `test:integration`, `test:contract`, `typech
 
 ## 12. Docs + Postman (part of done)
 
-- New `Main Server/docs/Maps_Tracking_Guide.md` (Overview → auth → JSON request/response examples, same style as `Trip_Details_Cancellation_Flow_Notification_Settings.md`, `Passenger_Flow.md`).
+- New `main-server/docs/Maps_Tracking_Guide.md` (Overview → auth → JSON request/response examples, same style as `Trip_Details_Cancellation_Flow_Notification_Settings.md`, `Passenger_Flow.md`).
 - Update `docs/Flutter_Socket_IO_Integration_Guide.md` + `Flutter_Socket_Simple_Guide.md` with §7 events.
 - Postman `postman/masar_api_collection.json` (`{{base_url}}` = `/api`): new `Maps & Tracking` folder under Driver/Passenger with success + error examples. `PROPOSED` in description = unimplemented (existing convention).
 - Sync `SINGLE_SOURCE_OF_TRUTH.md §6/7/11/12/14/17/18/20` in the same PR (SSOT rule).

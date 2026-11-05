@@ -1,4 +1,4 @@
-// Port of Main Server/utils/seatSerializer.ts (verbatim).
+// Port of main-server/utils/seatSerializer.ts (verbatim).
 export interface BookingLike {
   seatNumber?: number | string | null;
   seat_number?: number | string | null;

@@ -1,5 +1,5 @@
 // Shared serializer for the passenger-facing trip payload. Mirrors
-// Main Server/Services/homeService.ts `toTripDetails` so the passenger home,
+// main-server/Services/homeService.ts `toTripDetails` so the passenger home,
 // booking list and booking detail all expose the same complete trip shape.
 
 export function toNumberOrNull(value: unknown): number | null {

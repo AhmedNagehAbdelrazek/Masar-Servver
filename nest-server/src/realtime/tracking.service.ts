@@ -38,7 +38,7 @@ export interface LocationPayload {
   points?: LocationPayload[];
 }
 
-// Port of Main Server/Services/trackingService.ts. Trips open tracking rooms
+// Port of main-server/Services/trackingService.ts. Trips open tracking rooms
 // only while in_progress (ongoing does NOT); ETA is straight-line haversine
 // (never a provider call); proximity alerts fire once per booking.
 @Injectable()

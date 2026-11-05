@@ -31,7 +31,7 @@ function serializeVehicle(v: VehicleRow): Record<string, unknown> {
   };
 }
 
-// Port of Main Server/Services/vehicleService.ts
+// Port of main-server/Services/vehicleService.ts
 @Injectable()
 export class VehiclesService {
   constructor(private readonly prisma: PrismaService) {}

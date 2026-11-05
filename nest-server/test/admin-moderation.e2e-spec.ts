@@ -1,4 +1,4 @@
-// 1:1 port of Main Server/tests/integration/adminModeration.test.js (Wave 7).
+// 1:1 port of main-server/tests/integration/adminModeration.test.js (Wave 7).
 // Covers the admin moderation surface: user list/status, trip moderation,
 // penalty issuance. The complaint section of adminModerationRoutes.ts is NOT
 // covered here — it lives in test/complaints.e2e-spec.ts via

@@ -1,4 +1,4 @@
-// Shared Nest test bootstrap. Mirrors Main Server/tests/setup/setup.ts:
+// Shared Nest test bootstrap. Mirrors main-server/tests/setup/setup.ts:
 // full AppModule, in-memory Redis (ioredis-mock), real isolated Postgres.
 import { Reflector } from '@nestjs/core';
 import { ApiValidationPipe } from '../common/pipes/api-validation.pipe.js';

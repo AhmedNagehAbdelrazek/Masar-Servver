@@ -4,7 +4,7 @@ import { parseJordanDateOrInstant } from '../../common/utils/time.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { BLOCKING_TRIP_STATUSES, TRIP_DURATION_HOURS } from './trip.constants.js';
 
-// Port of the overlap-guard helpers in Main Server/Services/tripService.ts.
+// Port of the overlap-guard helpers in main-server/Services/tripService.ts.
 export function tripWindowEnd(start: Date): Date {
   return new Date(new Date(start).getTime() + TRIP_DURATION_HOURS * 3600 * 1000);
 }

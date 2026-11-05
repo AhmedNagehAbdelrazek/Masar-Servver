@@ -33,6 +33,8 @@ export const APP_MESSAGES = {
     NEW_PASSWORD_MUST_BE_DIFFERENT_FROM_THE_CURRENT_PASSWORD: { en: 'New password must be different from the current password', ar: 'يجب أن تختلف كلمة المرور الجديدة عن كلمة المرور الحالية' },
     OTP_SENT: { en: 'OTP sent successfully', ar: 'تم إرسال رمز التحقق بنجاح' },
     OTP_RESENT: { en: 'OTP resent successfully', ar: 'تم إعادة إرسال رمز التحقق بنجاح' },
+    SMS_SENT: { en: 'SMS sent successfully', ar: 'تم إرسال الرسالة النصية بنجاح' },
+    SMS_SEND_FAILED: { en: 'Could not send the SMS. Please try again.', ar: 'تعذر إرسال الرسالة النصية. يرجى المحاولة مرة أخرى.' },
     OTP_IF_REGISTERED: { en: 'If the phone number is registered, an OTP has been sent', ar: 'إذا كان رقم الهاتف مسجلاً، فقد تم إرسال رمز التحقق' },
     INVALID_OTP: { en: 'Invalid OTP', ar: 'رمز التحقق غير صالح' },
     OTP_HAS_EXPIRED_PLEASE_REQUEST_A_NEW_ONE: { en: 'OTP has expired. Please request a new one.', ar: 'انتهت صلاحية رمز التحقق. يرجى طلب رمز جديد.' },

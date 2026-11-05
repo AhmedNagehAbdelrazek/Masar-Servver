@@ -1,4 +1,4 @@
-// Test JWT factory. Mirrors Main Server/tests/setup/helpers.ts.
+// Test JWT factory. Mirrors main-server/tests/setup/helpers.ts.
 import { randomUUID } from 'node:crypto';
 import { sign } from 'jsonwebtoken';
 

@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service.js';
 
-// Port of Main Server/Services/driverStatsService.ts (spec 012 US5).
+// Port of main-server/Services/driverStatsService.ts (spec 012 US5).
 // Materialises derivable performance columns onto `driver_profiles` so the
 // passenger-facing driver reveal does not recompute them per request.
 export const PROFESSIONAL_MIN_TRIPS = 20;

@@ -78,7 +78,7 @@ export interface TokenPair {
   refresh_token: string;
 }
 
-// Full port of Main Server/Services/authService.ts. Services return message
+// Full port of main-server/Services/authService.ts. Services return message
 // KEYS (e.g. 'OTP_SENT'); the LocalizeInterceptor / HttpExceptionFilter render
 // them per request locale from the messages catalog.
 @Injectable()

@@ -18,7 +18,7 @@ export interface SweepResult {
 const STARTED_STATUSES = ['in_progress', 'ongoing'] as const;
 const UNOPERATED_STATUSES = ['published', 'full'] as const;
 
-// Port of Main Server/Services/tripExpiryService.ts. refreshStaleTrips
+// Port of main-server/Services/tripExpiryService.ts. refreshStaleTrips
 // tolerates non-array arguments (node-cron invokes tasks with a context
 // object) by running a global sweep instead.
 @Injectable()

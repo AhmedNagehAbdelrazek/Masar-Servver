@@ -1,4 +1,4 @@
-// 1:1 port of Main Server/tests/integration/tripStartWindow.test.js,
+// 1:1 port of main-server/tests/integration/tripStartWindow.test.js,
 // tripCompletion.test.js, tripEditCancel.test.js, tripCancellation.test.js,
 // tripLifecycle.test.js and contract/tripStart + tripCompletion +
 // tripEditCancel (Wave 5.2).

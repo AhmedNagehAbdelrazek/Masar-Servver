@@ -1,6 +1,6 @@
 // Booking chat (driver <-> passenger) + support ticket chat over Socket.IO,
 // with REST history fallback. 1:1 port of
-// Main Server/tests/integration/bookingChat.test.js (Wave 6.1).
+// main-server/tests/integration/bookingChat.test.js (Wave 6.1).
 // Sockets need a live port: the app listens on an ephemeral port per file.
 import { AddressInfo } from 'node:net';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';

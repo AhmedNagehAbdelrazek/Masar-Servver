@@ -32,6 +32,7 @@ export declare class TripsController {
     searchAvailableTrips(query: TripSearchQuery, user?: AuthUser): Promise<{
         trips: Record<string, unknown>[];
         returning_trips: Record<string, unknown>[];
+        search: Record<string, unknown>;
     }>;
     getTripById(params: TripIdParam): Promise<Record<string, unknown>>;
     getTripOptions(params: TripIdParam): Promise<Record<string, unknown>>;

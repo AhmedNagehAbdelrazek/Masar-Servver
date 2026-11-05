@@ -292,12 +292,12 @@ export const APP_MESSAGES = {
   // throws it via ApiErrors.custom without a catalog entry (wire shows the raw
   // key), so the EN/AR text here is a Nest addition following the same pattern.
   PICKUP_POINT_NOT_ON_TRIP: { en: 'Pickup point is not on this trip', ar: 'نقطة الصعود غير موجودة على هذه الرحلة' },
-  // Values below are verbatim copies of Main Server/config/messages/app.ts.
+  // Values below are verbatim copies of main-server/config/messages/app.ts.
   YOU_CAN_ONLY_EDIT_YOUR_OWN_BOOKINGS: { en: 'You can only edit your own bookings.', ar: 'يمكنك تعديل حجوزاتك فقط.' },
   BOOKING_IS_NOT_CONFIRMED: { en: 'Booking is not confirmed.', ar: 'الحجز غير مؤكد.' },
   PICKUP_EDIT_CUTOFF_PASSED: { en: 'Pickup can no longer be changed for this trip.', ar: 'لا يمكن تغيير نقطة الصعود لهذه الرحلة بعد الآن.' },
   LOCATION_POINT_TOO_OLD: { en: 'Location point is too old and was discarded.', ar: 'نقطة الموقع قديمة جداً وتم تجاهلها.' },
-  // RATE_LIMITED mirrors Main Server/utils/socketAck.ts rateLimited() default
+  // RATE_LIMITED mirrors main-server/utils/socketAck.ts rateLimited() default
   // ('Rate limit exceeded', code RATE_LIMITED); no app-catalog entry in Express.
   RATE_LIMITED: { en: 'Rate limit exceeded', ar: 'تم تجاوز الحد الأقصى للطلبات. يرجى المحاولة لاحقاً.' },
   // Fallback entries for the upload rejection codes. The controller throws the
@@ -306,7 +306,7 @@ export const APP_MESSAGES = {
   // a message still localizes instead of leaking the raw key.
   INVALID_FILE_TYPE: { en: 'Invalid file type', ar: 'نوع الملف غير صالح' },
   FILE_TOO_LARGE: { en: 'File too large. Maximum allowed size is 10 MB.', ar: 'الملف كبير جداً. الحد الأقصى للحجم هو 10 ميغابايت.' },
-  // Verbatim copy of Main Server/config/messages/validation.ts.
+  // Verbatim copy of main-server/config/messages/validation.ts.
   PICKUP_STOP_ID_MUST_BE_A_VALID_UUID: { en: 'pickup_stop_id must be a valid UUID', ar: 'يجب أن يكون معرّف محطة الصعود معرّفاً صالحاً' },
 
   // ===== Successes =====

@@ -5,8 +5,8 @@ Flutter app. This document covers connection/authentication, every event the
 app can **send** (with exact payloads), and every event the app must
 **listen** for (with exact response shapes).
 
-> Source of truth: `Main Server/socketServer.js`, `Main Server/sockets/*`,
-> and `Main Server/Services/*`. If this doc disagrees with code, code wins.
+> Source of truth: `main-server/socketServer.js`, `main-server/sockets/*`,
+> and `main-server/Services/*`. If this doc disagrees with code, code wins.
 
 ---
 

@@ -10,7 +10,7 @@ import { buildPagination, parsePagination } from '../../common/utils/pagination.
 import { PrismaService } from '../../prisma/prisma.service.js';
 import type { DriversListQuery, DriverTripsQuery, RecentTripsQuery, ReservationsQuery } from './dto/dashboard-queries.dto.js';
 
-// Port of Main Server/Services/adminDashboardService.ts (Sequelize -> Prisma).
+// Port of main-server/Services/adminDashboardService.ts (Sequelize -> Prisma).
 // Response shapes are kept 1:1 with the Express service; auditService.track
 // calls are intentionally skipped (global AuditInterceptor covers Nest-side).
 

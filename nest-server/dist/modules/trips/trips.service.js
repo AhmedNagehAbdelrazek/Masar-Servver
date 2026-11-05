@@ -24,11 +24,15 @@ import { HomeService } from '../subscriptions/home.service.js';
 import { RecentSearchService } from '../subscriptions/recent-search.service.js';
 import { SeatLockService } from './seat-lock.service.js';
 import { TRIP_START_WINDOW_MS } from './trip.constants.js';
+import { hasTripDeparted } from './trip-schedule.js';
 import { TripExpiryService as TripExpiryServiceToken } from './trip-expiry.service.js';
 import { getMapsConfig } from '../maps/maps.config.js';
+import { GeoService } from '../maps/geo.service.js';
 import { PickupService } from '../maps/pickup.service.js';
 import { RouteService } from '../maps/route.service.js';
+import { getSearchConfig } from '../../config/search.config.js';
 import { assertNoOverlappingTrip } from './trip-overlap.js';
+import { matchTrip, } from './trip-search.matcher.js';
 function validationError(_code, message, details) {
     return new UnprocessableEntityException(details === undefined
         ? { message, code: 'VALIDATION_ERROR' }
@@ -39,6 +43,47 @@ function toNumber(value) {
         return null;
     const n = Number(value);
     return Number.isFinite(n) ? n : null;
+}
+function parseSearchPoint(lat, lng, field) {
+    if ((lat === null || lat === undefined || lat === '') && (lng === null || lng === undefined || lng === '')) {
+        return null;
+    }
+    if (lat === null || lat === undefined || lat === '' || lng === null || lng === undefined || lng === '') {
+        throw validationError('LAT_AND_LNG_ARE_REQUIRED', 'LAT_AND_LNG_ARE_REQUIRED', [{ field: `${field}_lat` }, { field: `${field}_lng` }]);
+    }
+    const a = Number(lat);
+    const b = Number(lng);
+    if (!Number.isFinite(a) || !Number.isFinite(b)) {
+        throw validationError('INVALID_COORDINATES', 'INVALID_COORDINATES', [
+            { field: `${field}_lat` },
+            { field: `${field}_lng` },
+        ]);
+    }
+    return { lat: a, lng: b };
+}
+function clampRadius(value, fallback, max) {
+    const n = value == null ? fallback : Number(value);
+    if (!Number.isFinite(n))
+        return fallback;
+    return Math.max(100, Math.min(Math.round(n), max));
+}
+function anchorToJson(anchor) {
+    return {
+        kind: anchor.kind,
+        distance_m: anchor.distanceM != null ? Math.round(anchor.distanceM) : null,
+        along_route_m: anchor.alongM != null ? Math.round(anchor.alongM) : null,
+        lat: anchor.lat,
+        lng: anchor.lng,
+        ...(anchor.stopId ? { stop_id: anchor.stopId } : {}),
+        ...(anchor.stopName ? { stop_name: anchor.stopName } : {}),
+    };
+}
+function matchToJson(match) {
+    return {
+        origin: anchorToJson(match.origin),
+        destination: anchorToJson(match.destination),
+        score: match.score,
+    };
 }
 function buildStopRecord(tripId, src, fallbackOrder, fallbackType) {
     const name = (src.stop_name ?? src.name ?? src.city ?? null);
@@ -72,8 +117,9 @@ let TripsService = TripsService_1 = class TripsService {
     expiry;
     routeService;
     pickupService;
+    geo;
     logger = new Logger(TripsService_1.name);
-    constructor(prisma, commission, seatLocks, recentSearch, notifications, home, realtime, expiry, routeService, pickupService) {
+    constructor(prisma, commission, seatLocks, recentSearch, notifications, home, realtime, expiry, routeService, pickupService, geo) {
         this.prisma = prisma;
         this.commission = commission;
         this.seatLocks = seatLocks;
@@ -84,6 +130,37 @@ let TripsService = TripsService_1 = class TripsService {
         this.expiry = expiry;
         this.routeService = routeService;
         this.pickupService = pickupService;
+        this.geo = geo;
+    }
+    async rideRequestIdsByTrip(tripIds) {
+        const ids = [...new Set((tripIds || []).filter(Boolean))];
+        if (ids.length === 0)
+            return new Map();
+        const offers = await this.prisma.requestOffer.findMany({
+            where: {
+                tripId: { in: ids },
+                status: 'accepted',
+                bookingId: { not: null },
+            },
+            select: { tripId: true, requestId: true },
+        });
+        const byTrip = new Map();
+        for (const offer of offers) {
+            if (!offer.tripId || !offer.requestId)
+                continue;
+            const requestIds = byTrip.get(offer.tripId) ?? [];
+            if (!requestIds.includes(offer.requestId))
+                requestIds.push(offer.requestId);
+            byTrip.set(offer.tripId, requestIds);
+        }
+        return byTrip;
+    }
+    withRideRequestOrigin(trip, requestIds) {
+        return {
+            ...trip,
+            is_requested_trip: requestIds.length > 0,
+            ride_request_ids: requestIds,
+        };
     }
     async hasRemainingFreeTrips(driverId) {
         const subscription = await this.prisma.driverSubscription.findFirst({
@@ -421,6 +498,10 @@ let TripsService = TripsService_1 = class TripsService {
             additional_instructions: t.additionalInstructions,
             created_at: t.createdAt,
         };
+        const requestIdsByTrip = await this.rideRequestIdsByTrip([tripId]);
+        const rideRequestIds = requestIdsByTrip.get(tripId) ?? [];
+        out.trip.is_requested_trip = rideRequestIds.length > 0;
+        out.trip.ride_request_ids = rideRequestIds;
         out.passengers = bookings.map((b) => {
             const passenger = b.passenger;
             return {
@@ -448,11 +529,19 @@ let TripsService = TripsService_1 = class TripsService {
     async getTripOptions(tripId) {
         const trip = await this.prisma.trip.findUnique({
             where: { id: tripId },
-            select: { id: true, status: true, availableSeats: true },
+            select: {
+                id: true,
+                status: true,
+                availableSeats: true,
+                departureTime: true,
+                isRecurring: true,
+                startedAt: true,
+                completedAt: true,
+            },
         });
         if (!trip)
             throw new NotFoundException({ message: 'TRIP_NOT_FOUND', code: 'TRIP_NOT_FOUND' });
-        if (!['published', 'full'].includes(trip.status)) {
+        if (!['published', 'full'].includes(trip.status) || hasTripDeparted(trip)) {
             throw new ConflictException({ message: 'TRIP_NOT_BOOKABLE', code: 'TRIP_NOT_BOOKABLE' });
         }
         const stops = await this.prisma.tripStop.findMany({
@@ -546,9 +635,11 @@ let TripsService = TripsService_1 = class TripsService {
             },
             orderBy: { departureTime: 'asc' },
         });
+        const requestIdsByTrip = await this.rideRequestIdsByTrip(trips.map((trip) => trip.id));
         return trips.map((t) => {
             const seats = t.seats ?? [];
             const stops = t.stops ?? [];
+            const rideRequestIds = requestIdsByTrip.get(t.id) ?? [];
             return {
                 trip_id: t.id,
                 origin_city: t.originCity,
@@ -569,6 +660,8 @@ let TripsService = TripsService_1 = class TripsService {
                 instructions: t.driverInstructions,
                 additional_instructions: t.additionalInstructions,
                 status: t.status,
+                is_requested_trip: rideRequestIds.length > 0,
+                ride_request_ids: rideRequestIds,
                 seats: seats.map((s) => ({
                     seat_number: s.seatNumber,
                     seat_type: s.seatType,
@@ -603,36 +696,132 @@ let TripsService = TripsService_1 = class TripsService {
         if (filters.timeFrom && filters.timeTo && filters.timeTo < filters.timeFrom) {
             throw validationError('TIME_FROM_AFTER_TIME_TO', 'TIME_FROM_AFTER_TIME_TO');
         }
-        const trips = await this.fetchTripsForDate({
-            targetDate: date ?? null,
-            originCity: filters.originCity,
-            destinationCity: filters.destinationCity,
+        const cfg = getSearchConfig();
+        const originPoint = parseSearchPoint(filters.originLat, filters.originLng, 'origin');
+        const destinationPoint = parseSearchPoint(filters.destinationLat, filters.destinationLng, 'destination');
+        const hasGeo = Boolean(originPoint || destinationPoint);
+        const requestedOriginRadius = clampRadius(filters.originRadiusM, cfg.pickupRadiusM, cfg.maxRadiusM);
+        const requestedDestinationRadius = clampRadius(filters.destinationRadiusM, cfg.dropoffRadiusM, cfg.maxRadiusM);
+        const includeEnroute = filters.includeEnroute ?? cfg.includeEnroute;
+        const sort = filters.sort ?? (hasGeo ? 'best_match' : 'departure_time');
+        const run = (params) => this.fetchTripsForDate({
+            ...params,
+            includeEnroute,
+            sort,
             genderPreference: filters.genderPreference,
             timeFrom: filters.timeFrom,
             timeTo: filters.timeTo,
             vehicleType: filters.vehicleType,
             seats: filters.seats,
         });
-        let returningTrips = [];
-        if (returnDate && filters.originCity && filters.destinationCity) {
-            returningTrips = await this.fetchTripsForDate({
+        let usedOriginRadius = requestedOriginRadius;
+        let usedDestinationRadius = requestedDestinationRadius;
+        const canReturn = Boolean(returnDate &&
+            ((filters.originCity && filters.destinationCity) ||
+                (originPoint && destinationPoint)));
+        let outbound = await run({
+            targetDate: date ?? null,
+            originCity: filters.originCity,
+            destinationCity: filters.destinationCity,
+            originPoint,
+            destinationPoint,
+            originRadiusM: usedOriginRadius,
+            destinationRadiusM: usedDestinationRadius,
+        });
+        let returning = { trips: [], candidateCount: 0 };
+        if (canReturn && returnDate) {
+            returning = await run({
                 targetDate: returnDate,
                 originCity: filters.destinationCity,
                 destinationCity: filters.originCity,
-                genderPreference: filters.genderPreference,
-                timeFrom: filters.timeFrom,
-                timeTo: filters.timeTo,
-                vehicleType: filters.vehicleType,
-                seats: filters.seats,
+                originPoint: destinationPoint,
+                destinationPoint: originPoint,
+                originRadiusM: usedDestinationRadius,
+                destinationRadiusM: usedOriginRadius,
             });
         }
-        return { trips, returningTrips };
+        let widened = false;
+        if (cfg.autoWiden &&
+            hasGeo &&
+            outbound.trips.length === 0 &&
+            returning.trips.length === 0) {
+            const widerOrigin = originPoint
+                ? clampRadius(requestedOriginRadius * cfg.widenFactor, requestedOriginRadius, cfg.maxRadiusM)
+                : requestedOriginRadius;
+            const widerDestination = destinationPoint
+                ? clampRadius(requestedDestinationRadius * cfg.widenFactor, requestedDestinationRadius, cfg.maxRadiusM)
+                : requestedDestinationRadius;
+            if (widerOrigin !== requestedOriginRadius ||
+                widerDestination !== requestedDestinationRadius) {
+                usedOriginRadius = widerOrigin;
+                usedDestinationRadius = widerDestination;
+                outbound = await run({
+                    targetDate: date ?? null,
+                    originCity: filters.originCity,
+                    destinationCity: filters.destinationCity,
+                    originPoint,
+                    destinationPoint,
+                    originRadiusM: usedOriginRadius,
+                    destinationRadiusM: usedDestinationRadius,
+                });
+                if (canReturn && returnDate) {
+                    returning = await run({
+                        targetDate: returnDate,
+                        originCity: filters.destinationCity,
+                        destinationCity: filters.originCity,
+                        originPoint: destinationPoint,
+                        destinationPoint: originPoint,
+                        originRadiusM: usedDestinationRadius,
+                        destinationRadiusM: usedOriginRadius,
+                    });
+                }
+                widened = outbound.trips.length + returning.trips.length > 0;
+            }
+        }
+        const requestIdsByTrip = await this.rideRequestIdsByTrip([...outbound.trips, ...returning.trips].map((trip) => String(trip.id)));
+        const decorate = (arr) => arr.map((trip) => this.withRideRequestOrigin(trip, requestIdsByTrip.get(String(trip.id)) ?? []));
+        return {
+            trips: decorate(outbound.trips),
+            returningTrips: decorate(returning.trips),
+            search: {
+                origin_radius_m: usedOriginRadius,
+                destination_radius_m: usedDestinationRadius,
+                widened,
+                candidate_count: outbound.candidateCount + returning.candidateCount,
+                enroute_enabled: Boolean(includeEnroute && cfg.includeEnroute && hasGeo),
+            },
+        };
     }
-    async fetchTripsForDate({ targetDate, originCity, destinationCity, genderPreference, timeFrom, timeTo, vehicleType, seats, }) {
+    citySearchWhere(side, value) {
+        const stopTypes = side === 'origin' ? ['pickup', 'both'] : ['dropoff', 'both'];
+        const endpoint = side === 'origin'
+            ? { originCity: { equals: value, mode: 'insensitive' } }
+            : { destinationCity: { equals: value, mode: 'insensitive' } };
+        const area = side === 'origin'
+            ? { originArea: { equals: value, mode: 'insensitive' } }
+            : { destinationArea: { equals: value, mode: 'insensitive' } };
+        return {
+            OR: [
+                endpoint,
+                area,
+                {
+                    stops: {
+                        some: {
+                            city: { equals: value, mode: 'insensitive' },
+                            OR: [{ stopType: { in: stopTypes } }, { stopType: null }],
+                        },
+                    },
+                },
+            ],
+        };
+    }
+    async fetchTripsForDate({ targetDate, originCity, destinationCity, originPoint, destinationPoint, originRadiusM, destinationRadiusM, includeEnroute, sort, genderPreference, timeFrom, timeTo, vehicleType, seats, }) {
         const seatCount = Number(seats);
         const hasDate = Boolean(targetDate);
         const dayStart = hasDate ? jordanDateOnly(parseJordanDayStart(targetDate)) : null;
         const now = new Date();
+        const cfg = getSearchConfig();
+        const hasGeo = Boolean(originPoint || destinationPoint);
         const andConditions = [];
         if (hasDate && dayStart) {
             const weekday = jordanWeekday(dayStart);
@@ -666,13 +855,17 @@ let TripsService = TripsService_1 = class TripsService {
                 ],
             });
         }
+        if (originCity && !originPoint) {
+            andConditions.push(this.citySearchWhere('origin', originCity));
+        }
+        if (destinationCity && !destinationPoint) {
+            andConditions.push(this.citySearchWhere('destination', destinationCity));
+        }
         const rows = await this.prisma.trip.findMany({
             where: {
                 status: 'published',
                 isModerated: false,
                 availableSeats: Number.isFinite(seatCount) && seatCount > 0 ? { gte: seatCount } : { gt: 0 },
-                ...(originCity ? { originCity } : {}),
-                ...(destinationCity ? { destinationCity } : {}),
                 ...(genderPreference && genderPreference !== 'all'
                     ? { genderPreference: { in: [genderPreference] } }
                     : {}),
@@ -681,16 +874,39 @@ let TripsService = TripsService_1 = class TripsService {
             },
             include: {
                 seats: { where: { seatType: 'available' } },
-                stops: true,
+                stops: { orderBy: { stopOrder: 'asc' } },
                 vehicle: true,
                 driver: { select: { id: true, fullName: true, avgRating: true, avatarUrl: true, gender: true } },
             },
             orderBy: { departureTime: 'asc' },
+            take: cfg.maxCandidates + 1,
         });
+        if (rows.length > cfg.maxCandidates) {
+            this.logger.warn(`trip search candidate cap reached (${cfg.maxCandidates}); refine the search filters`);
+        }
+        const candidateRows = rows.length > cfg.maxCandidates ? rows.slice(0, cfg.maxCandidates) : rows;
         const withVehicle = vehicleType
-            ? rows.filter((r) => r.vehicle !== null &&
+            ? candidateRows.filter((r) => r.vehicle !== null &&
                 r.vehicle.vehicleType === vehicleType)
-            : rows;
+            : candidateRows;
+        const searchOptions = {
+            origin: originPoint,
+            destination: destinationPoint,
+            originCity: originPoint ? null : (originCity ?? null),
+            destinationCity: destinationPoint ? null : (destinationCity ?? null),
+            originRadiusM,
+            destinationRadiusM,
+            corridorM: cfg.corridorM,
+            includeEnroute: includeEnroute && cfg.includeEnroute,
+            allowCustomDropoff: cfg.allowCustomDropoff,
+            minRideM: cfg.minRideM,
+        };
+        const matched = [];
+        for (const row of withVehicle) {
+            const match = matchTrip(row, searchOptions, this.geo);
+            if (match)
+                matched.push({ row, match });
+        }
         const anchor = dayStart ?? jordanStartOfToday();
         const toMin = (hhmm) => {
             const [h, m] = hhmm.split(':').map(Number);
@@ -698,7 +914,7 @@ let TripsService = TripsService_1 = class TripsService {
         };
         const fromMin = timeFrom ? toMin(timeFrom) : null;
         const toMinVal = timeTo ? toMin(timeTo) : null;
-        const kept = withVehicle.filter((t) => {
+        const kept = matched.filter(({ row: t }) => {
             const depMs = new Date(t.departureTime).getTime();
             if (!t.isRecurring && depMs <= now.getTime())
                 return false;
@@ -727,16 +943,32 @@ let TripsService = TripsService_1 = class TripsService {
             return true;
         });
         const anchorFromMs = fromMin !== null ? anchor.getTime() + fromMin * 60000 : null;
-        kept.sort((a, b) => {
+        const timeCompare = (a, b) => {
             if (fromMin !== null && toMinVal !== null && anchorFromMs !== null) {
-                const da = Math.abs(new Date(a.departureTime).getTime() - anchorFromMs);
-                const db = Math.abs(new Date(b.departureTime).getTime() - anchorFromMs);
+                const da = Math.abs(new Date(a.row.departureTime).getTime() - anchorFromMs);
+                const db = Math.abs(new Date(b.row.departureTime).getTime() - anchorFromMs);
                 if (da !== db)
                     return da - db;
             }
-            return new Date(a.departureTime).getTime() - new Date(b.departureTime).getTime();
-        });
-        return kept;
+            return (new Date(a.row.departureTime).getTime() - new Date(b.row.departureTime).getTime());
+        };
+        if (hasGeo && sort === 'best_match') {
+            kept.sort((a, b) => b.match.score - a.match.score || timeCompare(a, b));
+        }
+        else if (hasGeo && sort === 'distance') {
+            const distanceOf = (m) => (m.origin.distanceM ?? originRadiusM) + (m.destination.distanceM ?? destinationRadiusM);
+            kept.sort((a, b) => distanceOf(a.match) - distanceOf(b.match) || timeCompare(a, b));
+        }
+        else {
+            kept.sort(timeCompare);
+        }
+        return {
+            trips: kept.map(({ row, match }) => ({
+                ...row,
+                search_match: matchToJson(match),
+            })),
+            candidateCount: Math.min(rows.length, cfg.maxCandidates),
+        };
     }
     async cancelTrip(driverId, tripId) {
         const trip = await this.prisma.trip.findUnique({ where: { id: tripId } });
@@ -1610,7 +1842,8 @@ TripsService = TripsService_1 = __decorate([
         NotificationsService,
         HomeService,
         RealtimeGateway, Function, RouteService,
-        PickupService])
+        PickupService,
+        GeoService])
 ], TripsService);
 export { TripsService };
 //# sourceMappingURL=trips.service.js.map

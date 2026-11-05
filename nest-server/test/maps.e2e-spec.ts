@@ -1,4 +1,4 @@
-// 1:1 port of Main Server/tests/integration/mapsPickup.test.js and
+// 1:1 port of main-server/tests/integration/mapsPickup.test.js and
 // contract/maps.contract.test.js (Wave 5.3/5.5). MAPS_MOCK=true (test env),
 // so no provider network calls occur.
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';

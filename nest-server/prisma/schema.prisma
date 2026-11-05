@@ -1,14 +1,14 @@
-// Prisma schema ported from Main Server/ Sequelize models + migrations 001-032.
-// Source of truth: Main Server/Models/*.ts with underscored:true and
+// Prisma schema ported from main-server/ Sequelize models + migrations 001-032.
+// Source of truth: main-server/Models/*.ts with underscored:true and
 // global define { createdAt: 'createdat', updatedAt: 'updatedat' }.
 //
 // SHARED-DB STRATEGY: this server shares one Postgres database with the
-// Express/Sequelize server (Main Server/), which owns the schema via its own
+// Express/Sequelize server (main-server/), which owns the schema via its own
 // migrations + `sequelize.sync({ force:false })` (Sequelize ENUM columns use
 // `enum_<table>_<column>` types). Prisma therefore declares every former
 // enum column as `String` and NEVER emits `CREATE TYPE` — native PG enums
 // would 42704 (`type "public.<Enum>" does not exist`) on a Sequelize-managed
-// DB. Allowed values live in Main Server/config/constants.ts and are enforced
+// DB. Allowed values live in main-server/config/constants.ts and are enforced
 // at the service/DTO layer on both sides. Do NOT reintroduce `enum` blocks
 // without a coordinated cross-server migration.
 

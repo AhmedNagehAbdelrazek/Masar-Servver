@@ -1,7 +1,7 @@
 import { UnprocessableEntityException } from '@nestjs/common';
 import { jordanDateOnly } from './jordan-time.js';
 
-// Port of Main Server/utils/time.ts (API-boundary subset).
+// Port of main-server/utils/time.ts (API-boundary subset).
 // Validation failures are 422 VALIDATION_ERROR, mirroring ApiErrors.validation.
 const TZ_SUFFIX_RE = /(Z|[+-]\d{2}:?\d{2})$/;
 const DATE_ONLY_RE = /^\d{4}-\d{2}-\d{2}$/;

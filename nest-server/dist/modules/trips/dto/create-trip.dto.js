@@ -7,8 +7,8 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
-import { Type } from 'class-transformer';
-import { ArrayMinSize, IsArray, IsDefined, IsIn, IsInt, IsISO8601, IsNotEmpty, IsNumber, IsObject, IsOptional, IsString, IsUUID, Matches, Max, MaxLength, Min, ValidateNested, registerDecorator, } from 'class-validator';
+import { Transform, Type } from 'class-transformer';
+import { ArrayMinSize, IsArray, IsBoolean, IsDefined, IsIn, IsInt, IsISO8601, IsNotEmpty, IsNumber, IsObject, IsOptional, IsString, IsUUID, Matches, Max, MaxLength, Min, ValidateNested, registerDecorator, } from 'class-validator';
 import { IsLat, IsLng, IsMoney, TrimString } from '../../../common/validators/geo.validators.js';
 export function IsFutureDateTime(validationOptions) {
     return function (object, propertyName) {
@@ -542,6 +542,14 @@ __decorate([
 export class TripSearchQuery {
     origin_city;
     destination_city;
+    origin_lat;
+    origin_lng;
+    destination_lat;
+    destination_lng;
+    origin_radius_m;
+    destination_radius_m;
+    include_enroute;
+    sort;
     date;
     return_date;
     gender_preference;
@@ -564,6 +572,64 @@ __decorate([
     TrimString(),
     __metadata("design:type", String)
 ], TripSearchQuery.prototype, "destination_city", void 0);
+__decorate([
+    IsOptional(),
+    IsLat(),
+    __metadata("design:type", Object)
+], TripSearchQuery.prototype, "origin_lat", void 0);
+__decorate([
+    IsOptional(),
+    IsLng(),
+    __metadata("design:type", Object)
+], TripSearchQuery.prototype, "origin_lng", void 0);
+__decorate([
+    IsOptional(),
+    IsLat(),
+    __metadata("design:type", Object)
+], TripSearchQuery.prototype, "destination_lat", void 0);
+__decorate([
+    IsOptional(),
+    IsLng(),
+    __metadata("design:type", Object)
+], TripSearchQuery.prototype, "destination_lng", void 0);
+__decorate([
+    IsOptional(),
+    IsInt(),
+    Min(100),
+    Max(10000),
+    Type(() => Number),
+    __metadata("design:type", Number)
+], TripSearchQuery.prototype, "origin_radius_m", void 0);
+__decorate([
+    IsOptional(),
+    IsInt(),
+    Min(100),
+    Max(10000),
+    Type(() => Number),
+    __metadata("design:type", Number)
+], TripSearchQuery.prototype, "destination_radius_m", void 0);
+__decorate([
+    IsOptional(),
+    Transform(({ value }) => {
+        if (value === undefined || value === null || value === '')
+            return undefined;
+        if (typeof value === 'boolean')
+            return value;
+        const normalized = String(value).toLowerCase();
+        if (['true', '1', 'yes', 'on'].includes(normalized))
+            return true;
+        if (['false', '0', 'no', 'off'].includes(normalized))
+            return false;
+        return value;
+    }),
+    IsBoolean(),
+    __metadata("design:type", Boolean)
+], TripSearchQuery.prototype, "include_enroute", void 0);
+__decorate([
+    IsOptional(),
+    IsIn(['best_match', 'departure_time', 'distance']),
+    __metadata("design:type", String)
+], TripSearchQuery.prototype, "sort", void 0);
 __decorate([
     IsOptional(),
     IsString(),

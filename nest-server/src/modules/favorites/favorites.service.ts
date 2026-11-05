@@ -42,7 +42,7 @@ function serializeFavoriteRoute(r: RouteRow): Record<string, unknown> {
   };
 }
 
-// Port of Main Server/Services/favoriteService.ts
+// Port of main-server/Services/favoriteService.ts
 @Injectable()
 export class FavoritesService {
   constructor(private readonly prisma: PrismaService) {}

@@ -1,4 +1,4 @@
-// 1:1 port of Main Server/tests/integration/subscription.test.js (minus the
+// 1:1 port of main-server/tests/integration/subscription.test.js (minus the
 // expiry-sweep test → Wave 7 jobs), integration/subscriptionDetails.test.js,
 // contract/subscription + subscriptionDetails (Wave 4.1).
 // DEVIATION (verified): Express forbids manual free-plan subscription, but its
@@ -739,7 +739,7 @@ describe('Contract: driver subscription page', () => {
   });
 });
 
-// Port of Main Server/tests/integration/adminSubscription.test.js (gaps only).
+// Port of main-server/tests/integration/adminSubscription.test.js (gaps only).
 // Pending-queue shape + approve/reject envelopes are covered above; these
 // blocks assert the admin behaviors that had no coverage: exact masked
 // national id, balance credit + expiry timestamps, debt clearing,

@@ -161,7 +161,7 @@ function buildStopRecord(
   };
 }
 
-// Port of Main Server/Services/tripService.ts (Wave 5.1 scope: create, reads,
+// Port of main-server/Services/tripService.ts (Wave 5.1 scope: create, reads,
 // search, seats, seat-adjacent helpers; lifecycle/route/pickup land in
 // subsequent sub-waves of this file).
 @Injectable()
@@ -1296,7 +1296,7 @@ export class TripsService {
     return { trip: { id: tripId, status: 'cancelled', notified_passengers: notifiedPassengers } };
   }
 
-  // Port of moderateTrip in Main Server/Controllers/adminModerationController.ts
+  // Port of moderateTrip in main-server/Controllers/adminModerationController.ts
   // (PUT /api/admin/trips/:trip_id, admin only). Audit tracking is covered by
   // the global AuditInterceptor.
   async moderateTrip(

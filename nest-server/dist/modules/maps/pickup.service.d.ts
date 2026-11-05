@@ -21,6 +21,9 @@ export declare class PickupService {
     constructor(prisma: PrismaService, routes: RouteService, geo: GeoService);
     assertBookable(trip: {
         status: string;
+        departureTime: Date | string;
+        startedAt?: Date | string | null;
+        completedAt?: Date | string | null;
     }): void;
     validatePickup(tripId: string, input: {
         pickup_type?: string;

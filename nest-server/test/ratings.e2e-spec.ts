@@ -1,4 +1,4 @@
-// 1:1 port of Main Server/tests/integration/ratings.test.js and
+// 1:1 port of main-server/tests/integration/ratings.test.js and
 // tests/contract/ratings.contract.test.js (Wave 1.3, full-stack Wave 8).
 // Trips are created via POST /api/trips + seat-lock + POST /api/bookings like
 // the other specs (sos, trip-lifecycle); each booking gets a distinct

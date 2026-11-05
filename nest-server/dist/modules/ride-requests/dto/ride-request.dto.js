@@ -302,6 +302,7 @@ __decorate([
     __metadata("design:type", String)
 ], AttachOfferBody.prototype, "dropoff_deadline", void 0);
 export class AcceptRideRequestBody {
+    trip_id;
     fare_per_seat;
     vehicle_id;
     seats;
@@ -318,8 +319,12 @@ export class AcceptRideRequestBody {
     origin_time;
 }
 __decorate([
-    IsDefined(),
-    IsNotEmpty(),
+    IsOptional(),
+    IsUUID(),
+    __metadata("design:type", String)
+], AcceptRideRequestBody.prototype, "trip_id", void 0);
+__decorate([
+    IsOptional(),
     IsNumber(),
     Min(0),
     Type(() => Number),
@@ -331,13 +336,13 @@ __decorate([
     __metadata("design:type", String)
 ], AcceptRideRequestBody.prototype, "vehicle_id", void 0);
 __decorate([
-    IsDefined(),
+    IsOptional(),
     IsArray(),
     __metadata("design:type", Array)
 ], AcceptRideRequestBody.prototype, "seats", void 0);
 __decorate([
     IsOptional(),
-    IsIn(['one_way', 'repeated']),
+    IsIn(['once', 'repeated']),
     __metadata("design:type", String)
 ], AcceptRideRequestBody.prototype, "type_of_trip", void 0);
 __decorate([

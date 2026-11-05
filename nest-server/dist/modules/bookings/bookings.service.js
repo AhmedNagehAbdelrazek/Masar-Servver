@@ -13,6 +13,7 @@ import { maskPhone } from '../../common/utils/masking.js';
 import { buildPagination, parsePagination } from '../../common/utils/pagination.js';
 import { generateReferenceCode as generateRefCode } from '../../common/utils/reference-code.js';
 import { parseOptionalTimezoneAware } from '../../common/utils/time.js';
+import { serializeTripDetails, toNumberOrNull } from '../../common/utils/trip-details.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { withSerializableRetry } from '../../prisma/transaction.js';
 import { RealtimeGateway } from '../../realtime/realtime.gateway.js';
@@ -22,15 +23,10 @@ import { PickupService } from '../maps/pickup.service.js';
 import { RouteService } from '../maps/route.service.js';
 import { NotificationsService } from '../notifications/notifications.service.js';
 import { HomeService } from '../subscriptions/home.service.js';
+import { hasTripDeparted } from '../trips/trip-schedule.js';
 import { TripExpiryService } from '../trips/trip-expiry.service.js';
 function validationError(code, message) {
     return new UnprocessableEntityException({ message, code });
-}
-function toNumberOrNull(value) {
-    if (value === null || value === undefined)
-        return null;
-    const n = Number(value);
-    return Number.isFinite(n) ? n : null;
 }
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 function serializeRoutePoints(stops) {
@@ -190,12 +186,9 @@ let BookingsService = BookingsService_1 = class BookingsService {
             booking_created_at: booking.createdAt,
             trip: trip
                 ? {
-                    origin: trip.originCity,
-                    destination: trip.destinationCity,
-                    price: Number(trip.farePerSeat),
-                    status: trip.status,
-                    departure_time: trip.departureTime,
                     ...tripLocationData(trip, (trip.stops ?? [])),
+                    price: Number(trip.farePerSeat),
+                    ...serializeTripDetails(trip),
                 }
                 : null,
             driver: trip?.driver != null
@@ -211,8 +204,14 @@ let BookingsService = BookingsService_1 = class BookingsService {
                 ? {
                     vehicle_id: tripVehicle.id,
                     type: tripVehicle.vehicleType,
+                    make_model: [tripVehicle.manufacturer, tripVehicle.model]
+                        .filter(Boolean)
+                        .join(' '),
+                    year: tripVehicle.modelYear,
                     plate: tripVehicle.plateNumber,
+                    color: tripVehicle.color,
                     seats: tripVehicle.seats,
+                    total_seats: tripVehicle.seats,
                 }
                 : null,
             passenger: passenger ? { id: passenger.id, full_name: passenger.fullName } : null,
@@ -404,7 +403,7 @@ let BookingsService = BookingsService_1 = class BookingsService {
         });
         if (!trip)
             throw new NotFoundException({ message: 'TRIP_NOT_FOUND', code: 'TRIP_NOT_FOUND' });
-        if (!['published', 'full'].includes(trip.status)) {
+        if (!['published', 'full'].includes(trip.status) || hasTripDeparted(trip)) {
             throw new ConflictException({ message: 'TRIP_NOT_BOOKABLE', code: 'TRIP_NOT_BOOKABLE' });
         }
         if (payload.agreed_fare === undefined || Number(payload.agreed_fare) !== Number(trip.farePerSeat)) {
@@ -499,26 +498,37 @@ let BookingsService = BookingsService_1 = class BookingsService {
             detourSeconds = 0;
         }
         else {
-            const type = payload.pickup_type === 'stop' ? 'stop' : 'custom';
-            const checked = await this.pickup.validatePickup(trip.id, {
-                pickup_type: payload.pickup_stop_id ? 'stop' : type,
-                pickup_stop_id: payload.pickup_stop_id ?? null,
-                lat: resolvedPickupLat,
-                lng: resolvedPickupLng,
-                pickup_label: resolvedPickupPlace,
-            });
-            if (!checked.accepted) {
-                throw new UnprocessableEntityException({
-                    message: checked.reason ?? 'PICKUP_REJECTED',
-                    code: checked.reason ?? 'PICKUP_REJECTED',
+            if (payload.pickup_stop_id) {
+                const checked = await this.pickup.validatePickup(trip.id, {
+                    pickup_type: 'stop',
+                    pickup_stop_id: payload.pickup_stop_id,
                 });
+                pickupType = 'stop';
+                pickupStopId = checked.point?.pickupStopId ?? null;
+                pickupLabel = checked.point?.label ?? resolvedPickupPlace;
+                pickupLat = checked.point ? checked.point.lat : resolvedPickupLat;
+                pickupLng = checked.point ? checked.point.lng : resolvedPickupLng;
+                detourSeconds = 0;
             }
-            pickupType = type;
-            pickupStopId = checked.point?.pickupStopId ?? null;
-            pickupLabel = checked.point?.label ?? resolvedPickupPlace;
-            pickupLat = checked.point ? checked.point.lat : resolvedPickupLat;
-            pickupLng = checked.point ? checked.point.lng : resolvedPickupLng;
-            detourSeconds = checked.detourSeconds;
+            else if (resolvedPickupLat != null && resolvedPickupLng != null) {
+                pickupType = 'custom';
+                pickupStopId = null;
+                pickupLabel = resolvedPickupPlace ?? trip.originCity;
+                pickupCity = null;
+                pickupArea = null;
+                pickupLat = resolvedPickupLat;
+                pickupLng = resolvedPickupLng;
+                detourSeconds = 0;
+            }
+            else {
+                pickupType = 'custom';
+                pickupLabel = trip.originCity;
+                pickupCity = trip.originCity;
+                pickupArea = trip.originArea;
+                pickupLat = trip.originLat != null ? Number(trip.originLat) : null;
+                pickupLng = trip.originLng != null ? Number(trip.originLng) : null;
+                detourSeconds = 0;
+            }
         }
         if (requestedSeats > Number(trip.availableSeats)) {
             throw new ConflictException({
@@ -555,7 +565,7 @@ let BookingsService = BookingsService_1 = class BookingsService {
         const referenceCode = await this.uniqueBookingCode();
         const booking = await withSerializableRetry(this.prisma, async (tx) => {
             const freshTrip = await tx.trip.findUnique({ where: { id: trip.id } });
-            if (!freshTrip || !['published', 'full'].includes(freshTrip.status)) {
+            if (!freshTrip || !['published', 'full'].includes(freshTrip.status) || hasTripDeparted(freshTrip)) {
                 throw new ConflictException({ message: 'TRIP_NOT_BOOKABLE', code: 'TRIP_NOT_BOOKABLE' });
             }
             const remaining = Number(freshTrip.availableSeats) - requestedSeats;
@@ -695,8 +705,9 @@ let BookingsService = BookingsService_1 = class BookingsService {
             where: { id: trip.id },
             include: {
                 driver: { select: { id: true, fullName: true, phone: true, avgRating: true, avatarUrl: true } },
-                stops: true,
-                vehicle: { select: { id: true, vehicleType: true, plateNumber: true, seats: true } },
+                stops: { orderBy: { stopOrder: 'asc' } },
+                attributes: true,
+                vehicle: true,
             },
         });
         return this.serializePassengerDetail(booking, fullTrip, { id: user.id, fullName: user.fullName });
@@ -723,22 +734,16 @@ let BookingsService = BookingsService_1 = class BookingsService {
                 where: where,
                 include: {
                     trip: {
-                        select: {
-                            id: true,
-                            driverId: true,
-                            originCity: true,
-                            originArea: true,
-                            originLat: true,
-                            originLng: true,
-                            destinationCity: true,
-                            destinationArea: true,
-                            destinationLat: true,
-                            destinationLng: true,
-                            farePerSeat: true,
-                            status: true,
-                            departureTime: true,
+                        include: {
+                            driver: {
+                                select: { id: true, fullName: true, phone: true, avgRating: true, avatarUrl: true },
+                            },
+                            vehicle: true,
+                            stops: { orderBy: { stopOrder: 'asc' } },
+                            attributes: true,
                         },
                     },
+                    ratings: { select: { stars: true }, where: { raterId: passengerId } },
                 },
                 orderBy: { trip: { departureTime: 'asc' } },
                 skip: offset,
@@ -746,49 +751,8 @@ let BookingsService = BookingsService_1 = class BookingsService {
             }),
             this.prisma.booking.count({ where: where }),
         ]);
-        const tripIds = [...new Set(rows.map((r) => r.tripId))];
-        const [drivers, stopsMap, vehicles, ratings] = await Promise.all([
-            this.prisma.user.findMany({
-                where: {
-                    id: {
-                        in: [...new Set(rows.map((r) => r.trip.driverId))],
-                    },
-                },
-                select: { id: true, fullName: true, phone: true, avgRating: true, avatarUrl: true },
-            }),
-            this.prisma.tripStop.findMany({ where: { tripId: { in: tripIds } } }),
-            this.prisma.vehicle.findMany({
-                where: { driverId: { in: [...new Set(rows.map((r) => r.trip.driverId))] } },
-                select: { id: true, driverId: true, vehicleType: true, plateNumber: true, seats: true },
-            }),
-            this.prisma.rating.findMany({
-                where: { raterId: passengerId, bookingId: { in: rows.map((r) => r.id) } },
-                select: { bookingId: true, stars: true },
-            }),
-        ]);
-        const driverMap = new Map(drivers.map((d) => [d.id, d]));
-        const stopsByTrip = new Map();
-        for (const s of stopsMap) {
-            const list = stopsByTrip.get(s.tripId) ?? [];
-            list.push(s);
-            stopsByTrip.set(s.tripId, list);
-        }
-        const vehicleByDriver = new Map(vehicles.map((v) => [v.driverId, v]));
-        const ratingByBooking = new Map(ratings.map((r) => [r.bookingId, r.stars]));
         return {
-            data: rows.map((b) => {
-                const trip = b.trip;
-                const driver = driverMap.get(trip.driverId);
-                return this.serializePassengerDetail({
-                    ...b,
-                    ratings: ratingByBooking.has(b.id) ? [{ stars: ratingByBooking.get(b.id) }] : [],
-                }, {
-                    ...trip,
-                    driver: driver ?? null,
-                    stops: stopsByTrip.get(b.tripId) ?? [],
-                    vehicle: vehicleByDriver.get(trip.driverId) ?? null,
-                }, null);
-            }),
+            data: rows.map((b) => this.serializePassengerDetail(b)),
             pagination: buildPagination(count, page, limit),
         };
     }
@@ -798,47 +762,20 @@ let BookingsService = BookingsService_1 = class BookingsService {
                 where: { id: bookingId },
                 include: {
                     trip: {
-                        select: {
-                            id: true,
-                            driverId: true,
-                            originCity: true,
-                            originArea: true,
-                            originLat: true,
-                            originLng: true,
-                            destinationCity: true,
-                            destinationArea: true,
-                            destinationLat: true,
-                            destinationLng: true,
-                            farePerSeat: true,
-                            departureTime: true,
-                            status: true,
+                        include: {
+                            driver: {
+                                select: { id: true, fullName: true, phone: true, avgRating: true, avatarUrl: true },
+                            },
+                            vehicle: true,
+                            stops: { orderBy: { stopOrder: 'asc' } },
+                            attributes: true,
                         },
                     },
                     passenger: { select: { id: true, fullName: true } },
+                    ratings: { select: { stars: true }, where: { raterId: passengerId } },
                 },
             });
-            if (!b)
-                return null;
-            const [driver, stops, vehicle, ratings] = await Promise.all([
-                this.prisma.user.findUnique({
-                    where: { id: b.trip.driverId },
-                    select: { id: true, fullName: true, phone: true, avgRating: true, avatarUrl: true },
-                }),
-                this.prisma.tripStop.findMany({ where: { tripId: b.tripId } }),
-                this.prisma.vehicle.findFirst({
-                    where: { driverId: b.trip.driverId },
-                    select: { id: true, vehicleType: true, plateNumber: true, seats: true },
-                }),
-                this.prisma.rating.findMany({
-                    where: { bookingId: b.id, raterId: passengerId },
-                    select: { stars: true },
-                }),
-            ]);
-            return {
-                ...b,
-                trip: { ...b.trip, driver, stops, vehicle },
-                ratings,
-            };
+            return b ?? null;
         };
         let booking = await fetchBooking();
         if (!booking)
@@ -1090,7 +1027,7 @@ let BookingsService = BookingsService_1 = class BookingsService {
             throw new ConflictException({ message: 'BOOKING_IS_NOT_CONFIRMED', code: 'BOOKING_IS_NOT_CONFIRMED' });
         }
         const trip = booking.trip;
-        this.pickup.assertBookable({ status: trip.status });
+        this.pickup.assertBookable(trip);
         const cutoffMs = getMapsConfig().pickupEditCutoffMinutes * 60 * 1000;
         if (new Date(trip.departureTime).getTime() - Date.now() < cutoffMs) {
             throw new UnprocessableEntityException({

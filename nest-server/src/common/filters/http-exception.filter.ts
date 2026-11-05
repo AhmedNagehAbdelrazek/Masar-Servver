@@ -10,7 +10,7 @@ import { Request, Response } from 'express';
 import { hasKey, localizeDetail, shape } from '../i18n/i18n.js';
 import { resolveLocaleMode } from '../utils/locale.js';
 
-// Express parity (Main Server/utils/ApiError.ts): V1 has one code for every
+// Express parity (main-server/utils/ApiError.ts): V1 has one code for every
 // 401 (UNAUTHORIZED), uses FORBIDDEN for role denials, and emits generic
 // NOT_FOUND for missing resources — but it *does* have a few explicit codes
 // (FIELD_LOCKED, SEAT_LOCK_EXPIRED, NO_PENDING_DELETION_REQUEST, ...), so only
@@ -37,7 +37,7 @@ function isJsonParseMessage(message: unknown): boolean {
   );
 }
 
-// Port of Main Server/middlewares/globalErrorHandler.ts + utils/ApiError.ts
+// Port of main-server/middlewares/globalErrorHandler.ts + utils/ApiError.ts
 // Error envelope: { status: 'error', message, message_en?, code, details? }
 @Catch()
 export class HttpExceptionFilter implements ExceptionFilter {

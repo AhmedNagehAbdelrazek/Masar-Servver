@@ -50,7 +50,7 @@ async function bootstrap(): Promise<void> {
   // Idempotent boot seed (admin + dev test accounts, existing rows untouched).
   await app.get(SeedService).seed();
 
-  // Mirrors Main Server/app.ts global chain: cors -> helmet -> audit -> morgan -> json.
+  // Mirrors main-server/app.ts global chain: cors -> helmet -> audit -> morgan -> json.
   app.use(cors());
   app.use(helmet());
   app.use(morgan('short'));
@@ -77,7 +77,7 @@ async function bootstrap(): Promise<void> {
 
   const swaggerConfig = new DocumentBuilder()
     .setTitle('Masar API (Nest)')
-    .setDescription('Nest.js port of the Express Main Server. Express stays live until cutover.')
+    .setDescription('Nest.js port of the Express main-server. Express stays live until cutover.')
     .setVersion('1.0.0')
     .addBearerAuth()
     .build();

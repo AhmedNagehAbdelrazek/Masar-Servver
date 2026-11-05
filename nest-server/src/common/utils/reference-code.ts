@@ -1,6 +1,6 @@
 import { randomBytes } from 'node:crypto';
 
-// Port of Main Server/utils/referenceCode.ts generateReferenceCode(prefix):
+// Port of main-server/utils/referenceCode.ts generateReferenceCode(prefix):
 // PREFIX-{6 chars from unambiguous alphabet}.
 const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 

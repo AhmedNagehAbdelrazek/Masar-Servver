@@ -1,4 +1,4 @@
-// 1:1 port of Main Server/tests/integration/fullUserJourney.e2e.test.js.
+// 1:1 port of main-server/tests/integration/fullUserJourney.e2e.test.js.
 // A brand new driver registers, gets verified, publishes a trip, a new
 // passenger registers, finds it, books a seat, the ride is started and
 // completed, both parties rate each other, and every change is reflected

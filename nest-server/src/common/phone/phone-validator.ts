@@ -1,4 +1,4 @@
-// Port of Main Server/utils/phoneValidator.ts (logic verbatim; types kept).
+// Port of main-server/utils/phoneValidator.ts (logic verbatim; types kept).
 import { codes, type PhoneCode } from './phoneCodes.js';
 
 export interface PhoneValidationSuccess {
