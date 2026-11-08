@@ -15,6 +15,7 @@ router.get('/plans/free', ...admin, c.getFreePlan);
 router.put('/plans/free', ...admin, ...updatePlanValidation, validate, c.updateFreePlan);
 router.post('/plans', ...admin, ...createPlanValidation, validate, c.createPlan);
 router.put('/plans/:plan_id', ...admin, ...planIdValidation, ...updatePlanValidation, validate, c.updatePlan);
+router.delete('/plans/:plan_id/permanent', ...admin, ...planIdValidation, validate, c.permanentlyDeletePlan);
 router.delete('/plans/:plan_id', ...admin, ...planIdValidation, c.deactivatePlan);
 
 // ===== Payment method management =====

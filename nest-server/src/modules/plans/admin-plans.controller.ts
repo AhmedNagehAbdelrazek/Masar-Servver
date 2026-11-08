@@ -53,6 +53,14 @@ export class AdminPlansController {
     return this.plans.updatePlan(params.plan_id, dto, user?.id ?? '').then((plan) => ({ plan }));
   }
 
+  @Delete(':plan_id/permanent')
+  permanentlyDeletePlan(
+    @Param('plan_id') planId: string,
+    @CurrentUser() user?: AuthUser,
+  ): Promise<{ message: string }> {
+    return this.plans.permanentlyDeletePlan(planId, user?.id ?? '');
+  }
+
   @Delete(':plan_id')
   deactivatePlan(
     @Param('plan_id') planId: string,

@@ -677,10 +677,18 @@ export class AdminDashboardService {
     return {
       data: rows.map((t) => ({
         trip_id: t.id,
+        code: t.id,
         route: { origin: t.originCity, destination: t.destinationCity },
+        from: t.originCity,
+        to: t.destinationCity,
+        datetime: t.departureTime,
         date_time: t.departureTime,
+        total_seats: Number(t.totalSeats),
+        available_seats: Number(t.availableSeats),
         passengers_count: aggs.get(t.id)?.passengers_count ?? 0,
         reservations_count: aggs.get(t.id)?.reservations_count ?? 0,
+        bookings: aggs.get(t.id)?.reservations_count ?? 0,
+        seat_price: Number(t.farePerSeat),
         price: Number(t.farePerSeat),
         status: t.status,
       })),
@@ -721,6 +729,18 @@ export class AdminDashboardService {
       for (const tag of row.tags || []) tagCounts.set(tag, (tagCounts.get(tag) || 0) + 1);
     }
     const topTags = [...tagCounts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 10).map(([t]) => t);
+    const reviews = rows.map((r) => ({
+      passenger_name: r.rater?.fullName || 'Unknown',
+      passenger_avatar: toAbsoluteMediaUrl(r.rater?.avatarUrl),
+      rating: r.stars,
+      stars: r.stars,
+      comment: r.review,
+      text: r.review,
+      tags: r.tags ?? [],
+      was_late: r.wasLate,
+      date: r.createdAt,
+      created_at: r.createdAt,
+    }));
     return {
       summary: {
         average_rating: summary._avg.stars != null ? Number(summary._avg.stars) : 0,
@@ -728,14 +748,8 @@ export class AdminDashboardService {
       },
       distribution: [5, 4, 3, 2, 1].map((rating) => ({ rating, count: countsByStar.get(rating) || 0 })),
       top_tags: topTags,
-      reviews: rows.map((r) => ({
-        passenger_name: r.rater?.fullName || 'Unknown',
-        passenger_avatar: toAbsoluteMediaUrl(r.rater?.avatarUrl),
-        rating: r.stars,
-        comment: r.review,
-        was_late: r.wasLate,
-        date: r.createdAt,
-      })),
+      data: reviews,
+      reviews,
       pagination: buildPagination(count, page, limit),
     };
   }
@@ -743,13 +757,26 @@ export class AdminDashboardService {
   async getAccountLog(driverId: string): Promise<Record<string, unknown>> {
     await this.getDriverOrThrow(driverId);
     const now = new Date();
-    const [penalties, complaints] = await Promise.all([
+    const [penalties, complaints, profile, vehicle, reviews] = await Promise.all([
       this.prisma.penalty.findMany({ where: { userId: driverId }, orderBy: { startsAt: 'desc' } }),
       this.prisma.complaint.findMany({
         where: { OR: [{ reporterId: driverId }, { accusedId: driverId }] },
         orderBy: { createdAt: 'desc' },
       }),
+      this.prisma.driverProfile.findUnique({ where: { driverId } }),
+      this.prisma.vehicle.findUnique({ where: { driverId } }),
+      this.prisma.documentReview.findMany({ where: { driverId } }),
     ]);
+    const uploadedDocuments = (ALL_DOCUMENT_KEYS as DocumentDef[]).filter((def) => {
+      const imageId = def.source === 'profile'
+        ? (profile as unknown as Record<string, unknown> | null)?.[def.column as string]
+        : def.source === 'vehicle'
+          ? (vehicle as unknown as Record<string, unknown> | null)?.[def.column as string]
+          : null;
+      return imageId != null;
+    });
+    const decidedKeys = new Set(reviews.map((review) => review.documentKey));
+    const pendingDocuments = uploadedDocuments.filter((def) => !decidedKeys.has(def.key)).length;
     const log: Record<string, unknown>[] = [
       ...penalties.map((p) => {
         const open = !p.endsAt && new Date(p.startsAt) <= now;
@@ -780,6 +807,7 @@ export class AdminDashboardService {
         suspensions: penalties.filter((p) => p.type !== 'warning').length,
         complaints_against: complaints.filter((c) => c.accusedId === driverId).length,
         complaints_by: complaints.filter((c) => c.reporterId === driverId).length,
+        pending_documents: pendingDocuments,
       },
       log,
     };
@@ -802,6 +830,7 @@ export class AdminDashboardService {
     const entries = defs.map((d) => this.documentEntry(d, null, vehicle, reviewByKey, imageMap));
     return {
       car_info: {
+        type: vehicle.vehicleType,
         make: vehicle.manufacturer,
         model: vehicle.model,
         year: vehicle.modelYear,

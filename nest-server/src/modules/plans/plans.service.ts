@@ -251,6 +251,21 @@ export class PlansService {
     return { message: 'PLAN_DEACTIVATED' };
   }
 
+  async permanentlyDeletePlan(planId: string, _actorId: string): Promise<{ message: string }> {
+    const plan = await this.prisma.subscriptionPlan.findUnique({ where: { id: planId } });
+    if (!plan) throw new NotFoundException({ message: 'PLAN_NOT_FOUND', code: 'PLAN_NOT_FOUND' });
+    const subscriptions = await this.prisma.driverSubscription.count({ where: { planId } });
+    if (subscriptions > 0) {
+      throw new ConflictException({
+        message: 'PLAN_HAS_SUBSCRIPTIONS_AND_CANNOT_BE_DELETED',
+        code: 'PLAN_HAS_SUBSCRIPTIONS',
+      });
+    }
+    await this.prisma.subscriptionPlan.delete({ where: { id: planId } });
+    await this.invalidatePlansCache();
+    return { message: 'PLAN_DELETED' };
+  }
+
   async listPaymentMethods(): Promise<Record<string, unknown>[]> {
     const methods = await this.prisma.paymentMethod.findMany({ orderBy: { createdAt: 'asc' } });
     return methods.map((m) => toMethodDTO(m as unknown as MethodRow));

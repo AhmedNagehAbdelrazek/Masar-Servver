@@ -224,6 +224,30 @@ async function deactivatePlan(planId, actorId) {
   return { message: 'PLAN_DEACTIVATED' };
 }
 
+async function permanentlyDeletePlan(planId, actorId) {
+  const plan = await SubscriptionPlan.findByPk(planId);
+  if (!plan) throw ApiErrors.notFound('PLAN_NOT_FOUND');
+
+  const subscriptions = await DriverSubscription.count({ where: { planId } });
+  if (subscriptions > 0) {
+    throw ApiErrors.custom('PLAN_HAS_SUBSCRIPTIONS_AND_CANNOT_BE_DELETED', 409, 'PLAN_HAS_SUBSCRIPTIONS');
+  }
+
+  const snapshot = toPlanDTO(plan);
+  await plan.destroy();
+
+  auditMutation({
+    action: 'plan.delete',
+    actorId,
+    resourceType: 'subscription_plan',
+    resourceId: planId,
+    payload: snapshot,
+  });
+  await invalidatePlansCache();
+
+  return { message: 'PLAN_DELETED' };
+}
+
 async function listPaymentMethods() {
   const methods = await PaymentMethod.findAll({ order: [['createdat', 'ASC']] });
   return methods.map(toMethodDTO);
@@ -319,11 +343,12 @@ module.exports = {
   createPlan,
   updatePlan,
   deactivatePlan,
+  permanentlyDeletePlan,
   listPaymentMethods,
   createPaymentMethod,
   updatePaymentMethod,
   deactivatePaymentMethod,
   permanentlyDeletePaymentMethod,
 };
-export { toPlanDTO, toMethodDTO, getActivePlans, getActivePaymentMethods, listPlans, getFreePlan, updateFreePlan, createPlan, updatePlan, deactivatePlan, listPaymentMethods, createPaymentMethod, updatePaymentMethod, deactivatePaymentMethod, permanentlyDeletePaymentMethod };
+export { toPlanDTO, toMethodDTO, getActivePlans, getActivePaymentMethods, listPlans, getFreePlan, updateFreePlan, createPlan, updatePlan, deactivatePlan, permanentlyDeletePlan, listPaymentMethods, createPaymentMethod, updatePaymentMethod, deactivatePaymentMethod, permanentlyDeletePaymentMethod };
 export default module.exports;

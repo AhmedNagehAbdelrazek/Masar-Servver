@@ -729,13 +729,22 @@ async function getDriverEvaluations(driverId, query) {
 async function getAccountLog(driverId) {
   await getDriverOrThrow(driverId);
   const now = new Date();
-  const [penalties, complaints] = await Promise.all([
+  const [penalties, complaints, profile, vehicle, reviews] = await Promise.all([
     Penalty.findAll({ where: { userId: driverId }, order: [['starts_at', 'DESC']] }),
     Complaint.findAll({
       where: { [Op.or]: [{ reporterId: driverId }, { accusedId: driverId }] },
       order: [['createdat', 'DESC']],
     }),
+    DriverProfile.findOne({ where: { driverId } }),
+    Vehicle.findOne({ where: { driverId } }),
+    DocumentReview.findAll({ where: { driverId } }),
   ]);
+  const uploadedDocuments = REQUIRED_DOCUMENTS.filter((def) => {
+    const imageId = def.source === 'profile' ? profile?.[def.column] : vehicle?.[def.column];
+    return imageId != null;
+  });
+  const decidedKeys = new Set(reviews.map((review) => review.documentKey));
+  const pendingDocuments = uploadedDocuments.filter((def) => !decidedKeys.has(def.key)).length;
   const log = [
     ...penalties.map((p) => {
       const open = !p.endsAt && new Date(p.startsAt) <= now;
@@ -766,6 +775,7 @@ async function getAccountLog(driverId) {
       suspensions: penalties.filter((p) => p.type !== PENALTY_TYPES.WARNING).length,
       complaints_against: complaints.filter((c) => c.accusedId === driverId).length,
       complaints_by: complaints.filter((c) => c.reporterId === driverId).length,
+      pending_documents: pendingDocuments,
     },
     log,
     entries: log,
@@ -788,6 +798,7 @@ async function getCarDetails(driverId) {
   const entries = defs.map((d) => documentEntry(d, null, vehicle, reviewByKey, imageMap));
   return {
     car_info: {
+      type: vehicle.vehicleType,
       make: vehicle.manufacturer,
       model: vehicle.model,
       year: vehicle.modelYear,

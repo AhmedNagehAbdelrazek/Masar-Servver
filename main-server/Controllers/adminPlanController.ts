@@ -47,6 +47,14 @@ const deactivatePlan = catchAsync(async (req: Request, res: Response): Promise<v
   successResponse(res, result);
 });
 
+const permanentlyDeletePlan = catchAsync(async (req: Request, res: Response): Promise<void> => {
+  const authReq = req as AuthRequest;
+  const { plan_id } = req.params as { plan_id: string };
+  const result = await (planService as unknown as { permanentlyDeletePlan: (id: string, actorId: string) => Promise<unknown> }).permanentlyDeletePlan(plan_id, String(authReq.user?.id));
+  (auditService as unknown as { markResource: (res: Response, r: unknown) => void }).markResource(res, { type: 'subscription_plan', id: plan_id });
+  successResponse(res, result);
+});
+
 const listPaymentMethods = catchAsync(async (req: Request, res: Response): Promise<void> => {
   const methods = await (planService as unknown as { listPaymentMethods: () => Promise<unknown> }).listPaymentMethods();
   successResponse(res, { methods });
@@ -122,6 +130,7 @@ export {
   createPlan,
   updatePlan,
   deactivatePlan,
+  permanentlyDeletePlan,
   listPaymentMethods,
   createPaymentMethod,
   updatePaymentMethod,
@@ -140,6 +149,7 @@ export default {
   createPlan,
   updatePlan,
   deactivatePlan,
+  permanentlyDeletePlan,
   listPaymentMethods,
   createPaymentMethod,
   updatePaymentMethod,
