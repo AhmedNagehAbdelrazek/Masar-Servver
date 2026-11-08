@@ -26,7 +26,15 @@ function createApp(): Express {
   app.use(
     '/uploads',
     // express.static(process.env.LOCAL_UPLOAD_DIR || path.join(__dirname, 'uploads'))
-    express.static(path.join(__dirname, 'uploads')),
+    express.static(path.join(__dirname, 'uploads'), {
+      // Documents are embedded cross-origin by the admin dashboard. Helmet's
+      // default CORP=same-origin makes browsers block them, so allow embedding
+      // only for the public media route.
+      setHeaders: (res: Response): void => {
+        res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+        res.setHeader('Access-Control-Allow-Origin', '*');
+      },
+    }),
   );
 
   // API_BASE_PATH versions the public surface: Express serves v1

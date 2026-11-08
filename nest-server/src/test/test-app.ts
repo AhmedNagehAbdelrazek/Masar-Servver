@@ -57,6 +57,10 @@ export async function createTestApp(): Promise<TestContext> {
   const app = module.createNestApplication<NestExpressApplication>();
   app.useStaticAssets(join(process.env.LOCAL_UPLOAD_DIR ?? join(process.cwd(), 'uploads')), {
     prefix: '/uploads/',
+    setHeaders: (res) => {
+      res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+      res.setHeader('Access-Control-Allow-Origin', '*');
+    },
   });
   app.setGlobalPrefix(process.env.API_PREFIX || 'api/v2');
   app.useGlobalPipes(new ApiValidationPipe());

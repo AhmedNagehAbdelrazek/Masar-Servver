@@ -58,6 +58,12 @@ async function bootstrap(): Promise<void> {
   app.useBodyParser('urlencoded', { extended: true });
   app.useStaticAssets(join(process.env.LOCAL_UPLOAD_DIR ?? join(process.cwd(), 'uploads')), {
     prefix: '/uploads/',
+    // The admin dashboard embeds /uploads images cross-origin. Helmet's
+    // default CORP=same-origin blocks them; allow only the media route.
+    setHeaders: (res) => {
+      res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+      res.setHeader('Access-Control-Allow-Origin', '*');
+    },
   });
 
   // API_PREFIX versions the public surface: nest-server serves v2
