@@ -42,6 +42,14 @@ export class AdminPaymentMethodsController {
       .then((method) => ({ method }));
   }
 
+  @Delete(':method_id/permanent')
+  permanentlyDeletePaymentMethod(
+    @Param() params: UuidMethodIdParam,
+    @CurrentUser() user?: AuthUser,
+  ): Promise<{ message: string }> {
+    return this.plans.permanentlyDeletePaymentMethod(params.method_id, user?.id ?? '');
+  }
+
   @Delete(':method_id')
   deactivatePaymentMethod(
     @Param() params: UuidMethodIdParam,

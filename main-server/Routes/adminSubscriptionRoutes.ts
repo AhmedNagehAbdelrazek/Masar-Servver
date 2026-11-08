@@ -21,6 +21,7 @@ router.delete('/plans/:plan_id', ...admin, ...planIdValidation, c.deactivatePlan
 router.get('/payment-methods', ...admin, c.listPaymentMethods);
 router.post('/payment-methods', ...admin, ...createPaymentMethodValidation, validate, c.createPaymentMethod);
 router.put('/payment-methods/:method_id', ...admin, ...paymentMethodIdValidation, ...updatePaymentMethodValidation, validate, c.updatePaymentMethod);
+router.delete('/payment-methods/:method_id/permanent', ...admin, ...paymentMethodIdValidation, validate, c.permanentlyDeletePaymentMethod);
 router.delete('/payment-methods/:method_id', ...admin, ...paymentMethodIdValidation, c.deactivatePaymentMethod);
 
 // ===== Subscription admin workflow (US2) =====

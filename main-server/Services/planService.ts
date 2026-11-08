@@ -290,6 +290,24 @@ async function deactivatePaymentMethod(methodId, actorId) {
   return { message: 'PAYMENT_METHOD_DEACTIVATED' };
 }
 
+async function permanentlyDeletePaymentMethod(methodId, actorId) {
+  const method = await PaymentMethod.findByPk(methodId);
+  if (!method) throw ApiErrors.notFound('PAYMENT_METHOD_NOT_FOUND');
+
+  const snapshot = toMethodDTO(method);
+  await method.destroy();
+
+  auditMutation({
+    action: 'payment_method.delete',
+    actorId,
+    resourceType: 'payment_method',
+    resourceId: methodId,
+    payload: snapshot,
+  });
+
+  return { message: 'PAYMENT_METHOD_DELETED' };
+}
+
 module.exports = {
   toPlanDTO,
   toMethodDTO,
@@ -305,6 +323,7 @@ module.exports = {
   createPaymentMethod,
   updatePaymentMethod,
   deactivatePaymentMethod,
+  permanentlyDeletePaymentMethod,
 };
-export { toPlanDTO, toMethodDTO, getActivePlans, getActivePaymentMethods, listPlans, getFreePlan, updateFreePlan, createPlan, updatePlan, deactivatePlan, listPaymentMethods, createPaymentMethod, updatePaymentMethod, deactivatePaymentMethod };
+export { toPlanDTO, toMethodDTO, getActivePlans, getActivePaymentMethods, listPlans, getFreePlan, updateFreePlan, createPlan, updatePlan, deactivatePlan, listPaymentMethods, createPaymentMethod, updatePaymentMethod, deactivatePaymentMethod, permanentlyDeletePaymentMethod };
 export default module.exports;

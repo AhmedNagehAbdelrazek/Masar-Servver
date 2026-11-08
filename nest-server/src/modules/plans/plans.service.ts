@@ -299,4 +299,13 @@ export class PlansService {
     await this.prisma.paymentMethod.update({ where: { id: methodId }, data: { isActive: false } });
     return { message: 'PAYMENT_METHOD_DEACTIVATED' };
   }
+
+  async permanentlyDeletePaymentMethod(methodId: string, _actorId: string): Promise<{ message: string }> {
+    const method = await this.prisma.paymentMethod.findUnique({ where: { id: methodId } });
+    if (!method) {
+      throw new NotFoundException({ message: 'PAYMENT_METHOD_NOT_FOUND', code: 'PAYMENT_METHOD_NOT_FOUND' });
+    }
+    await this.prisma.paymentMethod.delete({ where: { id: methodId } });
+    return { message: 'PAYMENT_METHOD_DELETED' };
+  }
 }

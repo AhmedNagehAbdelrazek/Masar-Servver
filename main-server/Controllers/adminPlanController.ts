@@ -75,6 +75,14 @@ const deactivatePaymentMethod = catchAsync(async (req: Request, res: Response): 
   successResponse(res, result);
 });
 
+const permanentlyDeletePaymentMethod = catchAsync(async (req: Request, res: Response): Promise<void> => {
+  const authReq = req as AuthRequest;
+  const { method_id } = req.params as { method_id: string };
+  const result = await (planService as unknown as { permanentlyDeletePaymentMethod: (id: string, actorId: string) => Promise<unknown> }).permanentlyDeletePaymentMethod(method_id, String(authReq.user?.id));
+  (auditService as unknown as { markResource: (res: Response, r: unknown) => void }).markResource(res, { type: 'payment_method', id: method_id });
+  successResponse(res, result);
+});
+
 const listPendingSubscriptions = catchAsync(async (req: Request, res: Response): Promise<void> => {
   const { status, sort } = req.query as { status?: string; sort?: string };
   const pending = await (subscriptionService as unknown as { listPending: (opts: unknown) => Promise<unknown> }).listPending({ status, sort });
@@ -118,6 +126,7 @@ export {
   createPaymentMethod,
   updatePaymentMethod,
   deactivatePaymentMethod,
+  permanentlyDeletePaymentMethod,
   listPendingSubscriptions,
   getSubscriptionStats,
   getSubscriptionDetail,
@@ -135,6 +144,7 @@ export default {
   createPaymentMethod,
   updatePaymentMethod,
   deactivatePaymentMethod,
+  permanentlyDeletePaymentMethod,
   listPendingSubscriptions,
   getSubscriptionStats,
   getSubscriptionDetail,
