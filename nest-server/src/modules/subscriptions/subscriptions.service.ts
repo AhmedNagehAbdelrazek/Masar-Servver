@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { hasFreeTripsOffer, freeTripsLimit } from '../../common/utils/free-trips.js';
 import { maskPhone } from '../../common/utils/masking.js';
+import { toAbsoluteMediaUrl } from '../../common/utils/media-url.js';
 import type { Prisma } from '../../generated/prisma/client.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { withSerializableRetry } from '../../prisma/transaction.js';
@@ -321,7 +322,7 @@ export class SubscriptionsService {
         },
         payment_method: { name: payment?.name ?? null },
         screenshot_id: sub.screenshotId ?? null,
-        screenshot_url: screenshot?.url ?? null,
+        screenshot_url: toAbsoluteMediaUrl(screenshot?.url ?? null),
         submitted_at: sub.createdAt,
       };
     });
@@ -441,7 +442,7 @@ export class SubscriptionsService {
       transfer: {
         method: payment,
         screenshot_id: sub.screenshotId,
-        screenshot_url: screenshot?.url ?? null,
+        screenshot_url: toAbsoluteMediaUrl(screenshot?.url ?? null),
       },
       history,
     };

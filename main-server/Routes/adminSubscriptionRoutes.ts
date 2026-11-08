@@ -11,6 +11,8 @@ const admin = [protect, roleGuard(['admin'])];
 
 // ===== Plan management =====
 router.get('/plans', ...admin, c.listPlans);
+router.get('/plans/free', ...admin, c.getFreePlan);
+router.put('/plans/free', ...admin, ...updatePlanValidation, validate, c.updateFreePlan);
 router.post('/plans', ...admin, ...createPlanValidation, validate, c.createPlan);
 router.put('/plans/:plan_id', ...admin, ...planIdValidation, ...updatePlanValidation, validate, c.updatePlan);
 router.delete('/plans/:plan_id', ...admin, ...planIdValidation, c.deactivatePlan);
@@ -22,7 +24,9 @@ router.put('/payment-methods/:method_id', ...admin, ...paymentMethodIdValidation
 router.delete('/payment-methods/:method_id', ...admin, ...paymentMethodIdValidation, c.deactivatePaymentMethod);
 
 // ===== Subscription admin workflow (US2) =====
+router.get('/subscriptions/stats', ...admin, c.getSubscriptionStats);
 router.get('/subscriptions/pending', ...admin, c.listPendingSubscriptions);
+router.get('/subscriptions/:subscription_id', ...admin, ...subscriptionIdValidation, validate, c.getSubscriptionDetail);
 router.post('/subscriptions/:subscription_id/approve', ...admin, ...subscriptionIdValidation, validate, c.approveSubscription);
 router.post('/subscriptions/:subscription_id/reject', ...admin, ...rejectSubscriptionValidation, validate, c.rejectSubscription);
 

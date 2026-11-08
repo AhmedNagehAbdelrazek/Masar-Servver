@@ -228,7 +228,7 @@ export class PlansService {
   async getFreePlan(): Promise<Record<string, unknown>> {
     const plan = await this.prisma.subscriptionPlan.findFirst({
       where: { isFree: true },
-      orderBy: { createdAt: 'asc' },
+      orderBy: [{ isActive: 'desc' }, { createdAt: 'asc' }],
     });
     if (!plan) throw new NotFoundException({ message: 'FREE_PLAN_NOT_FOUND', code: 'FREE_PLAN_NOT_FOUND' });
     return toPlanDTO(plan as unknown as PlanRow);
@@ -237,7 +237,7 @@ export class PlansService {
   async updateFreePlan(data: UpdatePlanDto, actorId: string): Promise<Record<string, unknown>> {
     const plan = await this.prisma.subscriptionPlan.findFirst({
       where: { isFree: true },
-      orderBy: { createdAt: 'asc' },
+      orderBy: [{ isActive: 'desc' }, { createdAt: 'asc' }],
     });
     if (!plan) throw new NotFoundException({ message: 'FREE_PLAN_NOT_FOUND', code: 'FREE_PLAN_NOT_FOUND' });
     return this.updatePlan(plan.id, data, actorId);
@@ -263,7 +263,7 @@ export class PlansService {
         accountNumber: data.account_number,
         type: DB_METHOD_TYPE[data.type],
         email: data.email ?? null,
-        isActive: true,
+        isActive: data.is_active ?? true,
       },
     });
     return toMethodDTO(method as unknown as MethodRow);
@@ -285,6 +285,7 @@ export class PlansService {
         ...(data.account_number !== undefined ? { accountNumber: data.account_number } : {}),
         ...(data.type !== undefined ? { type: DB_METHOD_TYPE[data.type] } : {}),
         ...(data.email !== undefined ? { email: data.email } : {}),
+        ...(data.is_active !== undefined ? { isActive: data.is_active } : {}),
       },
     });
     return toMethodDTO(updated as unknown as MethodRow);

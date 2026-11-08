@@ -5,7 +5,9 @@ import { TRIP_STATUS, BOOKING_STATUS, COMPLAINT_STATUS, PENALTY_TYPES, VERIFICAT
 import { parsePagination, buildPagination } from '../utils/pagination';
 import { ApiErrors } from '../utils/ApiError';
 import { maskPhone } from '../utils/masking';
-import { User, DriverProfile, Vehicle, UploadedImage, Trip, Booking, Rating, Complaint, Penalty, DriverSubscription, DocumentReview, VerificationStatusChange } from '../Models';
+import { User, DriverProfile, Vehicle, UploadedImage, Trip, Booking, Rating, Complaint, Penalty, DriverSubscription, DocumentReview, VerificationStatusChange, Notification, TripSeat, RideRequest } from '../Models';
+import notificationService from './notificationService';
+import { toAbsoluteMediaUrl } from '../utils/mediaUrl';
 
 // ===== Canonical document registry (data-model.md) =====
 const DOCUMENT_KEYS = {
@@ -29,6 +31,13 @@ const DRIVER_STATUSES = ['active', 'suspended', 'pending', 'blocked'];
 const STANDING_ACTIONS = ['suspend', 'reactivate', 'unblock'];
 
 const TRIP_ACTIVE_STATUSES = [TRIP_STATUS.PUBLISHED, TRIP_STATUS.FULL, TRIP_STATUS.IN_PROGRESS, TRIP_STATUS.ONGOING];
+
+function startOfUtcDay(offsetDays = 0) {
+  const d = new Date();
+  d.setUTCHours(0, 0, 0, 0);
+  d.setUTCDate(d.getUTCDate() + offsetDays);
+  return d;
+}
 
 // Derived dashboard status buckets (research R7)
 const ACTIVE_BUCKET = {
@@ -110,7 +119,7 @@ function documentEntry(def, profile, vehicle, reviewByKey, imageMap) {
   else status = 'missing';
   return {
     key: def.key,
-    document_url: image ? image.url : null,
+    document_url: toAbsoluteMediaUrl(image ? image.url : null),
     upload_date: image ? image.createdat : null,
     status,
     ...(status === 'rejected' && review?.reason ? { reason: review.reason } : {}),
@@ -226,6 +235,8 @@ async function getSummary() {
     totalDrivers, activeDrivers, totalTrips, activeTrips, totalVehicles,
     pendingDocsCount, pendingDriversRows, unresolvedComplaints,
     topRoutes, recentTripRows, latestComplaints,
+    bookingsToday, tripsToday, totalPassengers, pendingPayments, newRideRequests,
+    completedTrips, cancelledTrips, upcomingTrips,
   ] = await Promise.all([
     User.count({ where: { role: 'driver' } }),
     User.count({ where: ACTIVE_BUCKET }),
@@ -255,6 +266,14 @@ async function getSummary() {
       order: [['createdat', 'DESC']],
       limit: 5,
     }),
+    Booking.count({ where: { createdat: { [Op.gte]: startOfUtcDay() } } }),
+    Trip.count({ where: { departureTime: { [Op.gte]: startOfUtcDay(), [Op.lt]: startOfUtcDay(1) } } }),
+    User.count({ where: { role: 'passenger' } }),
+    DriverSubscription.count({ where: { status: 'pending_approval' } }),
+    RideRequest.count({ where: { status: 'open' } }),
+    Trip.count({ where: { status: TRIP_STATUS.COMPLETED } }),
+    Trip.count({ where: { status: TRIP_STATUS.CANCELLED } }),
+    Trip.count({ where: { status: { [Op.in]: [TRIP_STATUS.PUBLISHED, TRIP_STATUS.FULL] } } }),
   ]);
 
   const aggs = await tripPassengerAggregates(recentTripRows.map((t) => t.id));
@@ -268,6 +287,14 @@ async function getSummary() {
       active_trips: activeTrips,
       total_vehicles: totalVehicles,
       pending_documents: pendingDocsCount,
+      bookings_today: bookingsToday,
+      trips_today: tripsToday,
+      total_passengers: totalPassengers,
+      pending_payments: pendingPayments,
+      new_ride_requests: newRideRequests,
+      completed_trips: completedTrips,
+      cancelled_trips: cancelledTrips,
+      upcoming_trips: upcomingTrips,
     },
     alerts: [
       { type: 'pending_verification_documents', message: 'ALERT_PENDING_VERIFICATION_DOCUMENTS', count: pendingDocsCount },
@@ -429,6 +456,130 @@ async function getDriverStats() {
   return { total_drivers: total, active_drivers: active, suspended_drivers: suspended, pending_drivers: pending };
 }
 
+// CSV export used by the drivers page and the home report button. Mirrors the
+// V2 contract: same filters as listDrivers, masked phones, capped at 5000.
+async function exportDrivers(query) {
+  const where = bucketWhereFor(query.status) || { role: 'driver' };
+  if (query.search) {
+    const term = `%${query.search}%`;
+    where[Op.or] = [{ fullName: { [Op.iLike]: term } }, { phone: { [Op.iLike]: term } }];
+  }
+  if (query.registration_from || query.registration_to) {
+    where.createdat = {};
+    if (query.registration_from) where.createdat[Op.gte] = new Date(`${query.registration_from}T00:00:00.000Z`);
+    if (query.registration_to) where.createdat[Op.lte] = new Date(`${query.registration_to}T23:59:59.999Z`);
+  }
+  const rows = await User.findAll({
+    where,
+    attributes: ['id', 'fullName', 'phone', 'status', 'verificationStatus', 'createdat'],
+    order: [['createdat', 'DESC']],
+    limit: 5000,
+  });
+  const esc = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+  const lines = ['id,full_name,phone,account_status,created_at'];
+  for (const u of rows) {
+    lines.push([
+      u.id,
+      esc(u.fullName),
+      esc(maskPhone(u.phone)),
+      deriveAccountStatus(u),
+      u.createdat ? u.createdat.toISOString() : '',
+    ].join(','));
+  }
+  return lines.join('\n');
+}
+
+async function sendDriverNotification(adminId, driverId, dto) {
+  await getDriverOrThrow(driverId);
+  const notification = await Notification.create({
+    userId: driverId,
+    type: 'ADMIN_NOTICE',
+    title: dto.title,
+    body: dto.body,
+    data: { category: dto.type || 'general', sent_by: adminId },
+    sentVia: ['in_app'],
+  });
+  return {
+    notification: {
+      id: notification.id,
+      user_id: notification.userId,
+      title: notification.title,
+      category: dto.type || 'general',
+      created_at: notification.createdat || notification.createdAt,
+    },
+  };
+}
+
+// Admin override used by the journeys page. Cancels the trip, releases seats,
+// cancels non-terminal bookings and tells both sides. Mirrors the V2 behavior
+// without the 1-hour passenger window.
+async function cancelTrip(adminId, tripId, reason) {
+  const trip = await Trip.findByPk(tripId);
+  if (!trip) throw ApiErrors.notFound('TRIP_NOT_FOUND');
+  if ([TRIP_STATUS.COMPLETED, TRIP_STATUS.CANCELLED].includes(trip.status)) {
+    throw ApiErrors.conflict('TRIP_ALREADY_COMPLETED_OR_CANCELLED');
+  }
+
+  const result = await sequelize.transaction(async (t) => {
+    const [claimed] = await Trip.update(
+      { status: TRIP_STATUS.CANCELLED, isModerated: true, moderationReason: reason || 'Cancelled by administrator', moderatedBy: adminId },
+      { where: { id: tripId, status: { [Op.notIn]: [TRIP_STATUS.COMPLETED, TRIP_STATUS.CANCELLED] } }, transaction: t }
+    );
+    if (!claimed) throw ApiErrors.conflict('TRIP_ALREADY_COMPLETED_OR_CANCELLED');
+
+    const bookings = await Booking.findAll({
+      where: { tripId, status: { [Op.in]: [BOOKING_STATUS.PENDING, BOOKING_STATUS.CONFIRMED] } },
+      transaction: t,
+    });
+    if (bookings.length > 0) {
+      await Booking.update(
+        {
+          status: BOOKING_STATUS.CANCELLED,
+          cancellationReason: reason || 'Cancelled by administrator',
+          cancelledBy: adminId,
+          cancelledAt: new Date(),
+        },
+        { where: { id: { [Op.in]: bookings.map((b) => b.id) } }, transaction: t }
+      );
+      const seatNumbers = bookings.flatMap((b) => (b.seatNumbers && b.seatNumbers.length ? b.seatNumbers : b.seatNumber != null ? [b.seatNumber] : []));
+      if (seatNumbers.length > 0) {
+        await TripSeat.update({ seatType: 'available' }, { where: { tripId, seatNumber: { [Op.in]: seatNumbers } }, transaction: t });
+      }
+      const passengerIds = [...new Set(bookings.map((b) => b.passengerId))];
+      for (const passengerId of passengerIds) {
+        try {
+          await Notification.create({
+            userId: passengerId,
+            type: 'TRIP_CANCELLED',
+            title: 'Trip cancelled',
+            body: `The trip ${trip.originCity} → ${trip.destinationCity} was cancelled by support.${reason ? ` Reason: ${reason}` : ''}`,
+            data: { trip_id: tripId, reason: reason || null },
+            sentVia: ['in_app'],
+          }, { transaction: t });
+        } catch (err) {
+          console.warn('[adminDashboardService] trip cancellation notification failed:', err.message);
+        }
+      }
+    }
+    return { bookings: bookings.length };
+  });
+
+  try {
+    await notificationService.sendToUser(await User.findByPk(trip.driverId), 'TRIP_CANCELLED', {
+      channels: ['in_app', 'push'],
+      vars: { route: `${trip.originCity} → ${trip.destinationCity}`, reason: reason || '' },
+      data: { trip_id: tripId, reason: reason || null },
+    });
+  } catch (err) {
+    console.warn('[adminDashboardService] driver trip cancellation notification failed:', err.message);
+  }
+
+  return {
+    trip: { id: tripId, status: TRIP_STATUS.CANCELLED, cancellation_reason: reason || null },
+    cancelled_bookings: result.bookings,
+  };
+}
+
 // ===== US3: Dossier tabs =====
 
 async function getDriverHeader(driverId) {
@@ -447,7 +598,7 @@ async function getDriverHeader(driverId) {
     phone: maskPhone(driver.phone),
     age: driver.age != null ? Number(driver.age) : null,
     city: null,
-    avatar_url: driver.avatarUrl,
+    avatar_url: toAbsoluteMediaUrl(driver.avatarUrl),
     account_status: deriveAccountStatus(driver),
     trip_stats: { total_trips: totalTrips, completed_trips: completedTrips, canceled_trips: canceledTrips },
     balance: Number(driver.totalBalance || 0),
@@ -512,9 +663,15 @@ async function listDriverTrips(driverId, query) {
     data: rows.map((t) => ({
       trip_id: t.id,
       route: { origin: t.originCity, destination: t.destinationCity },
+      from: t.originCity,
+      to: t.destinationCity,
       date_time: t.departureTime,
+      datetime: t.departureTime,
+      seats: Number(t.totalSeats),
+      bookings: aggs.get(t.id)?.reservations_count ?? 0,
       passengers_count: aggs.get(t.id)?.passengers_count ?? 0,
       reservations_count: aggs.get(t.id)?.reservations_count ?? 0,
+      seat_price: Number(t.farePerSeat),
       price: Number(t.farePerSeat),
       status: t.status,
     })),
@@ -543,6 +700,19 @@ async function getDriverEvaluations(driverId, query) {
     for (const tag of row.tags || []) tagCounts.set(tag, (tagCounts.get(tag) || 0) + 1);
   }
   const topTags = [...tagCounts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 10).map(([t]) => t);
+  const reviews = rows.map((r) => ({
+    id: r.id,
+    passenger_name: r.rater?.fullName || 'Unknown',
+    passenger_avatar: toAbsoluteMediaUrl(r.rater?.avatarUrl),
+    rating: r.stars,
+    stars: r.stars,
+    comment: r.review,
+    text: r.review,
+    tags: r.tags || [],
+    was_late: r.wasLate,
+    date: r.createdat,
+    created_at: r.createdat,
+  }));
   return {
     summary: {
       average_rating: summaryRow?.get('avg') ? parseFloat(summaryRow.get('avg')) : 0,
@@ -550,14 +720,8 @@ async function getDriverEvaluations(driverId, query) {
     },
     distribution: [5, 4, 3, 2, 1].map((rating) => ({ rating, count: countsByStar.get(rating) || 0 })),
     top_tags: topTags,
-    reviews: rows.map((r) => ({
-      passenger_name: r.rater?.fullName || 'Unknown',
-      passenger_avatar: r.rater?.avatarUrl || null,
-      rating: r.stars,
-      comment: r.review,
-      was_late: r.wasLate,
-      date: r.createdat,
-    })),
+    data: reviews,
+    reviews,
     pagination: buildPagination(count, page, limit),
   };
 }
@@ -604,6 +768,8 @@ async function getAccountLog(driverId) {
       complaints_by: complaints.filter((c) => c.reporterId === driverId).length,
     },
     log,
+    entries: log,
+    rows: log,
   };
 }
 
@@ -629,7 +795,7 @@ async function getCarDetails(driverId) {
       plate_number: vehicle.plateNumber,
       seats: vehicle.seats,
     },
-    car_photos: { front: front ? front.url : null, rear: rear ? rear.url : null },
+    car_photos: { front: toAbsoluteMediaUrl(front ? front.url : null), rear: toAbsoluteMediaUrl(rear ? rear.url : null) },
     document_status: entries.map(({ key, status }) => ({ key, status })),
     vehicle_verified: vehicle.isVerified,
   };
@@ -733,6 +899,13 @@ async function decideDocument(adminId, driverId, documentKey, decision, reason) 
     });
   }
 
+  // The dashboard only approves individual documents. Once every uploaded
+  // driver/vehicle document is approved the driver must actually become
+  // verified (and receive the message); a rejected document must mark the
+  // driver rejected and tell them why. Without this the admin's decision was
+  // recorded on document_reviews only and the driver stayed pending forever.
+  const verification = await syncVerificationFromDocuments(driverId, adminId, documentKey, decision, reason);
+
   return {
     document: {
       key: documentKey,
@@ -741,7 +914,138 @@ async function decideDocument(adminId, driverId, documentKey, decision, reason) 
       decided_at: review.decidedAt,
       ...(reason ? { reason } : {}),
     },
+    ...(verification ? { verification } : {}),
   };
+}
+
+const REQUIRED_DOCUMENTS = ALL_DOCUMENT_KEYS.filter((d) => d.source != null);
+
+function documentImageId(def, profile, vehicle) {
+  return def.source === 'profile' ? profile?.[def.column] : vehicle?.[def.column];
+}
+
+/**
+ * Re-derive the driver-level verification state from the per-document review
+ * rows. Called after every document decision so the existing dossier buttons
+ * (اعتماد / رفض) produce the same outcome as the dedicated verification
+ * approve/reject endpoints.
+ */
+async function syncVerificationFromDocuments(driverId, adminId, documentKey, decision, reason) {
+  const [driver, profile, vehicle, reviews] = await Promise.all([
+    User.findByPk(driverId),
+    DriverProfile.findOne({ where: { driverId } }),
+    Vehicle.findOne({ where: { driverId } }),
+    DocumentReview.findAll({ where: { driverId } }),
+  ]);
+  if (!driver) return null;
+
+  const reviewByKey = new Map(reviews.map((r) => [r.documentKey, r]));
+  const rejectedKeys = REQUIRED_DOCUMENTS
+    .filter((d) => reviewByKey.get(d.key)?.decision === 'rejected')
+    .map((d) => d.key);
+  const hasRejected = rejectedKeys.length > 0 || decision === 'rejected';
+  const allUploaded = REQUIRED_DOCUMENTS.every((d) => documentImageId(d, profile, vehicle) != null);
+  const allApproved = allUploaded && REQUIRED_DOCUMENTS.every((d) => reviewByKey.get(d.key)?.decision === 'approved');
+
+  if (hasRejected) {
+    const rejectionReason = reason
+      || reviewByKey.get(documentKey)?.reason
+      || 'One or more documents were rejected';
+    const fields = rejectedKeys.length > 0 ? rejectedKeys : [documentKey];
+    const alreadyRejected = driver.verificationStatus === VERIFICATION_STATUS.REJECTED
+      && driver.isVerified === false
+      && driver.verificationRejectionReason === rejectionReason;
+
+    if (profile) await profile.update({ idVerified: false });
+    if (vehicle) {
+      await vehicle.update({
+        isVerified: false,
+        verificationNotes: rejectionReason,
+        verificationRejectionReason: rejectionReason,
+        verificationRejectedAt: new Date(),
+      });
+    }
+    if (!alreadyRejected) {
+      const fromStatus = driver.verificationStatus;
+      await driver.update({
+        isVerified: false,
+        verificationStatus: VERIFICATION_STATUS.REJECTED,
+        verificationRejectedAt: new Date(),
+        verificationRejectionReason: rejectionReason,
+        verificationRejectionFields: fields,
+      });
+      await VerificationStatusChange.create({
+        driverId,
+        fromStatus,
+        toStatus: VERIFICATION_STATUS.REJECTED,
+        reason: rejectionReason,
+        markedFields: fields,
+        changedBy: adminId,
+      });
+      try {
+        await notificationService.sendToUser(driver, 'VERIFICATION_REJECTED', {
+          channels: ['in_app', 'push'],
+          vars: { subject: 'identity documents', reason: rejectionReason },
+          data: { driver_id: driverId, reason: rejectionReason, fields_to_fix: fields },
+        });
+      } catch (err) {
+        console.warn('[adminDashboardService] verification rejection notification failed:', err.message);
+      }
+    }
+    return {
+      status: VERIFICATION_STATUS.REJECTED,
+      reason: rejectionReason,
+      fields_to_fix: fields,
+      notified: !alreadyRejected,
+    };
+  }
+
+  if (!allApproved) {
+    return { status: driver.verificationStatus, complete: false };
+  }
+
+  const alreadyApproved = driver.verificationStatus === VERIFICATION_STATUS.APPROVED
+    && driver.isVerified === true
+    && Boolean(profile?.idVerified)
+    && Boolean(vehicle?.isVerified);
+  if (alreadyApproved) {
+    return { status: VERIFICATION_STATUS.APPROVED, complete: true, notified: false };
+  }
+
+  const fromStatus = driver.verificationStatus;
+  if (profile) await profile.update({ idVerified: true });
+  if (vehicle) {
+    await vehicle.update({
+      isVerified: true,
+      verifiedBy: adminId,
+      verifiedAt: new Date(),
+      verificationRejectionReason: null,
+      verificationNotes: null,
+    });
+  }
+  await driver.update({
+    isVerified: true,
+    verificationStatus: VERIFICATION_STATUS.APPROVED,
+    verificationRejectedAt: null,
+    verificationRejectionReason: null,
+    verificationRejectionFields: [],
+  });
+  await VerificationStatusChange.create({
+    driverId,
+    fromStatus,
+    toStatus: VERIFICATION_STATUS.APPROVED,
+    changedBy: adminId,
+  });
+  try {
+    await notificationService.sendToUser(driver, 'VERIFICATION_APPROVED', {
+      channels: ['in_app', 'push'],
+      vars: { subject: 'identity documents' },
+      data: { driver_id: driverId },
+    });
+  } catch (err) {
+    console.warn('[adminDashboardService] verification approval notification failed:', err.message);
+  }
+  return { status: VERIFICATION_STATUS.APPROVED, complete: true, notified: true };
 }
 
 // ===== US5: Shared listings =====
@@ -799,6 +1103,9 @@ module.exports = {
   getLatestComplaints,
   listDrivers,
   getDriverStats,
+  exportDrivers,
+  sendDriverNotification,
+  cancelTrip,
   getDriverHeader,
   getDriverOverview,
   listDriverTrips,
@@ -809,7 +1116,8 @@ module.exports = {
   setDriverStatus,
   applyStandingAction,
   decideDocument,
+  syncVerificationFromDocuments,
   listReservations,
 };
-export { DOCUMENT_KEYS, ALL_DOCUMENT_KEYS, deriveAccountStatus, getSummary, getRecentTrips, getTopRoutes, getPendingRequests, getLatestComplaints, listDrivers, getDriverStats, getDriverHeader, getDriverOverview, listDriverTrips, getDriverEvaluations, getAccountLog, getCarDetails, getDocuments, setDriverStatus, applyStandingAction, decideDocument, listReservations };
+export { DOCUMENT_KEYS, ALL_DOCUMENT_KEYS, deriveAccountStatus, getSummary, getRecentTrips, getTopRoutes, getPendingRequests, getLatestComplaints, listDrivers, getDriverStats, exportDrivers, sendDriverNotification, cancelTrip, getDriverHeader, getDriverOverview, listDriverTrips, getDriverEvaluations, getAccountLog, getCarDetails, getDocuments, setDriverStatus, applyStandingAction, decideDocument, syncVerificationFromDocuments, listReservations };
 export default module.exports;

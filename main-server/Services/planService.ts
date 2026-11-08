@@ -1,6 +1,6 @@
 // @ts-nocheck
-import { SubscriptionPlan, PaymentMethod } from '../Models';
-import { Op } from 'sequelize';
+import { SubscriptionPlan, PaymentMethod, DriverSubscription } from '../Models';
+import { Op, fn, col } from 'sequelize';
 import { ApiErrors } from '../utils/ApiError';
 import { REDIS_KEYS, CACHE_TTL } from '../utils/redisKeys';
 import { getKey, setKey, deleteKey } from '../config/redis';
@@ -95,8 +95,20 @@ async function getActivePaymentMethods() {
  * Admin: list all plans including inactive.
  */
 async function listPlans() {
-  const plans = await SubscriptionPlan.findAll({ order: [['createdat', 'ASC']] });
-  return plans.map(toPlanDTO);
+  const [plans, activeCounts] = await Promise.all([
+    SubscriptionPlan.findAll({ order: [['createdat', 'ASC']] }),
+    DriverSubscription.findAll({
+      attributes: ['planId', [fn('COUNT', col('id')), 'count']],
+      where: { status: 'active' },
+      group: ['planId'],
+      raw: true,
+    }),
+  ]);
+  const countByPlan = new Map(activeCounts.map((row) => [row.planId, Number(row.count)]));
+  return plans.map((plan) => ({
+    ...toPlanDTO(plan),
+    active_subscribers: countByPlan.get(plan.id) || 0,
+  }));
 }
 
 async function ensureSingleFreePlan({ isFree, excludeId = null }) {
@@ -113,6 +125,24 @@ async function ensureSingleFreePlan({ isFree, excludeId = null }) {
       'FREE_PLAN_EXISTS'
     );
   }
+}
+
+async function getFreePlan() {
+  const plan = await SubscriptionPlan.findOne({
+    where: { isFree: true },
+    order: [['isActive', 'DESC'], ['createdat', 'ASC']],
+  });
+  if (!plan) throw ApiErrors.notFound('FREE_PLAN_NOT_FOUND');
+  return toPlanDTO(plan);
+}
+
+async function updateFreePlan(data, actorId) {
+  const plan = await SubscriptionPlan.findOne({
+    where: { isFree: true },
+    order: [['isActive', 'DESC'], ['createdat', 'ASC']],
+  });
+  if (!plan) throw ApiErrors.notFound('FREE_PLAN_NOT_FOUND');
+  return updatePlan(plan.id, data, actorId);
 }
 
 async function createPlan(data, actorId) {
@@ -148,7 +178,8 @@ async function updatePlan(planId, data, actorId) {
   if (!plan) throw ApiErrors.notFound('PLAN_NOT_FOUND');
 
   const isFree = data.is_free !== undefined ? Boolean(data.is_free) : plan.isFree;
-  await ensureSingleFreePlan({ isFree, excludeId: planId });
+  const willBeActive = data.is_active !== undefined ? Boolean(data.is_active) : plan.isActive;
+  if (isFree && willBeActive) await ensureSingleFreePlan({ isFree, excludeId: planId });
 
   if (data.name !== undefined) plan.name = data.name;
   if (data.period_days !== undefined) plan.periodDays = data.period_days;
@@ -158,6 +189,7 @@ async function updatePlan(planId, data, actorId) {
   if (data.features !== undefined) plan.features = data.features || [];
   if (data.is_free !== undefined) plan.isFree = isFree;
   if (data.free_offer !== undefined) plan.freeOffer = isFree ? data.free_offer : null;
+  if (data.is_active !== undefined) plan.isActive = willBeActive;
 
   await plan.save();
 
@@ -203,7 +235,7 @@ async function createPaymentMethod(data, actorId) {
     accountNumber: data.account_number,
     type: data.type,
     email: data.email || null,
-    isActive: true,
+    isActive: data.is_active !== undefined ? Boolean(data.is_active) : true,
   });
 
   auditMutation({
@@ -225,6 +257,7 @@ async function updatePaymentMethod(methodId, data, actorId) {
   if (data.account_number !== undefined) method.accountNumber = data.account_number;
   if (data.type !== undefined) method.type = data.type;
   if (data.email !== undefined) method.email = data.email || null;
+  if (data.is_active !== undefined) method.isActive = Boolean(data.is_active);
 
   await method.save();
 
@@ -263,6 +296,8 @@ module.exports = {
   getActivePlans,
   getActivePaymentMethods,
   listPlans,
+  getFreePlan,
+  updateFreePlan,
   createPlan,
   updatePlan,
   deactivatePlan,
@@ -271,5 +306,5 @@ module.exports = {
   updatePaymentMethod,
   deactivatePaymentMethod,
 };
-export { toPlanDTO, toMethodDTO, getActivePlans, getActivePaymentMethods, listPlans, createPlan, updatePlan, deactivatePlan, listPaymentMethods, createPaymentMethod, updatePaymentMethod, deactivatePaymentMethod };
+export { toPlanDTO, toMethodDTO, getActivePlans, getActivePaymentMethods, listPlans, getFreePlan, updateFreePlan, createPlan, updatePlan, deactivatePlan, listPaymentMethods, createPaymentMethod, updatePaymentMethod, deactivatePaymentMethod };
 export default module.exports;

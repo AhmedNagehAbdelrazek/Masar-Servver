@@ -7,6 +7,7 @@ import { parsePagination, buildPagination } from '../utils/pagination';
 import { VERIFICATION_STATUS } from '../config/constants';
 import notificationService from './notificationService';
 import auditService from './auditService';
+import { toAbsoluteMediaUrl } from '../utils/mediaUrl';
 
 async function syncUserVerification(driverId) {
   const profile = await DriverProfile.findOne({ where: { driverId } });
@@ -39,7 +40,7 @@ async function resolveImageUrls(imageIds) {
   const ids = [...new Set(imageIds.filter(Boolean))];
   if (ids.length === 0) return new Map();
   const images = await UploadedImage.findAll({ where: { id: { [Op.in]: ids } } });
-  return new Map(images.map((img) => [img.id, img.url]));
+  return new Map(images.map((img) => [img.id, toAbsoluteMediaUrl(img.url)]));
 }
 
 function buildDocuments(record, labels, urls) {

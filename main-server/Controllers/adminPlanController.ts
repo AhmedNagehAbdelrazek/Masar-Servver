@@ -12,6 +12,18 @@ const listPlans = catchAsync(async (req: Request, res: Response): Promise<void> 
   successResponse(res, { plans });
 });
 
+const getFreePlan = catchAsync(async (req: Request, res: Response): Promise<void> => {
+  const plan = await (planService as unknown as { getFreePlan: () => Promise<unknown> }).getFreePlan();
+  successResponse(res, { plan });
+});
+
+const updateFreePlan = catchAsync(async (req: Request, res: Response): Promise<void> => {
+  const authReq = req as AuthRequest;
+  const plan = await (planService as unknown as { updateFreePlan: (body: unknown, actorId: string) => Promise<{ id: string }> }).updateFreePlan(req.body, String(authReq.user?.id));
+  (auditService as unknown as { markResource: (res: Response, r: unknown) => void }).markResource(res, { type: 'subscription_plan', id: plan.id });
+  successResponse(res, { plan });
+});
+
 const createPlan = catchAsync(async (req: Request, res: Response): Promise<void> => {
   const authReq = req as AuthRequest;
   const plan = await (planService as unknown as { createPlan: (body: unknown, actorId: string) => Promise<{ id: string }> }).createPlan(req.body, String(authReq.user?.id));
@@ -69,6 +81,15 @@ const listPendingSubscriptions = catchAsync(async (req: Request, res: Response):
   successResponse(res, { pending });
 });
 
+const getSubscriptionStats = catchAsync(async (req: Request, res: Response): Promise<void> => {
+  successResponse(res, await (subscriptionService as unknown as { getStats: () => Promise<unknown> }).getStats());
+});
+
+const getSubscriptionDetail = catchAsync(async (req: Request, res: Response): Promise<void> => {
+  const { subscription_id } = req.params as { subscription_id: string };
+  successResponse(res, await (subscriptionService as unknown as { getDetail: (id: string) => Promise<unknown> }).getDetail(subscription_id));
+});
+
 const approveSubscription = catchAsync(async (req: Request, res: Response): Promise<void> => {
   const authReq = req as AuthRequest;
   const { subscription_id } = req.params as { subscription_id: string };
@@ -88,6 +109,8 @@ const rejectSubscription = catchAsync(async (req: Request, res: Response): Promi
 
 export {
   listPlans,
+  getFreePlan,
+  updateFreePlan,
   createPlan,
   updatePlan,
   deactivatePlan,
@@ -96,11 +119,15 @@ export {
   updatePaymentMethod,
   deactivatePaymentMethod,
   listPendingSubscriptions,
+  getSubscriptionStats,
+  getSubscriptionDetail,
   approveSubscription,
   rejectSubscription,
 };
 export default {
   listPlans,
+  getFreePlan,
+  updateFreePlan,
   createPlan,
   updatePlan,
   deactivatePlan,
@@ -109,6 +136,8 @@ export default {
   updatePaymentMethod,
   deactivatePaymentMethod,
   listPendingSubscriptions,
+  getSubscriptionStats,
+  getSubscriptionDetail,
   approveSubscription,
   rejectSubscription,
 };

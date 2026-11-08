@@ -1,5 +1,5 @@
 import { Transform } from 'class-transformer';
-import { IsEmail, IsIn, IsNotEmpty, IsOptional, IsString, IsUUID, MaxLength } from 'class-validator';
+import { IsBoolean, IsEmail, IsIn, IsNotEmpty, IsOptional, IsString, IsUUID, MaxLength } from 'class-validator';
 
 // Ports of create/update/param validators for payment methods.
 // Admin mount uses utils/validators/planValidator.ts (email '' -> null);
@@ -27,6 +27,10 @@ export class CreatePaymentMethodDto {
   @IsEmail()
   @Transform(({ value }: { value: unknown }) => (value === '' ? null : value))
   email?: string | null;
+
+  @IsOptional()
+  @IsBoolean()
+  is_active?: boolean;
 }
 
 export class UpdatePaymentMethodDto {
@@ -50,6 +54,10 @@ export class UpdatePaymentMethodDto {
   @IsEmail()
   @Transform(({ value }: { value: unknown }) => (value === '' ? null : value))
   email?: string | null;
+
+  @IsOptional()
+  @IsBoolean()
+  is_active?: boolean;
 }
 
 // Express applies methodParamValidation WITH `validate` on admin PUT/DELETE

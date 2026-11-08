@@ -38,6 +38,43 @@ const getDriverStats = catchAsync(async (req: Request, res: Response): Promise<v
   successResponse(res, await (adminDashboardService as unknown as { getDriverStats: () => Promise<unknown> }).getDriverStats());
 });
 
+const exportDrivers = catchAsync(async (req: Request, res: Response): Promise<void> => {
+  const csv = await (adminDashboardService as unknown as { exportDrivers: (q: unknown) => Promise<string> }).exportDrivers(req.query);
+  res.setHeader('Content-Type', 'text/csv');
+  res.setHeader('Content-Disposition', 'attachment; filename="drivers.csv"');
+  res.status(200).send(csv);
+});
+
+const sendDriverNotification = catchAsync(async (req: Request, res: Response): Promise<void> => {
+  const authReq = req as AuthRequest;
+  const { driver_id } = req.params as { driver_id: string };
+  const dto = req.body as { title: string; body: string; type?: string };
+  const result = await (adminDashboardService as unknown as { sendDriverNotification: (actorId: string, driverId: string, dto: unknown) => Promise<unknown> }).sendDriverNotification(String(authReq.user?.id), driver_id, dto);
+  (auditService as unknown as { track: (p: unknown) => void }).track({
+    action: 'dashboard.driver.notify',
+    resourceType: 'user',
+    resourceId: driver_id,
+    actorId: authReq.user?.id,
+    payload: { category: dto.type || 'general' },
+  });
+  successResponse(res, result);
+});
+
+const cancelTrip = catchAsync(async (req: Request, res: Response): Promise<void> => {
+  const authReq = req as AuthRequest;
+  const { trip_id } = req.params as { trip_id: string };
+  const { reason } = req.body as { reason?: string };
+  const result = await (adminDashboardService as unknown as { cancelTrip: (actorId: string, tripId: string, reason?: string) => Promise<unknown> }).cancelTrip(String(authReq.user?.id), trip_id, reason);
+  (auditService as unknown as { track: (p: unknown) => void }).track({
+    action: 'dashboard.trip.cancel',
+    resourceType: 'trip',
+    resourceId: trip_id,
+    actorId: authReq.user?.id,
+    payload: { reason: reason || null },
+  });
+  successResponse(res, result);
+});
+
 const getDriverHeader = catchAsync(async (req: Request, res: Response): Promise<void> => {
   const { driver_id } = req.params as { driver_id: string };
   successResponse(res, await (adminDashboardService as unknown as { getDriverHeader: (id: string) => Promise<unknown> }).getDriverHeader(driver_id));
@@ -151,6 +188,9 @@ export {
   getLatestComplaints,
   listDrivers,
   getDriverStats,
+  exportDrivers,
+  sendDriverNotification,
+  cancelTrip,
   getDriverHeader,
   getDriverOverview,
   listDriverTrips,
@@ -173,6 +213,9 @@ export default {
   getLatestComplaints,
   listDrivers,
   getDriverStats,
+  exportDrivers,
+  sendDriverNotification,
+  cancelTrip,
   getDriverHeader,
   getDriverOverview,
   listDriverTrips,

@@ -2,12 +2,15 @@ import {
   BadRequestException,
   ConflictException,
   Injectable,
+  Logger,
   NotFoundException,
   UnprocessableEntityException,
 } from '@nestjs/common';
 import type { Prisma } from '../../generated/prisma/client.js';
 import { buildPagination, parsePagination } from '../../common/utils/pagination.js';
+import { toAbsoluteMediaUrl } from '../../common/utils/media-url.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
+import { NotificationsService, type NotifyUser } from '../notifications/notifications.service.js';
 import type { DriversListQuery, DriverTripsQuery, RecentTripsQuery, ReservationsQuery } from './dto/dashboard-queries.dto.js';
 
 // Port of main-server/Services/adminDashboardService.ts (Sequelize -> Prisma).
@@ -153,7 +156,12 @@ function recentTripShape(
 
 @Injectable()
 export class AdminDashboardService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly logger = new Logger(AdminDashboardService.name);
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notifications: NotificationsService,
+  ) {}
 
   private async getDriverOrThrow(driverId: string): Promise<DossierDriver> {
     const driver = await this.prisma.user.findUnique({ where: { id: driverId } });
@@ -254,7 +262,7 @@ export class AdminDashboardService {
     else status = 'missing';
     return {
       key: def.key,
-      document_url: image ? image.url : null,
+      document_url: image ? toAbsoluteMediaUrl(image.url) : null,
       upload_date: image ? image.createdAt : null,
       status,
       ...(status === 'rejected' && review?.reason ? { reason: review.reason } : {}),
@@ -602,7 +610,7 @@ export class AdminDashboardService {
       phone: maskPhone(driver.phone),
       age: driver.age != null ? Number(driver.age) : null,
       city: null,
-      avatar_url: driver.avatarUrl,
+      avatar_url: toAbsoluteMediaUrl(driver.avatarUrl),
       account_status: deriveAccountStatus(driver),
       trip_stats: { total_trips: totalTrips, completed_trips: completedTrips, canceled_trips: canceledTrips },
       balance: Number(driver.totalBalance || 0),
@@ -722,7 +730,7 @@ export class AdminDashboardService {
       top_tags: topTags,
       reviews: rows.map((r) => ({
         passenger_name: r.rater?.fullName || 'Unknown',
-        passenger_avatar: r.rater?.avatarUrl || null,
+        passenger_avatar: toAbsoluteMediaUrl(r.rater?.avatarUrl),
         rating: r.stars,
         comment: r.review,
         was_late: r.wasLate,
@@ -801,7 +809,7 @@ export class AdminDashboardService {
         plate_number: vehicle.plateNumber,
         seats: vehicle.seats,
       },
-      car_photos: { front: front ? front.url : null, rear: rear ? rear.url : null },
+      car_photos: { front: toAbsoluteMediaUrl(front ? front.url : null), rear: toAbsoluteMediaUrl(rear ? rear.url : null) },
       document_status: entries.map(({ key, status }) => ({ key, status })),
       vehicle_verified: vehicle.isVerified,
     };
@@ -959,6 +967,17 @@ export class AdminDashboardService {
       });
     }
 
+    // Approving every uploaded document must actually verify the driver and
+    // notify them; rejecting one must mark the driver rejected and send the
+    // reason. The per-document review alone left drivers pending forever.
+    const verification = await this.syncVerificationFromDocuments(
+      driverId,
+      adminId,
+      documentKey,
+      decision,
+      reason,
+    );
+
     return {
       document: {
         key: documentKey,
@@ -967,7 +986,164 @@ export class AdminDashboardService {
         decided_at: review.decidedAt,
         ...(reason ? { reason } : {}),
       },
+      ...(verification ? { verification } : {}),
     };
+  }
+
+  private async syncVerificationFromDocuments(
+    driverId: string,
+    adminId: string,
+    documentKey: string,
+    decision: 'approved' | 'rejected',
+    reason?: string | null,
+  ): Promise<Record<string, unknown> | null> {
+    const required = ALL_DOCUMENT_KEYS.filter((d) => d.source != null);
+    const [driver, profile, vehicle, reviews] = await Promise.all([
+      this.prisma.user.findUnique({ where: { id: driverId } }),
+      this.prisma.driverProfile.findUnique({ where: { driverId } }),
+      this.prisma.vehicle.findUnique({ where: { driverId } }),
+      this.prisma.documentReview.findMany({ where: { driverId } }),
+    ]);
+    if (!driver) return null;
+
+    const profileRow = profile as unknown as Record<string, unknown> | null;
+    const vehicleRow = vehicle as unknown as Record<string, unknown> | null;
+    const reviewByKey = new Map(reviews.map((r) => [r.documentKey, r]));
+    const rejectedKeys = required
+      .filter((d) => reviewByKey.get(d.key)?.decision === 'rejected')
+      .map((d) => d.key);
+    const hasRejected = rejectedKeys.length > 0 || decision === 'rejected';
+    const allUploaded = required.every((d) => {
+      const value = d.source === 'profile'
+        ? profileRow?.[d.column as string]
+        : vehicleRow?.[d.column as string];
+      return value != null;
+    });
+    const allApproved = allUploaded
+      && required.every((d) => reviewByKey.get(d.key)?.decision === 'approved');
+
+    if (hasRejected) {
+      const rejectionReason = reason
+        || reviewByKey.get(documentKey)?.reason
+        || 'One or more documents were rejected';
+      const fields = rejectedKeys.length > 0 ? rejectedKeys : [documentKey];
+      const alreadyRejected = driver.verificationStatus === 'rejected'
+        && driver.isVerified === false
+        && driver.verificationRejectionReason === rejectionReason;
+
+      if (profile) {
+        await this.prisma.driverProfile.update({ where: { id: profile.id }, data: { idVerified: false } });
+      }
+      if (vehicle) {
+        await this.prisma.vehicle.update({
+          where: { id: vehicle.id },
+          data: {
+            isVerified: false,
+            verificationNotes: rejectionReason,
+            verificationRejectionReason: rejectionReason,
+            verificationRejectedAt: new Date(),
+          },
+        });
+      }
+      if (!alreadyRejected) {
+        const fromStatus = driver.verificationStatus;
+        await this.prisma.user.update({
+          where: { id: driverId },
+          data: {
+            isVerified: false,
+            verificationStatus: 'rejected',
+            verificationRejectedAt: new Date(),
+            verificationRejectionReason: rejectionReason,
+            verificationRejectionFields: fields as never,
+          },
+        });
+        await this.prisma.verificationStatusChange.create({
+          data: {
+            driverId,
+            fromStatus: fromStatus as never,
+            toStatus: 'rejected',
+            reason: rejectionReason,
+            markedFields: fields as never,
+            changedBy: adminId,
+          },
+        });
+        try {
+          await this.notifications.sendToUser(
+            driver as unknown as NotifyUser,
+            'VERIFICATION_REJECTED',
+            {
+              channels: ['in_app', 'push'],
+              vars: { subject: 'identity documents', reason: rejectionReason },
+              data: { driver_id: driverId, reason: rejectionReason, fields_to_fix: fields },
+            },
+          );
+        } catch (err) {
+          this.logger.warn(`verification rejection notification failed: ${(err as Error).message}`);
+        }
+      }
+      return { status: 'rejected', reason: rejectionReason, fields_to_fix: fields, notified: !alreadyRejected };
+    }
+
+    if (!allApproved) {
+      return { status: driver.verificationStatus, complete: false };
+    }
+
+    const alreadyApproved = driver.verificationStatus === 'approved'
+      && driver.isVerified === true
+      && Boolean(profile?.idVerified)
+      && Boolean(vehicle?.isVerified);
+    if (alreadyApproved) {
+      return { status: 'approved', complete: true, notified: false };
+    }
+
+    const fromStatus = driver.verificationStatus;
+    if (profile) {
+      await this.prisma.driverProfile.update({ where: { id: profile.id }, data: { idVerified: true } });
+    }
+    if (vehicle) {
+      await this.prisma.vehicle.update({
+        where: { id: vehicle.id },
+        data: {
+          isVerified: true,
+          verifiedBy: adminId,
+          verifiedAt: new Date(),
+          verificationRejectionReason: null,
+          verificationNotes: null,
+        },
+      });
+    }
+    await this.prisma.user.update({
+      where: { id: driverId },
+      data: {
+        isVerified: true,
+        verificationStatus: 'approved',
+        verificationRejectedAt: null,
+        verificationRejectionReason: null,
+        verificationRejectionFields: [] as never,
+      },
+    });
+    await this.prisma.verificationStatusChange.create({
+      data: {
+        driverId,
+        fromStatus: fromStatus as never,
+        toStatus: 'approved',
+        changedBy: adminId,
+      },
+    });
+    try {
+      await this.notifications.sendToUser(
+        driver as unknown as NotifyUser,
+        'VERIFICATION_APPROVED',
+        {
+          channels: ['in_app', 'push'],
+          vars: { subject: 'identity documents' },
+          data: { driver_id: driverId },
+        },
+      );
+    } catch (err) {
+      this.logger.warn(`verification approval notification failed: ${(err as Error).message}`);
+    }
+    return { status: 'approved', complete: true, notified: true };
   }
 
   // Figma 9928:23297 (إرسال إشعار للسائق): custom title/body + category chips.

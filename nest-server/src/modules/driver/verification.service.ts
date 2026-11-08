@@ -2,6 +2,7 @@ import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import type { Prisma } from '../../generated/prisma/client.js';
 import { maskPhone } from '../../common/utils/masking.js';
 import { buildPagination, parsePagination } from '../../common/utils/pagination.js';
+import { toAbsoluteMediaUrl } from '../../common/utils/media-url.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { NotificationsService } from '../notifications/notifications.service.js';
 
@@ -86,7 +87,7 @@ export class VerificationService {
     const ids = [...new Set(imageIds.filter((id): id is number => typeof id === 'number'))];
     if (ids.length === 0) return new Map();
     const images = await this.prisma.uploadedImage.findMany({ where: { id: { in: ids } } });
-    return new Map(images.map((img) => [img.id, img.url]));
+    return new Map(images.map((img) => [img.id, toAbsoluteMediaUrl(img.url) as string]));
   }
 
   private buildDocuments(

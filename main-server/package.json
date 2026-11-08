@@ -13,6 +13,7 @@
     "build:watch": "tsc --watch",
     "typecheck": "tsc --noEmit",
     "sms:check": "tsx scripts/sms-check.ts",
+    "verification:reconcile": "tsx scripts/reconcile-verification.ts",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",

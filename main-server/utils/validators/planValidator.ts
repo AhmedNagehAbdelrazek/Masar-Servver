@@ -153,6 +153,11 @@ export const updatePlanValidation: ValidationChain[] = [
   body('free_offer')
     .optional({ nullable: true })
     .custom(validateFreeOffer),
+
+  body('is_active')
+    .optional()
+    .isBoolean().withMessage('IS_ACTIVE_MUST_BE_A_BOOLEAN')
+    .toBoolean(),
 ];
 
 export const planIdValidation: ValidationChain[] = [
@@ -177,6 +182,11 @@ export const createPaymentMethodValidation: ValidationChain[] = [
     .optional({ nullable: true })
     .customSanitizer((value: unknown) => (value === '' ? null : value))
     .custom(validateEmail),
+
+  body('is_active')
+    .optional()
+    .isBoolean().withMessage('IS_ACTIVE_MUST_BE_A_BOOLEAN')
+    .toBoolean(),
 ];
 
 export const updatePaymentMethodValidation: ValidationChain[] = [
@@ -198,6 +208,11 @@ export const updatePaymentMethodValidation: ValidationChain[] = [
     .optional({ nullable: true })
     .customSanitizer((value: unknown) => (value === '' ? null : value))
     .custom(validateEmail),
+
+  body('is_active')
+    .optional()
+    .isBoolean().withMessage('IS_ACTIVE_MUST_BE_A_BOOLEAN')
+    .toBoolean(),
 ];
 
 export const paymentMethodIdValidation: ValidationChain[] = [

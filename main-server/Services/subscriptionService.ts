@@ -1,7 +1,8 @@
 // @ts-nocheck
-import { Op } from 'sequelize';
+import { Op, fn, col } from 'sequelize';
 import sequelize from '../config/database';
 import { User, SubscriptionPlan, PaymentMethod, DriverSubscription, UploadedImage, DriverProfile } from '../Models';
+import { toAbsoluteMediaUrl } from '../utils/mediaUrl';
 import { SUBSCRIPTION_STATUS, FREE_OFFER_TYPE } from '../config/constants';
 import { ApiErrors } from '../utils/ApiError';
 import balanceService from './balanceService';
@@ -254,18 +255,123 @@ async function listPending({ status = SUBSCRIPTION_STATUS.PENDING_APPROVAL, sort
         name: (sub.paymentMethod && sub.paymentMethod.name) || null,
       },
       screenshot_id: sub.screenshotId || null,
-      screenshot_url: (sub.screenshot && sub.screenshot.url) || null,
+      screenshot_url: toAbsoluteMediaUrl((sub.screenshot && sub.screenshot.url) || null),
       submitted_at: sub.createdat || sub.createdAt,
     };
   });
 }
 
 /**
- * Approve a pending request (US2). Atomic conditional update guarantees
- * first-action-wins. Credits balance (debt cleared first), sets activation
- * timestamps, merges an existing same-plan subscription balance (renewal),
- * and notifies the driver.
+ * Admin cards: إجمالي المشتركين (distinct drivers with an active
+ * subscription) / النشطة / قيد المراجعة / المرفوضة.
  */
+async function getStats() {
+  const [drivers, active, pending, rejected] = await Promise.all([
+    DriverSubscription.findAll({
+      attributes: [[fn('COUNT', fn('DISTINCT', col('driver_id'))), 'count']],
+      where: { status: SUBSCRIPTION_STATUS.ACTIVE },
+      raw: true,
+    }),
+    DriverSubscription.count({ where: { status: SUBSCRIPTION_STATUS.ACTIVE } }),
+    DriverSubscription.count({ where: { status: SUBSCRIPTION_STATUS.PENDING_APPROVAL } }),
+    DriverSubscription.count({ where: { status: SUBSCRIPTION_STATUS.REJECTED } }),
+  ]);
+  return {
+    total_subscribers: Number(drivers?.[0]?.count || 0),
+    active_subscriptions: active,
+    pending_review: pending,
+    rejected,
+  };
+}
+
+/**
+ * Review dossier used by the payment review page: plan, driver, transfer
+ * receipt and the submitted→decided history.
+ */
+async function getDetail(subscriptionId) {
+  const sub = await DriverSubscription.findByPk(subscriptionId, {
+    include: [
+      {
+        model: User,
+        as: 'driver',
+        attributes: ['id', 'fullName', 'phone', 'status', 'createdat'],
+        include: [{ model: DriverProfile, as: 'driverProfile', attributes: ['nationalID'] }],
+      },
+      { model: SubscriptionPlan, as: 'plan' },
+      { model: UploadedImage, as: 'screenshot', attributes: ['id', 'url'] },
+    ],
+  });
+  if (!sub) throw ApiErrors.notFound('SUBSCRIPTION_NOT_FOUND');
+
+  const driver = sub.driver || null;
+  const profile = driver?.driverProfile || null;
+  const plan = sub.plan || null;
+  const screenshot = sub.screenshot || null;
+  const payment = sub.paymentMethod || null;
+  const history = [{ event: 'submitted', at: sub.createdat || sub.createdAt }];
+  if (sub.status === SUBSCRIPTION_STATUS.ACTIVE && sub.activatedAt) {
+    history.push({ event: 'approved', at: sub.activatedAt, approved_at: sub.approvedAt });
+  } else if (sub.status === SUBSCRIPTION_STATUS.REJECTED) {
+    history.push({ event: 'rejected', at: sub.updatedat, reason: sub.adminNotes });
+  } else if (sub.status !== SUBSCRIPTION_STATUS.PENDING_APPROVAL) {
+    history.push({ event: sub.status, at: sub.updatedat });
+  }
+
+  return {
+    subscription: {
+      id: sub.id,
+      status: sub.status,
+      submitted_at: sub.createdat || sub.createdAt,
+      approved_at: sub.approvedAt,
+      activated_at: sub.activatedAt,
+      expires_at: sub.expiresAt,
+      rejection_reason: sub.adminNotes,
+      balance: Number(sub.balance),
+      free_trips_used: sub.freeTripsUsed,
+    },
+    driver: driver
+      ? {
+        id: driver.id,
+        full_name: driver.fullName,
+        phone: maskNationalIDPhone(driver.phone),
+        account_status: driver.status,
+        national_id_masked: maskNationalID(profile?.nationalID),
+        registered_at: driver.createdat || driver.createdAt,
+      }
+      : null,
+    plan: plan
+      ? {
+        id: plan.id,
+        name: plan.name,
+        period_days: plan.periodDays,
+        percentage_cut: Number(plan.percentageCut),
+        cost: Number(plan.cost),
+        is_active: plan.isActive,
+      }
+      : {
+        name: sub.planName,
+        period_days: sub.planPeriodDays,
+        percentage_cut: Number(sub.planPercentageCut),
+        cost: Number(sub.planCost),
+      },
+    transfer: {
+      method: payment,
+      screenshot_id: sub.screenshotId,
+      screenshot_url: toAbsoluteMediaUrl(screenshot?.url || null),
+    },
+    history,
+  };
+}
+
+// Driver phones are masked on admin list/detail surfaces (PII policy).
+function maskNationalIDPhone(phone) {
+  if (!phone) return null;
+  const s = String(phone);
+  if (s.length <= 7) return '***';
+  return `${s.slice(0, s.length - 7)}***${s.slice(-4)}`;
+}
+
+
 async function approve(subscriptionId, actorId) {
   const result = await sequelize.transaction(async (t) => {
     const sub = await DriverSubscription.findByPk(subscriptionId, {
@@ -449,9 +555,11 @@ module.exports = {
   getMySubscriptions,
   getCurrentSubscription,
   listPending,
+  getStats,
+  getDetail,
   approve,
   reject,
   getCurrentActivePlan,
 };
-export { round, maskNationalID, createSubscription, getMySubscriptions, getCurrentSubscription, listPending, approve, reject, getCurrentActivePlan };
+export { round, maskNationalID, createSubscription, getMySubscriptions, getCurrentSubscription, listPending, getStats, getDetail, approve, reject, getCurrentActivePlan };
 export default module.exports;

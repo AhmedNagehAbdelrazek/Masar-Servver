@@ -8,14 +8,23 @@ function parseBoolean(value) {
   return ['1', 'true', 'yes', 'on'].includes(String(value).trim().toLowerCase());
 }
 
+function normalizeUrl(value) {
+  const raw = String(value || '').trim();
+  if (!raw) return undefined;
+  if (raw.startsWith('//')) return `https:${raw}`;
+  if (/^[a-z][a-z0-9+.-]*:\/\//i.test(raw)) return raw.replace(/\/+$/, '');
+  // Coolify/Garage hosts are frequently pasted without a scheme.
+  return `https://${raw.replace(/^\/+/, '').replace(/\/+$/, '')}`;
+}
+
 class S3Uploader {
   constructor() {
     this.bucket = process.env.S3_BUCKET;
     this.region = process.env.S3_REGION;
-    this.endpoint = process.env.S3_ENDPOINT?.trim() || undefined;
+    this.endpoint = normalizeUrl(process.env.S3_ENDPOINT);
     this.accessKeyId = process.env.S3_ACCESS_KEY_ID;
     this.secretAccessKey = process.env.S3_SECRET_ACCESS_KEY;
-    this.baseUrl = process.env.S3_BASE_URL || '';
+    this.baseUrl = normalizeUrl(process.env.S3_PUBLIC_URL || process.env.S3_BASE_URL) || '';
     // S3-compatible stores (Garage, MinIO, ...) normally require path-style
     // URLs. Default to path-style whenever a custom endpoint is configured.
     this.forcePathStyle =
@@ -23,6 +32,11 @@ class S3Uploader {
 
     if (!this.bucket || !this.region) {
       throw new Error('S3_BUCKET and S3_REGION environment variables are required');
+    }
+    if (this.endpoint && !this.baseUrl) {
+      console.warn(
+        '[s3] S3_BASE_URL is not set; stored image URLs will use S3_ENDPOINT, which may require signed requests and return 403 to browsers.'
+      );
     }
   }
 

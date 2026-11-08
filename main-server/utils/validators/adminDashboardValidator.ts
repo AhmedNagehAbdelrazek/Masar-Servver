@@ -99,14 +99,28 @@ export const reservationsQueryValidation: ValidationChain[] = [
 
 
 
-const _exported = { driverIdParamValidation, documentKeyParamValidation, statusBodyValidation, accountActionBodyValidation, rejectReasonBodyValidation, paginationQueryValidation, recentTripsQueryValidation, driversListValidation, driverTripsQueryValidation, reservationsQueryValidation };
+export const cancelTripBodyValidation: ValidationChain[] = [
+  body('reason').optional({ nullable: true }).isString().trim().isLength({ max: 500 }).withMessage('REASON_MUST_BE_AT_MOST_2000_CHARACTERS'),
+];
+
+export const tripIdParamValidation: ValidationChain[] = [
+  param('trip_id').isUUID().withMessage('TRIP_ID_MUST_BE_A_VALID_UUID'),
+];
+
+export const driverNotificationBodyValidation: ValidationChain[] = [
+  body('title').isString().trim().isLength({ min: 1, max: 255 }).withMessage('TITLE_IS_REQUIRED'),
+  body('body').isString().trim().isLength({ min: 1, max: 2000 }).withMessage('MESSAGE_IS_REQUIRED'),
+  body('type').optional().isString().trim().isLength({ max: 40 }).withMessage('VALIDATION_FAILED'),
+];
+
+const _exported = { driverIdParamValidation, documentKeyParamValidation, statusBodyValidation, accountActionBodyValidation, rejectReasonBodyValidation, paginationQueryValidation, recentTripsQueryValidation, driversListValidation, driverTripsQueryValidation, reservationsQueryValidation, tripIdParamValidation, driverNotificationBodyValidation, cancelTripBodyValidation };
 export default _exported;
 
 // CommonJS interop
 // @ts-ignore
 if (typeof module !== 'undefined' && module.exports) {
   // @ts-ignore
-  module.exports = { driverIdParamValidation, documentKeyParamValidation, statusBodyValidation, accountActionBodyValidation, rejectReasonBodyValidation, paginationQueryValidation, recentTripsQueryValidation, driversListValidation, driverTripsQueryValidation, reservationsQueryValidation };
+  module.exports = { driverIdParamValidation, documentKeyParamValidation, statusBodyValidation, accountActionBodyValidation, rejectReasonBodyValidation, paginationQueryValidation, recentTripsQueryValidation, driversListValidation, driverTripsQueryValidation, reservationsQueryValidation, tripIdParamValidation, driverNotificationBodyValidation, cancelTripBodyValidation };
   // @ts-ignore
   module.exports.driverIdParamValidation = driverIdParamValidation;
   // @ts-ignore

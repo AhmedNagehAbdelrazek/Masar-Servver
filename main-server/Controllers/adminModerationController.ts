@@ -17,6 +17,29 @@ const listComplaints = catchAsync(async (req: Request, res: Response): Promise<v
   successResponse(res, result);
 });
 
+const getComplaintStats = catchAsync(async (req: Request, res: Response): Promise<void> => {
+  successResponse(res, await (complaintService as unknown as { getStats: () => Promise<unknown> }).getStats());
+});
+
+const getComplaintDetail = catchAsync(async (req: Request, res: Response): Promise<void> => {
+  const { complaint_id } = req.params as { complaint_id: string };
+  successResponse(res, await (complaintService as unknown as { getDetail: (id: string) => Promise<unknown> }).getDetail(complaint_id));
+});
+
+const penalizeComplaint = catchAsync(async (req: Request, res: Response): Promise<void> => {
+  const authReq = req as AuthRequest;
+  const { complaint_id } = req.params as { complaint_id: string };
+  const result = await (complaintService as unknown as { penalize: (actorId: string, id: string, body: unknown) => Promise<unknown> }).penalize(String(authReq.user?.id), complaint_id, req.body);
+  (auditService as unknown as { track: (p: unknown) => void }).track({
+    action: 'complaint.penalty',
+    resourceType: 'complaint',
+    resourceId: complaint_id,
+    actorId: authReq.user?.id,
+    payload: req.body,
+  });
+  successResponse(res, result);
+});
+
 const resolveComplaint = catchAsync(async (req: Request, res: Response): Promise<void> => {
   const authReq = req as AuthRequest;
   const { complaint_id } = req.params as { complaint_id: string };
@@ -146,5 +169,5 @@ const issuePenalty = catchAsync(async (req: Request, res: Response): Promise<voi
   successResponse(res, result);
 });
 
-export { listComplaints, resolveComplaint, listUsers, updateUserStatus, moderateTrip, issuePenalty };
-export default { listComplaints, resolveComplaint, listUsers, updateUserStatus, moderateTrip, issuePenalty };
+export { listComplaints, getComplaintStats, getComplaintDetail, penalizeComplaint, resolveComplaint, listUsers, updateUserStatus, moderateTrip, issuePenalty };
+export default { listComplaints, getComplaintStats, getComplaintDetail, penalizeComplaint, resolveComplaint, listUsers, updateUserStatus, moderateTrip, issuePenalty };

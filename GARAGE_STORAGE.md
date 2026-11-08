@@ -33,7 +33,15 @@ Mapping from the Coolify/Garage variable names:
 `S3_ENDPOINT` + path-style enables Garage/MinIO; `S3_BASE_URL` is only used to
 build the URL returned to clients. Objects are stored under
 `uploads/<timestamp>-<random>.<ext>` and the returned URL is
-`<S3_BASE_URL>/<key>`.
+`<S3_BASE_URL>/<key>`. `S3_PUBLIC_URL` is accepted as an alias for
+`S3_BASE_URL`.
+
+> Important: `S3_BASE_URL` must be the **public web endpoint**, not the signed
+> S3 endpoint. If it is omitted, the uploader falls back to
+> `<S3_ENDPOINT>/<bucket>/<key>`; Garage returns `403` for those signed URLs in
+> browsers. The API logs a warning at startup when this happens. Older rows
+> stored with the endpoint form are rewritten to `S3_BASE_URL` by the admin
+> media layer when both variables are configured.
 
 `BUCKET_ADMIN_TOKEN` is **not** needed at runtime. It is only for one-time
 bucket administration (see below); do not put it in the API service env.

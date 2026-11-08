@@ -1,9 +1,11 @@
 // @ts-nocheck
 import { Op } from 'sequelize';
-import { Complaint, User } from '../Models';
+import { Booking, Complaint, Penalty, Rating, Trip, User } from '../Models';
 import { ApiErrors } from '../utils/ApiError';
 import { COMPLAINT_STATUS } from '../config/constants';
 import { parsePagination, buildPagination } from '../utils/pagination';
+import { maskPhone } from '../utils/masking';
+import * as penaltyService from './penaltyService';
 import auditService from './auditService';
 
 function serializeCreate(complaint) {
@@ -155,6 +157,157 @@ async function listAdmin(filters = {}) {
 }
 
 /**
+ * Admin complaint cards: total / open / reviewing / resolved / dismissed.
+ */
+async function getStats() {
+  const [total, open, reviewing, resolved, dismissed] = await Promise.all([
+    Complaint.count(),
+    Complaint.count({ where: { status: COMPLAINT_STATUS.OPEN } }),
+    Complaint.count({ where: { status: COMPLAINT_STATUS.REVIEWING } }),
+    Complaint.count({ where: { status: COMPLAINT_STATUS.RESOLVED } }),
+    Complaint.count({ where: { status: COMPLAINT_STATUS.DISMISSED } }),
+  ]);
+  return { total_complaints: total, open, reviewing, resolved, dismissed };
+}
+
+/**
+ * Admin complaint dossier: parties, linked trip, evidence, penalty and log.
+ */
+async function getDetail(complaintId) {
+  const complaint = await Complaint.findByPk(complaintId, {
+    include: [
+      { model: User, as: 'reporter', attributes: ['id', 'fullName', 'role', 'phone', 'createdat'] },
+      {
+        model: User,
+        as: 'accused',
+        attributes: ['id', 'fullName', 'role', 'phone', 'status', 'avgRating', 'createdat'],
+      },
+    ],
+  });
+  if (!complaint) throw ApiErrors.notFound('COMPLAINT_NOT_FOUND');
+
+  const [booking, penalty] = await Promise.all([
+    complaint.bookingId
+      ? Booking.findByPk(complaint.bookingId, {
+        include: [{
+          model: Trip,
+          as: 'trip',
+          attributes: ['id', 'originCity', 'destinationCity', 'departureTime', 'totalSeats', 'availableSeats', 'farePerSeat', 'status'],
+        }],
+      })
+      : null,
+    Penalty.findOne({ where: { complaintId }, order: [['startsAt', 'DESC']] }),
+  ]);
+  const [reviewer, penaltyIssuer, ratingsCount] = await Promise.all([
+    complaint.resolvedBy ? User.findByPk(complaint.resolvedBy, { attributes: ['id', 'fullName'] }) : null,
+    penalty?.issuedBy ? User.findByPk(penalty.issuedBy, { attributes: ['id', 'fullName'] }) : null,
+    complaint.accusedId ? Rating.count({ where: { rateeId: complaint.accusedId } }) : 0,
+  ]);
+
+  const log = [{ event: 'filed', at: complaint.createdat }];
+  if (complaint.resolvedAt) {
+    if (complaint.status === COMPLAINT_STATUS.REVIEWING || complaint.updatedat < complaint.resolvedAt) {
+      log.push({ event: 'reviewing', at: complaint.updatedat });
+    }
+    log.push({ event: 'decided', at: complaint.resolvedAt, status: complaint.status });
+  } else if (complaint.status === COMPLAINT_STATUS.REVIEWING) {
+    log.push({ event: 'reviewing', at: complaint.updatedat });
+  }
+
+  return {
+    complaint: {
+      id: complaint.id,
+      category: complaint.category,
+      description: complaint.description,
+      evidence_urls: complaint.evidenceUrls,
+      status: complaint.status,
+      resolution: complaint.resolution,
+      created_at: complaint.createdat,
+    },
+    reporter: complaint.reporter
+      ? { ...complaint.reporter.toJSON(), phone: maskPhone(complaint.reporter.phone) }
+      : null,
+    accused: complaint.accused
+      ? {
+        ...complaint.accused.toJSON(),
+        phone: maskPhone(complaint.accused.phone),
+        avg_rating: Number(complaint.accused.avgRating) || 0,
+        ratings_count: ratingsCount,
+      }
+      : null,
+    trip: booking?.trip
+      ? {
+        id: booking.trip.id,
+        route: `${booking.trip.originCity} ← ${booking.trip.destinationCity}`,
+        departure_time: booking.trip.departureTime,
+        seats_booked: booking.seatsBooked,
+        total_seats: Number(booking.trip.totalSeats),
+        available_seats: Number(booking.trip.availableSeats),
+        seat_price: Number(booking.trip.farePerSeat),
+        status: booking.trip.status,
+        booking_id: booking.id,
+      }
+      : null,
+    penalty_action: complaint.accused
+      ? { accused_id: complaint.accused.id, accused_status: complaint.accused.status }
+      : null,
+    review_result: complaint.resolvedAt != null
+      ? {
+        reviewed_by: reviewer,
+        ended_at: complaint.resolvedAt,
+        action: penalty
+          ? {
+            id: penalty.id,
+            type: penalty.type,
+            reason: penalty.reason,
+            executed_by: penaltyIssuer,
+            executed_at: penalty.startsAt,
+            ends_at: penalty.endsAt,
+            active: !penalty.endsAt || new Date(penalty.endsAt) > new Date(),
+          }
+          : null,
+      }
+      : null,
+    log,
+  };
+}
+
+async function penalize(adminId, complaintId, dto) {
+  const complaint = await Complaint.findByPk(complaintId);
+  if (!complaint) throw ApiErrors.notFound('COMPLAINT_NOT_FOUND');
+  if (dto.kind === 'temporary') {
+    const days = dto.duration === 'custom' ? dto.durationDays : dto.duration != null ? ({ '1d': 1, '3d': 3, '7d': 7 })[dto.duration] : undefined;
+    if (!days) throw ApiErrors.validation('DURATION_DAYS_REQUIRED_FOR_CUSTOM_DURATION');
+    return penaltyService.issue(adminId, {
+      user_id: complaint.accusedId,
+      type: 'suspension',
+      reason: dto.reason,
+      details: dto.notes || `Temporary suspension for ${days} day(s)`,
+      complaint_id: complaintId,
+      ends_at: new Date(Date.now() + days * 24 * 3600 * 1000).toISOString(),
+    });
+  }
+  if (dto.kind === 'permanent') {
+    if (dto.confirmReviewedLog !== true) throw ApiErrors.validation('CONFIRM_REVIEWED_LOG_REQUIRED');
+    return penaltyService.issue(adminId, {
+      user_id: complaint.accusedId,
+      type: 'ban',
+      reason: dto.reason,
+      details: dto.notes || null,
+      complaint_id: complaintId,
+      confirm_reviewed_log: true,
+    });
+  }
+  return penaltyService.issue(adminId, {
+    user_id: complaint.accusedId,
+    type: 'warning',
+    reason: dto.reason,
+    details: dto.notes || null,
+    complaint_id: complaintId,
+  });
+}
+
+/**
  * Admin resolve/dismiss a complaint (contract A10).
  */
 async function resolve(adminId, complaintId, data) {
@@ -186,6 +339,6 @@ async function resolve(adminId, complaintId, data) {
   };
 }
 
-module.exports = { create, listForDriver, listAdmin, resolve };
-export { create, listForDriver, listAdmin, resolve };
+module.exports = { create, listForDriver, listAdmin, getStats, getDetail, penalize, resolve };
+export { create, listForDriver, listAdmin, getStats, getDetail, penalize, resolve };
 export default module.exports;

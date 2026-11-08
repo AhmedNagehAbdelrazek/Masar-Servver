@@ -4,7 +4,7 @@ import * as c from '../Controllers/adminDashboardController';
 import protect from '../middlewares/protect';
 import { roleGuard } from '../middlewares/roleGuard';
 import validate from '../middlewares/validatorMiddleware';
-import { driverIdParamValidation, documentKeyParamValidation, statusBodyValidation, accountActionBodyValidation, rejectReasonBodyValidation, recentTripsQueryValidation, driversListValidation, driverTripsQueryValidation, reservationsQueryValidation, } from '../utils/validators/adminDashboardValidator';
+import { driverIdParamValidation, documentKeyParamValidation, statusBodyValidation, accountActionBodyValidation, rejectReasonBodyValidation, recentTripsQueryValidation, driversListValidation, driverTripsQueryValidation, reservationsQueryValidation, tripIdParamValidation, driverNotificationBodyValidation, cancelTripBodyValidation } from '../utils/validators/adminDashboardValidator';
 
 // ===== US1: Global dashboard =====
 router.get('/summary', protect, roleGuard(['admin']), c.getSummary);
@@ -16,6 +16,7 @@ router.get('/latest-complaints', protect, roleGuard(['admin']), ...recentTripsQu
 // ===== US2: Drivers directory (static routes BEFORE :driver_id) =====
 router.get('/drivers', protect, roleGuard(['admin']), ...driversListValidation, validate, c.listDrivers);
 router.get('/drivers/stats/summary', protect, roleGuard(['admin']), c.getDriverStats);
+router.get('/drivers/export', protect, roleGuard(['admin']), ...driversListValidation, validate, c.exportDrivers);
 
 // ===== US3: Driver dossier =====
 router.get('/drivers/:driver_id', protect, roleGuard(['admin']), ...driverIdParamValidation, validate, c.getDriverHeader);
@@ -28,6 +29,8 @@ router.get('/drivers/:driver_id/documents', protect, roleGuard(['admin']), ...dr
 
 // ===== US4: Actions =====
 router.post('/drivers/:driver_id/status', protect, roleGuard(['admin']), ...driverIdParamValidation, ...statusBodyValidation, validate, c.setDriverStatus);
+router.post('/drivers/:driver_id/notifications', protect, roleGuard(['admin']), ...driverIdParamValidation, ...driverNotificationBodyValidation, validate, c.sendDriverNotification);
+router.post('/trips/:trip_id/cancel', protect, roleGuard(['admin']), ...tripIdParamValidation, ...cancelTripBodyValidation, validate, c.cancelTrip);
 router.post('/drivers/:driver_id/account-status', protect, roleGuard(['admin']), ...driverIdParamValidation, ...accountActionBodyValidation, validate, c.applyStandingAction);
 router.post('/drivers/:driver_id/documents/:document_key/approve', protect, roleGuard(['admin']), ...driverIdParamValidation, ...documentKeyParamValidation, validate, c.approveDocument);
 router.post('/drivers/:driver_id/documents/:document_key/reject', protect, roleGuard(['admin']), ...driverIdParamValidation, ...documentKeyParamValidation, ...rejectReasonBodyValidation, validate, c.rejectDocument);
