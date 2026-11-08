@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { Op } from 'sequelize';
-import { Booking, Complaint, Penalty, Rating, Trip, User } from '../Models';
+import { Booking, Complaint, Penalty, Rating, Trip, User, AuditLog } from '../Models';
 import { ApiErrors } from '../utils/ApiError';
 import { COMPLAINT_STATUS } from '../config/constants';
 import { parsePagination, buildPagination } from '../utils/pagination';
@@ -171,6 +171,24 @@ async function getStats() {
 }
 
 /**
+ * Persist a complaint workflow event for the ticket timeline. AuditLog already
+ * exists in both schemas, so reopening/resolving does not need a migration.
+ */
+async function recordComplaintEvent(complaintId, actorId, event, payload = {}) {
+  try {
+    await AuditLog.create({
+      tableName: 'complaints',
+      recordId: complaintId,
+      action: 'UPDATE',
+      newData: { event, ...payload },
+      performedBy: actorId || null,
+    });
+  } catch (err) {
+    console.warn('[complaintService] complaint event log failed:', err.message);
+  }
+}
+
+/**
  * Admin complaint dossier: parties, linked trip, evidence, penalty and log.
  */
 async function getDetail(complaintId) {
@@ -186,7 +204,7 @@ async function getDetail(complaintId) {
   });
   if (!complaint) throw ApiErrors.notFound('COMPLAINT_NOT_FOUND');
 
-  const [booking, penalty] = await Promise.all([
+  const [booking, penalties, auditLogs] = await Promise.all([
     complaint.bookingId
       ? Booking.findByPk(complaint.bookingId, {
         include: [{
@@ -196,13 +214,56 @@ async function getDetail(complaintId) {
         }],
       })
       : null,
-    Penalty.findOne({ where: { complaintId }, order: [['startsAt', 'DESC']] }),
+    Penalty.findAll({ where: { complaintId }, order: [['startsAt', 'DESC']] }),
+    AuditLog.findAll({
+      where: { tableName: 'complaints', recordId: complaintId },
+      order: [['createdat', 'ASC']],
+    }),
   ]);
-  const [reviewer, penaltyIssuer, ratingsCount] = await Promise.all([
+  const penalty = penalties[0] || null;
+
+  const actorIds = [...new Set([
+    ...penalties.map((p) => p.issuedBy).filter(Boolean),
+    ...auditLogs.map((entry) => entry.performedBy).filter(Boolean),
+    complaint.resolvedBy,
+  ].filter(Boolean))];
+  const actors = actorIds.length
+    ? await User.findAll({ where: { id: { [Op.in]: actorIds } }, attributes: ['id', 'fullName'] })
+    : [];
+  const actorById = new Map(actors.map((user) => [user.id, { id: user.id, name: user.fullName }]));
+  const [reviewer, ratingsCount] = await Promise.all([
     complaint.resolvedBy ? User.findByPk(complaint.resolvedBy, { attributes: ['id', 'fullName'] }) : null,
-    penalty?.issuedBy ? User.findByPk(penalty.issuedBy, { attributes: ['id', 'fullName'] }) : null,
     complaint.accusedId ? Rating.count({ where: { rateeId: complaint.accusedId } }) : 0,
   ]);
+
+  const history = [
+    {
+      event: 'filed',
+      at: complaint.createdat,
+      by: complaint.reporter ? { id: complaint.reporter.id, name: complaint.reporter.fullName } : null,
+    },
+    ...auditLogs.map((entry) => {
+      const data = entry.newData || {};
+      return {
+        event: data.event || 'updated',
+        at: entry.createdat,
+        by: entry.performedBy ? actorById.get(entry.performedBy) || { id: entry.performedBy, name: null } : null,
+        reason: data.reason || null,
+        action: data.action_type || null,
+        penalty_id: data.penalty_id || null,
+        note: data.note || null,
+      };
+    }),
+    ...penalties.map((row) => ({
+      event: 'penalty',
+      at: row.startsAt,
+      by: row.issuedBy ? actorById.get(row.issuedBy) || { id: row.issuedBy, name: null } : null,
+      reason: row.reason,
+      action: row.type,
+      penalty_id: row.id,
+      ends_at: row.endsAt,
+    })),
+  ].sort((a, b) => new Date(a.at).getTime() - new Date(b.at).getTime());
 
   const log = [{ event: 'filed', at: complaint.createdat }];
   if (complaint.resolvedAt) {
@@ -260,7 +321,9 @@ async function getDetail(complaintId) {
             id: penalty.id,
             type: penalty.type,
             reason: penalty.reason,
-            executed_by: penaltyIssuer,
+            executed_by: penalty.issuedBy
+              ? actorById.get(penalty.issuedBy) || { id: penalty.issuedBy, name: null }
+              : null,
             executed_at: penalty.startsAt,
             ends_at: penalty.endsAt,
             active: !penalty.endsAt || new Date(penalty.endsAt) > new Date(),
@@ -268,6 +331,7 @@ async function getDetail(complaintId) {
           : null,
       }
       : null,
+    history,
     log,
   };
 }
@@ -275,10 +339,12 @@ async function getDetail(complaintId) {
 async function penalize(adminId, complaintId, dto) {
   const complaint = await Complaint.findByPk(complaintId);
   if (!complaint) throw ApiErrors.notFound('COMPLAINT_NOT_FOUND');
+
+  let result;
   if (dto.kind === 'temporary') {
     const days = dto.duration === 'custom' ? dto.durationDays : dto.duration != null ? ({ '1d': 1, '3d': 3, '7d': 7 })[dto.duration] : undefined;
     if (!days) throw ApiErrors.validation('DURATION_DAYS_REQUIRED_FOR_CUSTOM_DURATION');
-    return penaltyService.issue(adminId, {
+    result = await penaltyService.issue(adminId, {
       user_id: complaint.accusedId,
       type: 'suspension',
       reason: dto.reason,
@@ -286,10 +352,9 @@ async function penalize(adminId, complaintId, dto) {
       complaint_id: complaintId,
       ends_at: new Date(Date.now() + days * 24 * 3600 * 1000).toISOString(),
     });
-  }
-  if (dto.kind === 'permanent') {
+  } else if (dto.kind === 'permanent') {
     if (dto.confirmReviewedLog !== true) throw ApiErrors.validation('CONFIRM_REVIEWED_LOG_REQUIRED');
-    return penaltyService.issue(adminId, {
+    result = await penaltyService.issue(adminId, {
       user_id: complaint.accusedId,
       type: 'ban',
       reason: dto.reason,
@@ -297,14 +362,44 @@ async function penalize(adminId, complaintId, dto) {
       complaint_id: complaintId,
       confirm_reviewed_log: true,
     });
+  } else {
+    result = await penaltyService.issue(adminId, {
+      user_id: complaint.accusedId,
+      type: 'warning',
+      reason: dto.reason,
+      details: dto.notes || null,
+      complaint_id: complaintId,
+    });
   }
-  return penaltyService.issue(adminId, {
-    user_id: complaint.accusedId,
-    type: 'warning',
-    reason: dto.reason,
-    details: dto.notes || null,
-    complaint_id: complaintId,
+
+  // Any enforcement action is a decision on the ticket: resolve it so the
+  // dashboard reflects what the admin actually did and stops offering the
+  // action buttons again.
+  const actionLabel = dto.kind === 'warning' ? 'إنذار' : dto.kind === 'temporary' ? 'إيقاف مؤقت' : 'إيقاف نهائي';
+  const resolvedAt = new Date();
+  await complaint.update({
+    status: COMPLAINT_STATUS.RESOLVED,
+    resolution: `${actionLabel}: ${dto.reason}`,
+    resolvedBy: adminId,
+    resolvedAt,
   });
+  await recordComplaintEvent(complaintId, adminId, 'resolved', {
+    reason: dto.reason,
+    action_type: result?.penalty?.type || dto.kind,
+    penalty_id: result?.penalty?.id || null,
+    note: dto.notes || null,
+  });
+
+  return {
+    ...result,
+    complaint: {
+      id: complaint.id,
+      status: complaint.status,
+      resolution: complaint.resolution,
+      resolved_by: complaint.resolvedBy,
+      resolved_at: complaint.resolvedAt,
+    },
+  };
 }
 
 /**
@@ -327,6 +422,15 @@ async function resolve(adminId, complaintId, data) {
   }
 
   await complaint.update(fields);
+  if ([COMPLAINT_STATUS.RESOLVED, COMPLAINT_STATUS.DISMISSED].includes(data.status)) {
+    await recordComplaintEvent(complaintId, adminId, data.status === COMPLAINT_STATUS.DISMISSED ? 'dismissed' : 'resolved', {
+      reason: fields.resolution || data.resolution || null,
+    });
+  } else if (data.status === COMPLAINT_STATUS.REVIEWING) {
+    await recordComplaintEvent(complaintId, adminId, 'reviewing', {
+      reason: data.resolution || null,
+    });
+  }
 
   return {
     complaint: {
@@ -339,6 +443,40 @@ async function resolve(adminId, complaintId, data) {
   };
 }
 
-module.exports = { create, listForDriver, listAdmin, getStats, getDetail, penalize, resolve };
-export { create, listForDriver, listAdmin, getStats, getDetail, penalize, resolve };
+/**
+ * Reopen a decided ticket. The previous resolution stays in the event history;
+ * the current row goes back to reviewing so the admin can act again.
+ */
+async function reopen(adminId, complaintId, reason) {
+  const complaint = await Complaint.findByPk(complaintId);
+  if (!complaint) throw ApiErrors.notFound('COMPLAINT_NOT_FOUND');
+  if (![COMPLAINT_STATUS.RESOLVED, COMPLAINT_STATUS.DISMISSED].includes(complaint.status)) {
+    throw ApiErrors.conflict('COMPLAINT_IS_NOT_RESOLVED');
+  }
+
+  const previousStatus = complaint.status;
+  await complaint.update({
+    status: COMPLAINT_STATUS.REVIEWING,
+    resolution: null,
+    resolvedBy: null,
+    resolvedAt: null,
+  });
+  await recordComplaintEvent(complaintId, adminId, 'reopened', {
+    reason: reason || 'Reopened by administrator',
+    previous_status: previousStatus,
+  });
+
+  return {
+    complaint: {
+      id: complaint.id,
+      status: complaint.status,
+      resolution: complaint.resolution,
+      resolved_by: complaint.resolvedBy,
+      resolved_at: complaint.resolvedAt,
+    },
+  };
+}
+
+module.exports = { create, listForDriver, listAdmin, getStats, getDetail, penalize, resolve, reopen };
+export { create, listForDriver, listAdmin, getStats, getDetail, penalize, resolve, reopen };
 export default module.exports;

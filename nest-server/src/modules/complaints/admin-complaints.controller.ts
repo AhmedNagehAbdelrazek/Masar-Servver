@@ -5,7 +5,7 @@ import type { AuthUser } from '../../common/guards/jwt-auth.guard.js';
 import { ComplaintsService } from './complaints.service.js';
 import { AdminComplaintListQuery } from './dto/complaint-list.query.js';
 import { ComplaintPenaltyDto } from './dto/complaint-penalty.dto.js';
-import { ComplaintIdParam, ResolveComplaintDto } from './dto/resolve-complaint.dto.js';
+import { ComplaintIdParam, ReopenComplaintDto, ResolveComplaintDto } from './dto/resolve-complaint.dto.js';
 
 // Express parity: Routes/adminModerationRoutes.ts complaint section
 // (all protect + admin). Stats/detail/penalties extend the dashboard
@@ -40,8 +40,18 @@ export class AdminComplaintsController {
     @Param() params: ComplaintIdParam,
     @Body() dto: ComplaintPenaltyDto,
     @CurrentUser() user?: AuthUser,
-  ): Promise<{ penalty: Record<string, unknown> }> {
+  ): Promise<Record<string, unknown>> {
     return this.complaints.penalize(user?.id ?? '', params.complaint_id, dto);
+  }
+
+  @Post(':complaint_id/reopen')
+  @HttpCode(200)
+  reopen(
+    @Param() params: ComplaintIdParam,
+    @Body() dto: ReopenComplaintDto,
+    @CurrentUser() user?: AuthUser,
+  ): Promise<{ complaint: Record<string, unknown> }> {
+    return this.complaints.reopen(user?.id ?? '', params.complaint_id, dto.reason);
   }
 
   @Put(':complaint_id')

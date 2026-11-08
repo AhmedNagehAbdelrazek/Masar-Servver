@@ -1,5 +1,7 @@
 import {
+  ConflictException,
   Injectable,
+  Logger,
   NotFoundException,
   UnprocessableEntityException,
 } from '@nestjs/common';
@@ -98,10 +100,33 @@ function validationError(field: string, message: string): UnprocessableEntityExc
 // Port of main-server/Services/complaintService.ts
 @Injectable()
 export class ComplaintsService {
+  private readonly logger = new Logger(ComplaintsService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly penalties: PenaltyService,
   ) {}
+
+  private async recordComplaintEvent(
+    complaintId: string,
+    actorId: string | null,
+    event: string,
+    payload: Record<string, unknown> = {},
+  ): Promise<void> {
+    try {
+      await this.prisma.auditLog.create({
+        data: {
+          tableName: 'complaints',
+          recordId: complaintId,
+          action: 'UPDATE',
+          newData: { event, ...payload } as Prisma.InputJsonValue,
+          performedBy: actorId,
+        },
+      });
+    } catch (err) {
+      this.logger.warn(`complaint event log failed: ${(err as Error).message}`);
+    }
+  }
 
   async create(
     reporterId: string,
@@ -272,7 +297,7 @@ export class ComplaintsService {
     if (!complaint) {
       throw new NotFoundException({ message: 'COMPLAINT_NOT_FOUND', code: 'COMPLAINT_NOT_FOUND' });
     }
-    const [booking, penalty, reviewer] = await Promise.all([
+    const [booking, penalties, auditLogs, reviewer] = await Promise.all([
       complaint.bookingId
         ? this.prisma.booking.findUnique({
           where: { id: complaint.bookingId },
@@ -292,9 +317,13 @@ export class ComplaintsService {
           },
         })
         : null,
-      this.prisma.penalty.findFirst({
+      this.prisma.penalty.findMany({
         where: { complaintId },
         orderBy: { startsAt: 'desc' },
+      }),
+      this.prisma.auditLog.findMany({
+        where: { tableName: 'complaints', recordId: complaintId },
+        orderBy: { createdAt: 'asc' },
       }),
       complaint.resolvedBy
         ? this.prisma.user.findUnique({
@@ -303,12 +332,54 @@ export class ComplaintsService {
         })
         : null,
     ]);
-    const penaltyIssuer = penalty?.issuedBy
-      ? await this.prisma.user.findUnique({
-        where: { id: penalty.issuedBy },
+    const penalty = penalties[0] ?? null;
+    const actorIds = [...new Set([
+      ...penalties.map((row) => row.issuedBy).filter((id): id is string => Boolean(id)),
+      ...auditLogs.map((row) => row.performedBy).filter((id): id is string => Boolean(id)),
+      complaint.resolvedBy,
+    ].filter((id): id is string => Boolean(id)))];
+    const actors = actorIds.length
+      ? await this.prisma.user.findMany({
+        where: { id: { in: actorIds } },
         select: { id: true, fullName: true },
       })
-      : null;
+      : [];
+    const actorById = new Map(actors.map((user) => [user.id, { id: user.id, name: user.fullName }]));
+
+    const history: Record<string, unknown>[] = [
+      {
+        event: 'filed',
+        at: complaint.createdAt,
+        by: complaint.reporter
+          ? { id: complaint.reporter.id, name: complaint.reporter.fullName }
+          : null,
+      },
+      ...auditLogs.map((entry) => {
+        const data = (entry.newData ?? {}) as Record<string, unknown>;
+        return {
+          event: String(data.event ?? 'updated'),
+          at: entry.createdAt,
+          by: entry.performedBy
+            ? actorById.get(entry.performedBy) ?? { id: entry.performedBy, name: null }
+            : null,
+          reason: data.reason ?? null,
+          action: data.action_type ?? null,
+          penalty_id: data.penalty_id ?? null,
+          note: data.note ?? null,
+        };
+      }),
+      ...penalties.map((row) => ({
+        event: 'penalty',
+        at: row.startsAt,
+        by: row.issuedBy
+          ? actorById.get(row.issuedBy) ?? { id: row.issuedBy, name: null }
+          : null,
+        reason: row.reason,
+        action: row.type,
+        penalty_id: row.id,
+        ends_at: row.endsAt,
+      })),
+    ].sort((a, b) => new Date(a.at as unknown as string).getTime() - new Date(b.at as unknown as string).getTime());
     const log: Record<string, unknown>[] = [{ event: 'filed', at: complaint.createdAt }];
     if (complaint.resolvedAt) {
       if (complaint.status === 'reviewing' || complaint.updatedAt < complaint.resolvedAt) {
@@ -365,7 +436,9 @@ export class ComplaintsService {
                 id: penalty.id,
                 type: penalty.type,
                 reason: penalty.reason,
-                executed_by: penaltyIssuer,
+                executed_by: penalty.issuedBy
+                  ? actorById.get(penalty.issuedBy) ?? { id: penalty.issuedBy, name: null }
+                  : null,
                 executed_at: penalty.startsAt,
                 ends_at: penalty.endsAt,
                 active: !penalty.endsAt || new Date(penalty.endsAt) > new Date(),
@@ -373,6 +446,7 @@ export class ComplaintsService {
               : null,
           }
           : null,
+      history,
       log,
     };
   }
@@ -384,17 +458,18 @@ export class ComplaintsService {
     adminId: string,
     complaintId: string,
     dto: ComplaintPenaltyDto,
-  ): Promise<{ penalty: Record<string, unknown> }> {
+  ): Promise<Record<string, unknown>> {
     const complaint = await this.prisma.complaint.findUnique({ where: { id: complaintId } });
     if (!complaint) {
       throw new NotFoundException({ message: 'COMPLAINT_NOT_FOUND', code: 'COMPLAINT_NOT_FOUND' });
     }
+    let result: { penalty: Record<string, unknown> };
     if (dto.kind === 'temporary') {
       const days = dto.duration === 'custom' ? dto.durationDays : dto.duration != null ? TEMP_DURATION_DAYS[dto.duration] : undefined;
       if (!days) {
         throw validationError('durationDays', 'DURATION_DAYS_REQUIRED_FOR_CUSTOM_DURATION');
       }
-      return this.penalties.issue(adminId, {
+      result = await this.penalties.issue(adminId, {
         user_id: complaint.accusedId,
         type: 'suspension',
         reason: dto.reason,
@@ -402,12 +477,11 @@ export class ComplaintsService {
         complaint_id: complaintId,
         ends_at: new Date(Date.now() + days * 24 * 3600 * 1000).toISOString(),
       });
-    }
-    if (dto.kind === 'permanent') {
+    } else if (dto.kind === 'permanent') {
       if (dto.confirmReviewedLog !== true) {
         throw validationError('confirmReviewedLog', 'CONFIRM_REVIEWED_LOG_REQUIRED');
       }
-      return this.penalties.issue(adminId, {
+      result = await this.penalties.issue(adminId, {
         user_id: complaint.accusedId,
         type: 'ban',
         reason: dto.reason,
@@ -415,14 +489,45 @@ export class ComplaintsService {
         complaint_id: complaintId,
         confirm_reviewed_log: true,
       });
+    } else {
+      result = await this.penalties.issue(adminId, {
+        user_id: complaint.accusedId,
+        type: 'warning',
+        reason: dto.reason,
+        details: dto.notes ?? null,
+        complaint_id: complaintId,
+      });
     }
-    return this.penalties.issue(adminId, {
-      user_id: complaint.accusedId,
-      type: 'warning',
-      reason: dto.reason,
-      details: dto.notes ?? null,
-      complaint_id: complaintId,
+
+    // Every enforcement action is also the ticket decision.
+    const actionLabel = dto.kind === 'warning' ? 'إنذار' : dto.kind === 'temporary' ? 'إيقاف مؤقت' : 'إيقاف نهائي';
+    const resolvedAt = new Date();
+    const updated = await this.prisma.complaint.update({
+      where: { id: complaintId },
+      data: {
+        status: 'resolved',
+        resolution: `${actionLabel}: ${dto.reason}`,
+        resolvedBy: adminId,
+        resolvedAt,
+      },
     });
+    await this.recordComplaintEvent(complaintId, adminId, 'resolved', {
+      reason: dto.reason,
+      action_type: result.penalty?.type ?? dto.kind,
+      penalty_id: result.penalty?.id ?? null,
+      note: dto.notes ?? null,
+    });
+
+    return {
+      ...result,
+      complaint: {
+        id: updated.id,
+        status: updated.status,
+        resolution: updated.resolution,
+        resolved_by: updated.resolvedBy,
+        resolved_at: updated.resolvedAt,
+      },
+    };
   }
 
   async resolve(
@@ -449,6 +554,58 @@ export class ComplaintsService {
       fields.resolvedAt = new Date();
     }
     const updated = await this.prisma.complaint.update({ where: { id: complaintId }, data: fields });
+    if (data.status === 'resolved' || data.status === 'dismissed') {
+      await this.recordComplaintEvent(
+        complaintId,
+        adminId,
+        data.status === 'dismissed' ? 'dismissed' : 'resolved',
+        { reason: fields.resolution ?? data.resolution ?? null },
+      );
+    } else if (data.status === 'reviewing') {
+      await this.recordComplaintEvent(complaintId, adminId, 'reviewing', {
+        reason: data.resolution ?? null,
+      });
+    }
+    return {
+      complaint: {
+        id: updated.id,
+        status: updated.status,
+        resolution: updated.resolution,
+        resolved_by: updated.resolvedBy,
+        resolved_at: updated.resolvedAt,
+      },
+    };
+  }
+
+  async reopen(
+    adminId: string,
+    complaintId: string,
+    reason?: string | null,
+  ): Promise<{ complaint: Record<string, unknown> }> {
+    const complaint = await this.prisma.complaint.findUnique({ where: { id: complaintId } });
+    if (!complaint) {
+      throw new NotFoundException({ message: 'COMPLAINT_NOT_FOUND', code: 'COMPLAINT_NOT_FOUND' });
+    }
+    if (!['resolved', 'dismissed'].includes(complaint.status)) {
+      throw new ConflictException({
+        message: 'COMPLAINT_IS_NOT_RESOLVED',
+        code: 'COMPLAINT_IS_NOT_RESOLVED',
+      });
+    }
+    const previousStatus = complaint.status;
+    const updated = await this.prisma.complaint.update({
+      where: { id: complaintId },
+      data: {
+        status: 'reviewing',
+        resolution: null,
+        resolvedBy: null,
+        resolvedAt: null,
+      },
+    });
+    await this.recordComplaintEvent(complaintId, adminId, 'reopened', {
+      reason: reason || 'Reopened by administrator',
+      previous_status: previousStatus,
+    });
     return {
       complaint: {
         id: updated.id,

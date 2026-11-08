@@ -40,6 +40,22 @@ const penalizeComplaint = catchAsync(async (req: Request, res: Response): Promis
   successResponse(res, result);
 });
 
+const reopenComplaint = catchAsync(async (req: Request, res: Response): Promise<void> => {
+  const authReq = req as AuthRequest;
+  const { complaint_id } = req.params as { complaint_id: string };
+  const { reason } = req.body as { reason?: string };
+  const result = await (complaintService as unknown as { reopen: (actorId: string, id: string, reason?: string) => Promise<unknown> }).reopen(String(authReq.user?.id), complaint_id, reason);
+  (auditService as unknown as { track: (p: unknown) => void }).track({
+    action: 'complaint.reopen',
+    resourceType: 'complaint',
+    resourceId: complaint_id,
+    actorId: authReq.user?.id,
+    payload: { reason: reason || null },
+  });
+  (auditService as unknown as { markResource: (res: Response, r: unknown) => void }).markResource(res, { type: 'complaint', id: complaint_id });
+  successResponse(res, result);
+});
+
 const resolveComplaint = catchAsync(async (req: Request, res: Response): Promise<void> => {
   const authReq = req as AuthRequest;
   const { complaint_id } = req.params as { complaint_id: string };
@@ -169,5 +185,5 @@ const issuePenalty = catchAsync(async (req: Request, res: Response): Promise<voi
   successResponse(res, result);
 });
 
-export { listComplaints, getComplaintStats, getComplaintDetail, penalizeComplaint, resolveComplaint, listUsers, updateUserStatus, moderateTrip, issuePenalty };
-export default { listComplaints, getComplaintStats, getComplaintDetail, penalizeComplaint, resolveComplaint, listUsers, updateUserStatus, moderateTrip, issuePenalty };
+export { listComplaints, getComplaintStats, getComplaintDetail, penalizeComplaint, reopenComplaint, resolveComplaint, listUsers, updateUserStatus, moderateTrip, issuePenalty };
+export default { listComplaints, getComplaintStats, getComplaintDetail, penalizeComplaint, reopenComplaint, resolveComplaint, listUsers, updateUserStatus, moderateTrip, issuePenalty };
