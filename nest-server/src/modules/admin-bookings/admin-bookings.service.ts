@@ -177,10 +177,11 @@ export class AdminBookingsService {
       throw new NotFoundException({ message: 'BOOKING_NOT_FOUND', code: 'BOOKING_NOT_FOUND' });
     }
     const trip = booking.trip as unknown as Record<string, unknown> | null;
-    const [totalBookings, completedBookings, cancelledBookings, lastBooking] = await Promise.all([
+    const [totalBookings, completedBookings, cancelledBookings, requestTotal, lastBooking] = await Promise.all([
       this.prisma.booking.count({ where: { passengerId: booking.passengerId } }),
       this.prisma.booking.count({ where: { passengerId: booking.passengerId, status: 'completed' } }),
       this.prisma.booking.count({ where: { passengerId: booking.passengerId, status: 'cancelled' } }),
+      this.prisma.rideRequest.count({ where: { passengerId: booking.passengerId } }),
       this.prisma.booking.findFirst({
         where: { passengerId: booking.passengerId },
         include: {
@@ -259,6 +260,7 @@ export class AdminBookingsService {
         total_bookings: totalBookings,
         completed: completedBookings,
         cancelled: cancelledBookings,
+        requests_total: requestTotal,
         last_booking: lastBooking
           ? {
               id: lastBooking.id,

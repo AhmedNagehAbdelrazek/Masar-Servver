@@ -106,7 +106,7 @@ async function getDetail(requestId) {
         include: [{
           model: Trip,
           as: 'trip',
-          attributes: ['id', 'originCity', 'destinationCity', 'departureTime', 'totalSeats', 'availableSeats', 'farePerSeat', 'status'],
+          attributes: ['id', 'originCity', 'destinationCity', 'departureTime', 'totalSeats', 'availableSeats', 'farePerSeat', 'isRecurring', 'genderPreference', 'status'],
           include: [{ model: User, as: 'driver', attributes: ['id', 'fullName', 'phone'] }],
         }],
       },
@@ -181,6 +181,8 @@ async function getDetail(requestId) {
           seat_price: Number(matched.trip.farePerSeat),
           total_seats: Number(matched.trip.totalSeats),
           available_seats: Number(matched.trip.availableSeats),
+          trip_type: matched.trip.isRecurring ? 'متكرر' : 'فردية',
+          gender: matched.trip.genderPreference,
           status: matched.trip.status,
         },
         driver: matched.trip.driver

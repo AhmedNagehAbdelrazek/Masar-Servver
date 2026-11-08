@@ -129,13 +129,17 @@ interface TripRow {
   originCity: string;
   destinationCity: string;
   departureTime: Date;
-  status: string;
+  totalSeats: number;
+  availableSeats: number;
   farePerSeat: unknown;
+  isRecurring: boolean;
+  status: string;
 }
 
 interface TripAgg {
   reservations_count: number;
   passengers_count: number;
+  total_booking_value: number;
 }
 
 function recentTripShape(
@@ -149,6 +153,11 @@ function recentTripShape(
     route: { origin: trip.originCity, destination: trip.destinationCity },
     departure_time: trip.departureTime,
     status: trip.status,
+    total_seats: Number(trip.totalSeats),
+    available_seats: Number(trip.availableSeats),
+    seat_price: Number(trip.farePerSeat),
+    trip_type: trip.isRecurring ? 'متكرر' : 'فردية',
+    total_booking_value: agg?.total_booking_value ?? 0,
     passengers_count: agg?.passengers_count ?? 0,
     reservations_count: agg?.reservations_count ?? 0,
   };
@@ -173,18 +182,24 @@ export class AdminDashboardService {
 
   private tripPassengerAggregates(tripIds: string[]): Promise<Map<string, TripAgg>> {
     if (tripIds.length === 0) return Promise.resolve(new Map());
-    return this.prisma.booking.groupBy({
-      by: ['tripId'],
+    return this.prisma.booking.findMany({
       where: { tripId: { in: tripIds }, status: { not: 'cancelled' } },
-      _count: { id: true },
-      _sum: { seatsBooked: true },
-    }).then((rows) => new Map(rows.map((r) => [
-      r.tripId,
-      {
-        reservations_count: r._count.id,
-        passengers_count: r._sum.seatsBooked ?? 0,
-      },
-    ])));
+      select: { tripId: true, seatsBooked: true, agreedFare: true },
+    }).then((rows) => {
+      const aggregates = new Map<string, TripAgg>();
+      for (const row of rows) {
+        const current = aggregates.get(row.tripId) ?? {
+          reservations_count: 0,
+          passengers_count: 0,
+          total_booking_value: 0,
+        };
+        current.reservations_count += 1;
+        current.passengers_count += row.seatsBooked;
+        current.total_booking_value += Number(row.agreedFare) * row.seatsBooked;
+        aggregates.set(row.tripId, current);
+      }
+      return aggregates;
+    });
   }
 
   private async pendingDocumentKeysFor(driverIds: string[]): Promise<Map<string, string[]>> {
@@ -303,6 +318,7 @@ export class AdminDashboardService {
       pendingDocsCount, pendingDriversRows, unresolvedComplaints,
       topRouteRows, recentTripRows, latestComplaints,
       bookingsToday, tripsToday, totalPassengers, pendingPayments, newRideRequests,
+      completedTrips, cancelledTrips, upcomingTrips, inProgressTrips,
     ] = await Promise.all([
       this.prisma.user.count({ where: { role: 'driver' } }),
       this.prisma.user.count({ where: ACTIVE_BUCKET }),
@@ -344,6 +360,10 @@ export class AdminDashboardService {
       this.prisma.user.count({ where: { role: 'passenger' } }),
       this.prisma.driverSubscription.count({ where: { status: 'pending_approval' } }),
       this.prisma.rideRequest.count({ where: { status: 'open' } }),
+      this.prisma.trip.count({ where: { status: 'completed' } }),
+      this.prisma.trip.count({ where: { status: 'cancelled' } }),
+      this.prisma.trip.count({ where: { status: { in: ['published', 'full'] } } }),
+      this.prisma.trip.count({ where: { status: { in: ['in_progress', 'ongoing'] } } }),
     ]);
 
     const aggs = await this.tripPassengerAggregates(recentTripRows.map((t) => t.id));
@@ -362,6 +382,10 @@ export class AdminDashboardService {
         total_passengers: totalPassengers,
         pending_payments: pendingPayments,
         new_ride_requests: newRideRequests,
+        completed_trips: completedTrips,
+        cancelled_trips: cancelledTrips,
+        upcoming_trips: upcomingTrips,
+        in_progress_trips: inProgressTrips,
       },
       alerts: [
         { type: 'pending_verification_documents', message: 'ALERT_PENDING_VERIFICATION_DOCUMENTS', count: pendingDocsCount },
@@ -400,6 +424,14 @@ export class AdminDashboardService {
     const { page, limit, offset } = parsePagination(query);
     const where: Prisma.TripWhereInput = {};
     if (query.status) where.status = tripStatusWhere(query.status);
+    if (query.search) {
+      const term = query.search.trim();
+      where.OR = [
+        { originCity: { contains: term, mode: 'insensitive' } },
+        { destinationCity: { contains: term, mode: 'insensitive' } },
+        { driver: { fullName: { contains: term, mode: 'insensitive' } } },
+      ];
+    }
     const [rows, count] = await Promise.all([
       this.prisma.trip.findMany({
         where,
@@ -526,6 +558,12 @@ export class AdminDashboardService {
           verificationStatus: true,
           createdAt: true,
           driverProfile: { select: { totalTrips: true } },
+          driverSubscriptions: {
+            where: { status: 'active' },
+            orderBy: { createdAt: 'desc' },
+            take: 1,
+            select: { planName: true },
+          },
         },
         orderBy: { [sortColumn]: sortOrder },
         skip: offset,
@@ -534,6 +572,21 @@ export class AdminDashboardService {
       this.prisma.user.count({ where }),
     ]);
 
+    const tripCounts = await this.prisma.trip.groupBy({
+      by: ['driverId'],
+      where: { driverId: { in: rows.map((row) => row.id) } },
+      _count: { id: true },
+    });
+    const tripCountByDriver = new Map(tripCounts.map((row) => [row.driverId, row._count.id]));
+    const completedTripCounts = await this.prisma.trip.groupBy({
+      by: ['driverId'],
+      where: { driverId: { in: rows.map((row) => row.id) }, status: 'completed' },
+      _count: { id: true },
+    });
+    const completedTripCountByDriver = new Map(
+      completedTripCounts.map((row) => [row.driverId, row._count.id]),
+    );
+
     return {
       data: rows.map((u) => ({
         id: u.id,
@@ -541,7 +594,9 @@ export class AdminDashboardService {
         phone: maskPhone(u.phone),
         registration_date: u.createdAt,
         avg_rating: Number(u.avgRating || 0),
-        total_trips: u.driverProfile?.totalTrips ?? 0,
+        total_trips: tripCountByDriver.get(u.id) ?? 0,
+        completed_trips: completedTripCountByDriver.get(u.id) ?? 0,
+        plan_name: u.driverSubscriptions[0]?.planName ?? null,
         balance: Number(u.totalBalance || 0),
         account_status: deriveAccountStatus({ status: u.status, verificationStatus: u.verificationStatus }),
       })),
@@ -590,6 +645,106 @@ export class AdminDashboardService {
       );
     }
     return lines.join('\n');
+  }
+
+  async cancelTrip(tripId: string, reason: string | null, adminId: string): Promise<Record<string, unknown>> {
+    const trip = await this.prisma.trip.findUnique({ where: { id: tripId } });
+    if (!trip) {
+      throw new NotFoundException({ message: 'TRIP_NOT_FOUND', code: 'TRIP_NOT_FOUND' });
+    }
+    if (['completed', 'cancelled'].includes(trip.status)) {
+      throw new ConflictException({
+        message: 'TRIP_ALREADY_COMPLETED_OR_CANCELLED',
+        code: 'TRIP_ALREADY_COMPLETED_OR_CANCELLED',
+      });
+    }
+
+    const cancellationReason = reason || 'Cancelled by administrator';
+    const result = await this.prisma.$transaction(async (tx) => {
+      const claimed = await tx.trip.updateMany({
+        where: { id: tripId, status: { notIn: ['completed', 'cancelled'] } },
+        data: {
+          status: 'cancelled',
+          isModerated: true,
+          moderationReason: cancellationReason,
+          moderatedBy: adminId,
+        },
+      });
+      if (claimed.count === 0) {
+        throw new ConflictException({
+          message: 'TRIP_ALREADY_COMPLETED_OR_CANCELLED',
+          code: 'TRIP_ALREADY_COMPLETED_OR_CANCELLED',
+        });
+      }
+      const bookings = await tx.booking.findMany({
+        where: { tripId, status: { in: ['pending', 'confirmed'] } },
+        select: { id: true, passengerId: true, seatNumbers: true, seatNumber: true },
+      });
+      if (bookings.length > 0) {
+        await tx.booking.updateMany({
+          where: { id: { in: bookings.map((booking) => booking.id) } },
+          data: {
+            status: 'cancelled',
+            cancellationReason,
+            cancelledBy: adminId,
+            cancelledAt: new Date(),
+          },
+        });
+        const seatNumbers = bookings.flatMap((booking) =>
+          booking.seatNumbers.length > 0
+            ? booking.seatNumbers
+            : booking.seatNumber != null
+              ? [booking.seatNumber]
+              : [],
+        );
+        if (seatNumbers.length > 0) {
+          await tx.tripSeat.updateMany({
+            where: { tripId, seatNumber: { in: seatNumbers } },
+            data: { seatType: 'available' },
+          });
+        }
+      }
+      return {
+        bookings: bookings.length,
+        passengerIds: [...new Set(bookings.map((booking) => booking.passengerId))],
+      };
+    });
+
+    const route = `${trip.originCity} ← ${trip.destinationCity}`;
+    for (const passengerId of result.passengerIds) {
+      try {
+        await this.prisma.notification.create({
+          data: {
+            userId: passengerId,
+            type: 'TRIP_CANCELLED',
+            title: 'Trip cancelled',
+            body: `The trip ${route} was cancelled by support.${reason ? ` Reason: ${reason}` : ''}`,
+            data: { trip_id: tripId, reason: reason ?? null },
+            sentVia: ['in_app'],
+          },
+        });
+      } catch (err) {
+        this.logger.warn(`trip cancellation notification failed: ${(err as Error).message}`);
+      }
+    }
+
+    const driver = await this.prisma.user.findUnique({ where: { id: trip.driverId } });
+    if (driver) {
+      try {
+        await this.notifications.sendToUser(driver as unknown as NotifyUser, 'TRIP_CANCELLED', {
+          channels: ['in_app', 'push'],
+          vars: { route, reason: reason ?? '' },
+          data: { trip_id: tripId, reason: reason ?? null },
+        });
+      } catch (err) {
+        this.logger.warn(`driver trip cancellation notification failed: ${(err as Error).message}`);
+      }
+    }
+
+    return {
+      trip: { id: tripId, status: 'cancelled', cancellation_reason: reason ?? null },
+      cancelled_bookings: result.bookings,
+    };
   }
 
   // ===== US3: Dossier tabs =====

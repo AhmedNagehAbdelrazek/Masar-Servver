@@ -387,6 +387,7 @@ export class AdminPassengersService {
         seats_needed: r.seatsNeeded,
         status: r.status,
         created_at: r.createdAt,
+        preferred_date: r.originTime ?? r.arrivalDeadline ?? null,
         expires_at: r.expiresAt,
       })),
       pagination: buildPagination(count, page, limit),
@@ -418,6 +419,25 @@ export class AdminPassengersService {
       }),
       this.prisma.complaint.count({ where }),
     ]);
+    const bookingIds = [...new Set(rows.map((row) => row.bookingId).filter((id): id is string => id != null))];
+    const tripsByBooking = new Map<string, { id: string; route: string }>();
+    if (bookingIds.length > 0) {
+      const bookings = await this.prisma.booking.findMany({
+        where: { id: { in: bookingIds } },
+        select: {
+          id: true,
+          trip: { select: { id: true, originCity: true, destinationCity: true } },
+        },
+      });
+      for (const booking of bookings) {
+        if (booking.trip) {
+          tripsByBooking.set(booking.id, {
+            id: booking.trip.id,
+            route: `${booking.trip.originCity} ← ${booking.trip.destinationCity}`,
+          });
+        }
+      }
+    }
     return {
       data: rows.map((c) => ({
         id: c.id,
@@ -426,6 +446,7 @@ export class AdminPassengersService {
         other_party: c.reporterId === passengerId ? c.accused : c.reporter,
         reason: c.category,
         description: c.description,
+        trip: c.bookingId ? tripsByBooking.get(c.bookingId) ?? null : null,
         status: c.status,
         created_at: c.createdAt,
       })),
@@ -436,14 +457,18 @@ export class AdminPassengersService {
   async listRatings(
     passengerId: string,
     query: PassengerRatingsQuery = {},
-  ): Promise<{ data: Record<string, unknown>[]; pagination: Record<string, unknown> }> {
+  ): Promise<{
+    data: Record<string, unknown>[];
+    summary: Record<string, unknown>;
+    pagination: Record<string, unknown>;
+  }> {
     await this.getPassengerOrThrow(passengerId);
     const { page, limit, offset } = parsePagination(query);
     const direction = query.direction ?? 'given';
     const where: Prisma.RatingWhereInput = direction === 'given'
       ? { raterId: passengerId }
       : { rateeId: passengerId };
-    const [rows, count] = await Promise.all([
+    const [rows, count, ratingAgg, withComment] = await Promise.all([
       this.prisma.rating.findMany({
         where,
         include: {
@@ -461,6 +486,8 @@ export class AdminPassengersService {
         take: limit,
       }),
       this.prisma.rating.count({ where }),
+      this.prisma.rating.aggregate({ where, _avg: { stars: true } }),
+      this.prisma.rating.count({ where: { ...where, review: { not: null } } }),
     ]);
     return {
       data: rows.map((r) => ({
@@ -475,6 +502,12 @@ export class AdminPassengersService {
         trip: r.booking?.trip ?? null,
         created_at: r.createdAt,
       })),
+      summary: {
+        total: count,
+        average: ratingAgg._avg.stars != null ? Number(ratingAgg._avg.stars) : 0,
+        with_comment: withComment,
+        without_comment: count - withComment,
+      },
       pagination: buildPagination(count, page, limit),
     };
   }
@@ -554,5 +587,26 @@ export class AdminPassengersService {
       details: dto.notes ?? null,
       confirm_reviewed_log: true,
     });
+  }
+
+  async applyAccountStatus(
+    passengerId: string,
+    action: 'reactivate' | 'unblock' | 'suspend',
+  ): Promise<Record<string, unknown>> {
+    await this.getPassengerOrThrow(passengerId);
+    if (action === 'suspend') {
+      await this.prisma.user.update({ where: { id: passengerId }, data: { status: 'suspended' } });
+    } else {
+      await this.prisma.user.update({ where: { id: passengerId }, data: { status: 'active' } });
+      await this.prisma.penalty.updateMany({
+        where: {
+          userId: passengerId,
+          type: { in: ['suspension', 'ban'] },
+          endsAt: null,
+        },
+        data: { endsAt: new Date() },
+      });
+    }
+    return { passenger: { id: passengerId, account_status: action === 'suspend' ? 'suspended' : 'active' } };
   }
 }

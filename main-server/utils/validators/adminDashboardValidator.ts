@@ -47,6 +47,10 @@ export const paginationQueryValidation: ValidationChain[] = [
 
 export const recentTripsQueryValidation: ValidationChain[] = [
   ...paginationQueryValidation,
+  query('search')
+    .optional()
+    .isString().trim()
+    .isLength({ max: 120 }).withMessage(V.SEARCH_MUST_BE_AT_MOST_100_CHARACTERS),
   query('status')
     .optional()
     .isIn(['published', 'full', 'in_progress', 'ongoing', 'completed', 'cancelled', 'canceled'])

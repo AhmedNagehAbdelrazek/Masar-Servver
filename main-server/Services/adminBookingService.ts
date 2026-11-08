@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { Op } from 'sequelize';
 import sequelize from '../config/database';
-import { Booking, Trip, User, TripSeat, Notification } from '../Models';
+import { Booking, Trip, User, TripSeat, Notification, RideRequest } from '../Models';
 import { parsePagination, buildPagination } from '../utils/pagination';
 import { ApiErrors } from '../utils/ApiError';
 import { maskPhone } from '../utils/masking';
@@ -125,10 +125,11 @@ async function getDetail(bookingId) {
   });
   if (!booking) throw ApiErrors.notFound('BOOKING_NOT_FOUND');
   const trip = booking.trip;
-  const [totalBookings, completedBookings, cancelledBookings, lastBooking] = await Promise.all([
+  const [totalBookings, completedBookings, cancelledBookings, requestTotal, lastBooking] = await Promise.all([
     Booking.count({ where: { passengerId: booking.passengerId } }),
     Booking.count({ where: { passengerId: booking.passengerId, status: 'completed' } }),
     Booking.count({ where: { passengerId: booking.passengerId, status: 'cancelled' } }),
+    RideRequest.count({ where: { passengerId: booking.passengerId } }),
     Booking.findOne({
       where: { passengerId: booking.passengerId },
       include: [{ model: Trip, as: 'trip', attributes: ['id', 'originCity', 'destinationCity'] }],
@@ -186,6 +187,7 @@ async function getDetail(bookingId) {
       total_bookings: totalBookings,
       completed: completedBookings,
       cancelled: cancelledBookings,
+      requests_total: requestTotal,
       last_booking: lastBooking
         ? {
           id: lastBooking.id,

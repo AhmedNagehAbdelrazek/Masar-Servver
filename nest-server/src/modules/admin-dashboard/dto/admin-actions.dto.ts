@@ -21,6 +21,15 @@ export class AccountActionDto {
   reason?: string | null;
 }
 
+// Port of cancelTripBodyValidation: reason optional (nullable), max 500.
+export class CancelTripDto {
+  @IsOptional()
+  @IsString()
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
+  @MaxLength(500)
+  reason?: string | null;
+}
+
 // Port of rejectReasonBodyValidation: reason optional (nullable), max 2000.
 export class RejectDocumentDto {
   @IsOptional()

@@ -190,13 +190,24 @@ async function countPendingDocuments() {
 function tripPassengerAggregates(tripIds) {
   if (tripIds.length === 0) return Promise.resolve(new Map());
   return Booking.findAll({
-    attributes: ['tripId', [fn('COUNT', col('id')), 'reservations_count'], [fn('SUM', col('seats_booked')), 'passengers_count']],
+    attributes: ['tripId', 'seatsBooked', 'agreedFare'],
     where: { tripId: { [Op.in]: tripIds }, status: { [Op.ne]: BOOKING_STATUS.CANCELLED } },
-    group: ['tripId'],
-  }).then((rows) => new Map(rows.map((r) => [
-    r.tripId,
-    { reservations_count: Number(r.get('reservations_count')), passengers_count: Number(r.get('passengers_count') || 0) },
-  ])));
+    raw: true,
+  }).then((rows) => {
+    const aggregates = new Map();
+    for (const row of rows) {
+      const current = aggregates.get(row.tripId) || {
+        reservations_count: 0,
+        passengers_count: 0,
+        total_booking_value: 0,
+      };
+      current.reservations_count += 1;
+      current.passengers_count += Number(row.seatsBooked || 0);
+      current.total_booking_value += Number(row.agreedFare || 0) * Number(row.seatsBooked || 0);
+      aggregates.set(row.tripId, current);
+    }
+    return aggregates;
+  });
 }
 
 function recentTripShape(trip, driver, agg) {
@@ -206,20 +217,33 @@ function recentTripShape(trip, driver, agg) {
     route: { origin: trip.originCity, destination: trip.destinationCity },
     departure_time: trip.departureTime,
     status: trip.status,
+    total_seats: Number(trip.totalSeats),
+    available_seats: Number(trip.availableSeats),
+    seat_price: Number(trip.farePerSeat),
+    trip_type: trip.isRecurring ? 'متكرر' : 'فردية',
+    total_booking_value: agg?.total_booking_value ?? 0,
     passengers_count: agg?.passengers_count ?? 0,
     reservations_count: agg?.reservations_count ?? 0,
   };
 }
 
-async function fetchRecentTrips({ limit, offset = 0, status = null }) {
+async function fetchRecentTrips({ limit, offset = 0, status = null, search = null }) {
   const where = {};
   if (status) where.status = mapTripStatusFilter(status) || status;
+  if (search) {
+    where[Op.or] = [
+      { originCity: { [Op.iLike]: `%${search}%` } },
+      { destinationCity: { [Op.iLike]: `%${search}%` } },
+      { '$driver.fullName$': { [Op.iLike]: `%${search}%` } },
+    ];
+  }
   const { rows, count } = await Trip.findAndCountAll({
     where,
     include: [{ model: User, as: 'driver', attributes: ['id', 'fullName'] }],
     order: [['departure_time', 'DESC']],
     offset,
     limit,
+    subQuery: false,
   });
   const aggs = await tripPassengerAggregates(rows.map((t) => t.id));
   return {
@@ -236,7 +260,7 @@ async function getSummary() {
     pendingDocsCount, pendingDriversRows, unresolvedComplaints,
     topRoutes, recentTripRows, latestComplaints,
     bookingsToday, tripsToday, totalPassengers, pendingPayments, newRideRequests,
-    completedTrips, cancelledTrips, upcomingTrips,
+    completedTrips, cancelledTrips, upcomingTrips, inProgressTrips,
   ] = await Promise.all([
     User.count({ where: { role: 'driver' } }),
     User.count({ where: ACTIVE_BUCKET }),
@@ -274,6 +298,7 @@ async function getSummary() {
     Trip.count({ where: { status: TRIP_STATUS.COMPLETED } }),
     Trip.count({ where: { status: TRIP_STATUS.CANCELLED } }),
     Trip.count({ where: { status: { [Op.in]: [TRIP_STATUS.PUBLISHED, TRIP_STATUS.FULL] } } }),
+    Trip.count({ where: { status: { [Op.in]: [TRIP_STATUS.IN_PROGRESS, TRIP_STATUS.ONGOING] } } }),
   ]);
 
   const aggs = await tripPassengerAggregates(recentTripRows.map((t) => t.id));
@@ -295,6 +320,7 @@ async function getSummary() {
       completed_trips: completedTrips,
       cancelled_trips: cancelledTrips,
       upcoming_trips: upcomingTrips,
+      in_progress_trips: inProgressTrips,
     },
     alerts: [
       { type: 'pending_verification_documents', message: 'ALERT_PENDING_VERIFICATION_DOCUMENTS', count: pendingDocsCount },
@@ -327,7 +353,12 @@ async function getSummary() {
 
 async function getRecentTrips(query) {
   const { page, limit, offset } = parsePagination(query);
-  const result = await fetchRecentTrips({ limit, offset, status: query.status || null });
+  const result = await fetchRecentTrips({
+    limit,
+    offset,
+    status: query.status || null,
+    search: query.search || null,
+  });
   result.pagination.page = page;
   return result;
 }
@@ -425,11 +456,46 @@ async function listDrivers(query) {
   const { rows, count } = await User.findAndCountAll({
     where,
     attributes: ['id', 'fullName', 'phone', 'avgRating', 'totalBalance', 'status', 'verificationStatus', 'createdat'],
-    include: [{ model: DriverProfile, as: 'driverProfile', attributes: ['totalTrips'] }],
     order: [[sortColumn, sortOrder]],
     offset,
     limit,
   });
+
+  const ids = rows.map((u) => u.id);
+  const tripCounts = ids.length
+    ? await Trip.findAll({
+      attributes: ['driverId', [fn('COUNT', col('id')), 'count']],
+      where: { driverId: { [Op.in]: ids } },
+      group: ['driverId'],
+      raw: true,
+    })
+    : [];
+  const tripCountByDriver = new Map(tripCounts.map((row) => [row.driverId, Number(row.count)]));
+  const completedTripCounts = ids.length
+    ? await Trip.findAll({
+      attributes: ['driverId', [fn('COUNT', col('id')), 'count']],
+      where: { driverId: { [Op.in]: ids }, status: TRIP_STATUS.COMPLETED },
+      group: ['driverId'],
+      raw: true,
+    })
+    : [];
+  const completedTripCountByDriver = new Map(
+    completedTripCounts.map((row) => [row.driverId, Number(row.count)]),
+  );
+  const subscriptions = ids.length
+    ? await DriverSubscription.findAll({
+      attributes: ['driverId', 'planName'],
+      where: { driverId: { [Op.in]: ids }, status: 'active' },
+      order: [['createdat', 'DESC']],
+      raw: true,
+    })
+    : [];
+  const planByDriver = new Map();
+  for (const subscription of subscriptions) {
+    if (!planByDriver.has(subscription.driverId)) {
+      planByDriver.set(subscription.driverId, subscription.planName);
+    }
+  }
 
   return {
     data: rows.map((u) => ({
@@ -438,7 +504,9 @@ async function listDrivers(query) {
       phone: maskPhone(u.phone),
       registration_date: u.createdat,
       avg_rating: Number(u.avgRating || 0),
-      total_trips: u.driverProfile?.totalTrips ?? 0,
+      total_trips: tripCountByDriver.get(u.id) ?? 0,
+      completed_trips: completedTripCountByDriver.get(u.id) ?? 0,
+      plan_name: planByDriver.get(u.id) || null,
       balance: Number(u.totalBalance || 0),
       account_status: deriveAccountStatus(u),
     })),

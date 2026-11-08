@@ -201,6 +201,14 @@ const BAN_REASONS = [
   'other',
 ] as const;
 
+// Port of account-status action validation.
+export class PassengerAccountStatusDto {
+  @IsString()
+  @IsNotEmpty()
+  @IsIn(['reactivate', 'unblock', 'suspend'])
+  action!: 'reactivate' | 'unblock' | 'suspend';
+}
+
 // Figma 10063:19348 إيقاف نهائي: reason + notes + أؤكد مراجعة سجل الحساب checkbox.
 export class PermanentSuspensionDto {
   @IsString()

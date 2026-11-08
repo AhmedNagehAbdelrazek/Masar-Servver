@@ -4,6 +4,7 @@ import { Roles } from '../../common/decorators/roles.decorator.js';
 import type { AuthUser } from '../../common/guards/jwt-auth.guard.js';
 import { AdminPassengersService } from './admin-passengers.service.js';
 import {
+  PassengerAccountStatusDto,
   PassengerBookingsQuery,
   PassengerComplaintsQuery,
   PassengerIdParam,
@@ -81,7 +82,11 @@ export class AdminPassengersController {
   listRatings(
     @Param() params: PassengerIdParam,
     @Query() query: PassengerRatingsQuery,
-  ): Promise<{ data: Record<string, unknown>[]; pagination: Record<string, unknown> }> {
+  ): Promise<{
+    data: Record<string, unknown>[];
+    summary: Record<string, unknown>;
+    pagination: Record<string, unknown>;
+  }> {
     return this.passengers.listRatings(params.passenger_id, query);
   }
 
@@ -123,5 +128,14 @@ export class AdminPassengersController {
     @CurrentUser() user?: AuthUser,
   ): Promise<{ penalty: Record<string, unknown> }> {
     return this.passengers.suspendPermanent(user?.id ?? '', params.passenger_id, dto);
+  }
+
+  @Post(':passenger_id/account-status')
+  @HttpCode(200)
+  applyAccountStatus(
+    @Param() params: PassengerIdParam,
+    @Body() dto: PassengerAccountStatusDto,
+  ): Promise<Record<string, unknown>> {
+    return this.passengers.applyAccountStatus(params.passenger_id, dto.action);
   }
 }

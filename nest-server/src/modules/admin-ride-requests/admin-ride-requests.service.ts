@@ -163,6 +163,8 @@ export class AdminRideRequestsService {
                 totalSeats: true,
                 availableSeats: true,
                 farePerSeat: true,
+                isRecurring: true,
+                genderPreference: true,
                 status: true,
                 driver: { select: { id: true, fullName: true, phone: true } },
               },
@@ -191,6 +193,8 @@ export class AdminRideRequestsService {
         totalSeats: number;
         availableSeats: number;
         farePerSeat: unknown;
+        isRecurring: boolean;
+        genderPreference: string;
         status: string;
         driver: { id: string; fullName: string | null; phone: string } | null;
       } | null;
@@ -270,6 +274,8 @@ export class AdminRideRequestsService {
                 seat_price: Number(matched.trip.farePerSeat),
                 total_seats: Number(matched.trip.totalSeats),
                 available_seats: Number(matched.trip.availableSeats),
+                trip_type: matched.trip.isRecurring ? 'متكرر' : 'فردية',
+                gender: matched.trip.genderPreference,
                 status: matched.trip.status,
               },
               driver: matched.trip.driver

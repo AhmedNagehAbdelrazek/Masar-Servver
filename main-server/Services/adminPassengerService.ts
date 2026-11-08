@@ -315,6 +315,7 @@ async function listTripRequests(passengerId, query = {}) {
       seats_needed: r.seatsNeeded,
       status: r.status,
       created_at: r.createdat,
+      preferred_date: r.originTime || r.arrivalDeadline || null,
       expires_at: r.expiresAt,
     })),
     pagination: buildPagination(count, page, limit),
@@ -340,6 +341,23 @@ async function listComplaints(passengerId, query = {}) {
     offset,
     limit,
   });
+  const bookingIds = [...new Set(rows.map((row) => row.bookingId).filter(Boolean))];
+  const tripsByBooking = new Map();
+  if (bookingIds.length > 0) {
+    const bookings = await Booking.findAll({
+      where: { id: { [Op.in]: bookingIds } },
+      attributes: ['id'],
+      include: [{ model: Trip, as: 'trip', attributes: ['id', 'originCity', 'destinationCity'] }],
+    });
+    for (const booking of bookings) {
+      if (booking.trip) {
+        tripsByBooking.set(booking.id, {
+          id: booking.trip.id,
+          route: `${booking.trip.originCity} ← ${booking.trip.destinationCity}`,
+        });
+      }
+    }
+  }
   return {
     data: rows.map((c) => ({
       id: c.id,
@@ -348,6 +366,7 @@ async function listComplaints(passengerId, query = {}) {
       other_party: c.reporterId === passengerId ? c.accused : c.reporter,
       reason: c.category,
       description: c.description,
+      trip: c.bookingId ? tripsByBooking.get(c.bookingId) || null : null,
       status: c.status,
       created_at: c.createdat,
     })),
@@ -376,6 +395,10 @@ async function listRatings(passengerId, query = {}) {
     offset,
     limit,
   });
+  const [avg, withComment] = await Promise.all([
+    Rating.aggregate('stars', 'avg', { where }),
+    Rating.count({ where: { ...where, review: { [Op.ne]: null } } }),
+  ]);
   return {
     data: rows.map((r) => ({
       id: r.id,
@@ -389,6 +412,12 @@ async function listRatings(passengerId, query = {}) {
       trip: r.booking?.trip || null,
       created_at: r.createdat,
     })),
+    summary: {
+      total: count,
+      average: avg != null ? Number(avg) : 0,
+      with_comment: withComment,
+      without_comment: count - withComment,
+    },
     pagination: buildPagination(count, page, limit),
   };
 }

@@ -22,6 +22,11 @@ class PaginationQuery {
 // the same chain there; the service ignores status for those endpoints).
 export class RecentTripsQuery extends PaginationQuery {
   @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  search?: string;
+
+  @IsOptional()
   @IsIn(['published', 'full', 'in_progress', 'ongoing', 'completed', 'cancelled', 'canceled'])
   status?: string;
 }

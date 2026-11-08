@@ -1,9 +1,9 @@
-import { Body, Controller, Get, Header, HttpCode, Param, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Header, HttpCode, Param, ParseUUIDPipe, Post, Query } from '@nestjs/common';
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import { Roles } from '../../common/decorators/roles.decorator.js';
 import type { AuthUser } from '../../common/guards/jwt-auth.guard.js';
 import { AdminDashboardService } from './admin-dashboard.service.js';
-import { AccountActionDto, RejectDocumentDto, SetDriverStatusDto } from './dto/admin-actions.dto.js';
+import { AccountActionDto, CancelTripDto, RejectDocumentDto, SetDriverStatusDto } from './dto/admin-actions.dto.js';
 import { SendDriverNotificationDto } from './dto/driver-notification.dto.js';
 import {
   DriversListQuery,
@@ -118,6 +118,16 @@ export class AdminDashboardController {
     @CurrentUser() user?: AuthUser,
   ): Promise<Record<string, unknown>> {
     return this.dashboard.sendDriverNotification(user?.id ?? '', params.driver_id, dto);
+  }
+
+  @Post('trips/:trip_id/cancel')
+  @HttpCode(200)
+  cancelTrip(
+    @Param('trip_id', new ParseUUIDPipe()) tripId: string,
+    @Body() dto: CancelTripDto,
+    @CurrentUser() user?: AuthUser,
+  ): Promise<Record<string, unknown>> {
+    return this.dashboard.cancelTrip(tripId, dto.reason ?? null, user?.id ?? '');
   }
 
   @Post('drivers/:driver_id/status')
