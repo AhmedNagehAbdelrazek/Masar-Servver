@@ -720,10 +720,10 @@ async function attachOfferToTrip(driverId, tripId, offerId, payload = {}) {
     throw ApiErrors.forbidden('YOU_CAN_ONLY_ATTACH_YOUR_OWN_OFFERS');
   }
   if (offer.bookingId) {
-    throw ApiErrors.conflict('OFFER_ALREADY_ATTACHED_TO_A_BOOKING');
+    throw ApiErrors.custom('OFFER_ALREADY_ATTACHED_TO_A_BOOKING', 409, 'OFFER_ALREADY_ATTACHED_TO_A_BOOKING');
   }
   if (offer.status !== REQUEST_OFFER_STATUS.ACCEPTED) {
-    throw ApiErrors.conflict('ONLY_ACCEPTED_OFFERS_CAN_BE_ATTACHED_TO_A_TRIP');
+    throw ApiErrors.custom('ONLY_ACCEPTED_OFFERS_CAN_BE_ATTACHED_TO_A_TRIP', 409, 'ONLY_ACCEPTED_OFFERS_CAN_BE_ATTACHED_TO_A_TRIP');
   }
   if (!offer.rideRequest || offer.rideRequest.status !== RIDE_REQUEST_STATUS.ACCEPTED) {
     throw ApiErrors.conflict('THE_UNDERLYING_RIDE_REQUEST_IS_NOT_IN_AN_ACCEPTED_STATE');

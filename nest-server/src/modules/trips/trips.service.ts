@@ -525,7 +525,6 @@ export class TripsService {
         stops: { orderBy: { stopOrder: 'asc' } },
         attributes: true,
         bookings: {
-          where: { status: { in: ['confirmed', 'completed', 'no_show'] } },
           include: {
             passenger: {
               select: { id: true, fullName: true, phone: true, avgRating: true, avatarUrl: true },
@@ -595,6 +594,8 @@ export class TripsService {
       total_seats: t.totalSeats,
       available_seats: t.availableSeats,
       status: t.status,
+      abandoned_at: t.abandonedAt,
+      abandon_reason: t.abandonReason,
       is_recurring: t.isRecurring,
       recurrence_days: t.recurrenceDays,
       recurrence_end_date: t.recurrenceEndDate,
@@ -837,6 +838,8 @@ export class TripsService {
         instructions: t.driverInstructions,
         additional_instructions: t.additionalInstructions,
         status: t.status,
+        abandoned_at: t.abandonedAt,
+        abandon_reason: t.abandonReason,
         is_requested_trip: rideRequestIds.length > 0,
         ride_request_ids: rideRequestIds,
         seats: seats.map((s) => ({

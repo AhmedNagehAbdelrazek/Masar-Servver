@@ -680,6 +680,8 @@ export class AdminDashboardService {
       trip: {
         id: trip.id,
         status: trip.status,
+        abandoned_at: trip.abandonedAt,
+        abandon_reason: trip.abandonReason,
         route: { origin: trip.originCity, destination: trip.destinationCity },
         origin_city: trip.originCity,
         origin_area: trip.originArea,

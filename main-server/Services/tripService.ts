@@ -623,11 +623,6 @@ const getTripById = async (tripId) => {
       {
         model: Booking,
         as: 'bookings',
-        where: {
-          status: {
-            [Op.in]: [BOOKING_STATUS.CONFIRMED, BOOKING_STATUS.COMPLETED, BOOKING_STATUS.NO_SHOW],
-          },
-        },
         required: false,
         include: [
           {
@@ -686,6 +681,8 @@ const getTripById = async (tripId) => {
     total_seats: data.totalSeats,
     available_seats: data.availableSeats,
     status: data.status,
+    abandoned_at: data.abandonedAt,
+    abandon_reason: data.abandonReason,
     is_recurring: data.isRecurring,
     recurrence_days: data.recurrenceDays,
     recurrence_end_date: data.recurrenceEndDate,
@@ -970,6 +967,8 @@ const getDriverTrips = async (driverId : string, status : string | null ) => {
     instructions: trip.driverInstructions,
     additional_instructions: trip.additionalInstructions,
     status: trip.status,
+    abandoned_at: trip.abandonedAt,
+    abandon_reason: trip.abandonReason,
     is_requested_trip: (requestIdsByTrip.get(trip.id) || []).length > 0,
     ride_request_ids: requestIdsByTrip.get(trip.id) || [],
     seats: (trip.seats || []).map((s) => ({
@@ -1509,7 +1508,7 @@ const abandonTrip = async (driverId, tripId, reason = null) => {
   if (!trip) throw ApiErrors.notFound('TRIP_NOT_FOUND');
   if (trip.driverId !== driverId) throw ApiErrors.forbidden('YOU_CAN_ONLY_ABANDON_YOUR_OWN_TRIPS');
   if (![TRIP_STATUS.IN_PROGRESS, TRIP_STATUS.ONGOING].includes(trip.status)) {
-    throw ApiErrors.conflict('ONLY_A_STARTED_TRIP_CAN_BE_ABANDONED', null, { code: 'TRIP_NOT_IN_PROGRESS' });
+    throw ApiErrors.custom('ONLY_A_STARTED_TRIP_CAN_BE_ABANDONED', 409, 'TRIP_NOT_IN_PROGRESS');
   }
 
   const now = new Date();
@@ -1526,7 +1525,7 @@ const abandonTrip = async (driverId, tripId, reason = null) => {
       },
     }
   );
-  if (!claimed) throw ApiErrors.conflict('ONLY_A_STARTED_TRIP_CAN_BE_ABANDONED');
+  if (!claimed) throw ApiErrors.custom('ONLY_A_STARTED_TRIP_CAN_BE_ABANDONED', 409, 'TRIP_NOT_IN_PROGRESS');
 
   const bookings = await Booking.findAll({
     where: { tripId, status: { [Op.in]: [BOOKING_STATUS.CONFIRMED, BOOKING_STATUS.PENDING] } },
