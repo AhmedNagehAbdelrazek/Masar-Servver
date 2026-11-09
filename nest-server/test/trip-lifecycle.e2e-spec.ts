@@ -347,6 +347,7 @@ describe('Trip completion', () => {
         seatsBooked: 1,
         agreedFare: 5,
         status: 'confirmed',
+        pickupStatus: 'picked_up',
         paymentStatus: 'pending',
         referenceCode: makeRef('MSR-T'),
       },
@@ -425,6 +426,31 @@ describe('Trip completion', () => {
       .post(`/api/trips/${trip.id}/complete`)
       .set('Authorization', `Bearer ${driverToken}`);
     expect(res.status).toBe(422);
+  });
+
+  it('abandons a started trip and cancels its active bookings', async () => {
+    const trip = await seedInProgressTrip();
+    const booking = await ctx.prisma.booking.create({
+      data: {
+        tripId: trip.id,
+        passengerId: C_PASSENGER_ID,
+        seatNumber: 2,
+        seatsBooked: 1,
+        agreedFare: 5,
+        status: 'confirmed',
+        paymentStatus: 'pending',
+        referenceCode: makeRef('MSR-A'),
+      },
+    });
+    const res = await ctx.agent
+      .post(`/api/trips/${trip.id}/abandon`)
+      .set('Authorization', `Bearer ${driverToken}`)
+      .send({ reason: 'vehicle_issue' });
+    expect(res.status).toBe(200);
+    expect((await ctx.prisma.trip.findUnique({ where: { id: trip.id } }))?.status).toBe('abandoned');
+    const updated = await ctx.prisma.booking.findUnique({ where: { id: booking.id } });
+    expect(updated?.status).toBe('cancelled');
+    expect(updated?.cancellationReason).toBe('trip_abandoned');
   });
 });
 
@@ -887,7 +913,7 @@ describe('tripExpiry sweep', () => {
     });
   }
 
-  it('auto-completes started trips past their end', async () => {
+  it('auto-abandons started trips with no driver activity', async () => {
     const trip = await ctx.prisma.trip.create({
       data: {
         driverId: SWEEP_DRIVER_ID,
@@ -895,6 +921,7 @@ describe('tripExpiry sweep', () => {
         originCity: 'Amman',
         destinationCity: 'Irbid',
         departureTime: hoursAgo(5),
+        startedAt: hoursAgo(5),
         totalSeats: 4,
         availableSeats: 3,
         farePerSeat: 15,
@@ -908,12 +935,12 @@ describe('tripExpiry sweep', () => {
     const expiry = ctx.app.get(TripExpiryService);
     const result = await expiry.refreshStaleTrips();
 
-    expect(result.autoCompleted).toContain(trip.id);
+    expect(result.abandoned).toContain(trip.id);
     expect(result.errors).toEqual([]);
-    expect((await ctx.prisma.trip.findUnique({ where: { id: trip.id } }))?.status).toBe('completed');
+    expect((await ctx.prisma.trip.findUnique({ where: { id: trip.id } }))?.status).toBe('abandoned');
     const updated = await ctx.prisma.booking.findUnique({ where: { id: booking.id } });
-    expect(updated?.status).toBe('completed');
-    expect(updated?.completedAt).not.toBeNull();
+    expect(updated?.status).toBe('cancelled');
+    expect(updated?.cancellationReason).toBe('trip_abandoned');
   });
 
   it('expires never-operated trips with NO_SHOW bookings', async () => {
@@ -998,6 +1025,7 @@ describe('tripExpiry sweep', () => {
         originCity: 'Amman',
         destinationCity: 'Irbid',
         departureTime: hoursAgo(1),
+        startedAt: new Date(Date.now() - 5 * 60000),
         totalSeats: 4,
         availableSeats: 3,
         farePerSeat: 15,

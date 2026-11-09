@@ -8,13 +8,14 @@ import { AdminTripController } from './admin-trip.controller.js';
 import { SeatLockController } from './seat-lock.controller.js';
 import { SeatLockService } from './seat-lock.service.js';
 import { TripExpiryService } from './trip-expiry.service.js';
+import { TripReminderService } from './trip-reminder.service.js';
 import { TripsController } from './trips.controller.js';
 import { TripsService } from './trips.service.js';
 
 @Module({
   imports: [SubscriptionsModule, NotificationsModule, RealtimeModule, MapsModule, forwardRef(() => RideRequestsModule)],
   controllers: [TripsController, SeatLockController, AdminTripController],
-  providers: [TripsService, SeatLockService, TripExpiryService],
-  exports: [TripsService, SeatLockService, TripExpiryService],
+  providers: [TripsService, SeatLockService, TripExpiryService, TripReminderService],
+  exports: [TripsService, SeatLockService, TripExpiryService, TripReminderService],
 })
 export class TripsModule {}

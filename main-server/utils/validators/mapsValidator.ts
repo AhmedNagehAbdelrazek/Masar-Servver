@@ -63,6 +63,6 @@ export const pickupStatusValidation: ValidationChain[] = [  param('booking_id').
   body('pickup_status')
     .notEmpty()
     .withMessage(V.PICKUP_STATUS_MUST_BE_ONE_OF_ARRIVED_PICKED_UP_MISSED)
-    .isIn([PICKUP_STATUS.ARRIVED, PICKUP_STATUS.PICKED_UP, PICKUP_STATUS.MISSED])
+    .isIn([PICKUP_STATUS.ARRIVED, PICKUP_STATUS.PICKED_UP, PICKUP_STATUS.DROPPED_OFF, PICKUP_STATUS.MISSED])
     .withMessage(V.PICKUP_STATUS_MUST_BE_ONE_OF_ARRIVED_PICKED_UP_MISSED),
 ];

@@ -212,7 +212,7 @@ export class TrackingService {
     pos: { lat: number; lng: number; speed: number | null },
   ): Promise<Record<string, unknown>> {
     const upcoming = await this.upcomingBookings(tripId);
-    const pending = upcoming.filter((b) => !['picked_up', 'missed'].includes(b.pickupStatus));
+    const pending = upcoming.filter((b) => !['picked_up', 'dropped_off', 'missed'].includes(b.pickupStatus));
     const next = pending[0] ?? null;
     let eta: number | null = null;
     if (next && next.pickupLat != null && next.pickupLng != null && (pos.speed ?? 0) > 0) {
@@ -248,7 +248,7 @@ export class TrackingService {
     const trip = await this.prisma.trip.findUnique({ where: { id: tripId } });
     if (!trip) return;
     const upcoming = await this.upcomingBookings(tripId);
-    const pending = upcoming.filter((b) => !['picked_up', 'missed'].includes(b.pickupStatus));
+    const pending = upcoming.filter((b) => !['picked_up', 'dropped_off', 'missed'].includes(b.pickupStatus));
     const next = pending[0] ?? null;
 
     if (next) {

@@ -50,6 +50,11 @@ export class InAppChannel {
         created_at: notification.createdAt.toISOString(),
         timestamp: Date.now(),
       });
+      this.realtime.emitToUser(user.id, 'app:notification', {
+        type: notification.type,
+        message: notification.body,
+        metadata: data,
+      });
       const unreadCount = await this.prisma.notification.count({
         where: { userId: user.id, isRead: false },
       });

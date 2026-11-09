@@ -1,14 +1,14 @@
 // @ts-nocheck
 import { Op } from 'sequelize';
-import { Booking, Trip, TripSeat } from '../Models';
-import { BOOKING_STATUS, TRIP_DURATION_HOURS, TRIP_STATUS } from '../config/constants';
+import { Booking, Trip, TripSeat, TripLocation, User } from '../Models';
+import { BOOKING_STATUS, TRIP_DURATION_HOURS, TRIP_STATUS, TRIP_ABANDON_WARN_MINUTES, TRIP_ABANDON_AFTER_MINUTES } from '../config/constants';
 import * as tripService from './tripService';
 import notificationService from './notificationService';
 import homeService from './homeService';
 import auditService from './auditService';
 import { releaseSeatLock } from '../utils/seatLock';
 
-const { completeTrip } = tripService;
+const { abandonTrip } = tripService;
 
 // Trips that were started but never finished.
 const STARTED_STATUSES = [TRIP_STATUS.IN_PROGRESS, TRIP_STATUS.ONGOING];
@@ -87,16 +87,40 @@ async function expireUnoperatedTrip(trip) {
 async function closeOutStaleTrip(trip, result) {
   try {
     if (STARTED_STATUSES.includes(trip.status)) {
-      await completeTrip(trip.driverId, trip.id);
-      result.autoCompleted.push(trip.id);
-      auditService.track({
-        action: 'trip.auto_completed',
-        resourceType: 'trip',
-        resourceId: trip.id,
-        actorId: trip.driverId,
-        actorType: 'system',
-        payload: { status: trip.status },
+      const lastPoint = await TripLocation.findOne({
+        where: { tripId: trip.id },
+        orderBy: [['createdat', 'DESC']],
+        attributes: ['createdat'],
       });
+      const lastActivity = lastPoint?.createdat || trip.startedAt || trip.departureTime;
+      const idleMinutes = (Date.now() - new Date(lastActivity).getTime()) / 60000;
+      if (idleMinutes >= TRIP_ABANDON_AFTER_MINUTES) {
+        await abandonTrip(trip.driverId, trip.id, 'no_driver_activity');
+        result.abandoned.push(trip.id);
+        auditService.track({
+          action: 'trip.auto_abandoned',
+          resourceType: 'trip',
+          resourceId: trip.id,
+          actorId: trip.driverId,
+          actorType: 'system',
+          payload: { status: trip.status, idle_minutes: Math.round(idleMinutes) },
+        });
+      } else if (idleMinutes >= TRIP_ABANDON_WARN_MINUTES && !trip.abandonWarnedAt) {
+        const driver = await User.findByPk(trip.driverId);
+        if (driver) {
+          try {
+            await notificationService.sendToUser(driver, 'TRIP_ABANDON_WARNING', {
+              channels: ['sms'],
+              vars: { route: `${trip.originCity} - ${trip.destinationCity}` },
+              data: { trip_id: trip.id },
+            });
+          } catch (err) {
+            console.warn('[tripExpiryService] abandon warning failed:', err.message);
+          }
+        }
+        await trip.update({ abandonWarnedAt: new Date() });
+        result.warned.push(trip.id);
+      }
     } else {
       result.noShowBookings += await expireUnoperatedTrip(trip);
       result.expiredUnoperated.push(trip.id);
@@ -124,7 +148,7 @@ async function closeOutStaleTrip(trip, result) {
  * call at the start of read endpoints before serializing the fresh state.
  */
 async function refreshStaleTrips(tripIds = null) {
-  const result = { autoCompleted: [], expiredUnoperated: [], noShowBookings: 0, errors: [], touched: 0 };
+  const result = { autoCompleted: [], expiredUnoperated: [], abandoned: [], warned: [], noShowBookings: 0, errors: [], touched: 0 };
   try {
     const now = new Date();
     let idFilter = null;
@@ -143,17 +167,20 @@ async function refreshStaleTrips(tripIds = null) {
           },
           {
             status: { [Op.in]: STARTED_STATUSES },
-            departureTime: { [Op.lte]: lifecycleCutoff(now) },
           },
         ],
         ...(idFilter || {}),
       },
-      attributes: ['id', 'driverId', 'status', 'departureTime'],
+      attributes: ['id', 'driverId', 'status', 'departureTime', 'startedAt', 'updatedat', 'originCity', 'destinationCity', 'abandonWarnedAt'],
     });
     for (const trip of stale) {
       await closeOutStaleTrip(trip, result);
     }
-    result.touched = result.autoCompleted.length + result.expiredUnoperated.length;
+    result.touched =
+      result.autoCompleted.length +
+      result.expiredUnoperated.length +
+      result.abandoned.length +
+      result.warned.length;
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     console.warn('[tripExpiryService] refresh failed:', message);

@@ -9,6 +9,7 @@ import { NotificationsService } from '../modules/notifications/notifications.ser
 import { SosService } from '../modules/sos/sos.service.js';
 import { CommissionService } from '../modules/subscriptions/commission.service.js';
 import { TripExpiryService } from '../modules/trips/trip-expiry.service.js';
+import { TripReminderService } from '../modules/trips/trip-reminder.service.js';
 
 // Nest port of main-server/jobs/* (9 schedules). Schedule strings match
 // jobs/index.ts exactly. Overlap guard + `jobs:lastrun:*` keys (3d TTL)
@@ -38,6 +39,7 @@ export class JobsService {
     private readonly commission: CommissionService,
     private readonly sos: SosService,
     private readonly tripExpiry: TripExpiryService,
+    private readonly tripReminders: TripReminderService,
     private readonly routes: RouteService,
     private readonly stats: DriverStatsService,
   ) {}
@@ -305,6 +307,8 @@ export class JobsService {
   async runTripLifecycle(): Promise<{
     autoCompleted: string[];
     expiredUnoperated: string[];
+    abandoned: string[];
+    warned: string[];
     noShowBookings: number;
     errors: { tripId: string | null; message: string }[];
     touched: number;
@@ -312,10 +316,14 @@ export class JobsService {
     const result = await this.tripExpiry.refreshStaleTrips();
     if (result.touched > 0) {
       this.logger.log(
-        `[tripLifecycleJob] closed ${result.autoCompleted.length} completed + ${result.expiredUnoperated.length} unoperated (${result.noShowBookings} no-show bookings), ${result.errors.length} error(s)`,
+        `[tripLifecycleJob] ${result.abandoned.length} abandoned + ${result.warned.length} warned + ${result.expiredUnoperated.length} unoperated (${result.noShowBookings} no-show bookings), ${result.errors.length} error(s)`,
       );
     }
     return result;
+  }
+
+  async runTripReminders(): Promise<{ sent: number; skipped: number }> {
+    return this.tripReminders.sendDueReminders();
   }
 
   private isTestEnv(): boolean {
@@ -332,6 +340,12 @@ export class JobsService {
   expiryReminder(): void {
     if (this.isTestEnv()) return;
     void this.guarded('expiryReminder', () => this.runExpiryReminder());
+  }
+
+  @Cron(process.env.JOB_TRIP_REMINDER_CRON ?? '* * * * *')
+  tripReminderCron(): void {
+    if (this.isTestEnv()) return;
+    void this.guarded('tripReminders', () => this.runTripReminders());
   }
 
   @Cron('0 12 * * *')

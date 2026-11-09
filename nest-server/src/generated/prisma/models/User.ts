@@ -426,6 +426,7 @@ export type UserWhereInput = {
   driverSubscriptions?: Prisma.DriverSubscriptionListRelationFilter
   notificationSettings?: Prisma.NotificationSettingListRelationFilter
   verificationChanges?: Prisma.VerificationStatusChangeListRelationFilter
+  tripReminders?: Prisma.TripReminderListRelationFilter
 }
 
 export type UserOrderByWithRelationInput = {
@@ -482,6 +483,7 @@ export type UserOrderByWithRelationInput = {
   driverSubscriptions?: Prisma.DriverSubscriptionOrderByRelationAggregateInput
   notificationSettings?: Prisma.NotificationSettingOrderByRelationAggregateInput
   verificationChanges?: Prisma.VerificationStatusChangeOrderByRelationAggregateInput
+  tripReminders?: Prisma.TripReminderOrderByRelationAggregateInput
 }
 
 export type UserWhereUniqueInput = Prisma.AtLeast<{
@@ -541,6 +543,7 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
   driverSubscriptions?: Prisma.DriverSubscriptionListRelationFilter
   notificationSettings?: Prisma.NotificationSettingListRelationFilter
   verificationChanges?: Prisma.VerificationStatusChangeListRelationFilter
+  tripReminders?: Prisma.TripReminderListRelationFilter
 }, "id" | "phone" | "email">
 
 export type UserOrderByWithAggregationInput = {
@@ -665,6 +668,7 @@ export type UserCreateInput = {
   driverSubscriptions?: Prisma.DriverSubscriptionCreateNestedManyWithoutDriverInput
   notificationSettings?: Prisma.NotificationSettingCreateNestedManyWithoutUserInput
   verificationChanges?: Prisma.VerificationStatusChangeCreateNestedManyWithoutDriverInput
+  tripReminders?: Prisma.TripReminderCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateInput = {
@@ -721,6 +725,7 @@ export type UserUncheckedCreateInput = {
   driverSubscriptions?: Prisma.DriverSubscriptionUncheckedCreateNestedManyWithoutDriverInput
   notificationSettings?: Prisma.NotificationSettingUncheckedCreateNestedManyWithoutUserInput
   verificationChanges?: Prisma.VerificationStatusChangeUncheckedCreateNestedManyWithoutDriverInput
+  tripReminders?: Prisma.TripReminderUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserUpdateInput = {
@@ -777,6 +782,7 @@ export type UserUpdateInput = {
   driverSubscriptions?: Prisma.DriverSubscriptionUpdateManyWithoutDriverNestedInput
   notificationSettings?: Prisma.NotificationSettingUpdateManyWithoutUserNestedInput
   verificationChanges?: Prisma.VerificationStatusChangeUpdateManyWithoutDriverNestedInput
+  tripReminders?: Prisma.TripReminderUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateInput = {
@@ -833,6 +839,7 @@ export type UserUncheckedUpdateInput = {
   driverSubscriptions?: Prisma.DriverSubscriptionUncheckedUpdateManyWithoutDriverNestedInput
   notificationSettings?: Prisma.NotificationSettingUncheckedUpdateManyWithoutUserNestedInput
   verificationChanges?: Prisma.VerificationStatusChangeUncheckedUpdateManyWithoutDriverNestedInput
+  tripReminders?: Prisma.TripReminderUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateManyInput = {
@@ -1149,6 +1156,20 @@ export type UserUpdateOneRequiredWithoutTripLocationsNestedInput = {
   upsert?: Prisma.UserUpsertWithoutTripLocationsInput
   connect?: Prisma.UserWhereUniqueInput
   update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutTripLocationsInput, Prisma.UserUpdateWithoutTripLocationsInput>, Prisma.UserUncheckedUpdateWithoutTripLocationsInput>
+}
+
+export type UserCreateNestedOneWithoutTripRemindersInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutTripRemindersInput, Prisma.UserUncheckedCreateWithoutTripRemindersInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutTripRemindersInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserUpdateOneRequiredWithoutTripRemindersNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutTripRemindersInput, Prisma.UserUncheckedCreateWithoutTripRemindersInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutTripRemindersInput
+  upsert?: Prisma.UserUpsertWithoutTripRemindersInput
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutTripRemindersInput, Prisma.UserUpdateWithoutTripRemindersInput>, Prisma.UserUncheckedUpdateWithoutTripRemindersInput>
 }
 
 export type UserCreateNestedOneWithoutBookingsInput = {
@@ -1500,6 +1521,7 @@ export type UserCreateWithoutDriverProfileInput = {
   driverSubscriptions?: Prisma.DriverSubscriptionCreateNestedManyWithoutDriverInput
   notificationSettings?: Prisma.NotificationSettingCreateNestedManyWithoutUserInput
   verificationChanges?: Prisma.VerificationStatusChangeCreateNestedManyWithoutDriverInput
+  tripReminders?: Prisma.TripReminderCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutDriverProfileInput = {
@@ -1555,6 +1577,7 @@ export type UserUncheckedCreateWithoutDriverProfileInput = {
   driverSubscriptions?: Prisma.DriverSubscriptionUncheckedCreateNestedManyWithoutDriverInput
   notificationSettings?: Prisma.NotificationSettingUncheckedCreateNestedManyWithoutUserInput
   verificationChanges?: Prisma.VerificationStatusChangeUncheckedCreateNestedManyWithoutDriverInput
+  tripReminders?: Prisma.TripReminderUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutDriverProfileInput = {
@@ -1626,6 +1649,7 @@ export type UserUpdateWithoutDriverProfileInput = {
   driverSubscriptions?: Prisma.DriverSubscriptionUpdateManyWithoutDriverNestedInput
   notificationSettings?: Prisma.NotificationSettingUpdateManyWithoutUserNestedInput
   verificationChanges?: Prisma.VerificationStatusChangeUpdateManyWithoutDriverNestedInput
+  tripReminders?: Prisma.TripReminderUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutDriverProfileInput = {
@@ -1681,6 +1705,7 @@ export type UserUncheckedUpdateWithoutDriverProfileInput = {
   driverSubscriptions?: Prisma.DriverSubscriptionUncheckedUpdateManyWithoutDriverNestedInput
   notificationSettings?: Prisma.NotificationSettingUncheckedUpdateManyWithoutUserNestedInput
   verificationChanges?: Prisma.VerificationStatusChangeUncheckedUpdateManyWithoutDriverNestedInput
+  tripReminders?: Prisma.TripReminderUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutVehicleInput = {
@@ -1736,6 +1761,7 @@ export type UserCreateWithoutVehicleInput = {
   driverSubscriptions?: Prisma.DriverSubscriptionCreateNestedManyWithoutDriverInput
   notificationSettings?: Prisma.NotificationSettingCreateNestedManyWithoutUserInput
   verificationChanges?: Prisma.VerificationStatusChangeCreateNestedManyWithoutDriverInput
+  tripReminders?: Prisma.TripReminderCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutVehicleInput = {
@@ -1791,6 +1817,7 @@ export type UserUncheckedCreateWithoutVehicleInput = {
   driverSubscriptions?: Prisma.DriverSubscriptionUncheckedCreateNestedManyWithoutDriverInput
   notificationSettings?: Prisma.NotificationSettingUncheckedCreateNestedManyWithoutUserInput
   verificationChanges?: Prisma.VerificationStatusChangeUncheckedCreateNestedManyWithoutDriverInput
+  tripReminders?: Prisma.TripReminderUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutVehicleInput = {
@@ -1862,6 +1889,7 @@ export type UserUpdateWithoutVehicleInput = {
   driverSubscriptions?: Prisma.DriverSubscriptionUpdateManyWithoutDriverNestedInput
   notificationSettings?: Prisma.NotificationSettingUpdateManyWithoutUserNestedInput
   verificationChanges?: Prisma.VerificationStatusChangeUpdateManyWithoutDriverNestedInput
+  tripReminders?: Prisma.TripReminderUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutVehicleInput = {
@@ -1917,6 +1945,7 @@ export type UserUncheckedUpdateWithoutVehicleInput = {
   driverSubscriptions?: Prisma.DriverSubscriptionUncheckedUpdateManyWithoutDriverNestedInput
   notificationSettings?: Prisma.NotificationSettingUncheckedUpdateManyWithoutUserNestedInput
   verificationChanges?: Prisma.VerificationStatusChangeUncheckedUpdateManyWithoutDriverNestedInput
+  tripReminders?: Prisma.TripReminderUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutPassengerProfileInput = {
@@ -1972,6 +2001,7 @@ export type UserCreateWithoutPassengerProfileInput = {
   driverSubscriptions?: Prisma.DriverSubscriptionCreateNestedManyWithoutDriverInput
   notificationSettings?: Prisma.NotificationSettingCreateNestedManyWithoutUserInput
   verificationChanges?: Prisma.VerificationStatusChangeCreateNestedManyWithoutDriverInput
+  tripReminders?: Prisma.TripReminderCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutPassengerProfileInput = {
@@ -2027,6 +2057,7 @@ export type UserUncheckedCreateWithoutPassengerProfileInput = {
   driverSubscriptions?: Prisma.DriverSubscriptionUncheckedCreateNestedManyWithoutDriverInput
   notificationSettings?: Prisma.NotificationSettingUncheckedCreateNestedManyWithoutUserInput
   verificationChanges?: Prisma.VerificationStatusChangeUncheckedCreateNestedManyWithoutDriverInput
+  tripReminders?: Prisma.TripReminderUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutPassengerProfileInput = {
@@ -2098,6 +2129,7 @@ export type UserUpdateWithoutPassengerProfileInput = {
   driverSubscriptions?: Prisma.DriverSubscriptionUpdateManyWithoutDriverNestedInput
   notificationSettings?: Prisma.NotificationSettingUpdateManyWithoutUserNestedInput
   verificationChanges?: Prisma.VerificationStatusChangeUpdateManyWithoutDriverNestedInput
+  tripReminders?: Prisma.TripReminderUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutPassengerProfileInput = {
@@ -2153,6 +2185,7 @@ export type UserUncheckedUpdateWithoutPassengerProfileInput = {
   driverSubscriptions?: Prisma.DriverSubscriptionUncheckedUpdateManyWithoutDriverNestedInput
   notificationSettings?: Prisma.NotificationSettingUncheckedUpdateManyWithoutUserNestedInput
   verificationChanges?: Prisma.VerificationStatusChangeUncheckedUpdateManyWithoutDriverNestedInput
+  tripReminders?: Prisma.TripReminderUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutTripsInput = {
@@ -2208,6 +2241,7 @@ export type UserCreateWithoutTripsInput = {
   driverSubscriptions?: Prisma.DriverSubscriptionCreateNestedManyWithoutDriverInput
   notificationSettings?: Prisma.NotificationSettingCreateNestedManyWithoutUserInput
   verificationChanges?: Prisma.VerificationStatusChangeCreateNestedManyWithoutDriverInput
+  tripReminders?: Prisma.TripReminderCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutTripsInput = {
@@ -2263,6 +2297,7 @@ export type UserUncheckedCreateWithoutTripsInput = {
   driverSubscriptions?: Prisma.DriverSubscriptionUncheckedCreateNestedManyWithoutDriverInput
   notificationSettings?: Prisma.NotificationSettingUncheckedCreateNestedManyWithoutUserInput
   verificationChanges?: Prisma.VerificationStatusChangeUncheckedCreateNestedManyWithoutDriverInput
+  tripReminders?: Prisma.TripReminderUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutTripsInput = {
@@ -2334,6 +2369,7 @@ export type UserUpdateWithoutTripsInput = {
   driverSubscriptions?: Prisma.DriverSubscriptionUpdateManyWithoutDriverNestedInput
   notificationSettings?: Prisma.NotificationSettingUpdateManyWithoutUserNestedInput
   verificationChanges?: Prisma.VerificationStatusChangeUpdateManyWithoutDriverNestedInput
+  tripReminders?: Prisma.TripReminderUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutTripsInput = {
@@ -2389,6 +2425,7 @@ export type UserUncheckedUpdateWithoutTripsInput = {
   driverSubscriptions?: Prisma.DriverSubscriptionUncheckedUpdateManyWithoutDriverNestedInput
   notificationSettings?: Prisma.NotificationSettingUncheckedUpdateManyWithoutUserNestedInput
   verificationChanges?: Prisma.VerificationStatusChangeUncheckedUpdateManyWithoutDriverNestedInput
+  tripReminders?: Prisma.TripReminderUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutTripLocationsInput = {
@@ -2444,6 +2481,7 @@ export type UserCreateWithoutTripLocationsInput = {
   driverSubscriptions?: Prisma.DriverSubscriptionCreateNestedManyWithoutDriverInput
   notificationSettings?: Prisma.NotificationSettingCreateNestedManyWithoutUserInput
   verificationChanges?: Prisma.VerificationStatusChangeCreateNestedManyWithoutDriverInput
+  tripReminders?: Prisma.TripReminderCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutTripLocationsInput = {
@@ -2499,6 +2537,7 @@ export type UserUncheckedCreateWithoutTripLocationsInput = {
   driverSubscriptions?: Prisma.DriverSubscriptionUncheckedCreateNestedManyWithoutDriverInput
   notificationSettings?: Prisma.NotificationSettingUncheckedCreateNestedManyWithoutUserInput
   verificationChanges?: Prisma.VerificationStatusChangeUncheckedCreateNestedManyWithoutDriverInput
+  tripReminders?: Prisma.TripReminderUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutTripLocationsInput = {
@@ -2570,6 +2609,7 @@ export type UserUpdateWithoutTripLocationsInput = {
   driverSubscriptions?: Prisma.DriverSubscriptionUpdateManyWithoutDriverNestedInput
   notificationSettings?: Prisma.NotificationSettingUpdateManyWithoutUserNestedInput
   verificationChanges?: Prisma.VerificationStatusChangeUpdateManyWithoutDriverNestedInput
+  tripReminders?: Prisma.TripReminderUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutTripLocationsInput = {
@@ -2618,6 +2658,247 @@ export type UserUncheckedUpdateWithoutTripLocationsInput = {
   sentMessages?: Prisma.MessageUncheckedUpdateManyWithoutSenderNestedInput
   receivedMessages?: Prisma.MessageUncheckedUpdateManyWithoutReceiverNestedInput
   sosEvents?: Prisma.SosEventUncheckedUpdateManyWithoutUserNestedInput
+  favoriteDrivers?: Prisma.FavoriteDriverUncheckedUpdateManyWithoutPassengerNestedInput
+  favoritedBy?: Prisma.FavoriteDriverUncheckedUpdateManyWithoutDriverNestedInput
+  favoriteRoutes?: Prisma.FavoriteRouteUncheckedUpdateManyWithoutPassengerNestedInput
+  recentSearches?: Prisma.RecentSearchUncheckedUpdateManyWithoutPassengerNestedInput
+  driverSubscriptions?: Prisma.DriverSubscriptionUncheckedUpdateManyWithoutDriverNestedInput
+  notificationSettings?: Prisma.NotificationSettingUncheckedUpdateManyWithoutUserNestedInput
+  verificationChanges?: Prisma.VerificationStatusChangeUncheckedUpdateManyWithoutDriverNestedInput
+  tripReminders?: Prisma.TripReminderUncheckedUpdateManyWithoutUserNestedInput
+}
+
+export type UserCreateWithoutTripRemindersInput = {
+  id?: string
+  fullName?: string | null
+  displayName?: string | null
+  countryCode?: string | null
+  phone: string
+  email?: string | null
+  role: string
+  gender?: string | null
+  passwordHash: string
+  age?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  avatarUrl?: string | null
+  isVerified?: boolean
+  verificationStatus?: string
+  verificationSubmittedAt?: Date | string | null
+  verificationRejectedAt?: Date | string | null
+  verificationRejectionReason?: string | null
+  verificationRejectionFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  avgRating?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  strikes?: number
+  locale?: string
+  status?: string
+  fcmToken?: string | null
+  lastLoginAt?: Date | string | null
+  totalBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  isInDebt?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  driverProfile?: Prisma.DriverProfileCreateNestedOneWithoutDriverInput
+  passengerProfile?: Prisma.PassengerProfileCreateNestedOneWithoutPassengerInput
+  vehicle?: Prisma.VehicleCreateNestedOneWithoutDriverInput
+  trips?: Prisma.TripCreateNestedManyWithoutDriverInput
+  bookings?: Prisma.BookingCreateNestedManyWithoutPassengerInput
+  rideRequests?: Prisma.RideRequestCreateNestedManyWithoutPassengerInput
+  requestOffers?: Prisma.RequestOfferCreateNestedManyWithoutDriverInput
+  ratingsGiven?: Prisma.RatingCreateNestedManyWithoutRaterInput
+  ratingsReceived?: Prisma.RatingCreateNestedManyWithoutRateeInput
+  complaintsReported?: Prisma.ComplaintCreateNestedManyWithoutReporterInput
+  complaintsAccused?: Prisma.ComplaintCreateNestedManyWithoutAccusedInput
+  penalties?: Prisma.PenaltyCreateNestedManyWithoutUserInput
+  deletionRequests?: Prisma.DeletionRequestCreateNestedManyWithoutUserInput
+  supportTickets?: Prisma.SupportTicketCreateNestedManyWithoutUserInput
+  notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
+  sentMessages?: Prisma.MessageCreateNestedManyWithoutSenderInput
+  receivedMessages?: Prisma.MessageCreateNestedManyWithoutReceiverInput
+  sosEvents?: Prisma.SosEventCreateNestedManyWithoutUserInput
+  tripLocations?: Prisma.TripLocationCreateNestedManyWithoutDriverInput
+  favoriteDrivers?: Prisma.FavoriteDriverCreateNestedManyWithoutPassengerInput
+  favoritedBy?: Prisma.FavoriteDriverCreateNestedManyWithoutDriverInput
+  favoriteRoutes?: Prisma.FavoriteRouteCreateNestedManyWithoutPassengerInput
+  recentSearches?: Prisma.RecentSearchCreateNestedManyWithoutPassengerInput
+  driverSubscriptions?: Prisma.DriverSubscriptionCreateNestedManyWithoutDriverInput
+  notificationSettings?: Prisma.NotificationSettingCreateNestedManyWithoutUserInput
+  verificationChanges?: Prisma.VerificationStatusChangeCreateNestedManyWithoutDriverInput
+}
+
+export type UserUncheckedCreateWithoutTripRemindersInput = {
+  id?: string
+  fullName?: string | null
+  displayName?: string | null
+  countryCode?: string | null
+  phone: string
+  email?: string | null
+  role: string
+  gender?: string | null
+  passwordHash: string
+  age?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  avatarUrl?: string | null
+  isVerified?: boolean
+  verificationStatus?: string
+  verificationSubmittedAt?: Date | string | null
+  verificationRejectedAt?: Date | string | null
+  verificationRejectionReason?: string | null
+  verificationRejectionFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  avgRating?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  strikes?: number
+  locale?: string
+  status?: string
+  fcmToken?: string | null
+  lastLoginAt?: Date | string | null
+  totalBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  isInDebt?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  driverProfile?: Prisma.DriverProfileUncheckedCreateNestedOneWithoutDriverInput
+  passengerProfile?: Prisma.PassengerProfileUncheckedCreateNestedOneWithoutPassengerInput
+  vehicle?: Prisma.VehicleUncheckedCreateNestedOneWithoutDriverInput
+  trips?: Prisma.TripUncheckedCreateNestedManyWithoutDriverInput
+  bookings?: Prisma.BookingUncheckedCreateNestedManyWithoutPassengerInput
+  rideRequests?: Prisma.RideRequestUncheckedCreateNestedManyWithoutPassengerInput
+  requestOffers?: Prisma.RequestOfferUncheckedCreateNestedManyWithoutDriverInput
+  ratingsGiven?: Prisma.RatingUncheckedCreateNestedManyWithoutRaterInput
+  ratingsReceived?: Prisma.RatingUncheckedCreateNestedManyWithoutRateeInput
+  complaintsReported?: Prisma.ComplaintUncheckedCreateNestedManyWithoutReporterInput
+  complaintsAccused?: Prisma.ComplaintUncheckedCreateNestedManyWithoutAccusedInput
+  penalties?: Prisma.PenaltyUncheckedCreateNestedManyWithoutUserInput
+  deletionRequests?: Prisma.DeletionRequestUncheckedCreateNestedManyWithoutUserInput
+  supportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutUserInput
+  notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
+  sentMessages?: Prisma.MessageUncheckedCreateNestedManyWithoutSenderInput
+  receivedMessages?: Prisma.MessageUncheckedCreateNestedManyWithoutReceiverInput
+  sosEvents?: Prisma.SosEventUncheckedCreateNestedManyWithoutUserInput
+  tripLocations?: Prisma.TripLocationUncheckedCreateNestedManyWithoutDriverInput
+  favoriteDrivers?: Prisma.FavoriteDriverUncheckedCreateNestedManyWithoutPassengerInput
+  favoritedBy?: Prisma.FavoriteDriverUncheckedCreateNestedManyWithoutDriverInput
+  favoriteRoutes?: Prisma.FavoriteRouteUncheckedCreateNestedManyWithoutPassengerInput
+  recentSearches?: Prisma.RecentSearchUncheckedCreateNestedManyWithoutPassengerInput
+  driverSubscriptions?: Prisma.DriverSubscriptionUncheckedCreateNestedManyWithoutDriverInput
+  notificationSettings?: Prisma.NotificationSettingUncheckedCreateNestedManyWithoutUserInput
+  verificationChanges?: Prisma.VerificationStatusChangeUncheckedCreateNestedManyWithoutDriverInput
+}
+
+export type UserCreateOrConnectWithoutTripRemindersInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutTripRemindersInput, Prisma.UserUncheckedCreateWithoutTripRemindersInput>
+}
+
+export type UserUpsertWithoutTripRemindersInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutTripRemindersInput, Prisma.UserUncheckedUpdateWithoutTripRemindersInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutTripRemindersInput, Prisma.UserUncheckedCreateWithoutTripRemindersInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutTripRemindersInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutTripRemindersInput, Prisma.UserUncheckedUpdateWithoutTripRemindersInput>
+}
+
+export type UserUpdateWithoutTripRemindersInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  fullName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  countryCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phone?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  role?: Prisma.StringFieldUpdateOperationsInput | string
+  gender?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
+  age?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  verificationStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  verificationSubmittedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  verificationRejectedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  verificationRejectionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  verificationRejectionFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  avgRating?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  strikes?: Prisma.IntFieldUpdateOperationsInput | number
+  locale?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.StringFieldUpdateOperationsInput | string
+  fcmToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  totalBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  isInDebt?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  driverProfile?: Prisma.DriverProfileUpdateOneWithoutDriverNestedInput
+  passengerProfile?: Prisma.PassengerProfileUpdateOneWithoutPassengerNestedInput
+  vehicle?: Prisma.VehicleUpdateOneWithoutDriverNestedInput
+  trips?: Prisma.TripUpdateManyWithoutDriverNestedInput
+  bookings?: Prisma.BookingUpdateManyWithoutPassengerNestedInput
+  rideRequests?: Prisma.RideRequestUpdateManyWithoutPassengerNestedInput
+  requestOffers?: Prisma.RequestOfferUpdateManyWithoutDriverNestedInput
+  ratingsGiven?: Prisma.RatingUpdateManyWithoutRaterNestedInput
+  ratingsReceived?: Prisma.RatingUpdateManyWithoutRateeNestedInput
+  complaintsReported?: Prisma.ComplaintUpdateManyWithoutReporterNestedInput
+  complaintsAccused?: Prisma.ComplaintUpdateManyWithoutAccusedNestedInput
+  penalties?: Prisma.PenaltyUpdateManyWithoutUserNestedInput
+  deletionRequests?: Prisma.DeletionRequestUpdateManyWithoutUserNestedInput
+  supportTickets?: Prisma.SupportTicketUpdateManyWithoutUserNestedInput
+  notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
+  sentMessages?: Prisma.MessageUpdateManyWithoutSenderNestedInput
+  receivedMessages?: Prisma.MessageUpdateManyWithoutReceiverNestedInput
+  sosEvents?: Prisma.SosEventUpdateManyWithoutUserNestedInput
+  tripLocations?: Prisma.TripLocationUpdateManyWithoutDriverNestedInput
+  favoriteDrivers?: Prisma.FavoriteDriverUpdateManyWithoutPassengerNestedInput
+  favoritedBy?: Prisma.FavoriteDriverUpdateManyWithoutDriverNestedInput
+  favoriteRoutes?: Prisma.FavoriteRouteUpdateManyWithoutPassengerNestedInput
+  recentSearches?: Prisma.RecentSearchUpdateManyWithoutPassengerNestedInput
+  driverSubscriptions?: Prisma.DriverSubscriptionUpdateManyWithoutDriverNestedInput
+  notificationSettings?: Prisma.NotificationSettingUpdateManyWithoutUserNestedInput
+  verificationChanges?: Prisma.VerificationStatusChangeUpdateManyWithoutDriverNestedInput
+}
+
+export type UserUncheckedUpdateWithoutTripRemindersInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  fullName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  countryCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phone?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  role?: Prisma.StringFieldUpdateOperationsInput | string
+  gender?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
+  age?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  verificationStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  verificationSubmittedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  verificationRejectedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  verificationRejectionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  verificationRejectionFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  avgRating?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  strikes?: Prisma.IntFieldUpdateOperationsInput | number
+  locale?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.StringFieldUpdateOperationsInput | string
+  fcmToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  totalBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  isInDebt?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  driverProfile?: Prisma.DriverProfileUncheckedUpdateOneWithoutDriverNestedInput
+  passengerProfile?: Prisma.PassengerProfileUncheckedUpdateOneWithoutPassengerNestedInput
+  vehicle?: Prisma.VehicleUncheckedUpdateOneWithoutDriverNestedInput
+  trips?: Prisma.TripUncheckedUpdateManyWithoutDriverNestedInput
+  bookings?: Prisma.BookingUncheckedUpdateManyWithoutPassengerNestedInput
+  rideRequests?: Prisma.RideRequestUncheckedUpdateManyWithoutPassengerNestedInput
+  requestOffers?: Prisma.RequestOfferUncheckedUpdateManyWithoutDriverNestedInput
+  ratingsGiven?: Prisma.RatingUncheckedUpdateManyWithoutRaterNestedInput
+  ratingsReceived?: Prisma.RatingUncheckedUpdateManyWithoutRateeNestedInput
+  complaintsReported?: Prisma.ComplaintUncheckedUpdateManyWithoutReporterNestedInput
+  complaintsAccused?: Prisma.ComplaintUncheckedUpdateManyWithoutAccusedNestedInput
+  penalties?: Prisma.PenaltyUncheckedUpdateManyWithoutUserNestedInput
+  deletionRequests?: Prisma.DeletionRequestUncheckedUpdateManyWithoutUserNestedInput
+  supportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutUserNestedInput
+  notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
+  sentMessages?: Prisma.MessageUncheckedUpdateManyWithoutSenderNestedInput
+  receivedMessages?: Prisma.MessageUncheckedUpdateManyWithoutReceiverNestedInput
+  sosEvents?: Prisma.SosEventUncheckedUpdateManyWithoutUserNestedInput
+  tripLocations?: Prisma.TripLocationUncheckedUpdateManyWithoutDriverNestedInput
   favoriteDrivers?: Prisma.FavoriteDriverUncheckedUpdateManyWithoutPassengerNestedInput
   favoritedBy?: Prisma.FavoriteDriverUncheckedUpdateManyWithoutDriverNestedInput
   favoriteRoutes?: Prisma.FavoriteRouteUncheckedUpdateManyWithoutPassengerNestedInput
@@ -2680,6 +2961,7 @@ export type UserCreateWithoutBookingsInput = {
   driverSubscriptions?: Prisma.DriverSubscriptionCreateNestedManyWithoutDriverInput
   notificationSettings?: Prisma.NotificationSettingCreateNestedManyWithoutUserInput
   verificationChanges?: Prisma.VerificationStatusChangeCreateNestedManyWithoutDriverInput
+  tripReminders?: Prisma.TripReminderCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutBookingsInput = {
@@ -2735,6 +3017,7 @@ export type UserUncheckedCreateWithoutBookingsInput = {
   driverSubscriptions?: Prisma.DriverSubscriptionUncheckedCreateNestedManyWithoutDriverInput
   notificationSettings?: Prisma.NotificationSettingUncheckedCreateNestedManyWithoutUserInput
   verificationChanges?: Prisma.VerificationStatusChangeUncheckedCreateNestedManyWithoutDriverInput
+  tripReminders?: Prisma.TripReminderUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutBookingsInput = {
@@ -2806,6 +3089,7 @@ export type UserUpdateWithoutBookingsInput = {
   driverSubscriptions?: Prisma.DriverSubscriptionUpdateManyWithoutDriverNestedInput
   notificationSettings?: Prisma.NotificationSettingUpdateManyWithoutUserNestedInput
   verificationChanges?: Prisma.VerificationStatusChangeUpdateManyWithoutDriverNestedInput
+  tripReminders?: Prisma.TripReminderUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutBookingsInput = {
@@ -2861,6 +3145,7 @@ export type UserUncheckedUpdateWithoutBookingsInput = {
   driverSubscriptions?: Prisma.DriverSubscriptionUncheckedUpdateManyWithoutDriverNestedInput
   notificationSettings?: Prisma.NotificationSettingUncheckedUpdateManyWithoutUserNestedInput
   verificationChanges?: Prisma.VerificationStatusChangeUncheckedUpdateManyWithoutDriverNestedInput
+  tripReminders?: Prisma.TripReminderUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutRideRequestsInput = {
@@ -2916,6 +3201,7 @@ export type UserCreateWithoutRideRequestsInput = {
   driverSubscriptions?: Prisma.DriverSubscriptionCreateNestedManyWithoutDriverInput
   notificationSettings?: Prisma.NotificationSettingCreateNestedManyWithoutUserInput
   verificationChanges?: Prisma.VerificationStatusChangeCreateNestedManyWithoutDriverInput
+  tripReminders?: Prisma.TripReminderCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutRideRequestsInput = {
@@ -2971,6 +3257,7 @@ export type UserUncheckedCreateWithoutRideRequestsInput = {
   driverSubscriptions?: Prisma.DriverSubscriptionUncheckedCreateNestedManyWithoutDriverInput
   notificationSettings?: Prisma.NotificationSettingUncheckedCreateNestedManyWithoutUserInput
   verificationChanges?: Prisma.VerificationStatusChangeUncheckedCreateNestedManyWithoutDriverInput
+  tripReminders?: Prisma.TripReminderUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutRideRequestsInput = {
@@ -3042,6 +3329,7 @@ export type UserUpdateWithoutRideRequestsInput = {
   driverSubscriptions?: Prisma.DriverSubscriptionUpdateManyWithoutDriverNestedInput
   notificationSettings?: Prisma.NotificationSettingUpdateManyWithoutUserNestedInput
   verificationChanges?: Prisma.VerificationStatusChangeUpdateManyWithoutDriverNestedInput
+  tripReminders?: Prisma.TripReminderUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutRideRequestsInput = {
@@ -3097,6 +3385,7 @@ export type UserUncheckedUpdateWithoutRideRequestsInput = {
   driverSubscriptions?: Prisma.DriverSubscriptionUncheckedUpdateManyWithoutDriverNestedInput
   notificationSettings?: Prisma.NotificationSettingUncheckedUpdateManyWithoutUserNestedInput
   verificationChanges?: Prisma.VerificationStatusChangeUncheckedUpdateManyWithoutDriverNestedInput
+  tripReminders?: Prisma.TripReminderUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutRequestOffersInput = {
@@ -3152,6 +3441,7 @@ export type UserCreateWithoutRequestOffersInput = {
   driverSubscriptions?: Prisma.DriverSubscriptionCreateNestedManyWithoutDriverInput
   notificationSettings?: Prisma.NotificationSettingCreateNestedManyWithoutUserInput
   verificationChanges?: Prisma.VerificationStatusChangeCreateNestedManyWithoutDriverInput
+  tripReminders?: Prisma.TripReminderCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutRequestOffersInput = {
@@ -3207,6 +3497,7 @@ export type UserUncheckedCreateWithoutRequestOffersInput = {
   driverSubscriptions?: Prisma.DriverSubscriptionUncheckedCreateNestedManyWithoutDriverInput
   notificationSettings?: Prisma.NotificationSettingUncheckedCreateNestedManyWithoutUserInput
   verificationChanges?: Prisma.VerificationStatusChangeUncheckedCreateNestedManyWithoutDriverInput
+  tripReminders?: Prisma.TripReminderUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutRequestOffersInput = {
@@ -3278,6 +3569,7 @@ export type UserUpdateWithoutRequestOffersInput = {
   driverSubscriptions?: Prisma.DriverSubscriptionUpdateManyWithoutDriverNestedInput
   notificationSettings?: Prisma.NotificationSettingUpdateManyWithoutUserNestedInput
   verificationChanges?: Prisma.VerificationStatusChangeUpdateManyWithoutDriverNestedInput
+  tripReminders?: Prisma.TripReminderUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutRequestOffersInput = {
@@ -3333,6 +3625,7 @@ export type UserUncheckedUpdateWithoutRequestOffersInput = {
   driverSubscriptions?: Prisma.DriverSubscriptionUncheckedUpdateManyWithoutDriverNestedInput
   notificationSettings?: Prisma.NotificationSettingUncheckedUpdateManyWithoutUserNestedInput
   verificationChanges?: Prisma.VerificationStatusChangeUncheckedUpdateManyWithoutDriverNestedInput
+  tripReminders?: Prisma.TripReminderUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutRatingsGivenInput = {
@@ -3388,6 +3681,7 @@ export type UserCreateWithoutRatingsGivenInput = {
   driverSubscriptions?: Prisma.DriverSubscriptionCreateNestedManyWithoutDriverInput
   notificationSettings?: Prisma.NotificationSettingCreateNestedManyWithoutUserInput
   verificationChanges?: Prisma.VerificationStatusChangeCreateNestedManyWithoutDriverInput
+  tripReminders?: Prisma.TripReminderCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutRatingsGivenInput = {
@@ -3443,6 +3737,7 @@ export type UserUncheckedCreateWithoutRatingsGivenInput = {
   driverSubscriptions?: Prisma.DriverSubscriptionUncheckedCreateNestedManyWithoutDriverInput
   notificationSettings?: Prisma.NotificationSettingUncheckedCreateNestedManyWithoutUserInput
   verificationChanges?: Prisma.VerificationStatusChangeUncheckedCreateNestedManyWithoutDriverInput
+  tripReminders?: Prisma.TripReminderUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutRatingsGivenInput = {
@@ -3503,6 +3798,7 @@ export type UserCreateWithoutRatingsReceivedInput = {
   driverSubscriptions?: Prisma.DriverSubscriptionCreateNestedManyWithoutDriverInput
   notificationSettings?: Prisma.NotificationSettingCreateNestedManyWithoutUserInput
   verificationChanges?: Prisma.VerificationStatusChangeCreateNestedManyWithoutDriverInput
+  tripReminders?: Prisma.TripReminderCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutRatingsReceivedInput = {
@@ -3558,6 +3854,7 @@ export type UserUncheckedCreateWithoutRatingsReceivedInput = {
   driverSubscriptions?: Prisma.DriverSubscriptionUncheckedCreateNestedManyWithoutDriverInput
   notificationSettings?: Prisma.NotificationSettingUncheckedCreateNestedManyWithoutUserInput
   verificationChanges?: Prisma.VerificationStatusChangeUncheckedCreateNestedManyWithoutDriverInput
+  tripReminders?: Prisma.TripReminderUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutRatingsReceivedInput = {
@@ -3629,6 +3926,7 @@ export type UserUpdateWithoutRatingsGivenInput = {
   driverSubscriptions?: Prisma.DriverSubscriptionUpdateManyWithoutDriverNestedInput
   notificationSettings?: Prisma.NotificationSettingUpdateManyWithoutUserNestedInput
   verificationChanges?: Prisma.VerificationStatusChangeUpdateManyWithoutDriverNestedInput
+  tripReminders?: Prisma.TripReminderUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutRatingsGivenInput = {
@@ -3684,6 +3982,7 @@ export type UserUncheckedUpdateWithoutRatingsGivenInput = {
   driverSubscriptions?: Prisma.DriverSubscriptionUncheckedUpdateManyWithoutDriverNestedInput
   notificationSettings?: Prisma.NotificationSettingUncheckedUpdateManyWithoutUserNestedInput
   verificationChanges?: Prisma.VerificationStatusChangeUncheckedUpdateManyWithoutDriverNestedInput
+  tripReminders?: Prisma.TripReminderUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserUpsertWithoutRatingsReceivedInput = {
@@ -3750,6 +4049,7 @@ export type UserUpdateWithoutRatingsReceivedInput = {
   driverSubscriptions?: Prisma.DriverSubscriptionUpdateManyWithoutDriverNestedInput
   notificationSettings?: Prisma.NotificationSettingUpdateManyWithoutUserNestedInput
   verificationChanges?: Prisma.VerificationStatusChangeUpdateManyWithoutDriverNestedInput
+  tripReminders?: Prisma.TripReminderUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutRatingsReceivedInput = {
@@ -3805,6 +4105,7 @@ export type UserUncheckedUpdateWithoutRatingsReceivedInput = {
   driverSubscriptions?: Prisma.DriverSubscriptionUncheckedUpdateManyWithoutDriverNestedInput
   notificationSettings?: Prisma.NotificationSettingUncheckedUpdateManyWithoutUserNestedInput
   verificationChanges?: Prisma.VerificationStatusChangeUncheckedUpdateManyWithoutDriverNestedInput
+  tripReminders?: Prisma.TripReminderUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutComplaintsReportedInput = {
@@ -3860,6 +4161,7 @@ export type UserCreateWithoutComplaintsReportedInput = {
   driverSubscriptions?: Prisma.DriverSubscriptionCreateNestedManyWithoutDriverInput
   notificationSettings?: Prisma.NotificationSettingCreateNestedManyWithoutUserInput
   verificationChanges?: Prisma.VerificationStatusChangeCreateNestedManyWithoutDriverInput
+  tripReminders?: Prisma.TripReminderCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutComplaintsReportedInput = {
@@ -3915,6 +4217,7 @@ export type UserUncheckedCreateWithoutComplaintsReportedInput = {
   driverSubscriptions?: Prisma.DriverSubscriptionUncheckedCreateNestedManyWithoutDriverInput
   notificationSettings?: Prisma.NotificationSettingUncheckedCreateNestedManyWithoutUserInput
   verificationChanges?: Prisma.VerificationStatusChangeUncheckedCreateNestedManyWithoutDriverInput
+  tripReminders?: Prisma.TripReminderUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutComplaintsReportedInput = {
@@ -3975,6 +4278,7 @@ export type UserCreateWithoutComplaintsAccusedInput = {
   driverSubscriptions?: Prisma.DriverSubscriptionCreateNestedManyWithoutDriverInput
   notificationSettings?: Prisma.NotificationSettingCreateNestedManyWithoutUserInput
   verificationChanges?: Prisma.VerificationStatusChangeCreateNestedManyWithoutDriverInput
+  tripReminders?: Prisma.TripReminderCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutComplaintsAccusedInput = {
@@ -4030,6 +4334,7 @@ export type UserUncheckedCreateWithoutComplaintsAccusedInput = {
   driverSubscriptions?: Prisma.DriverSubscriptionUncheckedCreateNestedManyWithoutDriverInput
   notificationSettings?: Prisma.NotificationSettingUncheckedCreateNestedManyWithoutUserInput
   verificationChanges?: Prisma.VerificationStatusChangeUncheckedCreateNestedManyWithoutDriverInput
+  tripReminders?: Prisma.TripReminderUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutComplaintsAccusedInput = {
@@ -4101,6 +4406,7 @@ export type UserUpdateWithoutComplaintsReportedInput = {
   driverSubscriptions?: Prisma.DriverSubscriptionUpdateManyWithoutDriverNestedInput
   notificationSettings?: Prisma.NotificationSettingUpdateManyWithoutUserNestedInput
   verificationChanges?: Prisma.VerificationStatusChangeUpdateManyWithoutDriverNestedInput
+  tripReminders?: Prisma.TripReminderUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutComplaintsReportedInput = {
@@ -4156,6 +4462,7 @@ export type UserUncheckedUpdateWithoutComplaintsReportedInput = {
   driverSubscriptions?: Prisma.DriverSubscriptionUncheckedUpdateManyWithoutDriverNestedInput
   notificationSettings?: Prisma.NotificationSettingUncheckedUpdateManyWithoutUserNestedInput
   verificationChanges?: Prisma.VerificationStatusChangeUncheckedUpdateManyWithoutDriverNestedInput
+  tripReminders?: Prisma.TripReminderUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserUpsertWithoutComplaintsAccusedInput = {
@@ -4222,6 +4529,7 @@ export type UserUpdateWithoutComplaintsAccusedInput = {
   driverSubscriptions?: Prisma.DriverSubscriptionUpdateManyWithoutDriverNestedInput
   notificationSettings?: Prisma.NotificationSettingUpdateManyWithoutUserNestedInput
   verificationChanges?: Prisma.VerificationStatusChangeUpdateManyWithoutDriverNestedInput
+  tripReminders?: Prisma.TripReminderUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutComplaintsAccusedInput = {
@@ -4277,6 +4585,7 @@ export type UserUncheckedUpdateWithoutComplaintsAccusedInput = {
   driverSubscriptions?: Prisma.DriverSubscriptionUncheckedUpdateManyWithoutDriverNestedInput
   notificationSettings?: Prisma.NotificationSettingUncheckedUpdateManyWithoutUserNestedInput
   verificationChanges?: Prisma.VerificationStatusChangeUncheckedUpdateManyWithoutDriverNestedInput
+  tripReminders?: Prisma.TripReminderUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutPenaltiesInput = {
@@ -4332,6 +4641,7 @@ export type UserCreateWithoutPenaltiesInput = {
   driverSubscriptions?: Prisma.DriverSubscriptionCreateNestedManyWithoutDriverInput
   notificationSettings?: Prisma.NotificationSettingCreateNestedManyWithoutUserInput
   verificationChanges?: Prisma.VerificationStatusChangeCreateNestedManyWithoutDriverInput
+  tripReminders?: Prisma.TripReminderCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutPenaltiesInput = {
@@ -4387,6 +4697,7 @@ export type UserUncheckedCreateWithoutPenaltiesInput = {
   driverSubscriptions?: Prisma.DriverSubscriptionUncheckedCreateNestedManyWithoutDriverInput
   notificationSettings?: Prisma.NotificationSettingUncheckedCreateNestedManyWithoutUserInput
   verificationChanges?: Prisma.VerificationStatusChangeUncheckedCreateNestedManyWithoutDriverInput
+  tripReminders?: Prisma.TripReminderUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutPenaltiesInput = {
@@ -4458,6 +4769,7 @@ export type UserUpdateWithoutPenaltiesInput = {
   driverSubscriptions?: Prisma.DriverSubscriptionUpdateManyWithoutDriverNestedInput
   notificationSettings?: Prisma.NotificationSettingUpdateManyWithoutUserNestedInput
   verificationChanges?: Prisma.VerificationStatusChangeUpdateManyWithoutDriverNestedInput
+  tripReminders?: Prisma.TripReminderUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutPenaltiesInput = {
@@ -4513,6 +4825,7 @@ export type UserUncheckedUpdateWithoutPenaltiesInput = {
   driverSubscriptions?: Prisma.DriverSubscriptionUncheckedUpdateManyWithoutDriverNestedInput
   notificationSettings?: Prisma.NotificationSettingUncheckedUpdateManyWithoutUserNestedInput
   verificationChanges?: Prisma.VerificationStatusChangeUncheckedUpdateManyWithoutDriverNestedInput
+  tripReminders?: Prisma.TripReminderUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutSupportTicketsInput = {
@@ -4568,6 +4881,7 @@ export type UserCreateWithoutSupportTicketsInput = {
   driverSubscriptions?: Prisma.DriverSubscriptionCreateNestedManyWithoutDriverInput
   notificationSettings?: Prisma.NotificationSettingCreateNestedManyWithoutUserInput
   verificationChanges?: Prisma.VerificationStatusChangeCreateNestedManyWithoutDriverInput
+  tripReminders?: Prisma.TripReminderCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutSupportTicketsInput = {
@@ -4623,6 +4937,7 @@ export type UserUncheckedCreateWithoutSupportTicketsInput = {
   driverSubscriptions?: Prisma.DriverSubscriptionUncheckedCreateNestedManyWithoutDriverInput
   notificationSettings?: Prisma.NotificationSettingUncheckedCreateNestedManyWithoutUserInput
   verificationChanges?: Prisma.VerificationStatusChangeUncheckedCreateNestedManyWithoutDriverInput
+  tripReminders?: Prisma.TripReminderUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutSupportTicketsInput = {
@@ -4694,6 +5009,7 @@ export type UserUpdateWithoutSupportTicketsInput = {
   driverSubscriptions?: Prisma.DriverSubscriptionUpdateManyWithoutDriverNestedInput
   notificationSettings?: Prisma.NotificationSettingUpdateManyWithoutUserNestedInput
   verificationChanges?: Prisma.VerificationStatusChangeUpdateManyWithoutDriverNestedInput
+  tripReminders?: Prisma.TripReminderUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutSupportTicketsInput = {
@@ -4749,6 +5065,7 @@ export type UserUncheckedUpdateWithoutSupportTicketsInput = {
   driverSubscriptions?: Prisma.DriverSubscriptionUncheckedUpdateManyWithoutDriverNestedInput
   notificationSettings?: Prisma.NotificationSettingUncheckedUpdateManyWithoutUserNestedInput
   verificationChanges?: Prisma.VerificationStatusChangeUncheckedUpdateManyWithoutDriverNestedInput
+  tripReminders?: Prisma.TripReminderUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutSentMessagesInput = {
@@ -4804,6 +5121,7 @@ export type UserCreateWithoutSentMessagesInput = {
   driverSubscriptions?: Prisma.DriverSubscriptionCreateNestedManyWithoutDriverInput
   notificationSettings?: Prisma.NotificationSettingCreateNestedManyWithoutUserInput
   verificationChanges?: Prisma.VerificationStatusChangeCreateNestedManyWithoutDriverInput
+  tripReminders?: Prisma.TripReminderCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutSentMessagesInput = {
@@ -4859,6 +5177,7 @@ export type UserUncheckedCreateWithoutSentMessagesInput = {
   driverSubscriptions?: Prisma.DriverSubscriptionUncheckedCreateNestedManyWithoutDriverInput
   notificationSettings?: Prisma.NotificationSettingUncheckedCreateNestedManyWithoutUserInput
   verificationChanges?: Prisma.VerificationStatusChangeUncheckedCreateNestedManyWithoutDriverInput
+  tripReminders?: Prisma.TripReminderUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutSentMessagesInput = {
@@ -4919,6 +5238,7 @@ export type UserCreateWithoutReceivedMessagesInput = {
   driverSubscriptions?: Prisma.DriverSubscriptionCreateNestedManyWithoutDriverInput
   notificationSettings?: Prisma.NotificationSettingCreateNestedManyWithoutUserInput
   verificationChanges?: Prisma.VerificationStatusChangeCreateNestedManyWithoutDriverInput
+  tripReminders?: Prisma.TripReminderCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutReceivedMessagesInput = {
@@ -4974,6 +5294,7 @@ export type UserUncheckedCreateWithoutReceivedMessagesInput = {
   driverSubscriptions?: Prisma.DriverSubscriptionUncheckedCreateNestedManyWithoutDriverInput
   notificationSettings?: Prisma.NotificationSettingUncheckedCreateNestedManyWithoutUserInput
   verificationChanges?: Prisma.VerificationStatusChangeUncheckedCreateNestedManyWithoutDriverInput
+  tripReminders?: Prisma.TripReminderUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutReceivedMessagesInput = {
@@ -5045,6 +5366,7 @@ export type UserUpdateWithoutSentMessagesInput = {
   driverSubscriptions?: Prisma.DriverSubscriptionUpdateManyWithoutDriverNestedInput
   notificationSettings?: Prisma.NotificationSettingUpdateManyWithoutUserNestedInput
   verificationChanges?: Prisma.VerificationStatusChangeUpdateManyWithoutDriverNestedInput
+  tripReminders?: Prisma.TripReminderUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutSentMessagesInput = {
@@ -5100,6 +5422,7 @@ export type UserUncheckedUpdateWithoutSentMessagesInput = {
   driverSubscriptions?: Prisma.DriverSubscriptionUncheckedUpdateManyWithoutDriverNestedInput
   notificationSettings?: Prisma.NotificationSettingUncheckedUpdateManyWithoutUserNestedInput
   verificationChanges?: Prisma.VerificationStatusChangeUncheckedUpdateManyWithoutDriverNestedInput
+  tripReminders?: Prisma.TripReminderUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserUpsertWithoutReceivedMessagesInput = {
@@ -5166,6 +5489,7 @@ export type UserUpdateWithoutReceivedMessagesInput = {
   driverSubscriptions?: Prisma.DriverSubscriptionUpdateManyWithoutDriverNestedInput
   notificationSettings?: Prisma.NotificationSettingUpdateManyWithoutUserNestedInput
   verificationChanges?: Prisma.VerificationStatusChangeUpdateManyWithoutDriverNestedInput
+  tripReminders?: Prisma.TripReminderUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutReceivedMessagesInput = {
@@ -5221,6 +5545,7 @@ export type UserUncheckedUpdateWithoutReceivedMessagesInput = {
   driverSubscriptions?: Prisma.DriverSubscriptionUncheckedUpdateManyWithoutDriverNestedInput
   notificationSettings?: Prisma.NotificationSettingUncheckedUpdateManyWithoutUserNestedInput
   verificationChanges?: Prisma.VerificationStatusChangeUncheckedUpdateManyWithoutDriverNestedInput
+  tripReminders?: Prisma.TripReminderUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutSosEventsInput = {
@@ -5276,6 +5601,7 @@ export type UserCreateWithoutSosEventsInput = {
   driverSubscriptions?: Prisma.DriverSubscriptionCreateNestedManyWithoutDriverInput
   notificationSettings?: Prisma.NotificationSettingCreateNestedManyWithoutUserInput
   verificationChanges?: Prisma.VerificationStatusChangeCreateNestedManyWithoutDriverInput
+  tripReminders?: Prisma.TripReminderCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutSosEventsInput = {
@@ -5331,6 +5657,7 @@ export type UserUncheckedCreateWithoutSosEventsInput = {
   driverSubscriptions?: Prisma.DriverSubscriptionUncheckedCreateNestedManyWithoutDriverInput
   notificationSettings?: Prisma.NotificationSettingUncheckedCreateNestedManyWithoutUserInput
   verificationChanges?: Prisma.VerificationStatusChangeUncheckedCreateNestedManyWithoutDriverInput
+  tripReminders?: Prisma.TripReminderUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutSosEventsInput = {
@@ -5402,6 +5729,7 @@ export type UserUpdateWithoutSosEventsInput = {
   driverSubscriptions?: Prisma.DriverSubscriptionUpdateManyWithoutDriverNestedInput
   notificationSettings?: Prisma.NotificationSettingUpdateManyWithoutUserNestedInput
   verificationChanges?: Prisma.VerificationStatusChangeUpdateManyWithoutDriverNestedInput
+  tripReminders?: Prisma.TripReminderUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutSosEventsInput = {
@@ -5457,6 +5785,7 @@ export type UserUncheckedUpdateWithoutSosEventsInput = {
   driverSubscriptions?: Prisma.DriverSubscriptionUncheckedUpdateManyWithoutDriverNestedInput
   notificationSettings?: Prisma.NotificationSettingUncheckedUpdateManyWithoutUserNestedInput
   verificationChanges?: Prisma.VerificationStatusChangeUncheckedUpdateManyWithoutDriverNestedInput
+  tripReminders?: Prisma.TripReminderUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutNotificationsInput = {
@@ -5512,6 +5841,7 @@ export type UserCreateWithoutNotificationsInput = {
   driverSubscriptions?: Prisma.DriverSubscriptionCreateNestedManyWithoutDriverInput
   notificationSettings?: Prisma.NotificationSettingCreateNestedManyWithoutUserInput
   verificationChanges?: Prisma.VerificationStatusChangeCreateNestedManyWithoutDriverInput
+  tripReminders?: Prisma.TripReminderCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutNotificationsInput = {
@@ -5567,6 +5897,7 @@ export type UserUncheckedCreateWithoutNotificationsInput = {
   driverSubscriptions?: Prisma.DriverSubscriptionUncheckedCreateNestedManyWithoutDriverInput
   notificationSettings?: Prisma.NotificationSettingUncheckedCreateNestedManyWithoutUserInput
   verificationChanges?: Prisma.VerificationStatusChangeUncheckedCreateNestedManyWithoutDriverInput
+  tripReminders?: Prisma.TripReminderUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutNotificationsInput = {
@@ -5638,6 +5969,7 @@ export type UserUpdateWithoutNotificationsInput = {
   driverSubscriptions?: Prisma.DriverSubscriptionUpdateManyWithoutDriverNestedInput
   notificationSettings?: Prisma.NotificationSettingUpdateManyWithoutUserNestedInput
   verificationChanges?: Prisma.VerificationStatusChangeUpdateManyWithoutDriverNestedInput
+  tripReminders?: Prisma.TripReminderUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutNotificationsInput = {
@@ -5693,6 +6025,7 @@ export type UserUncheckedUpdateWithoutNotificationsInput = {
   driverSubscriptions?: Prisma.DriverSubscriptionUncheckedUpdateManyWithoutDriverNestedInput
   notificationSettings?: Prisma.NotificationSettingUncheckedUpdateManyWithoutUserNestedInput
   verificationChanges?: Prisma.VerificationStatusChangeUncheckedUpdateManyWithoutDriverNestedInput
+  tripReminders?: Prisma.TripReminderUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutNotificationSettingsInput = {
@@ -5748,6 +6081,7 @@ export type UserCreateWithoutNotificationSettingsInput = {
   recentSearches?: Prisma.RecentSearchCreateNestedManyWithoutPassengerInput
   driverSubscriptions?: Prisma.DriverSubscriptionCreateNestedManyWithoutDriverInput
   verificationChanges?: Prisma.VerificationStatusChangeCreateNestedManyWithoutDriverInput
+  tripReminders?: Prisma.TripReminderCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutNotificationSettingsInput = {
@@ -5803,6 +6137,7 @@ export type UserUncheckedCreateWithoutNotificationSettingsInput = {
   recentSearches?: Prisma.RecentSearchUncheckedCreateNestedManyWithoutPassengerInput
   driverSubscriptions?: Prisma.DriverSubscriptionUncheckedCreateNestedManyWithoutDriverInput
   verificationChanges?: Prisma.VerificationStatusChangeUncheckedCreateNestedManyWithoutDriverInput
+  tripReminders?: Prisma.TripReminderUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutNotificationSettingsInput = {
@@ -5874,6 +6209,7 @@ export type UserUpdateWithoutNotificationSettingsInput = {
   recentSearches?: Prisma.RecentSearchUpdateManyWithoutPassengerNestedInput
   driverSubscriptions?: Prisma.DriverSubscriptionUpdateManyWithoutDriverNestedInput
   verificationChanges?: Prisma.VerificationStatusChangeUpdateManyWithoutDriverNestedInput
+  tripReminders?: Prisma.TripReminderUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutNotificationSettingsInput = {
@@ -5929,6 +6265,7 @@ export type UserUncheckedUpdateWithoutNotificationSettingsInput = {
   recentSearches?: Prisma.RecentSearchUncheckedUpdateManyWithoutPassengerNestedInput
   driverSubscriptions?: Prisma.DriverSubscriptionUncheckedUpdateManyWithoutDriverNestedInput
   verificationChanges?: Prisma.VerificationStatusChangeUncheckedUpdateManyWithoutDriverNestedInput
+  tripReminders?: Prisma.TripReminderUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutFavoriteDriversInput = {
@@ -5984,6 +6321,7 @@ export type UserCreateWithoutFavoriteDriversInput = {
   driverSubscriptions?: Prisma.DriverSubscriptionCreateNestedManyWithoutDriverInput
   notificationSettings?: Prisma.NotificationSettingCreateNestedManyWithoutUserInput
   verificationChanges?: Prisma.VerificationStatusChangeCreateNestedManyWithoutDriverInput
+  tripReminders?: Prisma.TripReminderCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutFavoriteDriversInput = {
@@ -6039,6 +6377,7 @@ export type UserUncheckedCreateWithoutFavoriteDriversInput = {
   driverSubscriptions?: Prisma.DriverSubscriptionUncheckedCreateNestedManyWithoutDriverInput
   notificationSettings?: Prisma.NotificationSettingUncheckedCreateNestedManyWithoutUserInput
   verificationChanges?: Prisma.VerificationStatusChangeUncheckedCreateNestedManyWithoutDriverInput
+  tripReminders?: Prisma.TripReminderUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutFavoriteDriversInput = {
@@ -6099,6 +6438,7 @@ export type UserCreateWithoutFavoritedByInput = {
   driverSubscriptions?: Prisma.DriverSubscriptionCreateNestedManyWithoutDriverInput
   notificationSettings?: Prisma.NotificationSettingCreateNestedManyWithoutUserInput
   verificationChanges?: Prisma.VerificationStatusChangeCreateNestedManyWithoutDriverInput
+  tripReminders?: Prisma.TripReminderCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutFavoritedByInput = {
@@ -6154,6 +6494,7 @@ export type UserUncheckedCreateWithoutFavoritedByInput = {
   driverSubscriptions?: Prisma.DriverSubscriptionUncheckedCreateNestedManyWithoutDriverInput
   notificationSettings?: Prisma.NotificationSettingUncheckedCreateNestedManyWithoutUserInput
   verificationChanges?: Prisma.VerificationStatusChangeUncheckedCreateNestedManyWithoutDriverInput
+  tripReminders?: Prisma.TripReminderUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutFavoritedByInput = {
@@ -6225,6 +6566,7 @@ export type UserUpdateWithoutFavoriteDriversInput = {
   driverSubscriptions?: Prisma.DriverSubscriptionUpdateManyWithoutDriverNestedInput
   notificationSettings?: Prisma.NotificationSettingUpdateManyWithoutUserNestedInput
   verificationChanges?: Prisma.VerificationStatusChangeUpdateManyWithoutDriverNestedInput
+  tripReminders?: Prisma.TripReminderUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutFavoriteDriversInput = {
@@ -6280,6 +6622,7 @@ export type UserUncheckedUpdateWithoutFavoriteDriversInput = {
   driverSubscriptions?: Prisma.DriverSubscriptionUncheckedUpdateManyWithoutDriverNestedInput
   notificationSettings?: Prisma.NotificationSettingUncheckedUpdateManyWithoutUserNestedInput
   verificationChanges?: Prisma.VerificationStatusChangeUncheckedUpdateManyWithoutDriverNestedInput
+  tripReminders?: Prisma.TripReminderUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserUpsertWithoutFavoritedByInput = {
@@ -6346,6 +6689,7 @@ export type UserUpdateWithoutFavoritedByInput = {
   driverSubscriptions?: Prisma.DriverSubscriptionUpdateManyWithoutDriverNestedInput
   notificationSettings?: Prisma.NotificationSettingUpdateManyWithoutUserNestedInput
   verificationChanges?: Prisma.VerificationStatusChangeUpdateManyWithoutDriverNestedInput
+  tripReminders?: Prisma.TripReminderUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutFavoritedByInput = {
@@ -6401,6 +6745,7 @@ export type UserUncheckedUpdateWithoutFavoritedByInput = {
   driverSubscriptions?: Prisma.DriverSubscriptionUncheckedUpdateManyWithoutDriverNestedInput
   notificationSettings?: Prisma.NotificationSettingUncheckedUpdateManyWithoutUserNestedInput
   verificationChanges?: Prisma.VerificationStatusChangeUncheckedUpdateManyWithoutDriverNestedInput
+  tripReminders?: Prisma.TripReminderUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutFavoriteRoutesInput = {
@@ -6456,6 +6801,7 @@ export type UserCreateWithoutFavoriteRoutesInput = {
   driverSubscriptions?: Prisma.DriverSubscriptionCreateNestedManyWithoutDriverInput
   notificationSettings?: Prisma.NotificationSettingCreateNestedManyWithoutUserInput
   verificationChanges?: Prisma.VerificationStatusChangeCreateNestedManyWithoutDriverInput
+  tripReminders?: Prisma.TripReminderCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutFavoriteRoutesInput = {
@@ -6511,6 +6857,7 @@ export type UserUncheckedCreateWithoutFavoriteRoutesInput = {
   driverSubscriptions?: Prisma.DriverSubscriptionUncheckedCreateNestedManyWithoutDriverInput
   notificationSettings?: Prisma.NotificationSettingUncheckedCreateNestedManyWithoutUserInput
   verificationChanges?: Prisma.VerificationStatusChangeUncheckedCreateNestedManyWithoutDriverInput
+  tripReminders?: Prisma.TripReminderUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutFavoriteRoutesInput = {
@@ -6582,6 +6929,7 @@ export type UserUpdateWithoutFavoriteRoutesInput = {
   driverSubscriptions?: Prisma.DriverSubscriptionUpdateManyWithoutDriverNestedInput
   notificationSettings?: Prisma.NotificationSettingUpdateManyWithoutUserNestedInput
   verificationChanges?: Prisma.VerificationStatusChangeUpdateManyWithoutDriverNestedInput
+  tripReminders?: Prisma.TripReminderUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutFavoriteRoutesInput = {
@@ -6637,6 +6985,7 @@ export type UserUncheckedUpdateWithoutFavoriteRoutesInput = {
   driverSubscriptions?: Prisma.DriverSubscriptionUncheckedUpdateManyWithoutDriverNestedInput
   notificationSettings?: Prisma.NotificationSettingUncheckedUpdateManyWithoutUserNestedInput
   verificationChanges?: Prisma.VerificationStatusChangeUncheckedUpdateManyWithoutDriverNestedInput
+  tripReminders?: Prisma.TripReminderUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutRecentSearchesInput = {
@@ -6692,6 +7041,7 @@ export type UserCreateWithoutRecentSearchesInput = {
   driverSubscriptions?: Prisma.DriverSubscriptionCreateNestedManyWithoutDriverInput
   notificationSettings?: Prisma.NotificationSettingCreateNestedManyWithoutUserInput
   verificationChanges?: Prisma.VerificationStatusChangeCreateNestedManyWithoutDriverInput
+  tripReminders?: Prisma.TripReminderCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutRecentSearchesInput = {
@@ -6747,6 +7097,7 @@ export type UserUncheckedCreateWithoutRecentSearchesInput = {
   driverSubscriptions?: Prisma.DriverSubscriptionUncheckedCreateNestedManyWithoutDriverInput
   notificationSettings?: Prisma.NotificationSettingUncheckedCreateNestedManyWithoutUserInput
   verificationChanges?: Prisma.VerificationStatusChangeUncheckedCreateNestedManyWithoutDriverInput
+  tripReminders?: Prisma.TripReminderUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutRecentSearchesInput = {
@@ -6818,6 +7169,7 @@ export type UserUpdateWithoutRecentSearchesInput = {
   driverSubscriptions?: Prisma.DriverSubscriptionUpdateManyWithoutDriverNestedInput
   notificationSettings?: Prisma.NotificationSettingUpdateManyWithoutUserNestedInput
   verificationChanges?: Prisma.VerificationStatusChangeUpdateManyWithoutDriverNestedInput
+  tripReminders?: Prisma.TripReminderUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutRecentSearchesInput = {
@@ -6873,6 +7225,7 @@ export type UserUncheckedUpdateWithoutRecentSearchesInput = {
   driverSubscriptions?: Prisma.DriverSubscriptionUncheckedUpdateManyWithoutDriverNestedInput
   notificationSettings?: Prisma.NotificationSettingUncheckedUpdateManyWithoutUserNestedInput
   verificationChanges?: Prisma.VerificationStatusChangeUncheckedUpdateManyWithoutDriverNestedInput
+  tripReminders?: Prisma.TripReminderUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutDriverSubscriptionsInput = {
@@ -6928,6 +7281,7 @@ export type UserCreateWithoutDriverSubscriptionsInput = {
   recentSearches?: Prisma.RecentSearchCreateNestedManyWithoutPassengerInput
   notificationSettings?: Prisma.NotificationSettingCreateNestedManyWithoutUserInput
   verificationChanges?: Prisma.VerificationStatusChangeCreateNestedManyWithoutDriverInput
+  tripReminders?: Prisma.TripReminderCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutDriverSubscriptionsInput = {
@@ -6983,6 +7337,7 @@ export type UserUncheckedCreateWithoutDriverSubscriptionsInput = {
   recentSearches?: Prisma.RecentSearchUncheckedCreateNestedManyWithoutPassengerInput
   notificationSettings?: Prisma.NotificationSettingUncheckedCreateNestedManyWithoutUserInput
   verificationChanges?: Prisma.VerificationStatusChangeUncheckedCreateNestedManyWithoutDriverInput
+  tripReminders?: Prisma.TripReminderUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutDriverSubscriptionsInput = {
@@ -7054,6 +7409,7 @@ export type UserUpdateWithoutDriverSubscriptionsInput = {
   recentSearches?: Prisma.RecentSearchUpdateManyWithoutPassengerNestedInput
   notificationSettings?: Prisma.NotificationSettingUpdateManyWithoutUserNestedInput
   verificationChanges?: Prisma.VerificationStatusChangeUpdateManyWithoutDriverNestedInput
+  tripReminders?: Prisma.TripReminderUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutDriverSubscriptionsInput = {
@@ -7109,6 +7465,7 @@ export type UserUncheckedUpdateWithoutDriverSubscriptionsInput = {
   recentSearches?: Prisma.RecentSearchUncheckedUpdateManyWithoutPassengerNestedInput
   notificationSettings?: Prisma.NotificationSettingUncheckedUpdateManyWithoutUserNestedInput
   verificationChanges?: Prisma.VerificationStatusChangeUncheckedUpdateManyWithoutDriverNestedInput
+  tripReminders?: Prisma.TripReminderUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutDeletionRequestsInput = {
@@ -7164,6 +7521,7 @@ export type UserCreateWithoutDeletionRequestsInput = {
   driverSubscriptions?: Prisma.DriverSubscriptionCreateNestedManyWithoutDriverInput
   notificationSettings?: Prisma.NotificationSettingCreateNestedManyWithoutUserInput
   verificationChanges?: Prisma.VerificationStatusChangeCreateNestedManyWithoutDriverInput
+  tripReminders?: Prisma.TripReminderCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutDeletionRequestsInput = {
@@ -7219,6 +7577,7 @@ export type UserUncheckedCreateWithoutDeletionRequestsInput = {
   driverSubscriptions?: Prisma.DriverSubscriptionUncheckedCreateNestedManyWithoutDriverInput
   notificationSettings?: Prisma.NotificationSettingUncheckedCreateNestedManyWithoutUserInput
   verificationChanges?: Prisma.VerificationStatusChangeUncheckedCreateNestedManyWithoutDriverInput
+  tripReminders?: Prisma.TripReminderUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutDeletionRequestsInput = {
@@ -7290,6 +7649,7 @@ export type UserUpdateWithoutDeletionRequestsInput = {
   driverSubscriptions?: Prisma.DriverSubscriptionUpdateManyWithoutDriverNestedInput
   notificationSettings?: Prisma.NotificationSettingUpdateManyWithoutUserNestedInput
   verificationChanges?: Prisma.VerificationStatusChangeUpdateManyWithoutDriverNestedInput
+  tripReminders?: Prisma.TripReminderUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutDeletionRequestsInput = {
@@ -7345,6 +7705,7 @@ export type UserUncheckedUpdateWithoutDeletionRequestsInput = {
   driverSubscriptions?: Prisma.DriverSubscriptionUncheckedUpdateManyWithoutDriverNestedInput
   notificationSettings?: Prisma.NotificationSettingUncheckedUpdateManyWithoutUserNestedInput
   verificationChanges?: Prisma.VerificationStatusChangeUncheckedUpdateManyWithoutDriverNestedInput
+  tripReminders?: Prisma.TripReminderUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutVerificationChangesInput = {
@@ -7400,6 +7761,7 @@ export type UserCreateWithoutVerificationChangesInput = {
   recentSearches?: Prisma.RecentSearchCreateNestedManyWithoutPassengerInput
   driverSubscriptions?: Prisma.DriverSubscriptionCreateNestedManyWithoutDriverInput
   notificationSettings?: Prisma.NotificationSettingCreateNestedManyWithoutUserInput
+  tripReminders?: Prisma.TripReminderCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutVerificationChangesInput = {
@@ -7455,6 +7817,7 @@ export type UserUncheckedCreateWithoutVerificationChangesInput = {
   recentSearches?: Prisma.RecentSearchUncheckedCreateNestedManyWithoutPassengerInput
   driverSubscriptions?: Prisma.DriverSubscriptionUncheckedCreateNestedManyWithoutDriverInput
   notificationSettings?: Prisma.NotificationSettingUncheckedCreateNestedManyWithoutUserInput
+  tripReminders?: Prisma.TripReminderUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutVerificationChangesInput = {
@@ -7526,6 +7889,7 @@ export type UserUpdateWithoutVerificationChangesInput = {
   recentSearches?: Prisma.RecentSearchUpdateManyWithoutPassengerNestedInput
   driverSubscriptions?: Prisma.DriverSubscriptionUpdateManyWithoutDriverNestedInput
   notificationSettings?: Prisma.NotificationSettingUpdateManyWithoutUserNestedInput
+  tripReminders?: Prisma.TripReminderUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutVerificationChangesInput = {
@@ -7581,6 +7945,7 @@ export type UserUncheckedUpdateWithoutVerificationChangesInput = {
   recentSearches?: Prisma.RecentSearchUncheckedUpdateManyWithoutPassengerNestedInput
   driverSubscriptions?: Prisma.DriverSubscriptionUncheckedUpdateManyWithoutDriverNestedInput
   notificationSettings?: Prisma.NotificationSettingUncheckedUpdateManyWithoutUserNestedInput
+  tripReminders?: Prisma.TripReminderUncheckedUpdateManyWithoutUserNestedInput
 }
 
 
@@ -7612,6 +7977,7 @@ export type UserCountOutputType = {
   driverSubscriptions: number
   notificationSettings: number
   verificationChanges: number
+  tripReminders: number
 }
 
 export type UserCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -7638,6 +8004,7 @@ export type UserCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.I
   driverSubscriptions?: boolean | UserCountOutputTypeCountDriverSubscriptionsArgs
   notificationSettings?: boolean | UserCountOutputTypeCountNotificationSettingsArgs
   verificationChanges?: boolean | UserCountOutputTypeCountVerificationChangesArgs
+  tripReminders?: boolean | UserCountOutputTypeCountTripRemindersArgs
 }
 
 /**
@@ -7811,6 +8178,13 @@ export type UserCountOutputTypeCountVerificationChangesArgs<ExtArgs extends runt
   where?: Prisma.VerificationStatusChangeWhereInput
 }
 
+/**
+ * UserCountOutputType without action
+ */
+export type UserCountOutputTypeCountTripRemindersArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.TripReminderWhereInput
+}
+
 
 export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -7866,6 +8240,7 @@ export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   driverSubscriptions?: boolean | Prisma.User$driverSubscriptionsArgs<ExtArgs>
   notificationSettings?: boolean | Prisma.User$notificationSettingsArgs<ExtArgs>
   verificationChanges?: boolean | Prisma.User$verificationChangesArgs<ExtArgs>
+  tripReminders?: boolean | Prisma.User$tripRemindersArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["user"]>
 
@@ -7987,6 +8362,7 @@ export type UserInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   driverSubscriptions?: boolean | Prisma.User$driverSubscriptionsArgs<ExtArgs>
   notificationSettings?: boolean | Prisma.User$notificationSettingsArgs<ExtArgs>
   verificationChanges?: boolean | Prisma.User$verificationChangesArgs<ExtArgs>
+  tripReminders?: boolean | Prisma.User$tripRemindersArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type UserIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
@@ -8021,6 +8397,7 @@ export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     driverSubscriptions: Prisma.$DriverSubscriptionPayload<ExtArgs>[]
     notificationSettings: Prisma.$NotificationSettingPayload<ExtArgs>[]
     verificationChanges: Prisma.$VerificationStatusChangePayload<ExtArgs>[]
+    tripReminders: Prisma.$TripReminderPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -8470,6 +8847,7 @@ export interface Prisma__UserClient<T, Null = never, ExtArgs extends runtime.Typ
   driverSubscriptions<T extends Prisma.User$driverSubscriptionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$driverSubscriptionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$DriverSubscriptionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   notificationSettings<T extends Prisma.User$notificationSettingsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$notificationSettingsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$NotificationSettingPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   verificationChanges<T extends Prisma.User$verificationChangesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$verificationChangesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$VerificationStatusChangePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  tripReminders<T extends Prisma.User$tripRemindersArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$tripRemindersArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$TripReminderPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -9525,6 +9903,30 @@ export type User$verificationChangesArgs<ExtArgs extends runtime.Types.Extension
   take?: number
   skip?: number
   distinct?: Prisma.VerificationStatusChangeScalarFieldEnum | Prisma.VerificationStatusChangeScalarFieldEnum[]
+}
+
+/**
+ * User.tripReminders
+ */
+export type User$tripRemindersArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the TripReminder
+   */
+  select?: Prisma.TripReminderSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the TripReminder
+   */
+  omit?: Prisma.TripReminderOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.TripReminderInclude<ExtArgs> | null
+  where?: Prisma.TripReminderWhereInput
+  orderBy?: Prisma.TripReminderOrderByWithRelationInput | Prisma.TripReminderOrderByWithRelationInput[]
+  cursor?: Prisma.TripReminderWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.TripReminderScalarFieldEnum | Prisma.TripReminderScalarFieldEnum[]
 }
 
 /**

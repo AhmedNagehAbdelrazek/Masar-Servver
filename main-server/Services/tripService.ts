@@ -623,7 +623,11 @@ const getTripById = async (tripId) => {
       {
         model: Booking,
         as: 'bookings',
-        where: { status: BOOKING_STATUS.CONFIRMED },
+        where: {
+          status: {
+            [Op.in]: [BOOKING_STATUS.CONFIRMED, BOOKING_STATUS.COMPLETED, BOOKING_STATUS.NO_SHOW],
+          },
+        },
         required: false,
         include: [
           {
@@ -664,12 +668,14 @@ const getTripById = async (tripId) => {
     origin: {
       city: data.originCity,
       area: data.originArea,
+      address: data.originAddress,
       lat: data.originLat ? Number(data.originLat) : null,
       lng: data.originLng ? Number(data.originLng) : null,
     },
     destination: {
       city: data.destinationCity,
       area: data.destinationArea,
+      address: data.destinationAddress,
       lat: data.destinationLat ? Number(data.destinationLat) : null,
       lng: data.destinationLng ? Number(data.destinationLng) : null,
     },
@@ -693,6 +699,30 @@ const getTripById = async (tripId) => {
       stop_lat: s.stopLat ? Number(s.stopLat) : null,
       stop_lng: s.stopLng ? Number(s.stopLng) : null,
     })),
+    stops: (data.stops || []).map((s) => ({
+      id: s.id,
+      stop_order: s.stopOrder,
+      stop_name: s.stopName,
+      city: s.city,
+      address: s.address,
+      stop_type: s.stopType,
+      stop_lat: s.stopLat ? Number(s.stopLat) : null,
+      stop_lng: s.stopLng ? Number(s.stopLng) : null,
+    })),
+    start_point: {
+      city: data.originCity,
+      area: data.originArea,
+      address: data.originAddress,
+      lat: data.originLat ? Number(data.originLat) : null,
+      lng: data.originLng ? Number(data.originLng) : null,
+    },
+    end_point: {
+      city: data.destinationCity,
+      area: data.destinationArea,
+      address: data.destinationAddress,
+      lat: data.destinationLat ? Number(data.destinationLat) : null,
+      lng: data.destinationLng ? Number(data.destinationLng) : null,
+    },
     instructions: data.driverInstructions,
     additional_instructions: data.additionalInstructions,
     created_at: data.createdAt,
@@ -718,6 +748,28 @@ const getTripById = async (tripId) => {
     seat_numbers: seatNumbersFor(b),
     agreed_fare: Number(b.agreedFare),
     booking_status: b.status,
+    pickup: {
+      place: b.pickupPlace,
+      label: b.pickupLabel,
+      city: b.pickupCity,
+      area: b.pickupArea,
+      lat: b.pickupLat != null ? Number(b.pickupLat) : null,
+      lng: b.pickupLng != null ? Number(b.pickupLng) : null,
+      order: b.pickupOrder != null ? Number(b.pickupOrder) : null,
+      type: b.pickupType,
+      stop_id: b.pickupStopId,
+      status: b.pickupStatus,
+      arrived_at: b.arrivedAt,
+      picked_up_at: b.pickedUpAt,
+    },
+    dropoff: {
+      place: b.dropoffPlace,
+      lat: b.dropoffLat != null ? Number(b.dropoffLat) : null,
+      lng: b.dropoffLng != null ? Number(b.dropoffLng) : null,
+      order: b.dropoffOrder != null ? Number(b.dropoffOrder) : null,
+      deadline: b.dropoffDeadline,
+      dropped_off_at: b.droppedOffAt,
+    },
     dropoff_place: b.dropoffPlace,
     dropoff_deadline: b.dropoffDeadline,
     created_at: b.createdAt,
@@ -1449,6 +1501,103 @@ const startTrip = async (driverId, tripId) => {
 };
 
 /**
+ * Abandon an in-progress trip. This is the driver's explicit stop action:
+ * it is terminal, cancels active bookings and notifies every passenger.
+ */
+const abandonTrip = async (driverId, tripId, reason = null) => {
+  const trip = await Trip.findByPk(tripId);
+  if (!trip) throw ApiErrors.notFound('TRIP_NOT_FOUND');
+  if (trip.driverId !== driverId) throw ApiErrors.forbidden('YOU_CAN_ONLY_ABANDON_YOUR_OWN_TRIPS');
+  if (![TRIP_STATUS.IN_PROGRESS, TRIP_STATUS.ONGOING].includes(trip.status)) {
+    throw ApiErrors.conflict('ONLY_A_STARTED_TRIP_CAN_BE_ABANDONED', null, { code: 'TRIP_NOT_IN_PROGRESS' });
+  }
+
+  const now = new Date();
+  const [claimed] = await Trip.update(
+    {
+      status: TRIP_STATUS.ABANDONED,
+      abandonedAt: now,
+      abandonReason: reason || 'stopped_by_driver',
+    },
+    {
+      where: {
+        id: tripId,
+        status: { [Op.in]: [TRIP_STATUS.IN_PROGRESS, TRIP_STATUS.ONGOING] },
+      },
+    }
+  );
+  if (!claimed) throw ApiErrors.conflict('ONLY_A_STARTED_TRIP_CAN_BE_ABANDONED');
+
+  const bookings = await Booking.findAll({
+    where: { tripId, status: { [Op.in]: [BOOKING_STATUS.CONFIRMED, BOOKING_STATUS.PENDING] } },
+    include: [{ model: User, as: 'passenger', attributes: ['id', 'phone', 'fcmToken', 'locale'] }],
+  });
+  if (bookings.length > 0) {
+    await Booking.update(
+      {
+        status: BOOKING_STATUS.CANCELLED,
+        cancellationReason: 'trip_abandoned',
+        cancelledBy: driverId,
+        cancelledAt: now,
+      },
+      { where: { id: { [Op.in]: bookings.map((booking) => booking.id) } } }
+    );
+  }
+  await TripSeat.update({ seatType: SEAT_TYPE.AVAILABLE }, { where: { tripId, seatType: SEAT_TYPE.UNAVAILABLE } });
+
+  const seatRows = await TripSeat.findAll({ where: { tripId }, attributes: ['seatNumber'] });
+  for (const seatRow of seatRows) {
+    try {
+      await releaseSeatLock(tripId, seatRow.seatNumber);
+    } catch (_err) {
+      // best-effort
+    }
+  }
+
+  const route = `${trip.originCity} - ${trip.destinationCity}`;
+  const seen = new Set();
+  for (const booking of bookings) {
+    const passenger = booking.passenger;
+    if (!passenger || seen.has(passenger.id)) continue;
+    seen.add(passenger.id);
+    try {
+      await notificationService.sendToUser(passenger, 'TRIP_ABANDONED', {
+        channels: ['in_app', 'push'],
+        vars: { route },
+        data: { trip_id: tripId, reason: reason || 'stopped_by_driver' },
+      });
+    } catch (err) {
+      console.warn('[tripService] trip abandoned notification failed:', err.message);
+    }
+  }
+
+  try {
+    realtimeService.emitToRoom(`trip:${tripId}`, 'tracking:ended', { trip_id: tripId, reason: 'abandoned' });
+  } catch (_err) {
+    // socket layer offline
+  }
+  try {
+    await homeService.invalidateHomeForTrip(tripId, driverId);
+  } catch (err) {
+    console.warn('[tripService] abandoned-trip home invalidation failed:', err.message);
+  }
+
+  auditService.track({
+    action: 'trip.abandoned',
+    resourceType: 'trip',
+    resourceId: tripId,
+    actorId: driverId,
+    actorType: 'driver',
+    payload: { reason: reason || 'stopped_by_driver', notified_passengers: seen.size },
+  });
+
+  return {
+    trip: { id: tripId, status: TRIP_STATUS.ABANDONED },
+    notified_passengers: seen.size,
+  };
+};
+
+/**
  * Complete a trip (US3). Deducts the commission (total paid fare × current
  * plan rate) FIFO from the active plans and marks the trip completed. If the
  * deduction pushes the driver into debt their trips are blocked.
@@ -1478,18 +1627,25 @@ const completeTrip = async (driverId, tripId) => {
     // socket layer offline (e.g. tests) — ignore
   }
 
-  // Finalize confirmed bookings (spec 009 US3): completed + paid_cash + timestamp.
+  // Finalize confirmed bookings: only passengers actually picked up count as
+  // completed; unboarded passengers are recorded as no-show.
   const confirmedBookings = await Booking.findAll({
     where: { tripId: trip.id, status: BOOKING_STATUS.CONFIRMED },
     include: [{ model: User, as: 'passenger', attributes: ['id', 'fullName'] }],
   });
   for (const booking of confirmedBookings) {
+    const boarded = ['picked_up', 'dropped_off'].includes(booking.pickupStatus);
     await booking.update({
-      status: BOOKING_STATUS.COMPLETED,
-      paymentStatus: 'paid_cash',
-      completedAt: new Date(),
+      status: boarded ? BOOKING_STATUS.COMPLETED : BOOKING_STATUS.NO_SHOW,
+      ...(boarded
+        ? {
+            paymentStatus: 'paid_cash',
+            completedAt: booking.completedAt || new Date(),
+            droppedOffAt: booking.droppedOffAt || new Date(),
+          }
+        : {}),
     });
-    if (booking.passenger) {
+    if (booking.passenger && boarded) {
       try {
         await notificationService.sendToUser(booking.passenger, 'TRIP_COMPLETED_PROMPT', {
           channels: ['in_app'],
@@ -1575,6 +1731,7 @@ module.exports = {
   getAvailableTrips,
   startTrip,
   completeTrip,
+  abandonTrip,
   updateTrip,
   replaceTripStops,
   getTripRoute,
@@ -1585,6 +1742,7 @@ module.exports = {
   cancelTripWithPenalty,
   getTripAttributes,
   getTripPassengers,
+  assertNoOverlappingTrip,
 };
 
 /**
@@ -1721,6 +1879,12 @@ async function setPickupStatus(driverId, tripId, bookingId, status) {
   const patch = { pickupStatus: status };
   if (status === 'arrived') patch.arrivedAt = now;
   if (status === 'picked_up') patch.pickedUpAt = now;
+  if (status === 'dropped_off') {
+    patch.droppedOffAt = now;
+    patch.status = BOOKING_STATUS.COMPLETED;
+    patch.completedAt = now;
+    patch.paymentStatus = 'paid_cash';
+  }
   // : missed touches pickup_status ONLY — booking.status stays CONFIRMED
   // so the driver no-show rate (expiry-driven NO_SHOW rows) is never polluted
   // by passenger misses. Passenger-side no-show tracking is out of scope.
@@ -1979,7 +2143,7 @@ async function cancelTrip(driverId, tripId) {
   if (!trip) throw ApiErrors.notFound('TRIP_NOT_FOUND');
   if (trip.driverId !== driverId) throw ApiErrors.forbidden('YOU_CAN_ONLY_CANCEL_YOUR_OWN_TRIPS');
   if (
-    [TRIP_STATUS.IN_PROGRESS, TRIP_STATUS.ONGOING, TRIP_STATUS.COMPLETED].includes(trip.status)
+    [TRIP_STATUS.IN_PROGRESS, TRIP_STATUS.ONGOING, TRIP_STATUS.COMPLETED, TRIP_STATUS.ABANDONED].includes(trip.status)
   ) {
     throw ApiErrors.forbidden('A_TRIP_THAT_HAS_ALREADY_STARTED_CANNOT_BE_CANCELLED');
   }
@@ -2221,5 +2385,5 @@ async function cancelTripWithPenalty(driverId, tripId, { reason, note }) {
     penalty_type: escalation.severity,
   };
 }
-export { createTrip, getTripById, getTripOptions, getTripSeats, getDriverTrips, getAvailableTrips, startTrip, completeTrip, updateTrip, replaceTripStops, getTripRoute, setPickupStatus, getBookingRoute, getTripActual, cancelTrip, cancelTripWithPenalty, getTripAttributes, getTripPassengers };
+export { createTrip, getTripById, getTripOptions, getTripSeats, getDriverTrips, getAvailableTrips, startTrip, completeTrip, abandonTrip, updateTrip, replaceTripStops, getTripRoute, setPickupStatus, getBookingRoute, getTripActual, cancelTrip, cancelTripWithPenalty, getTripAttributes, getTripPassengers, assertNoOverlappingTrip };
 export default module.exports;

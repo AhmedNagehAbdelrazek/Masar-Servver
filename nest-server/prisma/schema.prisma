@@ -79,6 +79,7 @@ model User {
   driverSubscriptions  DriverSubscription[]
   notificationSettings NotificationSetting[]
   verificationChanges  VerificationStatusChange[] @relation("VerificationDriver")
+  tripReminders        TripReminder[]
 
   @@map("users")
 }
@@ -204,6 +205,9 @@ model Trip {
   actualDurationS        Int?             @map("actual_duration_s")
   startedAt              DateTime?        @map("started_at") @db.Timestamptz
   completedAt            DateTime?        @map("completed_at") @db.Timestamptz
+  abandonedAt            DateTime?        @map("abandoned_at") @db.Timestamptz
+  abandonReason          String?          @map("abandon_reason") @db.Text
+  abandonWarnedAt        DateTime?        @map("abandon_warned_at") @db.Timestamptz
   createdAt              DateTime         @default(now()) @map("createdat") @db.Timestamptz
   updatedAt              DateTime         @default(now()) @updatedAt @map("updatedat") @db.Timestamptz
 
@@ -216,6 +220,7 @@ model Trip {
   offers     RequestOffer[]  @relation("TripOffers")
   sosEvents  SosEvent[]
   locations  TripLocation[]
+  reminders  TripReminder[]
 
   @@index([driverId, departureTime], map: "idx_trips_driver_departure")
   @@index([originCity, destinationCity, departureTime], map: "idx_trips_origin_dest")
@@ -299,6 +304,24 @@ model TripLocation {
   @@map("trip_locations")
 }
 
+model TripReminder {
+  id           String   @id @default(uuid()) @db.Uuid
+  tripId       String   @map("trip_id") @db.Uuid
+  userId       String   @map("user_id") @db.Uuid
+  kind         String   @db.VarChar(30)
+  occurrenceAt DateTime @map("occurrence_at") @db.Timestamptz
+  sentAt       DateTime @default(now()) @map("sent_at") @db.Timestamptz
+  createdAt    DateTime @default(now()) @map("createdat") @db.Timestamptz
+  updatedAt    DateTime @default(now()) @updatedAt @map("updatedat") @db.Timestamptz
+
+  trip Trip @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([tripId, userId, kind, occurrenceAt])
+  @@index([tripId, occurrenceAt], map: "idx_trip_reminders_trip_occurrence")
+  @@map("trip_reminders")
+}
+
 model Booking {
   id                 String         @id @default(uuid()) @db.Uuid
   tripId             String         @map("trip_id") @db.Uuid
@@ -333,6 +356,7 @@ model Booking {
   cancelledAt        DateTime?      @map("cancelled_at") @db.Timestamptz
   paymentStatus      String? @default("pending") @map("payment_status") @db.VarChar(20)
   completedAt        DateTime?      @map("completed_at") @db.Timestamptz
+  droppedOffAt       DateTime?      @map("dropped_off_at") @db.Timestamptz
   createdAt          DateTime       @default(now()) @map("createdat") @db.Timestamptz
   updatedAt          DateTime       @default(now()) @updatedAt @map("updatedat") @db.Timestamptz
 

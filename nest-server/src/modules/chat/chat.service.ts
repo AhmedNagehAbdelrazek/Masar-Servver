@@ -13,6 +13,7 @@ import { PrismaService } from '../../prisma/prisma.service.js';
 import type { RealtimeGateway } from '../../realtime/realtime.gateway.js';
 import { RealtimeGateway as RealtimeGatewayToken } from '../../realtime/realtime.gateway.js';
 import { RealtimeMetricsService } from '../../realtime/realtime-metrics.service.js';
+import { NotificationsService } from '../notifications/notifications.service.js';
 
 export interface ChatUser {
   id: string;
@@ -65,7 +66,31 @@ export class ChatService {
     @Inject(forwardRef(() => RealtimeGatewayToken))
     private readonly realtime: RealtimeGateway,
     private readonly metrics: RealtimeMetricsService,
+    @Inject(forwardRef(() => NotificationsService))
+    private readonly notifications: NotificationsService,
   ) {}
+
+  private async notifyChatRecipient(
+    recipientId: string | null | undefined,
+    senderName: string | null | undefined,
+    data: Record<string, unknown>,
+  ): Promise<void> {
+    if (!recipientId) return;
+    const recipient = await this.prisma.user.findUnique({
+      where: { id: recipientId },
+      select: { id: true, phone: true, fcmToken: true, locale: true },
+    });
+    if (!recipient) return;
+    try {
+      await this.notifications.sendToUser(recipient, 'NEW_MESSAGE', {
+        channels: ['in_app', 'push'],
+        vars: { sender: senderName ?? 'Masar' },
+        data,
+      });
+    } catch {
+      // best-effort: chat delivery must not fail because a notification did
+    }
+  }
 
   async getBookingChatContext(
     user: ChatUser,
@@ -119,7 +144,7 @@ export class ChatService {
     if (!bookingId) throw validationError('BOOKING_ID_IS_REQUIRED_FOR_BOOKING_CHAT');
     if (!message || !String(message).trim()) throw validationError('MESSAGE_IS_REQUIRED');
 
-    await this.assertBookingChatOpen(user, bookingId);
+    const { booking, trip } = await this.assertBookingChatOpen(user, bookingId);
 
     const clean = sanitizeMessage(message);
     if (!clean) throw validationError('MESSAGE_IS_EMPTY_AFTER_SANITIZATION');
@@ -151,6 +176,16 @@ export class ChatService {
     this.realtime.emitToRoom(`booking:${bookingId}`, 'chat:receive', out);
     this.metrics.recordEvent('chat:receive');
     this.metrics.recordDelivery();
+    const recipientId = user.id === booking.passengerId ? trip.driverId : booking.passengerId;
+    await this.notifyChatRecipient(recipientId, out.sender_name, {
+      conversation_type: 'booking',
+      booking_id: bookingId,
+      trip_id: trip.id,
+      message_id: out.id,
+      sender_id: out.sender_id,
+      sender_name: out.sender_name,
+      created_at: out.created_at,
+    });
     return { id: row.id, created_at: out.created_at };
   }
 
@@ -192,6 +227,21 @@ export class ChatService {
     this.realtime.emitToRoom(`support:${supportTicketId}`, 'chat:receive', out);
     this.metrics.recordEvent('chat:receive');
     this.metrics.recordDelivery();
+    const ticket = await this.prisma.supportTicket.findUnique({
+      where: { id: supportTicketId },
+      select: { userId: true, assignedTo: true },
+    });
+    if (ticket) {
+      const recipientId = user.id === ticket.userId ? ticket.assignedTo : ticket.userId;
+      await this.notifyChatRecipient(recipientId, out.sender_name, {
+        conversation_type: 'support',
+        support_ticket_id: supportTicketId,
+        message_id: out.id,
+        sender_id: out.sender_id,
+        sender_name: out.sender_name,
+        created_at: out.created_at,
+      });
+    }
     return { id: row.id, created_at: out.created_at };
   }
 

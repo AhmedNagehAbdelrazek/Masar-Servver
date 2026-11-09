@@ -54,6 +54,22 @@ export const TEMPLATES: Record<string, { ar: TemplateEntry; en: TemplateEntry }>
     ar: { title: 'تم إلغاء الرحلة', body: 'تم إلغاء رحلتك {route}. تم استرداد الحجز الخاص بك.' },
     en: { title: 'Trip cancelled', body: 'Your trip {route} was cancelled. Your booking has been refunded.' },
   },
+  TRIP_ABANDONED: {
+    ar: { title: 'تم إيقاف الرحلة', body: 'تم إيقاف رحلة {route} من قبل السائق. يرجى التواصل مع الدعم إذا كنت على متن الرحلة.' },
+    en: { title: 'Trip abandoned', body: 'The trip {route} was stopped by the driver. Please contact support if you are on board.' },
+  },
+  TRIP_ABANDON_WARNING: {
+    ar: { title: 'رحلتك ما زالت نشطة', body: 'لم نتلقَّ تحديثاً لرحلتك {route} منذ فترة. يرجى إكمال الرحلة أو إيقافها، وإلا سيتم اعتبارها متوقفة.' },
+    en: { title: 'Your trip is still active', body: 'We have not received an update for trip {route}. Please complete or stop it, otherwise it will be marked as abandoned.' },
+  },
+  TRIP_REMINDER: {
+    ar: { title: 'رحلتك تبدأ خلال {minutes} دقائق', body: 'رحلتك {route} تنطلق قريباً. يرجى الاستعداد.' },
+    en: { title: 'Your trip starts in {minutes} minutes', body: 'Your trip {route} departs soon. Please get ready.' },
+  },
+  NEW_MESSAGE: {
+    ar: { title: 'رسالة جديدة', body: '{sender} أرسل لك رسالة جديدة.' },
+    en: { title: 'New message', body: '{sender} sent you a new message.' },
+  },
   TRIP_STARTED: {
     ar: { title: 'انطلقت رحلتك', body: 'انطلقت رحلتك. يمكنك متابعة موقع الرحلة {trip_id}.' },
     en: { title: 'Your trip has started', body: 'Your trip has started. You can track it live: {trip_id}.' },

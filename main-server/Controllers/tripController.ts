@@ -148,6 +148,14 @@ const completeTrip = catchAsync(async (req: Request, res: Response): Promise<voi
   successResponse(res, result);
 });
 
+const abandonTrip = catchAsync(async (req: Request, res: Response): Promise<void> => {
+  const authReq = req as AuthRequest;
+  const { trip_id } = req.params as { trip_id: string };
+  const result = await (tripService as unknown as { abandonTrip: (userId: string, id: string, reason?: string) => Promise<{ trip: { id: string } }> }).abandonTrip(String(authReq.user?.id), trip_id, req.body?.reason);
+  (auditService as unknown as { markResource: (res: Response, r: unknown) => void }).markResource(res, { type: 'trip', id: result.trip.id });
+  successResponse(res, result);
+});
+
 const updateTrip = catchAsync(async (req: Request, res: Response): Promise<void> => {
   const authReq = req as AuthRequest;
   const { trip_id } = req.params as { trip_id: string };
@@ -255,6 +263,7 @@ export {
   getAvailableTrips,
   startTrip,
   completeTrip,
+  abandonTrip,
   updateTrip,
   updateTripStops,
   getTripRoute,
@@ -277,6 +286,7 @@ export default {
   getAvailableTrips,
   startTrip,
   completeTrip,
+  abandonTrip,
   updateTrip,
   updateTripStops,
   getTripRoute,

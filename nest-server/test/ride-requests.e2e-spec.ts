@@ -487,42 +487,36 @@ describe('Ride request board', () => {
     expect(trip.status).toBe(saved?.status);
   });
 
-  it('attaches accepted+priced offers to trips', async () => {
+  it('materializes an accepted+priced offer onto the driver schedule', async () => {
     const created = await createRideRequest(passenger1Token, { seats_needed: 1 });
     const requestId = created.body.ride_request.id as string;
     const o = await submitOffer(driver1Token, requestId);
     const offerId = o.body.offer.id as string;
 
-    async function acceptAndAgree(fare: number): Promise<void> {
-      await ctx.agent
-        .put(`/api/offers/${offerId}`)
-        .set('Authorization', `Bearer ${passenger1Token}`)
-        .send({ action: 'accept' });
-      await ctx.agent
-        .put(`/api/offers/${offerId}/price`)
-        .set('Authorization', `Bearer ${passenger1Token}`)
-        .send({ agreed_fare: fare });
-    }
+    await ctx.agent
+      .put(`/api/offers/${offerId}`)
+      .set('Authorization', `Bearer ${passenger1Token}`)
+      .send({ action: 'accept' });
 
-    await acceptAndAgree(18);
-    const before = await ctx.prisma.trip.findFirst({ where: { driverId: DRIVER1_ID } });
-    const res = await ctx.agent
-      .post(`/api/trips/${before?.id as string}/offers/${offerId}/attach`)
+    const offer = await ctx.prisma.requestOffer.findUnique({ where: { id: offerId } });
+    expect(offer?.bookingId).toBeTruthy();
+    expect(offer?.tripId).toBeTruthy();
+
+    const booking = await ctx.prisma.booking.findUnique({ where: { id: String(offer?.bookingId) } });
+    expect(booking?.passengerId).toBe(PASSENGER1_ID);
+    expect(booking?.status).toBe('confirmed');
+    expect(booking?.paymentStatus).toBe('pending');
+    expect(Number(booking?.agreedFare)).toBe(15);
+
+    const after = await ctx.prisma.trip.findUnique({ where: { id: String(offer?.tripId) } });
+    expect(Number(after?.availableSeats)).toBeGreaterThanOrEqual(0);
+
+    const again = await ctx.agent
+      .post(`/api/trips/${String(offer?.tripId)}/offers/${offerId}/attach`)
       .set('Authorization', `Bearer ${driver1Token}`)
       .send({});
-
-    expect(res.status).toBe(201);
-    expect(res.body.booking.reference_code).toMatch(/^MSR-[A-Z0-9]{6}$/);
-    expect(res.body.booking.status).toBe('confirmed');
-    expect(res.body.booking.payment_status).toBe('pending');
-    expect(Number(res.body.booking.agreed_fare)).toBe(18);
-    expect(res.body.offer.booking_id).toBe(res.body.booking.id);
-
-    const after = await ctx.prisma.trip.findFirst({ where: { driverId: DRIVER1_ID } });
-    expect(Number(after?.availableSeats)).toBe(Number(before?.availableSeats) - 1);
-    const stored = await ctx.prisma.booking.findFirst({ where: { tripId: before?.id } });
-    expect(stored?.passengerId).toBe(PASSENGER1_ID);
-    expect(stored?.seatNumber).toBeNull();
+    expect(again.status).toBe(409);
+    expect(again.body.code).toBe('OFFER_ALREADY_ATTACHED_TO_A_BOOKING');
   });
 
   it('rejects attach before price agreement and twice', async () => {
@@ -553,6 +547,30 @@ describe('Ride request board', () => {
           .send({})
       ).status,
     ).toBe(403);
+  });
+
+  it('rejects a driver offer when another trip already blocks that time', async () => {
+    const departure = new Date(Date.now() + 6 * 3600 * 1000);
+    await ctx.prisma.trip.create({
+      data: {
+        driverId: DRIVER1_ID,
+        vehicleId: VEHICLE_ID,
+        originCity: 'Amman',
+        destinationCity: 'Irbid',
+        departureTime: departure,
+        totalSeats: 4,
+        availableSeats: 3,
+        farePerSeat: 10,
+        status: 'published',
+      },
+    });
+    const created = await createRideRequest(passenger1Token, {
+      origin_time: departure.toISOString(),
+    });
+    const requestId = created.body.ride_request.id as string;
+    const res = await submitOffer(driver1Token, requestId);
+    expect(res.status).toBe(409);
+    expect(res.body.code).toBe('TRIP_TIME_OVERLAP');
   });
 
   it('accepts a ride request directly and adds the point to the trip schedule', async () => {
@@ -673,7 +691,7 @@ describe('Ride request board', () => {
     expect(res.body.code).toBe('TRIP_IS_ALREADY_ONGOING_OR_COMPLETED');
   });
 
-  it('rejects attaching an accepted offer to a trip whose departure has passed', async () => {
+  it('materializes an accepted offer and rejects re-attaching it', async () => {
     const created = await createRideRequest(passenger1Token);
     const requestId = created.body.ride_request.id as string;
     const offer = await submitOffer(driver1Token, requestId);
@@ -683,21 +701,13 @@ describe('Ride request board', () => {
       .put(`/api/offers/${offerId}`)
       .set('Authorization', `Bearer ${passenger1Token}`)
       .send({ action: 'accept' });
-    await ctx.agent
-      .put(`/api/offers/${offerId}/price`)
-      .set('Authorization', `Bearer ${passenger1Token}`)
-      .send({ agreed_fare: 18 });
-    await ctx.prisma.trip.update({
-      where: { id: tripId },
-      data: { departureTime: new Date(Date.now() - 60 * 1000) },
-    });
 
     const res = await ctx.agent
       .post(`/api/trips/${tripId}/offers/${offerId}/attach`)
       .set('Authorization', `Bearer ${driver1Token}`)
       .send({});
     expect(res.status).toBe(409);
-    expect(res.body.code).toBe('TRIP_IS_ALREADY_ONGOING_OR_COMPLETED');
+    expect(res.body.code).toBe('OFFER_ALREADY_ATTACHED_TO_A_BOOKING');
   });
 
   it('creates a new trip when the driver has no matching trip', async () => {

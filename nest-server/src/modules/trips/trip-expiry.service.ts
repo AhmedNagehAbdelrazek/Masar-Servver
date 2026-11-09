@@ -3,13 +3,15 @@ import { PrismaService } from '../../prisma/prisma.service.js';
 import { NotificationsService } from '../notifications/notifications.service.js';
 import { HomeService } from '../subscriptions/home.service.js';
 import { SeatLockService } from './seat-lock.service.js';
-import { TRIP_DURATION_HOURS } from './trip.constants.js';
+import { TRIP_ABANDON_AFTER_MINUTES, TRIP_ABANDON_WARN_MINUTES, TRIP_DURATION_HOURS } from './trip.constants.js';
 import type { TripsService } from './trips.service.js';
 import { TripsService as TripsServiceToken } from './trips.service.js';
 
 export interface SweepResult {
   autoCompleted: string[];
   expiredUnoperated: string[];
+  abandoned: string[];
+  warned: string[];
   noShowBookings: number;
   errors: { tripId: string | null; message: string }[];
   touched: number;
@@ -74,14 +76,83 @@ export class TripExpiryService {
     return updated.count;
   }
 
+  private async lastActivityAt(trip: {
+    id: string;
+    startedAt: Date | null;
+    updatedAt: Date;
+    departureTime: Date;
+  }): Promise<Date> {
+    const point = await this.prisma.tripLocation.findFirst({
+      where: { tripId: trip.id },
+      orderBy: { createdAt: 'desc' },
+      select: { createdAt: true },
+    });
+    return point?.createdAt ?? trip.startedAt ?? trip.departureTime;
+  }
+
+  private async warnOrAbandonStartedTrip(
+    trip: {
+      id: string;
+      driverId: string;
+      status: string;
+      startedAt: Date | null;
+      updatedAt: Date;
+      departureTime: Date;
+      abandonWarnedAt: Date | null;
+      originCity?: string;
+      destinationCity?: string;
+    },
+    result: SweepResult,
+  ): Promise<void> {
+    const lastActivity = await this.lastActivityAt(trip);
+    const idleMinutes = (Date.now() - lastActivity.getTime()) / 60000;
+    if (idleMinutes >= TRIP_ABANDON_AFTER_MINUTES) {
+      await this.trips.abandonTrip(trip.driverId, trip.id, 'no_driver_activity');
+      result.abandoned.push(trip.id);
+      return;
+    }
+    if (idleMinutes >= TRIP_ABANDON_WARN_MINUTES && !trip.abandonWarnedAt) {
+      const driver = await this.prisma.user.findUnique({ where: { id: trip.driverId } });
+      if (driver) {
+        try {
+          await this.notifications.sendToUser(driver, 'TRIP_ABANDON_WARNING', {
+            channels: ['sms'],
+            vars: {
+              route: trip.originCity && trip.destinationCity
+                ? `${trip.originCity} → ${trip.destinationCity}`
+                : 'your active trip',
+            },
+            data: { trip_id: trip.id },
+          });
+        } catch {
+          // best-effort
+        }
+      }
+      await this.prisma.trip.update({
+        where: { id: trip.id },
+        data: { abandonWarnedAt: new Date() },
+      });
+      result.warned.push(trip.id);
+    }
+  }
+
   private async closeOutStaleTrip(
-    trip: { id: string; driverId: string; status: string },
+    trip: {
+      id: string;
+      driverId: string;
+      status: string;
+      startedAt: Date | null;
+      updatedAt: Date;
+      departureTime: Date;
+      abandonWarnedAt: Date | null;
+      originCity?: string;
+      destinationCity?: string;
+    },
     result: SweepResult,
   ): Promise<void> {
     try {
       if ((STARTED_STATUSES as readonly string[]).includes(trip.status)) {
-        await this.trips.completeTrip(trip.driverId, trip.id);
-        result.autoCompleted.push(trip.id);
+        await this.warnOrAbandonStartedTrip(trip, result);
       } else {
         result.noShowBookings += await this.expireUnoperatedTrip(trip.id);
         result.expiredUnoperated.push(trip.id);
@@ -95,6 +166,8 @@ export class TripExpiryService {
     const result: SweepResult = {
       autoCompleted: [],
       expiredUnoperated: [],
+      abandoned: [],
+      warned: [],
       noShowBookings: 0,
       errors: [],
       touched: 0,
@@ -108,15 +181,29 @@ export class TripExpiryService {
           ...(scoped ? { id: { in: scoped } } : {}),
           OR: [
             { status: { in: [...UNOPERATED_STATUSES] }, departureTime: { lte: this.unoperatedCutoff(now) } },
-            { status: { in: [...STARTED_STATUSES] }, departureTime: { lte: this.lifecycleCutoff(now) } },
+            { status: { in: [...STARTED_STATUSES] } },
           ],
         },
-        select: { id: true, driverId: true, status: true },
+        select: {
+          id: true,
+          driverId: true,
+          status: true,
+          startedAt: true,
+          updatedAt: true,
+          departureTime: true,
+          originCity: true,
+          destinationCity: true,
+          abandonWarnedAt: true,
+        },
       });
       for (const trip of trips) {
         await this.closeOutStaleTrip(trip, result);
       }
-      result.touched = result.autoCompleted.length + result.expiredUnoperated.length;
+      result.touched =
+        result.autoCompleted.length +
+        result.expiredUnoperated.length +
+        result.abandoned.length +
+        result.warned.length;
       return result;
     } catch (err) {
       result.errors.push({ tripId: null, message: (err as Error).message });

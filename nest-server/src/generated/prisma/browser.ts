@@ -63,6 +63,11 @@ export type TripSeat = Prisma.TripSeatModel
  */
 export type TripLocation = Prisma.TripLocationModel
 /**
+ * Model TripReminder
+ * 
+ */
+export type TripReminder = Prisma.TripReminderModel
+/**
  * Model Booking
  * 
  */

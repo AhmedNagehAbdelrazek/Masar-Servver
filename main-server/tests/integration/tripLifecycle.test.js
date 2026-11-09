@@ -95,25 +95,25 @@ beforeEach(async () => {
 });
 
 describe('tripLifecycleJob - stale trip close-out', () => {
-  it('auto-completes started trips past their end (with bookings)', async () => {
+  it('auto-abandons started trips with no driver activity (with bookings)', async () => {
     const tripId = await createTripViaApi();
     const booking = await addConfirmedBooking(tripId);
     await Trip.update(
-      { departureTime: hoursAgo(5), status: TRIP_STATUS.IN_PROGRESS },
+      { departureTime: hoursAgo(5), startedAt: hoursAgo(5), status: TRIP_STATUS.IN_PROGRESS },
       { where: { id: tripId } }
     );
 
     const result = await runTripLifecycle();
 
-    expect(result.autoCompleted).toContain(tripId);
+    expect(result.abandoned).toContain(tripId);
     expect(result.errors).toEqual([]);
 
     const trip = await Trip.findByPk(tripId);
-    expect(trip.status).toBe(TRIP_STATUS.COMPLETED);
+    expect(trip.status).toBe(TRIP_STATUS.ABANDONED);
 
     const updated = await Booking.findByPk(booking.id);
-    expect(updated.status).toBe(BOOKING_STATUS.COMPLETED);
-    expect(updated.completedAt).not.toBeNull();
+    expect(updated.status).toBe(BOOKING_STATUS.CANCELLED);
+    expect(updated.cancellationReason).toBe('trip_abandoned');
   });
 
   it('expires never-operated trips as cancelled with NO_SHOW bookings', async () => {
@@ -159,7 +159,7 @@ describe('tripLifecycleJob - stale trip close-out', () => {
     const tripId = await createTripViaApi();
     const booking = await addConfirmedBooking(tripId);
     await Trip.update(
-      { departureTime: hoursAgo(1), status: TRIP_STATUS.IN_PROGRESS },
+      { departureTime: hoursAgo(1), startedAt: new Date(Date.now() - 5 * 60 * 1000), status: TRIP_STATUS.IN_PROGRESS },
       { where: { id: tripId } }
     );
 

@@ -5,7 +5,7 @@ import * as mapsC from '../Controllers/mapsController';
 import protect from '../middlewares/protect';
 import { roleGuard } from '../middlewares/roleGuard';
 import validate from '../middlewares/validatorMiddleware';
-import { createTripValidation, updateTripValidation, tripParamValidation, tripPassengersValidation, searchAvailableTripsValidation, cancelTripValidation } from '../utils/validators/tripValidator';
+import { createTripValidation, updateTripValidation, tripParamValidation, tripPassengersValidation, searchAvailableTripsValidation, cancelTripValidation, abandonTripValidation } from '../utils/validators/tripValidator';
 import { replaceStopsValidation, pickupPreviewValidation, pickupStatusValidation } from '../utils/validators/mapsValidator';
 import { param } from 'express-validator';
 
@@ -36,6 +36,9 @@ router.post('/:trip_id/complete', protect, roleGuard(['driver']), c.completeTrip
 
 // Edit a trip (driver owner only)
 router.put('/:trip_id', protect, roleGuard(['driver']), ...updateTripValidation, validate, c.updateTrip);
+
+// Abandon an in-progress trip (driver owner only)
+router.post('/:trip_id/abandon', protect, roleGuard(['driver']), ...abandonTripValidation, validate, c.abandonTrip);
 
 // Cancel a trip with penalty (driver owner only)
 router.post('/:trip_id/cancel', protect, roleGuard(['driver']), ...cancelTripValidation, validate, c.cancelTripWithPenalty);

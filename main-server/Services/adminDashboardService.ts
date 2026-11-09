@@ -5,7 +5,7 @@ import { TRIP_STATUS, BOOKING_STATUS, COMPLAINT_STATUS, PENALTY_TYPES, VERIFICAT
 import { parsePagination, buildPagination } from '../utils/pagination';
 import { ApiErrors } from '../utils/ApiError';
 import { maskPhone } from '../utils/masking';
-import { User, DriverProfile, Vehicle, UploadedImage, Trip, Booking, Rating, Complaint, Penalty, DriverSubscription, DocumentReview, VerificationStatusChange, Notification, TripSeat, RideRequest } from '../Models';
+import { User, DriverProfile, Vehicle, UploadedImage, Trip, TripStop, Booking, Rating, Complaint, Penalty, DriverSubscription, DocumentReview, VerificationStatusChange, Notification, TripSeat, RideRequest } from '../Models';
 import notificationService from './notificationService';
 import { toAbsoluteMediaUrl } from '../utils/mediaUrl';
 
@@ -76,6 +76,7 @@ function mapTripStatusFilter(status) {
     case 'pending': return { [Op.in]: [TRIP_STATUS.PUBLISHED, TRIP_STATUS.FULL] };
     case 'active': return { [Op.in]: [TRIP_STATUS.IN_PROGRESS, TRIP_STATUS.ONGOING] };
     case 'completed': return TRIP_STATUS.COMPLETED;
+    case 'abandoned': return TRIP_STATUS.ABANDONED;
     case 'canceled':
     case 'cancelled': return TRIP_STATUS.CANCELLED;
     default: return null;
@@ -260,7 +261,7 @@ async function getSummary() {
     pendingDocsCount, pendingDriversRows, unresolvedComplaints,
     topRoutes, recentTripRows, latestComplaints,
     bookingsToday, tripsToday, totalPassengers, pendingPayments, newRideRequests,
-    completedTrips, cancelledTrips, upcomingTrips, inProgressTrips,
+    completedTrips, cancelledTrips, upcomingTrips, inProgressTrips, abandonedTrips,
   ] = await Promise.all([
     User.count({ where: { role: 'driver' } }),
     User.count({ where: ACTIVE_BUCKET }),
@@ -299,6 +300,7 @@ async function getSummary() {
     Trip.count({ where: { status: TRIP_STATUS.CANCELLED } }),
     Trip.count({ where: { status: { [Op.in]: [TRIP_STATUS.PUBLISHED, TRIP_STATUS.FULL] } } }),
     Trip.count({ where: { status: { [Op.in]: [TRIP_STATUS.IN_PROGRESS, TRIP_STATUS.ONGOING] } } }),
+    Trip.count({ where: { status: TRIP_STATUS.ABANDONED } }),
   ]);
 
   const aggs = await tripPassengerAggregates(recentTripRows.map((t) => t.id));
@@ -321,6 +323,7 @@ async function getSummary() {
       cancelled_trips: cancelledTrips,
       upcoming_trips: upcomingTrips,
       in_progress_trips: inProgressTrips,
+      abandoned_trips: abandonedTrips,
     },
     alerts: [
       { type: 'pending_verification_documents', message: 'ALERT_PENDING_VERIFICATION_DOCUMENTS', count: pendingDocsCount },
@@ -652,6 +655,7 @@ async function getTripDetail(tripId) {
   const trip = await Trip.findByPk(tripId, {
     include: [
       { model: User, as: 'driver', attributes: ['id', 'fullName', 'phone', 'avgRating', 'avatarUrl'] },
+      { model: TripStop, as: 'stops' },
       {
         model: Booking,
         as: 'bookings',
@@ -689,6 +693,16 @@ async function getTripDetail(tripId) {
       reservations_count: activeBookings.length,
       passengers_count: activeBookings.reduce((sum, booking) => sum + Number(booking.seatsBooked || 0), 0),
       total_booking_value: totalBookingValue,
+      stops: (trip.stops || []).map((stop) => ({
+        id: stop.id,
+        stop_order: stop.stopOrder,
+        stop_name: stop.stopName,
+        city: stop.city,
+        address: stop.address,
+        stop_type: stop.stopType,
+        lat: stop.lat != null ? Number(stop.lat) : stop.stopLat != null ? Number(stop.stopLat) : null,
+        lng: stop.lng != null ? Number(stop.lng) : stop.stopLng != null ? Number(stop.stopLng) : null,
+      })),
     },
     driver: trip.driver
       ? {
@@ -709,6 +723,23 @@ async function getTripDetail(tripId) {
       total_price: Number(booking.agreedFare) * Number(booking.seatsBooked),
       payment_status: booking.paymentStatus,
       created_at: booking.createdat,
+      pickup: {
+        place: booking.pickupPlace,
+        label: booking.pickupLabel,
+        city: booking.pickupCity,
+        area: booking.pickupArea,
+        lat: booking.pickupLat != null ? Number(booking.pickupLat) : null,
+        lng: booking.pickupLng != null ? Number(booking.pickupLng) : null,
+        order: booking.pickupOrder != null ? Number(booking.pickupOrder) : null,
+        status: booking.pickupStatus,
+      },
+      dropoff: {
+        place: booking.dropoffPlace,
+        lat: booking.dropoffLat != null ? Number(booking.dropoffLat) : null,
+        lng: booking.dropoffLng != null ? Number(booking.dropoffLng) : null,
+        deadline: booking.dropoffDeadline,
+        dropped_off_at: booking.droppedOffAt,
+      },
       passenger: booking.passenger
         ? {
           id: booking.passenger.id,

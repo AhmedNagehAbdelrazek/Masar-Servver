@@ -1,12 +1,13 @@
 // @ts-nocheck
 import { Op } from 'sequelize';
-import { Message, User } from '../Models';
+import { Message, User, SupportTicket } from '../Models';
 import { ApiErrors } from '../utils/ApiError';
 import { parsePagination, buildPagination } from '../utils/pagination';
 import { sanitizeMessage } from '../utils/sanitize';
 import { BOOKING_STATUS, TRIP_STATUS } from '../config/constants';
 import realtimeService from './realtimeService';
 import realtimeMetrics from './realtimeMetrics';
+import notificationService from './notificationService';
 
 /**
  * Booking chat (driver <-> passenger) + support ticket chat persistence and
@@ -43,6 +44,23 @@ async function findMessageWithSender(id) {
   });
 }
 
+async function notifyChatRecipient(recipientId, senderName, data = {}) {
+  if (!recipientId) return;
+  const recipient = await User.findByPk(recipientId, {
+    attributes: ['id', 'phone', 'fcmToken', 'locale'],
+  });
+  if (!recipient) return;
+  try {
+    await notificationService.sendToUser(recipient, 'NEW_MESSAGE', {
+      channels: ['in_app', 'push'],
+      vars: { sender: senderName || 'Masar' },
+      data,
+    });
+  } catch (err) {
+    console.warn('[messageService] chat notification failed:', err.message);
+  }
+}
+
 /**
  * Loads the booking chat parties and enforces that the chat is open:
  * the booking must be CONFIRMED and its trip must not be completed or
@@ -70,7 +88,7 @@ async function sendBookingMessage(user, payload) {
   if (!bookingId) throw ApiErrors.validation('BOOKING_ID_IS_REQUIRED_FOR_BOOKING_CHAT');
   if (!message || !String(message).trim()) throw ApiErrors.validation('MESSAGE_IS_REQUIRED');
 
-  await assertBookingChatOpen(user, bookingId);
+  const { booking, trip } = await assertBookingChatOpen(user, bookingId);
 
   const clean = sanitizeMessage(message);
   if (!clean) throw ApiErrors.validation('MESSAGE_IS_EMPTY_AFTER_SANITIZATION');
@@ -98,6 +116,16 @@ async function sendBookingMessage(user, payload) {
   realtimeService.emitToRoom(`booking:${bookingId}`, 'chat:receive', out);
   realtimeMetrics.recordEvent('chat:receive');
   realtimeMetrics.recordDelivery();
+  const recipientId = user.id === booking.passengerId ? trip.driverId : booking.passengerId;
+  await notifyChatRecipient(recipientId, out.sender_name, {
+    conversation_type: 'booking',
+    booking_id: bookingId,
+    trip_id: trip.id,
+    message_id: out.id,
+    sender_id: out.sender_id,
+    sender_name: out.sender_name,
+    created_at: out.created_at,
+  });
 
   return { id: row.id, created_at: out.created_at };
 }
@@ -141,6 +169,20 @@ async function sendSupportMessage(user, payload) {
   realtimeService.emitToRoom(`support:${supportTicketId}`, 'chat:receive', out);
   realtimeMetrics.recordEvent('chat:receive');
   realtimeMetrics.recordDelivery();
+  const ticket = await SupportTicket.findByPk(supportTicketId, {
+    attributes: ['id', 'userId', 'assignedTo'],
+  });
+  if (ticket) {
+    const recipientId = user.id === ticket.userId ? ticket.assignedTo : ticket.userId;
+    await notifyChatRecipient(recipientId, out.sender_name, {
+      conversation_type: 'support',
+      support_ticket_id: supportTicketId,
+      message_id: out.id,
+      sender_id: out.sender_id,
+      sender_name: out.sender_name,
+      created_at: out.created_at,
+    });
+  }
 
   return { id: row.id, created_at: out.created_at };
 }

@@ -129,6 +129,7 @@ describe('US3 - trip completion finalizes bookings', () => {
       seatsBooked: 1,
       agreedFare: 5,
       status: BOOKING_STATUS.CONFIRMED,
+      pickupStatus: 'picked_up',
       paymentStatus: 'pending',
       referenceCode: await makeRef(),
     });
@@ -180,6 +181,7 @@ describe('US3 - trip completion finalizes bookings', () => {
       seatsBooked: 2,
       agreedFare: 22,
       status: BOOKING_STATUS.CONFIRMED,
+      pickupStatus: 'picked_up',
       paymentStatus: 'pending',
       referenceCode: await makeRef(),
     });

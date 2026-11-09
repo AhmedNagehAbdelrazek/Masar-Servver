@@ -60,6 +60,7 @@ export const ModelName = {
   TripStop: 'TripStop',
   TripSeat: 'TripSeat',
   TripLocation: 'TripLocation',
+  TripReminder: 'TripReminder',
   Booking: 'Booking',
   RideRequest: 'RideRequest',
   RequestOffer: 'RequestOffer',
@@ -253,6 +254,9 @@ export const TripScalarFieldEnum = {
   actualDurationS: 'actualDurationS',
   startedAt: 'startedAt',
   completedAt: 'completedAt',
+  abandonedAt: 'abandonedAt',
+  abandonReason: 'abandonReason',
+  abandonWarnedAt: 'abandonWarnedAt',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -316,6 +320,20 @@ export const TripLocationScalarFieldEnum = {
 export type TripLocationScalarFieldEnum = (typeof TripLocationScalarFieldEnum)[keyof typeof TripLocationScalarFieldEnum]
 
 
+export const TripReminderScalarFieldEnum = {
+  id: 'id',
+  tripId: 'tripId',
+  userId: 'userId',
+  kind: 'kind',
+  occurrenceAt: 'occurrenceAt',
+  sentAt: 'sentAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type TripReminderScalarFieldEnum = (typeof TripReminderScalarFieldEnum)[keyof typeof TripReminderScalarFieldEnum]
+
+
 export const BookingScalarFieldEnum = {
   id: 'id',
   tripId: 'tripId',
@@ -350,6 +368,7 @@ export const BookingScalarFieldEnum = {
   cancelledAt: 'cancelledAt',
   paymentStatus: 'paymentStatus',
   completedAt: 'completedAt',
+  droppedOffAt: 'droppedOffAt',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const

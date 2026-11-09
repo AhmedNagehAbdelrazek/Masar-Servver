@@ -109,7 +109,7 @@ async function ingestPoint(user, payload) {
     include: [{ model: User, as: 'passenger', attributes: ['id', 'fullName'] }],
     order: [['pickupOrder', 'ASC']],
   });
-  const pending = upcoming.filter((b) => ![PICKUP_STATUS.PICKED_UP, PICKUP_STATUS.MISSED].includes(b.pickupStatus));
+  const pending = upcoming.filter((b) => ![PICKUP_STATUS.PICKED_UP, PICKUP_STATUS.DROPPED_OFF, PICKUP_STATUS.MISSED].includes(b.pickupStatus));
   const next = pending[0] || null;
   if (next && next.pickupLat != null && speedNum > 0) {
     const distKm = haversineKm(Number(lat), Number(lng), Number(next.pickupLat), Number(next.pickupLng));

@@ -225,6 +225,12 @@ describe('Booking chat (driver <-> passenger)', () => {
       expect(received.support_ticket_id).toBeNull();
       expect(received.message).toBe('See you at the pickup point');
       expect(received.sender_id).toBe(PASSENGER1_ID);
+      const notification = await ctx.prisma.notification.findFirst({
+        where: { userId: DRIVER_ID, type: 'NEW_MESSAGE' },
+        orderBy: { createdAt: 'desc' },
+      });
+      expect(notification).not.toBeNull();
+      expect((notification?.data as Record<string, unknown>).booking_id).toBe(bookingId);
     } finally {
       driverSocket.disconnect();
       passengerSocket.disconnect();

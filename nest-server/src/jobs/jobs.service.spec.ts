@@ -25,6 +25,7 @@ function makeDeps() {
   const commission = { getGatingSnapshot: vi.fn() };
   const sos = { runEscalation: vi.fn() };
   const tripExpiry = { refreshStaleTrips: vi.fn() };
+  const tripReminders = { sendDueReminders: vi.fn() };
   const routes = { computeTripRoute: vi.fn(), compactActualPath: vi.fn() };
   const stats = { recomputeAllDrivers: vi.fn() };
   const service = new JobsService(
@@ -35,10 +36,11 @@ function makeDeps() {
     commission as never,
     sos as never,
     tripExpiry as never,
+    tripReminders as never,
     routes as never,
     stats as never,
   );
-  return { prisma, redis, balance, notifications, commission, sos, tripExpiry, routes, stats, service };
+  return { prisma, redis, balance, notifications, commission, sos, tripExpiry, tripReminders, routes, stats, service };
 }
 
 beforeEach(() => {

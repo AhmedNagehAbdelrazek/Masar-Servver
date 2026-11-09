@@ -27,7 +27,7 @@ export class RecentTripsQuery extends PaginationQuery {
   search?: string;
 
   @IsOptional()
-  @IsIn(['published', 'full', 'in_progress', 'ongoing', 'completed', 'cancelled', 'canceled'])
+  @IsIn(['published', 'full', 'in_progress', 'ongoing', 'completed', 'abandoned', 'cancelled', 'canceled'])
   status?: string;
 }
 
@@ -62,7 +62,7 @@ export class DriversListQuery extends PaginationQuery {
 // Port of driverTripsQueryValidation.
 export class DriverTripsQuery extends PaginationQuery {
   @IsOptional()
-  @IsIn(['all', 'pending', 'completed', 'canceled', 'cancelled', 'active'])
+  @IsIn(['all', 'pending', 'completed', 'canceled', 'cancelled', 'abandoned', 'active'])
   status?: string;
 
   @IsOptional()

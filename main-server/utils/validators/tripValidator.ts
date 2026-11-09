@@ -513,17 +513,25 @@ export const cancelTripValidation: ValidationChain[] = [
     .isLength({ max: 500 }).withMessage(V.NOTE_MUST_BE_AT_MOST_500_CHARACTERS),
 ];
 
+export const abandonTripValidation: ValidationChain[] = [
+  param('trip_id').isUUID().withMessage(V.TRIP_ID_MUST_BE_A_VALID_UUID),
+  body('reason')
+    .optional()
+    .trim()
+    .isLength({ max: 500 }).withMessage(V.REASON_MUST_BE_AT_MOST_500_CHARACTERS),
+];
 
 
 
-const _exported = { createTripValidation, searchAvailableTripsValidation, lockSeatValidation, releaseSeatLockValidation, updateTripValidation, tripParamValidation, tripPassengersValidation, cancelTripValidation };
+
+const _exported = { createTripValidation, searchAvailableTripsValidation, lockSeatValidation, releaseSeatLockValidation, updateTripValidation, tripParamValidation, tripPassengersValidation, cancelTripValidation, abandonTripValidation };
 export default _exported;
 
 // CommonJS interop
 // @ts-ignore
 if (typeof module !== 'undefined' && module.exports) {
   // @ts-ignore
-  module.exports = { createTripValidation, searchAvailableTripsValidation, lockSeatValidation, releaseSeatLockValidation, updateTripValidation, tripParamValidation, tripPassengersValidation, cancelTripValidation };
+  module.exports = { createTripValidation, searchAvailableTripsValidation, lockSeatValidation, releaseSeatLockValidation, updateTripValidation, tripParamValidation, tripPassengersValidation, cancelTripValidation, abandonTripValidation };
   // @ts-ignore
   module.exports.createTripValidation = createTripValidation;
   // @ts-ignore
@@ -540,6 +548,8 @@ if (typeof module !== 'undefined' && module.exports) {
   module.exports.tripPassengersValidation = tripPassengersValidation;
   // @ts-ignore
   module.exports.cancelTripValidation = cancelTripValidation;
+  // @ts-ignore
+  module.exports.abandonTripValidation = abandonTripValidation;
   // @ts-ignore
   module.exports.default = _exported;
 }

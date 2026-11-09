@@ -88,6 +88,7 @@ function mapTripStatusFilter(status: string): string | string[] | null {
     case 'pending': return ['published', 'full'];
     case 'active': return ['in_progress', 'ongoing'];
     case 'completed': return 'completed';
+    case 'abandoned': return 'abandoned';
     case 'canceled':
     case 'cancelled': return 'cancelled';
     default: return null;
@@ -96,11 +97,11 @@ function mapTripStatusFilter(status: string): string | string[] | null {
 
 function tripStatusWhere(status: string): Prisma.TripWhereInput['status'] {
   const mapped = mapTripStatusFilter(status);
-  if (Array.isArray(mapped)) return { in: mapped as ('published' | 'full' | 'in_progress' | 'ongoing' | 'completed' | 'cancelled')[] };
-  if (mapped) return mapped as 'completed' | 'cancelled';
+  if (Array.isArray(mapped)) return { in: mapped as ('published' | 'full' | 'in_progress' | 'ongoing' | 'completed' | 'abandoned' | 'cancelled')[] };
+  if (mapped) return mapped as 'completed' | 'abandoned' | 'cancelled';
   // 'canceled' (one L) is accepted by validators but stored as 'cancelled'.
   if (status === 'canceled') return 'cancelled';
-  return status as 'published' | 'full' | 'in_progress' | 'ongoing' | 'completed' | 'cancelled';
+  return status as 'published' | 'full' | 'in_progress' | 'ongoing' | 'completed' | 'abandoned' | 'cancelled';
 }
 
 export function maskPhone(phone: string | number | null | undefined): string | null {
@@ -318,7 +319,7 @@ export class AdminDashboardService {
       pendingDocsCount, pendingDriversRows, unresolvedComplaints,
       topRouteRows, recentTripRows, latestComplaints,
       bookingsToday, tripsToday, totalPassengers, pendingPayments, newRideRequests,
-      completedTrips, cancelledTrips, upcomingTrips, inProgressTrips,
+      completedTrips, cancelledTrips, upcomingTrips, inProgressTrips, abandonedTrips,
     ] = await Promise.all([
       this.prisma.user.count({ where: { role: 'driver' } }),
       this.prisma.user.count({ where: ACTIVE_BUCKET }),
@@ -364,6 +365,7 @@ export class AdminDashboardService {
       this.prisma.trip.count({ where: { status: 'cancelled' } }),
       this.prisma.trip.count({ where: { status: { in: ['published', 'full'] } } }),
       this.prisma.trip.count({ where: { status: { in: ['in_progress', 'ongoing'] } } }),
+      this.prisma.trip.count({ where: { status: 'abandoned' } }),
     ]);
 
     const aggs = await this.tripPassengerAggregates(recentTripRows.map((t) => t.id));
@@ -386,6 +388,7 @@ export class AdminDashboardService {
         cancelled_trips: cancelledTrips,
         upcoming_trips: upcomingTrips,
         in_progress_trips: inProgressTrips,
+        abandoned_trips: abandonedTrips,
       },
       alerts: [
         { type: 'pending_verification_documents', message: 'ALERT_PENDING_VERIFICATION_DOCUMENTS', count: pendingDocsCount },
@@ -654,6 +657,7 @@ export class AdminDashboardService {
         driver: {
           select: { id: true, fullName: true, phone: true, avgRating: true, avatarUrl: true },
         },
+        stops: { orderBy: { stopOrder: 'asc' } },
         bookings: {
           include: {
             passenger: {
@@ -691,6 +695,16 @@ export class AdminDashboardService {
         reservations_count: activeBookings.length,
         passengers_count: activeBookings.reduce((sum, booking) => sum + Number(booking.seatsBooked), 0),
         total_booking_value: totalBookingValue,
+        stops: trip.stops.map((stop) => ({
+          id: stop.id,
+          stop_order: stop.stopOrder,
+          stop_name: stop.stopName,
+          city: stop.city,
+          address: stop.address,
+          stop_type: stop.stopType,
+          lat: stop.lat != null ? Number(stop.lat) : stop.stopLat != null ? Number(stop.stopLat) : null,
+          lng: stop.lng != null ? Number(stop.lng) : stop.stopLng != null ? Number(stop.stopLng) : null,
+        })),
       },
       driver: trip.driver
         ? {
@@ -711,6 +725,23 @@ export class AdminDashboardService {
         total_price: Number(booking.agreedFare) * Number(booking.seatsBooked),
         payment_status: booking.paymentStatus,
         created_at: booking.createdAt,
+        pickup: {
+          place: booking.pickupPlace,
+          label: booking.pickupLabel,
+          city: booking.pickupCity,
+          area: booking.pickupArea,
+          lat: booking.pickupLat != null ? Number(booking.pickupLat) : null,
+          lng: booking.pickupLng != null ? Number(booking.pickupLng) : null,
+          order: booking.pickupOrder != null ? Number(booking.pickupOrder) : null,
+          status: booking.pickupStatus,
+        },
+        dropoff: {
+          place: booking.dropoffPlace,
+          lat: booking.dropoffLat != null ? Number(booking.dropoffLat) : null,
+          lng: booking.dropoffLng != null ? Number(booking.dropoffLng) : null,
+          deadline: booking.dropoffDeadline,
+          dropped_off_at: booking.droppedOffAt,
+        },
         passenger: booking.passenger
           ? {
               id: booking.passenger.id,

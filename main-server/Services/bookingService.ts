@@ -646,6 +646,7 @@ function serializePassengerDetail(booking, trip, passenger) {
     cancellation_reason: booking.cancellationReason,
     cancelled_at: booking.cancelledAt,
     completed_at: booking.completedAt,
+    dropped_off_at: booking.droppedOffAt,
     booking_created_at: booking.createdat || booking.createdAt,
     trip: trip
       ? {
@@ -696,18 +697,24 @@ async function syncBookingsWithTripStatus(passengerId) {
   for (const booking of active) {
     const tripStatus = booking.trip && booking.trip.status;
     try {
-      if (tripStatus === TRIP_STATUS.CANCELLED) {
+      if (tripStatus === TRIP_STATUS.CANCELLED || tripStatus === TRIP_STATUS.ABANDONED) {
         await booking.update({
           status: BOOKING_STATUS.CANCELLED,
-          cancellationReason: booking.cancellationReason || 'Trip cancelled by driver',
+          cancellationReason: booking.cancellationReason || (tripStatus === TRIP_STATUS.ABANDONED ? 'trip_abandoned' : 'Trip cancelled by driver'),
           cancelledBy: booking.cancelledBy || (booking.trip ? booking.trip.driverId : null),
           cancelledAt: booking.cancelledAt || new Date(),
         });
       } else if (tripStatus === TRIP_STATUS.COMPLETED) {
+        const boarded = ['picked_up', 'dropped_off'].includes(booking.pickupStatus);
         await booking.update({
-          status: BOOKING_STATUS.COMPLETED,
-          paymentStatus: booking.paymentStatus === PAYMENT_STATUS.PENDING ? 'paid_cash' : booking.paymentStatus,
-          completedAt: booking.completedAt || new Date(),
+          status: boarded ? BOOKING_STATUS.COMPLETED : BOOKING_STATUS.NO_SHOW,
+          ...(boarded
+            ? {
+                paymentStatus: booking.paymentStatus === PAYMENT_STATUS.PENDING ? 'paid_cash' : booking.paymentStatus,
+                completedAt: booking.completedAt || new Date(),
+                droppedOffAt: booking.droppedOffAt || new Date(),
+              }
+            : {}),
         });
       }
     } catch (err) {

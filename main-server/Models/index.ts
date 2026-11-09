@@ -21,6 +21,7 @@ import Notification from './Notification';
 import Message from './Message';
 import SosEvent from './SosEvent';
 import TripLocation from './TripLocation';
+import TripReminder from './TripReminder';
 import FavoriteDriver from './FavoriteDriver';
 import FavoriteRoute from './FavoriteRoute';
 import RecentSearch from './RecentSearch';
@@ -106,6 +107,11 @@ import DocumentReview from './DocumentReview';
 
 (Trip as unknown as { hasMany: (m: unknown, o: unknown) => void }).hasMany(SosEvent, { foreignKey: 'trip_id', as: 'sosEvents' });
 (SosEvent as unknown as { belongsTo: (m: unknown, o: unknown) => void }).belongsTo(Trip, { foreignKey: 'trip_id', as: 'trip' });
+
+(Trip as unknown as { hasMany: (m: unknown, o: unknown) => void }).hasMany(TripReminder, { foreignKey: 'trip_id', as: 'reminders' });
+(TripReminder as unknown as { belongsTo: (m: unknown, o: unknown) => void }).belongsTo(Trip, { foreignKey: 'trip_id', as: 'trip' });
+(User as unknown as { hasMany: (m: unknown, o: unknown) => void }).hasMany(TripReminder, { foreignKey: 'user_id', as: 'tripReminders' });
+(TripReminder as unknown as { belongsTo: (m: unknown, o: unknown) => void }).belongsTo(User, { foreignKey: 'user_id', as: 'user' });
 
 (Booking as unknown as { hasMany: (m: unknown, o: unknown) => void }).hasMany(SosEvent, { foreignKey: 'booking_id', as: 'sosEvents' });
 (SosEvent as unknown as { belongsTo: (m: unknown, o: unknown) => void }).belongsTo(Booking, { foreignKey: 'booking_id', as: 'booking' });
@@ -201,6 +207,7 @@ export {
   Message,
   SosEvent,
   TripLocation,
+  TripReminder,
   FavoriteDriver,
   FavoriteRoute,
   RecentSearch,
@@ -238,6 +245,7 @@ export default {
   Message,
   SosEvent,
   TripLocation,
+  TripReminder,
   FavoriteDriver,
   FavoriteRoute,
   RecentSearch,
@@ -275,6 +283,7 @@ module.exports = {
   Message,
   SosEvent,
   TripLocation,
+  TripReminder,
   FavoriteDriver,
   FavoriteRoute,
   RecentSearch,

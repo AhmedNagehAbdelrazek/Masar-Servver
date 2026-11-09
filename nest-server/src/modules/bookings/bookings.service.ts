@@ -247,6 +247,7 @@ export class BookingsService {
       cancellation_reason: booking.cancellationReason,
       cancelled_at: booking.cancelledAt,
       completed_at: booking.completedAt,
+      dropped_off_at: booking.droppedOffAt,
       booking_created_at: booking.createdAt,
       trip: trip
         ? {
@@ -955,23 +956,29 @@ export class BookingsService {
     for (const booking of active) {
       const trip = booking.trip as unknown as { status: string; driverId: string } | null;
       try {
-        if (trip?.status === 'cancelled') {
+        if (trip?.status === 'cancelled' || trip?.status === 'abandoned') {
           await this.prisma.booking.update({
             where: { id: booking.id },
             data: {
               status: 'cancelled',
-              cancellationReason: booking.cancellationReason ?? 'Trip cancelled by driver',
+              cancellationReason: booking.cancellationReason ?? (trip.status === 'abandoned' ? 'trip_abandoned' : 'Trip cancelled by driver'),
               cancelledBy: booking.cancelledBy ?? trip.driverId,
               cancelledAt: booking.cancelledAt ?? new Date(),
             },
           });
         } else if (trip?.status === 'completed') {
+          const boarded = ['picked_up', 'dropped_off'].includes(String(booking.pickupStatus));
           await this.prisma.booking.update({
             where: { id: booking.id },
             data: {
-              status: 'completed',
-              paymentStatus: booking.paymentStatus === 'pending' ? 'paid_cash' : booking.paymentStatus,
-              completedAt: booking.completedAt ?? new Date(),
+              status: boarded ? 'completed' : 'no_show',
+              ...(boarded
+                ? {
+                    paymentStatus: booking.paymentStatus === 'pending' ? 'paid_cash' : booking.paymentStatus,
+                    completedAt: booking.completedAt ?? new Date(),
+                    droppedOffAt: booking.droppedOffAt ?? new Date(),
+                  }
+                : {}),
             },
           });
         }

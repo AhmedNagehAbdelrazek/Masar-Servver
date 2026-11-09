@@ -103,6 +103,9 @@ export type TripMinAggregateOutputType = {
   actualDurationS: number | null
   startedAt: Date | null
   completedAt: Date | null
+  abandonedAt: Date | null
+  abandonReason: string | null
+  abandonWarnedAt: Date | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -150,6 +153,9 @@ export type TripMaxAggregateOutputType = {
   actualDurationS: number | null
   startedAt: Date | null
   completedAt: Date | null
+  abandonedAt: Date | null
+  abandonReason: string | null
+  abandonWarnedAt: Date | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -200,6 +206,9 @@ export type TripCountAggregateOutputType = {
   actualDurationS: number
   startedAt: number
   completedAt: number
+  abandonedAt: number
+  abandonReason: number
+  abandonWarnedAt: number
   createdAt: number
   updatedAt: number
   _all: number
@@ -283,6 +292,9 @@ export type TripMinAggregateInputType = {
   actualDurationS?: true
   startedAt?: true
   completedAt?: true
+  abandonedAt?: true
+  abandonReason?: true
+  abandonWarnedAt?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -330,6 +342,9 @@ export type TripMaxAggregateInputType = {
   actualDurationS?: true
   startedAt?: true
   completedAt?: true
+  abandonedAt?: true
+  abandonReason?: true
+  abandonWarnedAt?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -380,6 +395,9 @@ export type TripCountAggregateInputType = {
   actualDurationS?: true
   startedAt?: true
   completedAt?: true
+  abandonedAt?: true
+  abandonReason?: true
+  abandonWarnedAt?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -517,6 +535,9 @@ export type TripGroupByOutputType = {
   actualDurationS: number | null
   startedAt: Date | null
   completedAt: Date | null
+  abandonedAt: Date | null
+  abandonReason: string | null
+  abandonWarnedAt: Date | null
   createdAt: Date
   updatedAt: Date
   _count: TripCountAggregateOutputType | null
@@ -590,6 +611,9 @@ export type TripWhereInput = {
   actualDurationS?: Prisma.IntNullableFilter<"Trip"> | number | null
   startedAt?: Prisma.DateTimeNullableFilter<"Trip"> | Date | string | null
   completedAt?: Prisma.DateTimeNullableFilter<"Trip"> | Date | string | null
+  abandonedAt?: Prisma.DateTimeNullableFilter<"Trip"> | Date | string | null
+  abandonReason?: Prisma.StringNullableFilter<"Trip"> | string | null
+  abandonWarnedAt?: Prisma.DateTimeNullableFilter<"Trip"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"Trip"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Trip"> | Date | string
   driver?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
@@ -601,6 +625,7 @@ export type TripWhereInput = {
   offers?: Prisma.RequestOfferListRelationFilter
   sosEvents?: Prisma.SosEventListRelationFilter
   locations?: Prisma.TripLocationListRelationFilter
+  reminders?: Prisma.TripReminderListRelationFilter
 }
 
 export type TripOrderByWithRelationInput = {
@@ -649,6 +674,9 @@ export type TripOrderByWithRelationInput = {
   actualDurationS?: Prisma.SortOrderInput | Prisma.SortOrder
   startedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   completedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  abandonedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  abandonReason?: Prisma.SortOrderInput | Prisma.SortOrder
+  abandonWarnedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   driver?: Prisma.UserOrderByWithRelationInput
@@ -660,6 +688,7 @@ export type TripOrderByWithRelationInput = {
   offers?: Prisma.RequestOfferOrderByRelationAggregateInput
   sosEvents?: Prisma.SosEventOrderByRelationAggregateInput
   locations?: Prisma.TripLocationOrderByRelationAggregateInput
+  reminders?: Prisma.TripReminderOrderByRelationAggregateInput
 }
 
 export type TripWhereUniqueInput = Prisma.AtLeast<{
@@ -711,6 +740,9 @@ export type TripWhereUniqueInput = Prisma.AtLeast<{
   actualDurationS?: Prisma.IntNullableFilter<"Trip"> | number | null
   startedAt?: Prisma.DateTimeNullableFilter<"Trip"> | Date | string | null
   completedAt?: Prisma.DateTimeNullableFilter<"Trip"> | Date | string | null
+  abandonedAt?: Prisma.DateTimeNullableFilter<"Trip"> | Date | string | null
+  abandonReason?: Prisma.StringNullableFilter<"Trip"> | string | null
+  abandonWarnedAt?: Prisma.DateTimeNullableFilter<"Trip"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"Trip"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Trip"> | Date | string
   driver?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
@@ -722,6 +754,7 @@ export type TripWhereUniqueInput = Prisma.AtLeast<{
   offers?: Prisma.RequestOfferListRelationFilter
   sosEvents?: Prisma.SosEventListRelationFilter
   locations?: Prisma.TripLocationListRelationFilter
+  reminders?: Prisma.TripReminderListRelationFilter
 }, "id">
 
 export type TripOrderByWithAggregationInput = {
@@ -770,6 +803,9 @@ export type TripOrderByWithAggregationInput = {
   actualDurationS?: Prisma.SortOrderInput | Prisma.SortOrder
   startedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   completedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  abandonedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  abandonReason?: Prisma.SortOrderInput | Prisma.SortOrder
+  abandonWarnedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.TripCountOrderByAggregateInput
@@ -828,6 +864,9 @@ export type TripScalarWhereWithAggregatesInput = {
   actualDurationS?: Prisma.IntNullableWithAggregatesFilter<"Trip"> | number | null
   startedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Trip"> | Date | string | null
   completedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Trip"> | Date | string | null
+  abandonedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Trip"> | Date | string | null
+  abandonReason?: Prisma.StringNullableWithAggregatesFilter<"Trip"> | string | null
+  abandonWarnedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Trip"> | Date | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Trip"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Trip"> | Date | string
 }
@@ -876,6 +915,9 @@ export type TripCreateInput = {
   actualDurationS?: number | null
   startedAt?: Date | string | null
   completedAt?: Date | string | null
+  abandonedAt?: Date | string | null
+  abandonReason?: string | null
+  abandonWarnedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   driver: Prisma.UserCreateNestedOneWithoutTripsInput
@@ -887,6 +929,7 @@ export type TripCreateInput = {
   offers?: Prisma.RequestOfferCreateNestedManyWithoutTripInput
   sosEvents?: Prisma.SosEventCreateNestedManyWithoutTripInput
   locations?: Prisma.TripLocationCreateNestedManyWithoutTripInput
+  reminders?: Prisma.TripReminderCreateNestedManyWithoutTripInput
 }
 
 export type TripUncheckedCreateInput = {
@@ -935,6 +978,9 @@ export type TripUncheckedCreateInput = {
   actualDurationS?: number | null
   startedAt?: Date | string | null
   completedAt?: Date | string | null
+  abandonedAt?: Date | string | null
+  abandonReason?: string | null
+  abandonWarnedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   attributes?: Prisma.TripAttributeUncheckedCreateNestedManyWithoutTripInput
@@ -944,6 +990,7 @@ export type TripUncheckedCreateInput = {
   offers?: Prisma.RequestOfferUncheckedCreateNestedManyWithoutTripInput
   sosEvents?: Prisma.SosEventUncheckedCreateNestedManyWithoutTripInput
   locations?: Prisma.TripLocationUncheckedCreateNestedManyWithoutTripInput
+  reminders?: Prisma.TripReminderUncheckedCreateNestedManyWithoutTripInput
 }
 
 export type TripUpdateInput = {
@@ -990,6 +1037,9 @@ export type TripUpdateInput = {
   actualDurationS?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  abandonedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  abandonReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  abandonWarnedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   driver?: Prisma.UserUpdateOneRequiredWithoutTripsNestedInput
@@ -1001,6 +1051,7 @@ export type TripUpdateInput = {
   offers?: Prisma.RequestOfferUpdateManyWithoutTripNestedInput
   sosEvents?: Prisma.SosEventUpdateManyWithoutTripNestedInput
   locations?: Prisma.TripLocationUpdateManyWithoutTripNestedInput
+  reminders?: Prisma.TripReminderUpdateManyWithoutTripNestedInput
 }
 
 export type TripUncheckedUpdateInput = {
@@ -1049,6 +1100,9 @@ export type TripUncheckedUpdateInput = {
   actualDurationS?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  abandonedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  abandonReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  abandonWarnedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   attributes?: Prisma.TripAttributeUncheckedUpdateManyWithoutTripNestedInput
@@ -1058,6 +1112,7 @@ export type TripUncheckedUpdateInput = {
   offers?: Prisma.RequestOfferUncheckedUpdateManyWithoutTripNestedInput
   sosEvents?: Prisma.SosEventUncheckedUpdateManyWithoutTripNestedInput
   locations?: Prisma.TripLocationUncheckedUpdateManyWithoutTripNestedInput
+  reminders?: Prisma.TripReminderUncheckedUpdateManyWithoutTripNestedInput
 }
 
 export type TripCreateManyInput = {
@@ -1106,6 +1161,9 @@ export type TripCreateManyInput = {
   actualDurationS?: number | null
   startedAt?: Date | string | null
   completedAt?: Date | string | null
+  abandonedAt?: Date | string | null
+  abandonReason?: string | null
+  abandonWarnedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -1154,6 +1212,9 @@ export type TripUpdateManyMutationInput = {
   actualDurationS?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  abandonedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  abandonReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  abandonWarnedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -1204,6 +1265,9 @@ export type TripUncheckedUpdateManyInput = {
   actualDurationS?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  abandonedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  abandonReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  abandonWarnedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -1280,6 +1344,9 @@ export type TripCountOrderByAggregateInput = {
   actualDurationS?: Prisma.SortOrder
   startedAt?: Prisma.SortOrder
   completedAt?: Prisma.SortOrder
+  abandonedAt?: Prisma.SortOrder
+  abandonReason?: Prisma.SortOrder
+  abandonWarnedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -1344,6 +1411,9 @@ export type TripMaxOrderByAggregateInput = {
   actualDurationS?: Prisma.SortOrder
   startedAt?: Prisma.SortOrder
   completedAt?: Prisma.SortOrder
+  abandonedAt?: Prisma.SortOrder
+  abandonReason?: Prisma.SortOrder
+  abandonWarnedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -1391,6 +1461,9 @@ export type TripMinOrderByAggregateInput = {
   actualDurationS?: Prisma.SortOrder
   startedAt?: Prisma.SortOrder
   completedAt?: Prisma.SortOrder
+  abandonedAt?: Prisma.SortOrder
+  abandonReason?: Prisma.SortOrder
+  abandonWarnedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -1580,6 +1653,20 @@ export type TripUpdateOneRequiredWithoutLocationsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.TripUpdateToOneWithWhereWithoutLocationsInput, Prisma.TripUpdateWithoutLocationsInput>, Prisma.TripUncheckedUpdateWithoutLocationsInput>
 }
 
+export type TripCreateNestedOneWithoutRemindersInput = {
+  create?: Prisma.XOR<Prisma.TripCreateWithoutRemindersInput, Prisma.TripUncheckedCreateWithoutRemindersInput>
+  connectOrCreate?: Prisma.TripCreateOrConnectWithoutRemindersInput
+  connect?: Prisma.TripWhereUniqueInput
+}
+
+export type TripUpdateOneRequiredWithoutRemindersNestedInput = {
+  create?: Prisma.XOR<Prisma.TripCreateWithoutRemindersInput, Prisma.TripUncheckedCreateWithoutRemindersInput>
+  connectOrCreate?: Prisma.TripCreateOrConnectWithoutRemindersInput
+  upsert?: Prisma.TripUpsertWithoutRemindersInput
+  connect?: Prisma.TripWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.TripUpdateToOneWithWhereWithoutRemindersInput, Prisma.TripUpdateWithoutRemindersInput>, Prisma.TripUncheckedUpdateWithoutRemindersInput>
+}
+
 export type TripCreateNestedOneWithoutBookingsInput = {
   create?: Prisma.XOR<Prisma.TripCreateWithoutBookingsInput, Prisma.TripUncheckedCreateWithoutBookingsInput>
   connectOrCreate?: Prisma.TripCreateOrConnectWithoutBookingsInput
@@ -1668,6 +1755,9 @@ export type TripCreateWithoutDriverInput = {
   actualDurationS?: number | null
   startedAt?: Date | string | null
   completedAt?: Date | string | null
+  abandonedAt?: Date | string | null
+  abandonReason?: string | null
+  abandonWarnedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   vehicle: Prisma.VehicleCreateNestedOneWithoutTripsInput
@@ -1678,6 +1768,7 @@ export type TripCreateWithoutDriverInput = {
   offers?: Prisma.RequestOfferCreateNestedManyWithoutTripInput
   sosEvents?: Prisma.SosEventCreateNestedManyWithoutTripInput
   locations?: Prisma.TripLocationCreateNestedManyWithoutTripInput
+  reminders?: Prisma.TripReminderCreateNestedManyWithoutTripInput
 }
 
 export type TripUncheckedCreateWithoutDriverInput = {
@@ -1725,6 +1816,9 @@ export type TripUncheckedCreateWithoutDriverInput = {
   actualDurationS?: number | null
   startedAt?: Date | string | null
   completedAt?: Date | string | null
+  abandonedAt?: Date | string | null
+  abandonReason?: string | null
+  abandonWarnedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   attributes?: Prisma.TripAttributeUncheckedCreateNestedManyWithoutTripInput
@@ -1734,6 +1828,7 @@ export type TripUncheckedCreateWithoutDriverInput = {
   offers?: Prisma.RequestOfferUncheckedCreateNestedManyWithoutTripInput
   sosEvents?: Prisma.SosEventUncheckedCreateNestedManyWithoutTripInput
   locations?: Prisma.TripLocationUncheckedCreateNestedManyWithoutTripInput
+  reminders?: Prisma.TripReminderUncheckedCreateNestedManyWithoutTripInput
 }
 
 export type TripCreateOrConnectWithoutDriverInput = {
@@ -1811,6 +1906,9 @@ export type TripScalarWhereInput = {
   actualDurationS?: Prisma.IntNullableFilter<"Trip"> | number | null
   startedAt?: Prisma.DateTimeNullableFilter<"Trip"> | Date | string | null
   completedAt?: Prisma.DateTimeNullableFilter<"Trip"> | Date | string | null
+  abandonedAt?: Prisma.DateTimeNullableFilter<"Trip"> | Date | string | null
+  abandonReason?: Prisma.StringNullableFilter<"Trip"> | string | null
+  abandonWarnedAt?: Prisma.DateTimeNullableFilter<"Trip"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"Trip"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Trip"> | Date | string
 }
@@ -1859,6 +1957,9 @@ export type TripCreateWithoutVehicleInput = {
   actualDurationS?: number | null
   startedAt?: Date | string | null
   completedAt?: Date | string | null
+  abandonedAt?: Date | string | null
+  abandonReason?: string | null
+  abandonWarnedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   driver: Prisma.UserCreateNestedOneWithoutTripsInput
@@ -1869,6 +1970,7 @@ export type TripCreateWithoutVehicleInput = {
   offers?: Prisma.RequestOfferCreateNestedManyWithoutTripInput
   sosEvents?: Prisma.SosEventCreateNestedManyWithoutTripInput
   locations?: Prisma.TripLocationCreateNestedManyWithoutTripInput
+  reminders?: Prisma.TripReminderCreateNestedManyWithoutTripInput
 }
 
 export type TripUncheckedCreateWithoutVehicleInput = {
@@ -1916,6 +2018,9 @@ export type TripUncheckedCreateWithoutVehicleInput = {
   actualDurationS?: number | null
   startedAt?: Date | string | null
   completedAt?: Date | string | null
+  abandonedAt?: Date | string | null
+  abandonReason?: string | null
+  abandonWarnedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   attributes?: Prisma.TripAttributeUncheckedCreateNestedManyWithoutTripInput
@@ -1925,6 +2030,7 @@ export type TripUncheckedCreateWithoutVehicleInput = {
   offers?: Prisma.RequestOfferUncheckedCreateNestedManyWithoutTripInput
   sosEvents?: Prisma.SosEventUncheckedCreateNestedManyWithoutTripInput
   locations?: Prisma.TripLocationUncheckedCreateNestedManyWithoutTripInput
+  reminders?: Prisma.TripReminderUncheckedCreateNestedManyWithoutTripInput
 }
 
 export type TripCreateOrConnectWithoutVehicleInput = {
@@ -1997,6 +2103,9 @@ export type TripCreateWithoutAttributesInput = {
   actualDurationS?: number | null
   startedAt?: Date | string | null
   completedAt?: Date | string | null
+  abandonedAt?: Date | string | null
+  abandonReason?: string | null
+  abandonWarnedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   driver: Prisma.UserCreateNestedOneWithoutTripsInput
@@ -2007,6 +2116,7 @@ export type TripCreateWithoutAttributesInput = {
   offers?: Prisma.RequestOfferCreateNestedManyWithoutTripInput
   sosEvents?: Prisma.SosEventCreateNestedManyWithoutTripInput
   locations?: Prisma.TripLocationCreateNestedManyWithoutTripInput
+  reminders?: Prisma.TripReminderCreateNestedManyWithoutTripInput
 }
 
 export type TripUncheckedCreateWithoutAttributesInput = {
@@ -2055,6 +2165,9 @@ export type TripUncheckedCreateWithoutAttributesInput = {
   actualDurationS?: number | null
   startedAt?: Date | string | null
   completedAt?: Date | string | null
+  abandonedAt?: Date | string | null
+  abandonReason?: string | null
+  abandonWarnedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   stops?: Prisma.TripStopUncheckedCreateNestedManyWithoutTripInput
@@ -2063,6 +2176,7 @@ export type TripUncheckedCreateWithoutAttributesInput = {
   offers?: Prisma.RequestOfferUncheckedCreateNestedManyWithoutTripInput
   sosEvents?: Prisma.SosEventUncheckedCreateNestedManyWithoutTripInput
   locations?: Prisma.TripLocationUncheckedCreateNestedManyWithoutTripInput
+  reminders?: Prisma.TripReminderUncheckedCreateNestedManyWithoutTripInput
 }
 
 export type TripCreateOrConnectWithoutAttributesInput = {
@@ -2125,6 +2239,9 @@ export type TripUpdateWithoutAttributesInput = {
   actualDurationS?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  abandonedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  abandonReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  abandonWarnedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   driver?: Prisma.UserUpdateOneRequiredWithoutTripsNestedInput
@@ -2135,6 +2252,7 @@ export type TripUpdateWithoutAttributesInput = {
   offers?: Prisma.RequestOfferUpdateManyWithoutTripNestedInput
   sosEvents?: Prisma.SosEventUpdateManyWithoutTripNestedInput
   locations?: Prisma.TripLocationUpdateManyWithoutTripNestedInput
+  reminders?: Prisma.TripReminderUpdateManyWithoutTripNestedInput
 }
 
 export type TripUncheckedUpdateWithoutAttributesInput = {
@@ -2183,6 +2301,9 @@ export type TripUncheckedUpdateWithoutAttributesInput = {
   actualDurationS?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  abandonedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  abandonReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  abandonWarnedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   stops?: Prisma.TripStopUncheckedUpdateManyWithoutTripNestedInput
@@ -2191,6 +2312,7 @@ export type TripUncheckedUpdateWithoutAttributesInput = {
   offers?: Prisma.RequestOfferUncheckedUpdateManyWithoutTripNestedInput
   sosEvents?: Prisma.SosEventUncheckedUpdateManyWithoutTripNestedInput
   locations?: Prisma.TripLocationUncheckedUpdateManyWithoutTripNestedInput
+  reminders?: Prisma.TripReminderUncheckedUpdateManyWithoutTripNestedInput
 }
 
 export type TripCreateWithoutStopsInput = {
@@ -2237,6 +2359,9 @@ export type TripCreateWithoutStopsInput = {
   actualDurationS?: number | null
   startedAt?: Date | string | null
   completedAt?: Date | string | null
+  abandonedAt?: Date | string | null
+  abandonReason?: string | null
+  abandonWarnedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   driver: Prisma.UserCreateNestedOneWithoutTripsInput
@@ -2247,6 +2372,7 @@ export type TripCreateWithoutStopsInput = {
   offers?: Prisma.RequestOfferCreateNestedManyWithoutTripInput
   sosEvents?: Prisma.SosEventCreateNestedManyWithoutTripInput
   locations?: Prisma.TripLocationCreateNestedManyWithoutTripInput
+  reminders?: Prisma.TripReminderCreateNestedManyWithoutTripInput
 }
 
 export type TripUncheckedCreateWithoutStopsInput = {
@@ -2295,6 +2421,9 @@ export type TripUncheckedCreateWithoutStopsInput = {
   actualDurationS?: number | null
   startedAt?: Date | string | null
   completedAt?: Date | string | null
+  abandonedAt?: Date | string | null
+  abandonReason?: string | null
+  abandonWarnedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   attributes?: Prisma.TripAttributeUncheckedCreateNestedManyWithoutTripInput
@@ -2303,6 +2432,7 @@ export type TripUncheckedCreateWithoutStopsInput = {
   offers?: Prisma.RequestOfferUncheckedCreateNestedManyWithoutTripInput
   sosEvents?: Prisma.SosEventUncheckedCreateNestedManyWithoutTripInput
   locations?: Prisma.TripLocationUncheckedCreateNestedManyWithoutTripInput
+  reminders?: Prisma.TripReminderUncheckedCreateNestedManyWithoutTripInput
 }
 
 export type TripCreateOrConnectWithoutStopsInput = {
@@ -2365,6 +2495,9 @@ export type TripUpdateWithoutStopsInput = {
   actualDurationS?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  abandonedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  abandonReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  abandonWarnedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   driver?: Prisma.UserUpdateOneRequiredWithoutTripsNestedInput
@@ -2375,6 +2508,7 @@ export type TripUpdateWithoutStopsInput = {
   offers?: Prisma.RequestOfferUpdateManyWithoutTripNestedInput
   sosEvents?: Prisma.SosEventUpdateManyWithoutTripNestedInput
   locations?: Prisma.TripLocationUpdateManyWithoutTripNestedInput
+  reminders?: Prisma.TripReminderUpdateManyWithoutTripNestedInput
 }
 
 export type TripUncheckedUpdateWithoutStopsInput = {
@@ -2423,6 +2557,9 @@ export type TripUncheckedUpdateWithoutStopsInput = {
   actualDurationS?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  abandonedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  abandonReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  abandonWarnedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   attributes?: Prisma.TripAttributeUncheckedUpdateManyWithoutTripNestedInput
@@ -2431,6 +2568,7 @@ export type TripUncheckedUpdateWithoutStopsInput = {
   offers?: Prisma.RequestOfferUncheckedUpdateManyWithoutTripNestedInput
   sosEvents?: Prisma.SosEventUncheckedUpdateManyWithoutTripNestedInput
   locations?: Prisma.TripLocationUncheckedUpdateManyWithoutTripNestedInput
+  reminders?: Prisma.TripReminderUncheckedUpdateManyWithoutTripNestedInput
 }
 
 export type TripCreateWithoutSeatsInput = {
@@ -2477,6 +2615,9 @@ export type TripCreateWithoutSeatsInput = {
   actualDurationS?: number | null
   startedAt?: Date | string | null
   completedAt?: Date | string | null
+  abandonedAt?: Date | string | null
+  abandonReason?: string | null
+  abandonWarnedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   driver: Prisma.UserCreateNestedOneWithoutTripsInput
@@ -2487,6 +2628,7 @@ export type TripCreateWithoutSeatsInput = {
   offers?: Prisma.RequestOfferCreateNestedManyWithoutTripInput
   sosEvents?: Prisma.SosEventCreateNestedManyWithoutTripInput
   locations?: Prisma.TripLocationCreateNestedManyWithoutTripInput
+  reminders?: Prisma.TripReminderCreateNestedManyWithoutTripInput
 }
 
 export type TripUncheckedCreateWithoutSeatsInput = {
@@ -2535,6 +2677,9 @@ export type TripUncheckedCreateWithoutSeatsInput = {
   actualDurationS?: number | null
   startedAt?: Date | string | null
   completedAt?: Date | string | null
+  abandonedAt?: Date | string | null
+  abandonReason?: string | null
+  abandonWarnedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   attributes?: Prisma.TripAttributeUncheckedCreateNestedManyWithoutTripInput
@@ -2543,6 +2688,7 @@ export type TripUncheckedCreateWithoutSeatsInput = {
   offers?: Prisma.RequestOfferUncheckedCreateNestedManyWithoutTripInput
   sosEvents?: Prisma.SosEventUncheckedCreateNestedManyWithoutTripInput
   locations?: Prisma.TripLocationUncheckedCreateNestedManyWithoutTripInput
+  reminders?: Prisma.TripReminderUncheckedCreateNestedManyWithoutTripInput
 }
 
 export type TripCreateOrConnectWithoutSeatsInput = {
@@ -2605,6 +2751,9 @@ export type TripUpdateWithoutSeatsInput = {
   actualDurationS?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  abandonedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  abandonReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  abandonWarnedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   driver?: Prisma.UserUpdateOneRequiredWithoutTripsNestedInput
@@ -2615,6 +2764,7 @@ export type TripUpdateWithoutSeatsInput = {
   offers?: Prisma.RequestOfferUpdateManyWithoutTripNestedInput
   sosEvents?: Prisma.SosEventUpdateManyWithoutTripNestedInput
   locations?: Prisma.TripLocationUpdateManyWithoutTripNestedInput
+  reminders?: Prisma.TripReminderUpdateManyWithoutTripNestedInput
 }
 
 export type TripUncheckedUpdateWithoutSeatsInput = {
@@ -2663,6 +2813,9 @@ export type TripUncheckedUpdateWithoutSeatsInput = {
   actualDurationS?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  abandonedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  abandonReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  abandonWarnedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   attributes?: Prisma.TripAttributeUncheckedUpdateManyWithoutTripNestedInput
@@ -2671,6 +2824,7 @@ export type TripUncheckedUpdateWithoutSeatsInput = {
   offers?: Prisma.RequestOfferUncheckedUpdateManyWithoutTripNestedInput
   sosEvents?: Prisma.SosEventUncheckedUpdateManyWithoutTripNestedInput
   locations?: Prisma.TripLocationUncheckedUpdateManyWithoutTripNestedInput
+  reminders?: Prisma.TripReminderUncheckedUpdateManyWithoutTripNestedInput
 }
 
 export type TripCreateWithoutLocationsInput = {
@@ -2717,6 +2871,9 @@ export type TripCreateWithoutLocationsInput = {
   actualDurationS?: number | null
   startedAt?: Date | string | null
   completedAt?: Date | string | null
+  abandonedAt?: Date | string | null
+  abandonReason?: string | null
+  abandonWarnedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   driver: Prisma.UserCreateNestedOneWithoutTripsInput
@@ -2727,6 +2884,7 @@ export type TripCreateWithoutLocationsInput = {
   bookings?: Prisma.BookingCreateNestedManyWithoutTripInput
   offers?: Prisma.RequestOfferCreateNestedManyWithoutTripInput
   sosEvents?: Prisma.SosEventCreateNestedManyWithoutTripInput
+  reminders?: Prisma.TripReminderCreateNestedManyWithoutTripInput
 }
 
 export type TripUncheckedCreateWithoutLocationsInput = {
@@ -2775,6 +2933,9 @@ export type TripUncheckedCreateWithoutLocationsInput = {
   actualDurationS?: number | null
   startedAt?: Date | string | null
   completedAt?: Date | string | null
+  abandonedAt?: Date | string | null
+  abandonReason?: string | null
+  abandonWarnedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   attributes?: Prisma.TripAttributeUncheckedCreateNestedManyWithoutTripInput
@@ -2783,6 +2944,7 @@ export type TripUncheckedCreateWithoutLocationsInput = {
   bookings?: Prisma.BookingUncheckedCreateNestedManyWithoutTripInput
   offers?: Prisma.RequestOfferUncheckedCreateNestedManyWithoutTripInput
   sosEvents?: Prisma.SosEventUncheckedCreateNestedManyWithoutTripInput
+  reminders?: Prisma.TripReminderUncheckedCreateNestedManyWithoutTripInput
 }
 
 export type TripCreateOrConnectWithoutLocationsInput = {
@@ -2845,6 +3007,9 @@ export type TripUpdateWithoutLocationsInput = {
   actualDurationS?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  abandonedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  abandonReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  abandonWarnedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   driver?: Prisma.UserUpdateOneRequiredWithoutTripsNestedInput
@@ -2855,6 +3020,7 @@ export type TripUpdateWithoutLocationsInput = {
   bookings?: Prisma.BookingUpdateManyWithoutTripNestedInput
   offers?: Prisma.RequestOfferUpdateManyWithoutTripNestedInput
   sosEvents?: Prisma.SosEventUpdateManyWithoutTripNestedInput
+  reminders?: Prisma.TripReminderUpdateManyWithoutTripNestedInput
 }
 
 export type TripUncheckedUpdateWithoutLocationsInput = {
@@ -2903,6 +3069,9 @@ export type TripUncheckedUpdateWithoutLocationsInput = {
   actualDurationS?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  abandonedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  abandonReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  abandonWarnedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   attributes?: Prisma.TripAttributeUncheckedUpdateManyWithoutTripNestedInput
@@ -2911,6 +3080,263 @@ export type TripUncheckedUpdateWithoutLocationsInput = {
   bookings?: Prisma.BookingUncheckedUpdateManyWithoutTripNestedInput
   offers?: Prisma.RequestOfferUncheckedUpdateManyWithoutTripNestedInput
   sosEvents?: Prisma.SosEventUncheckedUpdateManyWithoutTripNestedInput
+  reminders?: Prisma.TripReminderUncheckedUpdateManyWithoutTripNestedInput
+}
+
+export type TripCreateWithoutRemindersInput = {
+  id?: string
+  originCity: string
+  originArea?: string | null
+  originAddress?: string | null
+  originLat?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  originLng?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  destinationCity: string
+  destinationArea?: string | null
+  destinationAddress?: string | null
+  destinationLat?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  destinationLng?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  departureTime: Date | string
+  arrivalTime?: Date | string | null
+  totalSeats: number
+  availableSeats: number
+  farePerSeat: runtime.Decimal | runtime.DecimalJsLike | number | string
+  totalProfit?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  currency?: string | null
+  isRecurring?: boolean
+  recurrencePattern?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  recurrenceDays?: Prisma.TripCreaterecurrenceDaysInput | number[]
+  recurrenceEndDate?: Date | string | null
+  genderPreference?: string
+  driverInstructions?: Prisma.TripCreatedriverInstructionsInput | string[]
+  additionalInstructions?: string | null
+  status?: string
+  isFeatured?: boolean | null
+  featuredUntil?: Date | string | null
+  isBlockedByBalance?: boolean
+  isModerated?: boolean
+  moderationReason?: string | null
+  moderatedBy?: string | null
+  routePolyline?: string | null
+  routeDistanceM?: number | null
+  routeDurationS?: number | null
+  routeStatus?: string
+  routeComputedAt?: Date | string | null
+  routeVersion?: number
+  actualPathPolyline?: string | null
+  actualDistanceM?: number | null
+  actualDurationS?: number | null
+  startedAt?: Date | string | null
+  completedAt?: Date | string | null
+  abandonedAt?: Date | string | null
+  abandonReason?: string | null
+  abandonWarnedAt?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  driver: Prisma.UserCreateNestedOneWithoutTripsInput
+  vehicle: Prisma.VehicleCreateNestedOneWithoutTripsInput
+  attributes?: Prisma.TripAttributeCreateNestedManyWithoutTripInput
+  stops?: Prisma.TripStopCreateNestedManyWithoutTripInput
+  seats?: Prisma.TripSeatCreateNestedManyWithoutTripInput
+  bookings?: Prisma.BookingCreateNestedManyWithoutTripInput
+  offers?: Prisma.RequestOfferCreateNestedManyWithoutTripInput
+  sosEvents?: Prisma.SosEventCreateNestedManyWithoutTripInput
+  locations?: Prisma.TripLocationCreateNestedManyWithoutTripInput
+}
+
+export type TripUncheckedCreateWithoutRemindersInput = {
+  id?: string
+  driverId: string
+  vehicleId: string
+  originCity: string
+  originArea?: string | null
+  originAddress?: string | null
+  originLat?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  originLng?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  destinationCity: string
+  destinationArea?: string | null
+  destinationAddress?: string | null
+  destinationLat?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  destinationLng?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  departureTime: Date | string
+  arrivalTime?: Date | string | null
+  totalSeats: number
+  availableSeats: number
+  farePerSeat: runtime.Decimal | runtime.DecimalJsLike | number | string
+  totalProfit?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  currency?: string | null
+  isRecurring?: boolean
+  recurrencePattern?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  recurrenceDays?: Prisma.TripCreaterecurrenceDaysInput | number[]
+  recurrenceEndDate?: Date | string | null
+  genderPreference?: string
+  driverInstructions?: Prisma.TripCreatedriverInstructionsInput | string[]
+  additionalInstructions?: string | null
+  status?: string
+  isFeatured?: boolean | null
+  featuredUntil?: Date | string | null
+  isBlockedByBalance?: boolean
+  isModerated?: boolean
+  moderationReason?: string | null
+  moderatedBy?: string | null
+  routePolyline?: string | null
+  routeDistanceM?: number | null
+  routeDurationS?: number | null
+  routeStatus?: string
+  routeComputedAt?: Date | string | null
+  routeVersion?: number
+  actualPathPolyline?: string | null
+  actualDistanceM?: number | null
+  actualDurationS?: number | null
+  startedAt?: Date | string | null
+  completedAt?: Date | string | null
+  abandonedAt?: Date | string | null
+  abandonReason?: string | null
+  abandonWarnedAt?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  attributes?: Prisma.TripAttributeUncheckedCreateNestedManyWithoutTripInput
+  stops?: Prisma.TripStopUncheckedCreateNestedManyWithoutTripInput
+  seats?: Prisma.TripSeatUncheckedCreateNestedManyWithoutTripInput
+  bookings?: Prisma.BookingUncheckedCreateNestedManyWithoutTripInput
+  offers?: Prisma.RequestOfferUncheckedCreateNestedManyWithoutTripInput
+  sosEvents?: Prisma.SosEventUncheckedCreateNestedManyWithoutTripInput
+  locations?: Prisma.TripLocationUncheckedCreateNestedManyWithoutTripInput
+}
+
+export type TripCreateOrConnectWithoutRemindersInput = {
+  where: Prisma.TripWhereUniqueInput
+  create: Prisma.XOR<Prisma.TripCreateWithoutRemindersInput, Prisma.TripUncheckedCreateWithoutRemindersInput>
+}
+
+export type TripUpsertWithoutRemindersInput = {
+  update: Prisma.XOR<Prisma.TripUpdateWithoutRemindersInput, Prisma.TripUncheckedUpdateWithoutRemindersInput>
+  create: Prisma.XOR<Prisma.TripCreateWithoutRemindersInput, Prisma.TripUncheckedCreateWithoutRemindersInput>
+  where?: Prisma.TripWhereInput
+}
+
+export type TripUpdateToOneWithWhereWithoutRemindersInput = {
+  where?: Prisma.TripWhereInput
+  data: Prisma.XOR<Prisma.TripUpdateWithoutRemindersInput, Prisma.TripUncheckedUpdateWithoutRemindersInput>
+}
+
+export type TripUpdateWithoutRemindersInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  originCity?: Prisma.StringFieldUpdateOperationsInput | string
+  originArea?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  originAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  originLat?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  originLng?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  destinationCity?: Prisma.StringFieldUpdateOperationsInput | string
+  destinationArea?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  destinationAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  destinationLat?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  destinationLng?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  departureTime?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  arrivalTime?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  totalSeats?: Prisma.IntFieldUpdateOperationsInput | number
+  availableSeats?: Prisma.IntFieldUpdateOperationsInput | number
+  farePerSeat?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  totalProfit?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  currency?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isRecurring?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  recurrencePattern?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  recurrenceDays?: Prisma.TripUpdaterecurrenceDaysInput | number[]
+  recurrenceEndDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  genderPreference?: Prisma.StringFieldUpdateOperationsInput | string
+  driverInstructions?: Prisma.TripUpdatedriverInstructionsInput | string[]
+  additionalInstructions?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status?: Prisma.StringFieldUpdateOperationsInput | string
+  isFeatured?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  featuredUntil?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  isBlockedByBalance?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isModerated?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  moderationReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  moderatedBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  routePolyline?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  routeDistanceM?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  routeDurationS?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  routeStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  routeComputedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  routeVersion?: Prisma.IntFieldUpdateOperationsInput | number
+  actualPathPolyline?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  actualDistanceM?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  actualDurationS?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  abandonedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  abandonReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  abandonWarnedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  driver?: Prisma.UserUpdateOneRequiredWithoutTripsNestedInput
+  vehicle?: Prisma.VehicleUpdateOneRequiredWithoutTripsNestedInput
+  attributes?: Prisma.TripAttributeUpdateManyWithoutTripNestedInput
+  stops?: Prisma.TripStopUpdateManyWithoutTripNestedInput
+  seats?: Prisma.TripSeatUpdateManyWithoutTripNestedInput
+  bookings?: Prisma.BookingUpdateManyWithoutTripNestedInput
+  offers?: Prisma.RequestOfferUpdateManyWithoutTripNestedInput
+  sosEvents?: Prisma.SosEventUpdateManyWithoutTripNestedInput
+  locations?: Prisma.TripLocationUpdateManyWithoutTripNestedInput
+}
+
+export type TripUncheckedUpdateWithoutRemindersInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  driverId?: Prisma.StringFieldUpdateOperationsInput | string
+  vehicleId?: Prisma.StringFieldUpdateOperationsInput | string
+  originCity?: Prisma.StringFieldUpdateOperationsInput | string
+  originArea?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  originAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  originLat?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  originLng?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  destinationCity?: Prisma.StringFieldUpdateOperationsInput | string
+  destinationArea?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  destinationAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  destinationLat?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  destinationLng?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  departureTime?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  arrivalTime?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  totalSeats?: Prisma.IntFieldUpdateOperationsInput | number
+  availableSeats?: Prisma.IntFieldUpdateOperationsInput | number
+  farePerSeat?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  totalProfit?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  currency?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isRecurring?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  recurrencePattern?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  recurrenceDays?: Prisma.TripUpdaterecurrenceDaysInput | number[]
+  recurrenceEndDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  genderPreference?: Prisma.StringFieldUpdateOperationsInput | string
+  driverInstructions?: Prisma.TripUpdatedriverInstructionsInput | string[]
+  additionalInstructions?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status?: Prisma.StringFieldUpdateOperationsInput | string
+  isFeatured?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  featuredUntil?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  isBlockedByBalance?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isModerated?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  moderationReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  moderatedBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  routePolyline?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  routeDistanceM?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  routeDurationS?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  routeStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  routeComputedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  routeVersion?: Prisma.IntFieldUpdateOperationsInput | number
+  actualPathPolyline?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  actualDistanceM?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  actualDurationS?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  abandonedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  abandonReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  abandonWarnedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  attributes?: Prisma.TripAttributeUncheckedUpdateManyWithoutTripNestedInput
+  stops?: Prisma.TripStopUncheckedUpdateManyWithoutTripNestedInput
+  seats?: Prisma.TripSeatUncheckedUpdateManyWithoutTripNestedInput
+  bookings?: Prisma.BookingUncheckedUpdateManyWithoutTripNestedInput
+  offers?: Prisma.RequestOfferUncheckedUpdateManyWithoutTripNestedInput
+  sosEvents?: Prisma.SosEventUncheckedUpdateManyWithoutTripNestedInput
+  locations?: Prisma.TripLocationUncheckedUpdateManyWithoutTripNestedInput
 }
 
 export type TripCreateWithoutBookingsInput = {
@@ -2957,6 +3383,9 @@ export type TripCreateWithoutBookingsInput = {
   actualDurationS?: number | null
   startedAt?: Date | string | null
   completedAt?: Date | string | null
+  abandonedAt?: Date | string | null
+  abandonReason?: string | null
+  abandonWarnedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   driver: Prisma.UserCreateNestedOneWithoutTripsInput
@@ -2967,6 +3396,7 @@ export type TripCreateWithoutBookingsInput = {
   offers?: Prisma.RequestOfferCreateNestedManyWithoutTripInput
   sosEvents?: Prisma.SosEventCreateNestedManyWithoutTripInput
   locations?: Prisma.TripLocationCreateNestedManyWithoutTripInput
+  reminders?: Prisma.TripReminderCreateNestedManyWithoutTripInput
 }
 
 export type TripUncheckedCreateWithoutBookingsInput = {
@@ -3015,6 +3445,9 @@ export type TripUncheckedCreateWithoutBookingsInput = {
   actualDurationS?: number | null
   startedAt?: Date | string | null
   completedAt?: Date | string | null
+  abandonedAt?: Date | string | null
+  abandonReason?: string | null
+  abandonWarnedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   attributes?: Prisma.TripAttributeUncheckedCreateNestedManyWithoutTripInput
@@ -3023,6 +3456,7 @@ export type TripUncheckedCreateWithoutBookingsInput = {
   offers?: Prisma.RequestOfferUncheckedCreateNestedManyWithoutTripInput
   sosEvents?: Prisma.SosEventUncheckedCreateNestedManyWithoutTripInput
   locations?: Prisma.TripLocationUncheckedCreateNestedManyWithoutTripInput
+  reminders?: Prisma.TripReminderUncheckedCreateNestedManyWithoutTripInput
 }
 
 export type TripCreateOrConnectWithoutBookingsInput = {
@@ -3085,6 +3519,9 @@ export type TripUpdateWithoutBookingsInput = {
   actualDurationS?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  abandonedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  abandonReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  abandonWarnedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   driver?: Prisma.UserUpdateOneRequiredWithoutTripsNestedInput
@@ -3095,6 +3532,7 @@ export type TripUpdateWithoutBookingsInput = {
   offers?: Prisma.RequestOfferUpdateManyWithoutTripNestedInput
   sosEvents?: Prisma.SosEventUpdateManyWithoutTripNestedInput
   locations?: Prisma.TripLocationUpdateManyWithoutTripNestedInput
+  reminders?: Prisma.TripReminderUpdateManyWithoutTripNestedInput
 }
 
 export type TripUncheckedUpdateWithoutBookingsInput = {
@@ -3143,6 +3581,9 @@ export type TripUncheckedUpdateWithoutBookingsInput = {
   actualDurationS?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  abandonedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  abandonReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  abandonWarnedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   attributes?: Prisma.TripAttributeUncheckedUpdateManyWithoutTripNestedInput
@@ -3151,6 +3592,7 @@ export type TripUncheckedUpdateWithoutBookingsInput = {
   offers?: Prisma.RequestOfferUncheckedUpdateManyWithoutTripNestedInput
   sosEvents?: Prisma.SosEventUncheckedUpdateManyWithoutTripNestedInput
   locations?: Prisma.TripLocationUncheckedUpdateManyWithoutTripNestedInput
+  reminders?: Prisma.TripReminderUncheckedUpdateManyWithoutTripNestedInput
 }
 
 export type TripCreateWithoutOffersInput = {
@@ -3197,6 +3639,9 @@ export type TripCreateWithoutOffersInput = {
   actualDurationS?: number | null
   startedAt?: Date | string | null
   completedAt?: Date | string | null
+  abandonedAt?: Date | string | null
+  abandonReason?: string | null
+  abandonWarnedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   driver: Prisma.UserCreateNestedOneWithoutTripsInput
@@ -3207,6 +3652,7 @@ export type TripCreateWithoutOffersInput = {
   bookings?: Prisma.BookingCreateNestedManyWithoutTripInput
   sosEvents?: Prisma.SosEventCreateNestedManyWithoutTripInput
   locations?: Prisma.TripLocationCreateNestedManyWithoutTripInput
+  reminders?: Prisma.TripReminderCreateNestedManyWithoutTripInput
 }
 
 export type TripUncheckedCreateWithoutOffersInput = {
@@ -3255,6 +3701,9 @@ export type TripUncheckedCreateWithoutOffersInput = {
   actualDurationS?: number | null
   startedAt?: Date | string | null
   completedAt?: Date | string | null
+  abandonedAt?: Date | string | null
+  abandonReason?: string | null
+  abandonWarnedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   attributes?: Prisma.TripAttributeUncheckedCreateNestedManyWithoutTripInput
@@ -3263,6 +3712,7 @@ export type TripUncheckedCreateWithoutOffersInput = {
   bookings?: Prisma.BookingUncheckedCreateNestedManyWithoutTripInput
   sosEvents?: Prisma.SosEventUncheckedCreateNestedManyWithoutTripInput
   locations?: Prisma.TripLocationUncheckedCreateNestedManyWithoutTripInput
+  reminders?: Prisma.TripReminderUncheckedCreateNestedManyWithoutTripInput
 }
 
 export type TripCreateOrConnectWithoutOffersInput = {
@@ -3325,6 +3775,9 @@ export type TripUpdateWithoutOffersInput = {
   actualDurationS?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  abandonedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  abandonReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  abandonWarnedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   driver?: Prisma.UserUpdateOneRequiredWithoutTripsNestedInput
@@ -3335,6 +3788,7 @@ export type TripUpdateWithoutOffersInput = {
   bookings?: Prisma.BookingUpdateManyWithoutTripNestedInput
   sosEvents?: Prisma.SosEventUpdateManyWithoutTripNestedInput
   locations?: Prisma.TripLocationUpdateManyWithoutTripNestedInput
+  reminders?: Prisma.TripReminderUpdateManyWithoutTripNestedInput
 }
 
 export type TripUncheckedUpdateWithoutOffersInput = {
@@ -3383,6 +3837,9 @@ export type TripUncheckedUpdateWithoutOffersInput = {
   actualDurationS?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  abandonedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  abandonReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  abandonWarnedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   attributes?: Prisma.TripAttributeUncheckedUpdateManyWithoutTripNestedInput
@@ -3391,6 +3848,7 @@ export type TripUncheckedUpdateWithoutOffersInput = {
   bookings?: Prisma.BookingUncheckedUpdateManyWithoutTripNestedInput
   sosEvents?: Prisma.SosEventUncheckedUpdateManyWithoutTripNestedInput
   locations?: Prisma.TripLocationUncheckedUpdateManyWithoutTripNestedInput
+  reminders?: Prisma.TripReminderUncheckedUpdateManyWithoutTripNestedInput
 }
 
 export type TripCreateWithoutSosEventsInput = {
@@ -3437,6 +3895,9 @@ export type TripCreateWithoutSosEventsInput = {
   actualDurationS?: number | null
   startedAt?: Date | string | null
   completedAt?: Date | string | null
+  abandonedAt?: Date | string | null
+  abandonReason?: string | null
+  abandonWarnedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   driver: Prisma.UserCreateNestedOneWithoutTripsInput
@@ -3447,6 +3908,7 @@ export type TripCreateWithoutSosEventsInput = {
   bookings?: Prisma.BookingCreateNestedManyWithoutTripInput
   offers?: Prisma.RequestOfferCreateNestedManyWithoutTripInput
   locations?: Prisma.TripLocationCreateNestedManyWithoutTripInput
+  reminders?: Prisma.TripReminderCreateNestedManyWithoutTripInput
 }
 
 export type TripUncheckedCreateWithoutSosEventsInput = {
@@ -3495,6 +3957,9 @@ export type TripUncheckedCreateWithoutSosEventsInput = {
   actualDurationS?: number | null
   startedAt?: Date | string | null
   completedAt?: Date | string | null
+  abandonedAt?: Date | string | null
+  abandonReason?: string | null
+  abandonWarnedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   attributes?: Prisma.TripAttributeUncheckedCreateNestedManyWithoutTripInput
@@ -3503,6 +3968,7 @@ export type TripUncheckedCreateWithoutSosEventsInput = {
   bookings?: Prisma.BookingUncheckedCreateNestedManyWithoutTripInput
   offers?: Prisma.RequestOfferUncheckedCreateNestedManyWithoutTripInput
   locations?: Prisma.TripLocationUncheckedCreateNestedManyWithoutTripInput
+  reminders?: Prisma.TripReminderUncheckedCreateNestedManyWithoutTripInput
 }
 
 export type TripCreateOrConnectWithoutSosEventsInput = {
@@ -3565,6 +4031,9 @@ export type TripUpdateWithoutSosEventsInput = {
   actualDurationS?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  abandonedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  abandonReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  abandonWarnedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   driver?: Prisma.UserUpdateOneRequiredWithoutTripsNestedInput
@@ -3575,6 +4044,7 @@ export type TripUpdateWithoutSosEventsInput = {
   bookings?: Prisma.BookingUpdateManyWithoutTripNestedInput
   offers?: Prisma.RequestOfferUpdateManyWithoutTripNestedInput
   locations?: Prisma.TripLocationUpdateManyWithoutTripNestedInput
+  reminders?: Prisma.TripReminderUpdateManyWithoutTripNestedInput
 }
 
 export type TripUncheckedUpdateWithoutSosEventsInput = {
@@ -3623,6 +4093,9 @@ export type TripUncheckedUpdateWithoutSosEventsInput = {
   actualDurationS?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  abandonedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  abandonReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  abandonWarnedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   attributes?: Prisma.TripAttributeUncheckedUpdateManyWithoutTripNestedInput
@@ -3631,6 +4104,7 @@ export type TripUncheckedUpdateWithoutSosEventsInput = {
   bookings?: Prisma.BookingUncheckedUpdateManyWithoutTripNestedInput
   offers?: Prisma.RequestOfferUncheckedUpdateManyWithoutTripNestedInput
   locations?: Prisma.TripLocationUncheckedUpdateManyWithoutTripNestedInput
+  reminders?: Prisma.TripReminderUncheckedUpdateManyWithoutTripNestedInput
 }
 
 export type TripCreateManyDriverInput = {
@@ -3678,6 +4152,9 @@ export type TripCreateManyDriverInput = {
   actualDurationS?: number | null
   startedAt?: Date | string | null
   completedAt?: Date | string | null
+  abandonedAt?: Date | string | null
+  abandonReason?: string | null
+  abandonWarnedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -3726,6 +4203,9 @@ export type TripUpdateWithoutDriverInput = {
   actualDurationS?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  abandonedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  abandonReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  abandonWarnedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   vehicle?: Prisma.VehicleUpdateOneRequiredWithoutTripsNestedInput
@@ -3736,6 +4216,7 @@ export type TripUpdateWithoutDriverInput = {
   offers?: Prisma.RequestOfferUpdateManyWithoutTripNestedInput
   sosEvents?: Prisma.SosEventUpdateManyWithoutTripNestedInput
   locations?: Prisma.TripLocationUpdateManyWithoutTripNestedInput
+  reminders?: Prisma.TripReminderUpdateManyWithoutTripNestedInput
 }
 
 export type TripUncheckedUpdateWithoutDriverInput = {
@@ -3783,6 +4264,9 @@ export type TripUncheckedUpdateWithoutDriverInput = {
   actualDurationS?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  abandonedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  abandonReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  abandonWarnedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   attributes?: Prisma.TripAttributeUncheckedUpdateManyWithoutTripNestedInput
@@ -3792,6 +4276,7 @@ export type TripUncheckedUpdateWithoutDriverInput = {
   offers?: Prisma.RequestOfferUncheckedUpdateManyWithoutTripNestedInput
   sosEvents?: Prisma.SosEventUncheckedUpdateManyWithoutTripNestedInput
   locations?: Prisma.TripLocationUncheckedUpdateManyWithoutTripNestedInput
+  reminders?: Prisma.TripReminderUncheckedUpdateManyWithoutTripNestedInput
 }
 
 export type TripUncheckedUpdateManyWithoutDriverInput = {
@@ -3839,6 +4324,9 @@ export type TripUncheckedUpdateManyWithoutDriverInput = {
   actualDurationS?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  abandonedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  abandonReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  abandonWarnedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -3888,6 +4376,9 @@ export type TripCreateManyVehicleInput = {
   actualDurationS?: number | null
   startedAt?: Date | string | null
   completedAt?: Date | string | null
+  abandonedAt?: Date | string | null
+  abandonReason?: string | null
+  abandonWarnedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -3936,6 +4427,9 @@ export type TripUpdateWithoutVehicleInput = {
   actualDurationS?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  abandonedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  abandonReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  abandonWarnedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   driver?: Prisma.UserUpdateOneRequiredWithoutTripsNestedInput
@@ -3946,6 +4440,7 @@ export type TripUpdateWithoutVehicleInput = {
   offers?: Prisma.RequestOfferUpdateManyWithoutTripNestedInput
   sosEvents?: Prisma.SosEventUpdateManyWithoutTripNestedInput
   locations?: Prisma.TripLocationUpdateManyWithoutTripNestedInput
+  reminders?: Prisma.TripReminderUpdateManyWithoutTripNestedInput
 }
 
 export type TripUncheckedUpdateWithoutVehicleInput = {
@@ -3993,6 +4488,9 @@ export type TripUncheckedUpdateWithoutVehicleInput = {
   actualDurationS?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  abandonedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  abandonReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  abandonWarnedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   attributes?: Prisma.TripAttributeUncheckedUpdateManyWithoutTripNestedInput
@@ -4002,6 +4500,7 @@ export type TripUncheckedUpdateWithoutVehicleInput = {
   offers?: Prisma.RequestOfferUncheckedUpdateManyWithoutTripNestedInput
   sosEvents?: Prisma.SosEventUncheckedUpdateManyWithoutTripNestedInput
   locations?: Prisma.TripLocationUncheckedUpdateManyWithoutTripNestedInput
+  reminders?: Prisma.TripReminderUncheckedUpdateManyWithoutTripNestedInput
 }
 
 export type TripUncheckedUpdateManyWithoutVehicleInput = {
@@ -4049,6 +4548,9 @@ export type TripUncheckedUpdateManyWithoutVehicleInput = {
   actualDurationS?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  abandonedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  abandonReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  abandonWarnedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -4066,6 +4568,7 @@ export type TripCountOutputType = {
   offers: number
   sosEvents: number
   locations: number
+  reminders: number
 }
 
 export type TripCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -4076,6 +4579,7 @@ export type TripCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.I
   offers?: boolean | TripCountOutputTypeCountOffersArgs
   sosEvents?: boolean | TripCountOutputTypeCountSosEventsArgs
   locations?: boolean | TripCountOutputTypeCountLocationsArgs
+  reminders?: boolean | TripCountOutputTypeCountRemindersArgs
 }
 
 /**
@@ -4137,6 +4641,13 @@ export type TripCountOutputTypeCountLocationsArgs<ExtArgs extends runtime.Types.
   where?: Prisma.TripLocationWhereInput
 }
 
+/**
+ * TripCountOutputType without action
+ */
+export type TripCountOutputTypeCountRemindersArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.TripReminderWhereInput
+}
+
 
 export type TripSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -4184,6 +4695,9 @@ export type TripSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   actualDurationS?: boolean
   startedAt?: boolean
   completedAt?: boolean
+  abandonedAt?: boolean
+  abandonReason?: boolean
+  abandonWarnedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   driver?: boolean | Prisma.UserDefaultArgs<ExtArgs>
@@ -4195,6 +4709,7 @@ export type TripSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   offers?: boolean | Prisma.Trip$offersArgs<ExtArgs>
   sosEvents?: boolean | Prisma.Trip$sosEventsArgs<ExtArgs>
   locations?: boolean | Prisma.Trip$locationsArgs<ExtArgs>
+  reminders?: boolean | Prisma.Trip$remindersArgs<ExtArgs>
   _count?: boolean | Prisma.TripCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["trip"]>
 
@@ -4244,6 +4759,9 @@ export type TripSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   actualDurationS?: boolean
   startedAt?: boolean
   completedAt?: boolean
+  abandonedAt?: boolean
+  abandonReason?: boolean
+  abandonWarnedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   driver?: boolean | Prisma.UserDefaultArgs<ExtArgs>
@@ -4296,6 +4814,9 @@ export type TripSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   actualDurationS?: boolean
   startedAt?: boolean
   completedAt?: boolean
+  abandonedAt?: boolean
+  abandonReason?: boolean
+  abandonWarnedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   driver?: boolean | Prisma.UserDefaultArgs<ExtArgs>
@@ -4348,11 +4869,14 @@ export type TripSelectScalar = {
   actualDurationS?: boolean
   startedAt?: boolean
   completedAt?: boolean
+  abandonedAt?: boolean
+  abandonReason?: boolean
+  abandonWarnedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type TripOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "driverId" | "vehicleId" | "originCity" | "originArea" | "originAddress" | "originLat" | "originLng" | "destinationCity" | "destinationArea" | "destinationAddress" | "destinationLat" | "destinationLng" | "departureTime" | "arrivalTime" | "totalSeats" | "availableSeats" | "farePerSeat" | "totalProfit" | "currency" | "isRecurring" | "recurrencePattern" | "recurrenceDays" | "recurrenceEndDate" | "genderPreference" | "driverInstructions" | "additionalInstructions" | "status" | "isFeatured" | "featuredUntil" | "isBlockedByBalance" | "isModerated" | "moderationReason" | "moderatedBy" | "routePolyline" | "routeDistanceM" | "routeDurationS" | "routeStatus" | "routeComputedAt" | "routeVersion" | "actualPathPolyline" | "actualDistanceM" | "actualDurationS" | "startedAt" | "completedAt" | "createdAt" | "updatedAt", ExtArgs["result"]["trip"]>
+export type TripOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "driverId" | "vehicleId" | "originCity" | "originArea" | "originAddress" | "originLat" | "originLng" | "destinationCity" | "destinationArea" | "destinationAddress" | "destinationLat" | "destinationLng" | "departureTime" | "arrivalTime" | "totalSeats" | "availableSeats" | "farePerSeat" | "totalProfit" | "currency" | "isRecurring" | "recurrencePattern" | "recurrenceDays" | "recurrenceEndDate" | "genderPreference" | "driverInstructions" | "additionalInstructions" | "status" | "isFeatured" | "featuredUntil" | "isBlockedByBalance" | "isModerated" | "moderationReason" | "moderatedBy" | "routePolyline" | "routeDistanceM" | "routeDurationS" | "routeStatus" | "routeComputedAt" | "routeVersion" | "actualPathPolyline" | "actualDistanceM" | "actualDurationS" | "startedAt" | "completedAt" | "abandonedAt" | "abandonReason" | "abandonWarnedAt" | "createdAt" | "updatedAt", ExtArgs["result"]["trip"]>
 export type TripInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   driver?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   vehicle?: boolean | Prisma.VehicleDefaultArgs<ExtArgs>
@@ -4363,6 +4887,7 @@ export type TripInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   offers?: boolean | Prisma.Trip$offersArgs<ExtArgs>
   sosEvents?: boolean | Prisma.Trip$sosEventsArgs<ExtArgs>
   locations?: boolean | Prisma.Trip$locationsArgs<ExtArgs>
+  reminders?: boolean | Prisma.Trip$remindersArgs<ExtArgs>
   _count?: boolean | Prisma.TripCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type TripIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -4386,6 +4911,7 @@ export type $TripPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     offers: Prisma.$RequestOfferPayload<ExtArgs>[]
     sosEvents: Prisma.$SosEventPayload<ExtArgs>[]
     locations: Prisma.$TripLocationPayload<ExtArgs>[]
+    reminders: Prisma.$TripReminderPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -4433,6 +4959,9 @@ export type $TripPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     actualDurationS: number | null
     startedAt: Date | null
     completedAt: Date | null
+    abandonedAt: Date | null
+    abandonReason: string | null
+    abandonWarnedAt: Date | null
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["trip"]>
@@ -4838,6 +5367,7 @@ export interface Prisma__TripClient<T, Null = never, ExtArgs extends runtime.Typ
   offers<T extends Prisma.Trip$offersArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Trip$offersArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$RequestOfferPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   sosEvents<T extends Prisma.Trip$sosEventsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Trip$sosEventsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$SosEventPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   locations<T extends Prisma.Trip$locationsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Trip$locationsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$TripLocationPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  reminders<T extends Prisma.Trip$remindersArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Trip$remindersArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$TripReminderPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -4912,6 +5442,9 @@ export interface TripFieldRefs {
   readonly actualDurationS: Prisma.FieldRef<"Trip", 'Int'>
   readonly startedAt: Prisma.FieldRef<"Trip", 'DateTime'>
   readonly completedAt: Prisma.FieldRef<"Trip", 'DateTime'>
+  readonly abandonedAt: Prisma.FieldRef<"Trip", 'DateTime'>
+  readonly abandonReason: Prisma.FieldRef<"Trip", 'String'>
+  readonly abandonWarnedAt: Prisma.FieldRef<"Trip", 'DateTime'>
   readonly createdAt: Prisma.FieldRef<"Trip", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"Trip", 'DateTime'>
 }
@@ -5480,6 +6013,30 @@ export type Trip$locationsArgs<ExtArgs extends runtime.Types.Extensions.Internal
   take?: number
   skip?: number
   distinct?: Prisma.TripLocationScalarFieldEnum | Prisma.TripLocationScalarFieldEnum[]
+}
+
+/**
+ * Trip.reminders
+ */
+export type Trip$remindersArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the TripReminder
+   */
+  select?: Prisma.TripReminderSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the TripReminder
+   */
+  omit?: Prisma.TripReminderOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.TripReminderInclude<ExtArgs> | null
+  where?: Prisma.TripReminderWhereInput
+  orderBy?: Prisma.TripReminderOrderByWithRelationInput | Prisma.TripReminderOrderByWithRelationInput[]
+  cursor?: Prisma.TripReminderWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.TripReminderScalarFieldEnum | Prisma.TripReminderScalarFieldEnum[]
 }
 
 /**

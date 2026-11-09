@@ -8,7 +8,7 @@ import auditService from './auditService';
 import notificationService from './notificationService';
 import { generateReferenceCode } from '../utils/referenceCode';
 import { RideRequest, RequestOffer, Booking, Trip, TripSeat, User, Vehicle, sequelize } from '../Models';
-import { BOOKING_STATUS, PAYMENT_STATUS, TRIP_STATUS, REQUEST_OFFER_STATUS, RIDE_REQUEST_STATUS, REQUEST_OFFER_TTL_HOURS, SEAT_TYPE, GENDER_PREFERENCE, PICKUP_TYPE, PICKUP_STATUS } from '../config/constants';
+import { BOOKING_STATUS, PAYMENT_STATUS, TRIP_STATUS, REQUEST_OFFER_STATUS, RIDE_REQUEST_STATUS, REQUEST_OFFER_TTL_HOURS, SEAT_TYPE, GENDER_PREFERENCE, PICKUP_TYPE, PICKUP_STATUS, REQUEST_TRIP_TIME_TOLERANCE_MINUTES } from '../config/constants';
 import { REDIS_KEYS } from '../utils/redisKeys';
 import { deleteKey } from '../config/redis';
 import homeService from './homeService';
@@ -16,6 +16,8 @@ import realtimeService from './realtimeService';
 import routeService from './routeService';
 import tripService from './tripService';
 import { parseOptionalTimezoneAware } from '../utils/time';
+
+const { assertNoOverlappingTrip } = tripService;
 
 const MATCH_WINDOW_BEFORE_MS = 24 * 60 * 60 * 1000;
 const MATCH_WINDOW_AFTER_MS = 2 * 24 * 60 * 60 * 1000;
@@ -370,6 +372,18 @@ async function submitOffer(driverId, requestId, payload) {
     throw ApiErrors.conflict('YOU_ALREADY_HAVE_A_PENDING_OFFER_ON_THIS_RIDE_REQUEST');
   }
 
+  if (payload.trip_id) {
+    const trip = await Trip.findByPk(payload.trip_id);
+    if (!trip) throw ApiErrors.notFound('TRIP_NOT_FOUND');
+    if (trip.driverId !== driverId) throw ApiErrors.forbidden('YOU_CAN_ONLY_OFFER_YOUR_OWN_TRIPS');
+    if (![TRIP_STATUS.PUBLISHED, TRIP_STATUS.FULL].includes(trip.status) || hasTripDeparted(trip)) {
+      throw ApiErrors.conflict('TRIP_IS_ALREADY_ONGOING_OR_COMPLETED');
+    }
+    await assertRequestTripCompatible(driverId, request, trip);
+  } else {
+    await assertRequestTripCompatible(driverId, request);
+  }
+
   const offer = await RequestOffer.create({
     requestId,
     driverId,
@@ -498,6 +512,58 @@ async function listDriverOffers(driverId, filters = {}) {
   };
 }
 
+async function assertRequestTripCompatible(driverId, request, trip = null) {
+  const requestedAt = request.originTime || request.arrivalDeadline || null;
+  if (trip) {
+    await assertNoOverlappingTrip(driverId, {
+      departureTime: trip.departureTime,
+      isRecurring: trip.isRecurring,
+      recurrenceDays: trip.recurrenceDays,
+      recurrenceEndDate: trip.recurrenceEndDate,
+      excludeTripId: trip.id,
+    });
+    return;
+  }
+  if (requestedAt) {
+    await assertNoOverlappingTrip(driverId, {
+      departureTime: requestedAt,
+      isRecurring: false,
+      recurrenceDays: null,
+      recurrenceEndDate: null,
+    });
+  }
+}
+
+async function materializeOfferAcceptance(driverId, offer) {
+  if (offer.bookingId) return offer;
+  const request = offer.rideRequest;
+  if (!request) throw ApiErrors.conflict('THE_UNDERLYING_RIDE_REQUEST_IS_NOT_IN_AN_ACCEPTED_STATE');
+  const seatsNeeded = Math.max(1, Number(request.seatsNeeded) || 1);
+  let trip;
+  if (offer.tripId) {
+    trip = await Trip.findByPk(offer.tripId);
+    if (!trip) throw ApiErrors.notFound('TRIP_NOT_FOUND');
+    if (trip.driverId !== driverId) throw ApiErrors.forbidden('YOU_CAN_ONLY_ATTACH_RIDES_TO_YOUR_OWN_TRIPS');
+    if (![TRIP_STATUS.PUBLISHED, TRIP_STATUS.FULL].includes(trip.status) || hasTripDeparted(trip)) {
+      throw ApiErrors.conflict('TRIP_IS_ALREADY_ONGOING_OR_COMPLETED');
+    }
+    await assertRequestTripCompatible(driverId, request, trip);
+  } else {
+    trip = await resolveAcceptTrip(driverId, request, {}, seatsNeeded);
+    const fresh = await Trip.findByPk(trip.id);
+    if (!fresh) throw ApiErrors.notFound('TRIP_NOT_FOUND');
+    await assertRequestTripCompatible(driverId, request, fresh);
+    trip = fresh;
+  }
+  const fare = Number(offer.agreedFare ?? offer.offeredFare ?? 0);
+  const booking = await createDirectAcceptBooking(trip, request, fare, seatsNeeded);
+  offer.status = REQUEST_OFFER_STATUS.ACCEPTED;
+  offer.tripId = trip.id;
+  offer.bookingId = booking.id;
+  await offer.save();
+  return offer;
+}
+
 async function decideOffer(passengerId, offerId, action) {
   await expireStale();
 
@@ -516,37 +582,49 @@ async function decideOffer(passengerId, offerId, action) {
   }
 
   if (action === 'accept') {
-    offer.status = REQUEST_OFFER_STATUS.ACCEPTED;
-    await offer.save();
-
-    offer.rideRequest.status = RIDE_REQUEST_STATUS.ACCEPTED;
-    await offer.rideRequest.save();
-
-    await RequestOffer.update(
-      { status: REQUEST_OFFER_STATUS.DECLINED },
-      {
-        where: {
-          requestId: offer.requestId,
-          id: { [Op.ne]: offer.id },
-          status: REQUEST_OFFER_STATUS.SENT,
-        },
-      }
+    const [claimed] = await RequestOffer.update(
+      { status: REQUEST_OFFER_STATUS.ACCEPTED },
+      { where: { id: offerId, status: REQUEST_OFFER_STATUS.SENT } }
     );
+    if (!claimed) throw ApiErrors.conflict('OFFER_NO_LONGER_DECIDABLE');
+    try {
+      await materializeOfferAcceptance(offer.driverId, offer);
 
-    auditService.track({
-      action: 'offer.accepted',
-      resourceType: 'request_offer',
-      resourceId: offer.id,
-      actorId: passengerId,
-      actorType: 'passenger',
-      payload: { request_id: offer.requestId, driver_id: offer.driverId },
-    });
+      offer.rideRequest.status = RIDE_REQUEST_STATUS.ACCEPTED;
+      await offer.rideRequest.save();
 
-    if (offer.driver) {
-      await notificationService.sendToUser(offer.driver, 'OFFER_ACCEPTED', {
-        channels: ['in_app', 'push'],
-        vars: {},
+      await RequestOffer.update(
+        { status: REQUEST_OFFER_STATUS.DECLINED },
+        {
+          where: {
+            requestId: offer.requestId,
+            id: { [Op.ne]: offer.id },
+            status: REQUEST_OFFER_STATUS.SENT,
+          },
+        }
+      );
+
+      auditService.track({
+        action: 'offer.accepted',
+        resourceType: 'request_offer',
+        resourceId: offer.id,
+        actorId: passengerId,
+        actorType: 'passenger',
+        payload: { request_id: offer.requestId, driver_id: offer.driverId },
       });
+
+      if (offer.driver) {
+        await notificationService.sendToUser(offer.driver, 'OFFER_ACCEPTED', {
+          channels: ['in_app', 'push'],
+          vars: {},
+        });
+      }
+    } catch (err) {
+      const fresh = await RequestOffer.findByPk(offerId);
+      if (fresh && !fresh.bookingId) {
+        await fresh.update({ status: REQUEST_OFFER_STATUS.SENT });
+      }
+      throw err;
     }
   } else {
     offer.status = REQUEST_OFFER_STATUS.DECLINED;
@@ -662,6 +740,7 @@ async function attachOfferToTrip(driverId, tripId, offerId, payload = {}) {
   if (![TRIP_STATUS.PUBLISHED, TRIP_STATUS.FULL].includes(trip.status) || hasTripDeparted(trip)) {
     throw ApiErrors.conflict('TRIP_IS_ALREADY_ONGOING_OR_COMPLETED');
   }
+  await assertRequestTripCompatible(driverId, offer.rideRequest, trip);
 
   const seatsNeeded = offer.rideRequest.seatsNeeded || 1;
 
@@ -797,6 +876,7 @@ async function resolveAcceptTrip(driverId, request, payload, seatsNeeded) {
     if (Number(trip.availableSeats) < seatsNeeded) {
       throw ApiErrors.conflict('NOT_ENOUGH_AVAILABLE_SEATS_ON_THE_SELECTED_TRIP');
     }
+    await assertRequestTripCompatible(driverId, request, trip);
     return trip;
   }
 

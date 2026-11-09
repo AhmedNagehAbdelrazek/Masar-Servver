@@ -25,7 +25,7 @@ import type { Prisma } from '../../generated/prisma/client.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { withSerializableRetry } from '../../prisma/transaction.js';
 import { RealtimeGateway } from '../../realtime/realtime.gateway.js';
-import { NotificationsService } from '../notifications/notifications.service.js';
+import { NotificationsService, type NotifyUser } from '../notifications/notifications.service.js';
 import { CommissionService } from '../subscriptions/commission.service.js';
 import { HomeService } from '../subscriptions/home.service.js';
 import { RecentSearchService } from '../subscriptions/recent-search.service.js';
@@ -525,7 +525,7 @@ export class TripsService {
         stops: { orderBy: { stopOrder: 'asc' } },
         attributes: true,
         bookings: {
-          where: { status: 'confirmed' },
+          where: { status: { in: ['confirmed', 'completed', 'no_show'] } },
           include: {
             passenger: {
               select: { id: true, fullName: true, phone: true, avgRating: true, avatarUrl: true },
@@ -605,6 +605,30 @@ export class TripsService {
         stop_lat: toNumber(s.lat ?? s.stopLat),
         stop_lng: toNumber(s.lng ?? s.stopLng),
       })),
+      stops: stops.map((s) => ({
+        id: s.id,
+        stop_order: s.stopOrder,
+        stop_name: s.stopName,
+        city: s.city,
+        address: s.address,
+        stop_type: s.stopType,
+        stop_lat: toNumber(s.lat ?? s.stopLat),
+        stop_lng: toNumber(s.lng ?? s.stopLng),
+      })),
+      start_point: {
+        city: t.originCity,
+        area: t.originArea,
+        address: t.originAddress,
+        lat: toNumber(t.originLat),
+        lng: toNumber(t.originLng),
+      },
+      end_point: {
+        city: t.destinationCity,
+        area: t.destinationArea,
+        address: t.destinationAddress,
+        lat: toNumber(t.destinationLat),
+        lng: toNumber(t.destinationLng),
+      },
       instructions: t.driverInstructions,
       additional_instructions: t.additionalInstructions,
       created_at: t.createdAt,
@@ -632,6 +656,28 @@ export class TripsService {
         seat_numbers: seatNumbersFor(b as never),
         agreed_fare: Number(b.agreedFare),
         booking_status: b.status,
+        pickup: {
+          place: b.pickupPlace,
+          label: b.pickupLabel,
+          city: b.pickupCity,
+          area: b.pickupArea,
+          lat: toNumber(b.pickupLat),
+          lng: toNumber(b.pickupLng),
+          order: b.pickupOrder != null ? Number(b.pickupOrder) : null,
+          type: b.pickupType,
+          stop_id: b.pickupStopId,
+          status: b.pickupStatus,
+          arrived_at: b.arrivedAt,
+          picked_up_at: b.pickedUpAt,
+        },
+        dropoff: {
+          place: b.dropoffPlace,
+          lat: toNumber(b.dropoffLat),
+          lng: toNumber(b.dropoffLng),
+          order: b.dropoffOrder != null ? Number(b.dropoffOrder) : null,
+          deadline: b.dropoffDeadline,
+          dropped_off_at: b.droppedOffAt,
+        },
         dropoff_place: b.dropoffPlace,
         dropoff_deadline: b.dropoffDeadline,
         created_at: b.createdAt,
@@ -742,7 +788,7 @@ export class TripsService {
     status?: string | null,
   ): Promise<Record<string, unknown>[]> {
     // Unknown status strings match nothing (Express exact-equality semantics).
-    const knownStatuses = ['published', 'full', 'in_progress', 'ongoing', 'completed', 'cancelled'];
+    const knownStatuses = ['published', 'full', 'in_progress', 'ongoing', 'completed', 'abandoned', 'cancelled'];
     if (status && !knownStatuses.includes(status)) return [];
     try {
       const live = await this.prisma.trip.findMany({
@@ -1237,7 +1283,7 @@ export class TripsService {
         code: 'FORBIDDEN',
       });
     }
-    if (['in_progress', 'ongoing', 'completed'].includes(trip.status)) {
+    if (['in_progress', 'ongoing', 'completed', 'abandoned'].includes(trip.status)) {
       throw new ForbiddenException({
         message: 'A_TRIP_THAT_HAS_ALREADY_STARTED_CANNOT_BE_CANCELLED',
         code: 'FORBIDDEN',
@@ -1294,6 +1340,113 @@ export class TripsService {
       // best-effort
     }
     return { trip: { id: tripId, status: 'cancelled', notified_passengers: notifiedPassengers } };
+  }
+
+  async abandonTrip(
+    driverId: string,
+    tripId: string,
+    reason?: string,
+  ): Promise<{ trip: { id: string; status: string }; notified_passengers: number }> {
+    const trip = await this.prisma.trip.findUnique({ where: { id: tripId } });
+    if (!trip) throw new NotFoundException({ message: 'TRIP_NOT_FOUND', code: 'TRIP_NOT_FOUND' });
+    if (trip.driverId !== driverId) {
+      throw new ForbiddenException({
+        message: 'YOU_CAN_ONLY_ABANDON_YOUR_OWN_TRIPS',
+        code: 'FORBIDDEN',
+      });
+    }
+    if (!['in_progress', 'ongoing'].includes(trip.status)) {
+      throw new ConflictException({
+        message: 'ONLY_A_STARTED_TRIP_CAN_BE_ABANDONED',
+        code: 'TRIP_NOT_IN_PROGRESS',
+      });
+    }
+
+    const now = new Date();
+    const outcome = await withSerializableRetry(this.prisma, async (tx) => {
+      const claimed = await tx.trip.updateMany({
+        where: { id: tripId, status: { in: ['in_progress', 'ongoing'] } },
+        data: {
+          status: 'abandoned',
+          abandonedAt: now,
+          abandonReason: reason ?? 'stopped_by_driver',
+        },
+      });
+      if (claimed.count === 0) {
+        throw new ConflictException({
+          message: 'ONLY_A_STARTED_TRIP_CAN_BE_ABANDONED',
+          code: 'TRIP_NOT_IN_PROGRESS',
+        });
+      }
+      const bookings = await tx.booking.findMany({
+        where: { tripId, status: { in: ['confirmed', 'pending'] } },
+        select: {
+          id: true,
+          passenger: { select: { id: true, phone: true, fcmToken: true, locale: true } },
+        },
+      });
+      if (bookings.length > 0) {
+        await tx.booking.updateMany({
+          where: { tripId, status: { in: ['confirmed', 'pending'] } },
+          data: {
+            status: 'cancelled',
+            cancellationReason: 'trip_abandoned',
+            cancelledBy: driverId,
+            cancelledAt: now,
+          },
+        });
+      }
+      await tx.tripSeat.updateMany({
+        where: { tripId, seatType: 'unavailable' },
+        data: { seatType: 'available' },
+      });
+      return { bookings };
+    });
+
+    const seats = await this.prisma.tripSeat.findMany({ where: { tripId }, select: { seatNumber: true } });
+    for (const seat of seats) {
+      try {
+        await this.seatLocks.releaseSeatLock(tripId, seat.seatNumber);
+      } catch {
+        // best-effort
+      }
+    }
+
+    const route = `${trip.originCity} → ${trip.destinationCity}`;
+    const seen = new Set<string>();
+    for (const booking of outcome.bookings) {
+      const passenger = booking.passenger as unknown as NotifyUser | null;
+      if (!passenger || seen.has(passenger.id)) continue;
+      seen.add(passenger.id);
+      try {
+        await this.notifications.sendToUser(passenger, 'TRIP_ABANDONED', {
+          channels: ['in_app', 'push'],
+          vars: { route },
+          data: { trip_id: tripId, reason: reason ?? 'stopped_by_driver' },
+        });
+      } catch {
+        // best-effort
+      }
+    }
+
+    try {
+      this.realtime.emitToRoom(`trip:${tripId}`, 'tracking:ended', {
+        trip_id: tripId,
+        reason: 'abandoned',
+      });
+    } catch {
+      // socket offline
+    }
+    try {
+      await this.home.invalidateHomeForTrip(tripId, driverId);
+    } catch {
+      // best-effort
+    }
+
+    return {
+      trip: { id: tripId, status: 'abandoned' },
+      notified_passengers: seen.size,
+    };
   }
 
   // Port of moderateTrip in main-server/Controllers/adminModerationController.ts
@@ -1466,10 +1619,29 @@ export class TripsService {
         where: { tripId, status: 'confirmed' },
         include: { passenger: { select: { id: true, phone: true, fcmToken: true, locale: true } } },
       });
-      await tx.booking.updateMany({
-        where: { tripId, status: 'confirmed' },
-        data: { status: 'completed', paymentStatus: 'paid_cash', completedAt: now },
-      });
+      const completedIds = confirmed
+        .filter((booking) => ['picked_up', 'dropped_off'].includes(String(booking.pickupStatus)))
+        .map((booking) => booking.id);
+      const noShowIds = confirmed
+        .filter((booking) => !['picked_up', 'dropped_off'].includes(String(booking.pickupStatus)))
+        .map((booking) => booking.id);
+      if (completedIds.length > 0) {
+        await tx.booking.updateMany({
+          where: { id: { in: completedIds } },
+          data: {
+            status: 'completed',
+            paymentStatus: 'paid_cash',
+            completedAt: now,
+            droppedOffAt: now,
+          },
+        });
+      }
+      if (noShowIds.length > 0) {
+        await tx.booking.updateMany({
+          where: { id: { in: noShowIds } },
+          data: { status: 'no_show' },
+        });
+      }
 
       const freeSub = await tx.driverSubscription.findFirst({
         where: {
@@ -2083,9 +2255,12 @@ export class TripsService {
     await this.prisma.booking.update({
       where: { id: bookingId },
       data: {
-        pickupStatus: status as 'arrived' | 'picked_up' | 'missed',
+        pickupStatus: status as 'arrived' | 'picked_up' | 'dropped_off' | 'missed',
         ...(status === 'arrived' ? { arrivedAt: now } : {}),
         ...(status === 'picked_up' ? { pickedUpAt: now } : {}),
+        ...(status === 'dropped_off'
+          ? { droppedOffAt: now, status: 'completed', completedAt: now, paymentStatus: 'paid_cash' }
+          : {}),
       },
     });
     try {

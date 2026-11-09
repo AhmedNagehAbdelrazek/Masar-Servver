@@ -36,11 +36,12 @@ export interface BookingAttributes {
   cancelledAt?: Date | null;
   paymentStatus?: string | null;
   completedAt?: Date | null;
+  droppedOffAt?: Date | null;
   createdAt?: Date;
   updatedAt?: Date;
 }
 
-export interface BookingCreationAttributes extends Optional<BookingAttributes, 'id' | 'seatNumber' | 'seatNumbers' | 'seatsBooked' | 'currency' | 'pickupPlace' | 'pickupLat' | 'pickupLng' | 'pickupOrder' | 'pickupType' | 'pickupStopId' | 'pickupLabel' | 'pickupCity' | 'pickupArea' | 'detourSeconds' | 'pickupStatus' | 'arrivedAt' | 'pickedUpAt' | 'dropoffPlace' | 'dropoffLat' | 'dropoffLng' | 'dropoffDeadline' | 'dropoffOrder' | 'status' | 'cancellationReason' | 'cancelledBy' | 'cancelledAt' | 'paymentStatus' | 'completedAt' | 'createdAt' | 'updatedAt'> {}
+export interface BookingCreationAttributes extends Optional<BookingAttributes, 'id' | 'seatNumber' | 'seatNumbers' | 'seatsBooked' | 'currency' | 'pickupPlace' | 'pickupLat' | 'pickupLng' | 'pickupOrder' | 'pickupType' | 'pickupStopId' | 'pickupLabel' | 'pickupCity' | 'pickupArea' | 'detourSeconds' | 'pickupStatus' | 'arrivedAt' | 'pickedUpAt' | 'dropoffPlace' | 'dropoffLat' | 'dropoffLng' | 'dropoffDeadline' | 'dropoffOrder' | 'status' | 'cancellationReason' | 'cancelledBy' | 'cancelledAt' | 'paymentStatus' | 'completedAt' | 'droppedOffAt' | 'createdAt' | 'updatedAt'> {}
 
 export class Booking extends Model<BookingAttributes, BookingCreationAttributes> implements BookingAttributes {
   declare id: string;
@@ -76,6 +77,7 @@ export class Booking extends Model<BookingAttributes, BookingCreationAttributes>
   declare cancelledAt?: Date | null;
   declare paymentStatus?: string | null;
   declare completedAt?: Date | null;
+  declare droppedOffAt?: Date | null;
   declare readonly createdAt?: Date;
   declare readonly updatedAt?: Date;
 }
@@ -170,7 +172,7 @@ Booking.init(
             allowNull: true,
         },
     pickupStatus: {
-            type: DataTypes.ENUM('pending', 'arrived', 'picked_up', 'missed'),
+            type: DataTypes.ENUM('pending', 'arrived', 'picked_up', 'dropped_off', 'missed'),
             field: 'pickup_status',
             allowNull: false,
             defaultValue: 'pending',
@@ -236,6 +238,11 @@ Booking.init(
         },
     completedAt: {
             type: DataTypes.DATE,
+            allowNull: true,
+        },
+    droppedOffAt: {
+            type: DataTypes.DATE,
+            field: 'dropped_off_at',
             allowNull: true,
         },
   },

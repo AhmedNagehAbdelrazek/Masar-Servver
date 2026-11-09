@@ -406,6 +406,7 @@ export const ModelName = {
   TripStop: 'TripStop',
   TripSeat: 'TripSeat',
   TripLocation: 'TripLocation',
+  TripReminder: 'TripReminder',
   Booking: 'Booking',
   RideRequest: 'RideRequest',
   RequestOffer: 'RequestOffer',
@@ -446,7 +447,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "driverProfile" | "vehicle" | "passengerProfile" | "trip" | "tripAttribute" | "tripStop" | "tripSeat" | "tripLocation" | "booking" | "rideRequest" | "requestOffer" | "rating" | "delayEvent" | "complaint" | "penalty" | "supportTicket" | "supportTicketMessage" | "message" | "sosEvent" | "notification" | "notificationSetting" | "favoriteDriver" | "favoriteRoute" | "recentSearch" | "auditLog" | "subscriptionPlan" | "driverSubscription" | "subscriptionTransaction" | "paymentMethod" | "uploadedImage" | "deletionRequest" | "documentReview" | "verificationStatusChange"
+    modelProps: "user" | "driverProfile" | "vehicle" | "passengerProfile" | "trip" | "tripAttribute" | "tripStop" | "tripSeat" | "tripLocation" | "tripReminder" | "booking" | "rideRequest" | "requestOffer" | "rating" | "delayEvent" | "complaint" | "penalty" | "supportTicket" | "supportTicketMessage" | "message" | "sosEvent" | "notification" | "notificationSetting" | "favoriteDriver" | "favoriteRoute" | "recentSearch" | "auditLog" | "subscriptionPlan" | "driverSubscription" | "subscriptionTransaction" | "paymentMethod" | "uploadedImage" | "deletionRequest" | "documentReview" | "verificationStatusChange"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1113,6 +1114,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.TripLocationCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.TripLocationCountAggregateOutputType> | number
+        }
+      }
+    }
+    TripReminder: {
+      payload: Prisma.$TripReminderPayload<ExtArgs>
+      fields: Prisma.TripReminderFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.TripReminderFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TripReminderPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.TripReminderFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TripReminderPayload>
+        }
+        findFirst: {
+          args: Prisma.TripReminderFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TripReminderPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.TripReminderFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TripReminderPayload>
+        }
+        findMany: {
+          args: Prisma.TripReminderFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TripReminderPayload>[]
+        }
+        create: {
+          args: Prisma.TripReminderCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TripReminderPayload>
+        }
+        createMany: {
+          args: Prisma.TripReminderCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.TripReminderCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TripReminderPayload>[]
+        }
+        delete: {
+          args: Prisma.TripReminderDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TripReminderPayload>
+        }
+        update: {
+          args: Prisma.TripReminderUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TripReminderPayload>
+        }
+        deleteMany: {
+          args: Prisma.TripReminderDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.TripReminderUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.TripReminderUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TripReminderPayload>[]
+        }
+        upsert: {
+          args: Prisma.TripReminderUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TripReminderPayload>
+        }
+        aggregate: {
+          args: Prisma.TripReminderAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateTripReminder>
+        }
+        groupBy: {
+          args: Prisma.TripReminderGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.TripReminderGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.TripReminderCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.TripReminderCountAggregateOutputType> | number
         }
       }
     }
@@ -3155,6 +3230,9 @@ export const TripScalarFieldEnum = {
   actualDurationS: 'actualDurationS',
   startedAt: 'startedAt',
   completedAt: 'completedAt',
+  abandonedAt: 'abandonedAt',
+  abandonReason: 'abandonReason',
+  abandonWarnedAt: 'abandonWarnedAt',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -3218,6 +3296,20 @@ export const TripLocationScalarFieldEnum = {
 export type TripLocationScalarFieldEnum = (typeof TripLocationScalarFieldEnum)[keyof typeof TripLocationScalarFieldEnum]
 
 
+export const TripReminderScalarFieldEnum = {
+  id: 'id',
+  tripId: 'tripId',
+  userId: 'userId',
+  kind: 'kind',
+  occurrenceAt: 'occurrenceAt',
+  sentAt: 'sentAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type TripReminderScalarFieldEnum = (typeof TripReminderScalarFieldEnum)[keyof typeof TripReminderScalarFieldEnum]
+
+
 export const BookingScalarFieldEnum = {
   id: 'id',
   tripId: 'tripId',
@@ -3252,6 +3344,7 @@ export const BookingScalarFieldEnum = {
   cancelledAt: 'cancelledAt',
   paymentStatus: 'paymentStatus',
   completedAt: 'completedAt',
+  droppedOffAt: 'droppedOffAt',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -3958,6 +4051,7 @@ export type GlobalOmitConfig = {
   tripStop?: Prisma.TripStopOmit
   tripSeat?: Prisma.TripSeatOmit
   tripLocation?: Prisma.TripLocationOmit
+  tripReminder?: Prisma.TripReminderOmit
   booking?: Prisma.BookingOmit
   rideRequest?: Prisma.RideRequestOmit
   requestOffer?: Prisma.RequestOfferOmit

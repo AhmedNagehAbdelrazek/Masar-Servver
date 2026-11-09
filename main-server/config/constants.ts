@@ -36,6 +36,7 @@ export const TRIP_STATUS = {
   IN_PROGRESS: 'in_progress',
   ONGOING: 'ongoing',
   COMPLETED: 'completed',
+  ABANDONED: 'abandoned',
   CANCELLED: 'cancelled',
 } as const;
 export type TripStatus = (typeof TRIP_STATUS)[keyof typeof TRIP_STATUS];
@@ -49,6 +50,14 @@ export type TripStatus = (typeof TRIP_STATUS)[keyof typeof TRIP_STATUS];
  * (Previously 0 which silently disabled the overlap guard.)
  */
 export const TRIP_DURATION_HOURS = 1;
+
+// Trip integrity / reminder tunables. Overridable per environment.
+export const TRIP_ABANDON_WARN_MINUTES = Number(process.env.TRIP_ABANDON_WARN_MINUTES || 10);
+export const TRIP_ABANDON_AFTER_MINUTES = Number(process.env.TRIP_ABANDON_AFTER_MINUTES || 20);
+export const TRIP_REMINDER_LEAD_MINUTES = Number(process.env.TRIP_REMINDER_LEAD_MINUTES || 10);
+export const REQUEST_TRIP_TIME_TOLERANCE_MINUTES = Number(
+  process.env.REQUEST_TRIP_TIME_TOLERANCE_MINUTES || 15,
+);
 
 
 
@@ -246,6 +255,8 @@ export const NOTIFICATION_TYPE = {
   BOOKING_CANCELLED: 'booking_cancelled',
   TRIP_REMINDER: 'trip_reminder',
   TRIP_CANCELLED: 'trip_cancelled',
+  TRIP_ABANDONED: 'trip_abandoned',
+  TRIP_ABANDON_WARNING: 'trip_abandon_warning',
   DRIVER_OFFER: 'driver_offer',
   RIDE_REQUEST_REPLY: 'ride_request_reply',
   NEW_MESSAGE: 'new_message',
@@ -284,6 +295,8 @@ export const NOTIFICATION_CATEGORIES = {
     types: [
       NOTIFICATION_TYPE.TRIP_REMINDER,
       NOTIFICATION_TYPE.TRIP_CANCELLED,
+      NOTIFICATION_TYPE.TRIP_ABANDONED,
+      NOTIFICATION_TYPE.TRIP_ABANDON_WARNING,
       NOTIFICATION_TYPE.DELAY_REPORT,
       NOTIFICATION_TYPE.PICKUP_ADDED,
       NOTIFICATION_TYPE.PICKUP_CHANGED,
@@ -312,6 +325,8 @@ export const NOTIFICATION_GROUP_LABELS = {
     new_message: 'رسائل الركاب',
     trip_reminder: 'تذكير الرحلات القادمة',
     trip_cancelled: 'تحديثات الرحلة',
+    trip_abandoned: 'الرحلات المتوقفة',
+    trip_abandon_warning: 'تنبيه استمرار الرحلة',
     delay_report: 'إشعارات عدم الحضور',
     subscription_payment: 'الباقات',
     payment_confirmed: 'اعتماد الدفع',
@@ -330,6 +345,8 @@ export const NOTIFICATION_GROUP_LABELS = {
     new_message: 'Passenger messages',
     trip_reminder: 'Upcoming trip reminders',
     trip_cancelled: 'Trip updates',
+    trip_abandoned: 'Abandoned trips',
+    trip_abandon_warning: 'Trip still active',
     delay_report: 'Absence alerts',
     subscription_payment: 'Plans',
     payment_confirmed: 'Payment confirmed',
@@ -350,6 +367,8 @@ export const NOTIFICATION_TYPE_LABELS = {
     booking_cancelled: 'إلغاء الحجز',
     trip_reminder: 'تذكير الرحلة',
     trip_cancelled: 'إلغاء الرحلة',
+    trip_abandoned: 'إيقاف الرحلة',
+    trip_abandon_warning: 'تنبيه استمرار الرحلة',
     driver_offer: 'عرض السائق',
     ride_request_reply: 'رد على طلب الرحلة',
     new_message: 'رسائل جديدة',
@@ -375,6 +394,8 @@ export const NOTIFICATION_TYPE_LABELS = {
     booking_cancelled: 'Booking cancelled',
     trip_reminder: 'Trip reminder',
     trip_cancelled: 'Trip cancelled',
+    trip_abandoned: 'Trip abandoned',
+    trip_abandon_warning: 'Trip still active',
     driver_offer: 'Driver offer',
     ride_request_reply: 'Ride request reply',
     new_message: 'New message',
@@ -434,6 +455,7 @@ export const PICKUP_STATUS = {
   PENDING: 'pending',
   ARRIVED: 'arrived',
   PICKED_UP: 'picked_up',
+  DROPPED_OFF: 'dropped_off',
   MISSED: 'missed',
 } as const;
 export type PickupStatus = (typeof PICKUP_STATUS)[keyof typeof PICKUP_STATUS];

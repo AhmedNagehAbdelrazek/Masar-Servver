@@ -526,6 +526,14 @@ export class CancelTripDto {
   note?: string;
 }
 
+export class AbandonTripDto {
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  @TrimString()
+  reason?: string;
+}
+
 export class LockSeatDto {
   @IsOptional()
   @IsInt()

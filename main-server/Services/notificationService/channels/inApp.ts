@@ -38,6 +38,11 @@ async function send(user, message, data = {}) {
   };
 
   realtimeService.emitToUser(user.id, 'notification:new', payload);
+  realtimeService.emitToUser(user.id, 'app:notification', {
+    type: message.type,
+    message: message.body,
+    metadata: data,
+  });
   realtimeMetrics.recordEvent('notification:new');
   realtimeMetrics.recordDelivery();
 

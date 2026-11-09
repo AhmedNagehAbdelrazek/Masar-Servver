@@ -48,11 +48,14 @@ export interface TripAttributes {
   actualDurationS?: number | null;
   startedAt?: Date | null;
   completedAt?: Date | null;
+  abandonedAt?: Date | null;
+  abandonReason?: string | null;
+  abandonWarnedAt?: Date | null;
   createdAt?: Date;
   updatedAt?: Date;
 }
 
-export interface TripCreationAttributes extends Optional<TripAttributes, 'id' | 'originArea' | 'originAddress' | 'originLat' | 'originLng' | 'destinationArea' | 'destinationAddress' | 'destinationLat' | 'destinationLng' | 'arrivalTime' | 'totalProfit' | 'currency' | 'isRecurring' | 'recurrencePattern' | 'recurrenceDays' | 'recurrenceEndDate' | 'genderPreference' | 'driverInstructions' | 'additionalInstructions' | 'status' | 'isFeatured' | 'featuredUntil' | 'isBlockedByBalance' | 'isModerated' | 'moderationReason' | 'moderatedBy' | 'routePolyline' | 'routeDistanceM' | 'routeDurationS' | 'routeStatus' | 'routeComputedAt' | 'routeVersion' | 'actualPathPolyline' | 'actualDistanceM' | 'actualDurationS' | 'startedAt' | 'completedAt' | 'createdAt' | 'updatedAt'> {}
+export interface TripCreationAttributes extends Optional<TripAttributes, 'id' | 'originArea' | 'originAddress' | 'originLat' | 'originLng' | 'destinationArea' | 'destinationAddress' | 'destinationLat' | 'destinationLng' | 'arrivalTime' | 'totalProfit' | 'currency' | 'isRecurring' | 'recurrencePattern' | 'recurrenceDays' | 'recurrenceEndDate' | 'genderPreference' | 'driverInstructions' | 'additionalInstructions' | 'status' | 'isFeatured' | 'featuredUntil' | 'isBlockedByBalance' | 'isModerated' | 'moderationReason' | 'moderatedBy' | 'routePolyline' | 'routeDistanceM' | 'routeDurationS' | 'routeStatus' | 'routeComputedAt' | 'routeVersion' | 'actualPathPolyline' | 'actualDistanceM' | 'actualDurationS' | 'startedAt' | 'completedAt' | 'abandonedAt' | 'abandonReason' | 'abandonWarnedAt' | 'createdAt' | 'updatedAt'> {}
 
 export class Trip extends Model<TripAttributes, TripCreationAttributes> implements TripAttributes {
   declare id: string;
@@ -89,6 +92,11 @@ export class Trip extends Model<TripAttributes, TripCreationAttributes> implemen
   declare isModerated: boolean;
   declare moderationReason?: string | null;
   declare moderatedBy?: string | null;
+  declare startedAt?: Date | null;
+  declare completedAt?: Date | null;
+  declare abandonedAt?: Date | null;
+  declare abandonReason?: string | null;
+  declare abandonWarnedAt?: Date | null;
   declare readonly createdAt?: Date;
   declare readonly updatedAt?: Date;
 }
@@ -297,6 +305,21 @@ Trip.init(
     completedAt: {
             type: DataTypes.DATE,
             field: 'completed_at',
+            allowNull: true,
+        },
+    abandonedAt: {
+            type: DataTypes.DATE,
+            field: 'abandoned_at',
+            allowNull: true,
+        },
+    abandonReason: {
+            type: DataTypes.TEXT,
+            field: 'abandon_reason',
+            allowNull: true,
+        },
+    abandonWarnedAt: {
+            type: DataTypes.DATE,
+            field: 'abandon_warned_at',
             allowNull: true,
         },
   },

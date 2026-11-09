@@ -53,7 +53,7 @@ export const recentTripsQueryValidation: ValidationChain[] = [
     .isLength({ max: 120 }).withMessage(V.SEARCH_MUST_BE_AT_MOST_100_CHARACTERS),
   query('status')
     .optional()
-    .isIn(['published', 'full', 'in_progress', 'ongoing', 'completed', 'cancelled', 'canceled'])
+    .isIn(['published', 'full', 'in_progress', 'ongoing', 'completed', 'abandoned', 'cancelled', 'canceled'])
     .withMessage('STATUS_MUST_BE_ONE_OF_PENDING_APPROVED_REJECTED_UNVERIFIED'),
 ];
 
@@ -85,7 +85,7 @@ export const driverTripsQueryValidation: ValidationChain[] = [
   ...paginationQueryValidation,
   query('status')
     .optional()
-    .isIn(['all', 'pending', 'completed', 'canceled', 'cancelled', 'active'])
+    .isIn(['all', 'pending', 'completed', 'canceled', 'cancelled', 'abandoned', 'active'])
     .withMessage('VALIDATION_FAILED'),
   query('month')
     .optional()

@@ -10,7 +10,7 @@ import {
   TripSearchQuery,
 } from './dto/create-trip.dto.js';
 import { IsUUID } from 'class-validator';
-import { CancelTripDto, UpdateTripDto } from './dto/create-trip.dto.js';
+import { AbandonTripDto, CancelTripDto, UpdateTripDto } from './dto/create-trip.dto.js';
 import { ReplaceStopsDto, SetPickupStatusDto, TripPickupParams } from './dto/route.dto.js';
 import { AttachOfferBody } from '../ride-requests/dto/ride-request.dto.js';
 import { RideRequestsService } from '../ride-requests/ride-requests.service.js';
@@ -203,6 +203,17 @@ export class TripsController {
     @CurrentUser() user?: AuthUser,
   ): Promise<{ trip: Record<string, unknown> }> {
     return this.trips.updateTrip(user?.id ?? '', params.trip_id, dto);
+  }
+
+  @Post(':trip_id/abandon')
+  @HttpCode(200)
+  @Roles('driver')
+  abandonTrip(
+    @Param() params: TripIdParam,
+    @Body() dto: AbandonTripDto,
+    @CurrentUser() user?: AuthUser,
+  ): Promise<{ trip: { id: string; status: string }; notified_passengers: number }> {
+    return this.trips.abandonTrip(user?.id ?? '', params.trip_id, dto.reason);
   }
 
   @Post(':trip_id/cancel')

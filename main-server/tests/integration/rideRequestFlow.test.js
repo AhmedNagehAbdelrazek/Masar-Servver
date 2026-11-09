@@ -606,28 +606,24 @@ describe('POST /api/trips/:trip_id/offers/:offer_id/attach - deferred materializ
     offerId = o.body.offer.id;
   });
 
-  it('should create the confirmed booking only when the driver attaches the offer', async () => {
+  it('should materialize the confirmed booking when the passenger accepts the offer', async () => {
     await acceptAndAgree(18);
 
-    const before = await Trip.findByPk(tripId);
+    const offer = await RequestOffer.findByPk(offerId);
+    expect(offer.bookingId).toBeTruthy();
+    expect(offer.tripId).toBeTruthy();
+
+    const booking = await Booking.findByPk(offer.bookingId);
+    expect(booking.referenceCode).toMatch(/^MSR-[A-Z0-9]{6}$/);
+    expect(booking.status).toBe('confirmed');
+    expect(booking.paymentStatus).toBe('pending');
+    expect(Number(booking.agreedFare)).toBe(15);
+
     const res = await getAgent()
-      .post(`/api/trips/${tripId}/offers/${offerId}/attach`)
+      .post(`/api/trips/${offer.tripId}/offers/${offerId}/attach`)
       .set('Authorization', `Bearer ${driver1Token}`)
       .send({});
-
-    expect(res.status).toBe(201);
-    expect(res.body.booking.reference_code).toMatch(/^MSR-[A-Z0-9]{6}$/);
-    expect(res.body.booking.status).toBe('confirmed');
-    expect(res.body.booking.payment_status).toBe('pending');
-    expect(Number(res.body.booking.agreed_fare)).toBe(18);
-    expect(res.body.offer.booking_id).toBe(res.body.booking.id);
-
-    const after = await Trip.findByPk(tripId);
-    expect(after.availableSeats).toBe(before.availableSeats - 1);
-
-    const stored = await Booking.findOne({ where: { tripId } });
-    expect(stored.passengerId).toBe(PASSENGER1_ID);
-    expect(stored.seatNumber).toBeNull();
+    expect(res.status).toBe(409);
   });
 
   it('should flip the trip to full when capacity reaches zero', async () => {
@@ -651,13 +647,17 @@ describe('POST /api/trips/:trip_id/offers/:offer_id/attach - deferred materializ
     expect(single.status).toBe(201);
     const singleTripId = single.body.trip_id;
 
-    await acceptAndAgree(28);
-    const res = await getAgent()
-      .post(`/api/trips/${singleTripId}/offers/${offerId}/attach`)
+    const created = await createRideRequest(passenger1Token, {
+      destination_city: 'Aqaba',
+      origin_time: `${getFutureDate(2)}T09:00:00+03:00`,
+    });
+    const reqId = created.body.ride_request.id;
+    const accepted = await getAgent()
+      .post(`/api/ride-requests/${reqId}/accept`)
       .set('Authorization', `Bearer ${driver1Token}`)
-      .send({});
+      .send({ trip_id: singleTripId });
+    expect(accepted.status).toBe(201);
 
-    expect(res.status).toBe(201);
     const trip = await Trip.findByPk(singleTripId);
     expect(trip.availableSeats).toBe(0);
     expect(trip.status).toBe('full');

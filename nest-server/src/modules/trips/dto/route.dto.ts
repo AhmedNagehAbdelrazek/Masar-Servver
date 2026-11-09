@@ -20,6 +20,6 @@ export class SetPickupStatusDto {
   @IsDefined()
   @IsNotEmpty()
   @IsString()
-  @IsIn(['arrived', 'picked_up', 'missed'])
+  @IsIn(['arrived', 'picked_up', 'dropped_off', 'missed'])
   pickup_status!: string;
 }
