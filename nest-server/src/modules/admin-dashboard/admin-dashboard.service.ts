@@ -647,6 +647,82 @@ export class AdminDashboardService {
     return lines.join('\n');
   }
 
+  async getTripDetail(tripId: string): Promise<Record<string, unknown>> {
+    const trip = await this.prisma.trip.findUnique({
+      where: { id: tripId },
+      include: {
+        driver: {
+          select: { id: true, fullName: true, phone: true, avgRating: true, avatarUrl: true },
+        },
+        bookings: {
+          include: {
+            passenger: {
+              select: { id: true, fullName: true, phone: true, avatarUrl: true },
+            },
+          },
+          orderBy: { createdAt: 'desc' },
+        },
+      },
+    });
+    if (!trip) {
+      throw new NotFoundException({ message: 'TRIP_NOT_FOUND', code: 'TRIP_NOT_FOUND' });
+    }
+    const activeBookings = trip.bookings.filter((booking) => booking.status !== 'cancelled');
+    const totalBookingValue = activeBookings.reduce(
+      (sum, booking) => sum + Number(booking.agreedFare) * Number(booking.seatsBooked),
+      0,
+    );
+    return {
+      trip: {
+        id: trip.id,
+        status: trip.status,
+        route: { origin: trip.originCity, destination: trip.destinationCity },
+        origin_city: trip.originCity,
+        origin_area: trip.originArea,
+        destination_city: trip.destinationCity,
+        destination_area: trip.destinationArea,
+        departure_time: trip.departureTime,
+        arrival_time: trip.arrivalTime,
+        total_seats: Number(trip.totalSeats),
+        available_seats: Number(trip.availableSeats),
+        seat_price: Number(trip.farePerSeat),
+        trip_type: trip.isRecurring ? 'متكرر' : 'فردية',
+        gender_preference: trip.genderPreference,
+        reservations_count: activeBookings.length,
+        passengers_count: activeBookings.reduce((sum, booking) => sum + Number(booking.seatsBooked), 0),
+        total_booking_value: totalBookingValue,
+      },
+      driver: trip.driver
+        ? {
+            id: trip.driver.id,
+            name: trip.driver.fullName,
+            phone: maskPhone(trip.driver.phone),
+            avatar_url: toAbsoluteMediaUrl(trip.driver.avatarUrl),
+            avg_rating: Number(trip.driver.avgRating || 0),
+          }
+        : null,
+      bookings: trip.bookings.map((booking) => ({
+        id: booking.id,
+        booking_no: booking.referenceCode,
+        status: booking.status,
+        seats_booked: Number(booking.seatsBooked),
+        seat_numbers: booking.seatNumbers,
+        seat_price: Number(booking.agreedFare),
+        total_price: Number(booking.agreedFare) * Number(booking.seatsBooked),
+        payment_status: booking.paymentStatus,
+        created_at: booking.createdAt,
+        passenger: booking.passenger
+          ? {
+              id: booking.passenger.id,
+              name: booking.passenger.fullName,
+              phone: maskPhone(booking.passenger.phone),
+              avatar_url: toAbsoluteMediaUrl(booking.passenger.avatarUrl),
+            }
+          : null,
+      })),
+    };
+  }
+
   async cancelTrip(tripId: string, reason: string | null, adminId: string): Promise<Record<string, unknown>> {
     const trip = await this.prisma.trip.findUnique({ where: { id: tripId } });
     if (!trip) {

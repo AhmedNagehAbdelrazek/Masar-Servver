@@ -251,6 +251,33 @@ describe('Dashboard partials', () => {
     expect(res.body.top_routes[0]).toHaveProperty('trips_count');
   });
 
+  it('GET /trips/:id returns status, driver and linked bookings', async () => {
+    const res = await ctx.agent
+      .get(`/api/admin/dashboard/trips/${SUM_TRIP_1_ID}`)
+      .set('Authorization', `Bearer ${adminToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.trip).toMatchObject({
+      id: SUM_TRIP_1_ID,
+      status: 'published',
+      total_seats: 4,
+      seat_price: 10,
+      reservations_count: 1,
+      passengers_count: 2,
+      total_booking_value: 40,
+    });
+    expect(res.body.driver.name).toBe('Active Driver');
+    expect(res.body.bookings).toHaveLength(1);
+    expect(res.body.bookings[0]).toMatchObject({
+      id: SUM_BOOKING_1_ID,
+      booking_no: 'SUMRC001',
+      seats_booked: 2,
+      seat_price: 20,
+      status: 'confirmed',
+    });
+    expect(res.body.bookings[0].passenger.name).toBe('Passenger P');
+  });
+
   it('GET /pending-requests lists pending drivers with their outstanding documents', async () => {
     const res = await ctx.agent
       .get('/api/admin/dashboard/pending-requests')

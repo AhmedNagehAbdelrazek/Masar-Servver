@@ -60,6 +60,11 @@ const sendDriverNotification = catchAsync(async (req: Request, res: Response): P
   successResponse(res, result);
 });
 
+const getTripDetail = catchAsync(async (req: Request, res: Response): Promise<void> => {
+  const { trip_id } = req.params as { trip_id: string };
+  successResponse(res, await (adminDashboardService as unknown as { getTripDetail: (id: string) => Promise<unknown> }).getTripDetail(trip_id));
+});
+
 const cancelTrip = catchAsync(async (req: Request, res: Response): Promise<void> => {
   const authReq = req as AuthRequest;
   const { trip_id } = req.params as { trip_id: string };
@@ -191,6 +196,7 @@ export {
   exportDrivers,
   sendDriverNotification,
   cancelTrip,
+  getTripDetail,
   getDriverHeader,
   getDriverOverview,
   listDriverTrips,
@@ -216,6 +222,7 @@ export default {
   exportDrivers,
   sendDriverNotification,
   cancelTrip,
+  getTripDetail,
   getDriverHeader,
   getDriverOverview,
   listDriverTrips,

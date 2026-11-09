@@ -120,6 +120,13 @@ export class AdminDashboardController {
     return this.dashboard.sendDriverNotification(user?.id ?? '', params.driver_id, dto);
   }
 
+  @Get('trips/:trip_id')
+  getTripDetail(
+    @Param('trip_id', new ParseUUIDPipe()) tripId: string,
+  ): Promise<Record<string, unknown>> {
+    return this.dashboard.getTripDetail(tripId);
+  }
+
   @Post('trips/:trip_id/cancel')
   @HttpCode(200)
   cancelTrip(

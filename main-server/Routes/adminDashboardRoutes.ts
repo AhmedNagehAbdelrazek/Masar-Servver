@@ -30,6 +30,7 @@ router.get('/drivers/:driver_id/documents', protect, roleGuard(['admin']), ...dr
 // ===== US4: Actions =====
 router.post('/drivers/:driver_id/status', protect, roleGuard(['admin']), ...driverIdParamValidation, ...statusBodyValidation, validate, c.setDriverStatus);
 router.post('/drivers/:driver_id/notifications', protect, roleGuard(['admin']), ...driverIdParamValidation, ...driverNotificationBodyValidation, validate, c.sendDriverNotification);
+router.get('/trips/:trip_id', protect, roleGuard(['admin']), ...tripIdParamValidation, validate, c.getTripDetail);
 router.post('/trips/:trip_id/cancel', protect, roleGuard(['admin']), ...tripIdParamValidation, ...cancelTripBodyValidation, validate, c.cancelTrip);
 router.post('/drivers/:driver_id/account-status', protect, roleGuard(['admin']), ...driverIdParamValidation, ...accountActionBodyValidation, validate, c.applyStandingAction);
 router.post('/drivers/:driver_id/documents/:document_key/approve', protect, roleGuard(['admin']), ...driverIdParamValidation, ...documentKeyParamValidation, validate, c.approveDocument);

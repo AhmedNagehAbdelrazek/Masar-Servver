@@ -648,6 +648,79 @@ async function cancelTrip(adminId, tripId, reason) {
   };
 }
 
+async function getTripDetail(tripId) {
+  const trip = await Trip.findByPk(tripId, {
+    include: [
+      { model: User, as: 'driver', attributes: ['id', 'fullName', 'phone', 'avgRating', 'avatarUrl'] },
+      {
+        model: Booking,
+        as: 'bookings',
+        include: [{ model: User, as: 'passenger', attributes: ['id', 'fullName', 'phone', 'avatarUrl'] }],
+      },
+    ],
+  });
+  if (!trip) throw ApiErrors.notFound('TRIP_NOT_FOUND');
+
+  const bookings = (trip.bookings || []).sort(
+    (a, b) => new Date(b.createdat).getTime() - new Date(a.createdat).getTime(),
+  );
+  const activeBookings = bookings.filter((booking) => booking.status !== BOOKING_STATUS.CANCELLED);
+  const totalBookingValue = activeBookings.reduce(
+    (sum, booking) => sum + Number(booking.agreedFare || 0) * Number(booking.seatsBooked || 0),
+    0,
+  );
+
+  return {
+    trip: {
+      id: trip.id,
+      status: trip.status,
+      route: { origin: trip.originCity, destination: trip.destinationCity },
+      origin_city: trip.originCity,
+      origin_area: trip.originArea,
+      destination_city: trip.destinationCity,
+      destination_area: trip.destinationArea,
+      departure_time: trip.departureTime,
+      arrival_time: trip.arrivalTime,
+      total_seats: Number(trip.totalSeats),
+      available_seats: Number(trip.availableSeats),
+      seat_price: Number(trip.farePerSeat),
+      trip_type: trip.isRecurring ? 'متكرر' : 'فردية',
+      gender_preference: trip.genderPreference,
+      reservations_count: activeBookings.length,
+      passengers_count: activeBookings.reduce((sum, booking) => sum + Number(booking.seatsBooked || 0), 0),
+      total_booking_value: totalBookingValue,
+    },
+    driver: trip.driver
+      ? {
+        id: trip.driver.id,
+        name: trip.driver.fullName,
+        phone: maskPhone(trip.driver.phone),
+        avatar_url: toAbsoluteMediaUrl(trip.driver.avatarUrl),
+        avg_rating: Number(trip.driver.avgRating || 0),
+      }
+      : null,
+    bookings: bookings.map((booking) => ({
+      id: booking.id,
+      booking_no: booking.referenceCode,
+      status: booking.status,
+      seats_booked: Number(booking.seatsBooked),
+      seat_numbers: booking.seatNumbers,
+      seat_price: Number(booking.agreedFare),
+      total_price: Number(booking.agreedFare) * Number(booking.seatsBooked),
+      payment_status: booking.paymentStatus,
+      created_at: booking.createdat,
+      passenger: booking.passenger
+        ? {
+          id: booking.passenger.id,
+          name: booking.passenger.fullName,
+          phone: maskPhone(booking.passenger.phone),
+          avatar_url: toAbsoluteMediaUrl(booking.passenger.avatarUrl),
+        }
+        : null,
+    })),
+  };
+}
+
 // ===== US3: Dossier tabs =====
 
 async function getDriverHeader(driverId) {
@@ -1185,6 +1258,7 @@ module.exports = {
   exportDrivers,
   sendDriverNotification,
   cancelTrip,
+  getTripDetail,
   getDriverHeader,
   getDriverOverview,
   listDriverTrips,
@@ -1198,5 +1272,5 @@ module.exports = {
   syncVerificationFromDocuments,
   listReservations,
 };
-export { DOCUMENT_KEYS, ALL_DOCUMENT_KEYS, deriveAccountStatus, getSummary, getRecentTrips, getTopRoutes, getPendingRequests, getLatestComplaints, listDrivers, getDriverStats, exportDrivers, sendDriverNotification, cancelTrip, getDriverHeader, getDriverOverview, listDriverTrips, getDriverEvaluations, getAccountLog, getCarDetails, getDocuments, setDriverStatus, applyStandingAction, decideDocument, syncVerificationFromDocuments, listReservations };
+export { DOCUMENT_KEYS, ALL_DOCUMENT_KEYS, deriveAccountStatus, getSummary, getRecentTrips, getTopRoutes, getPendingRequests, getLatestComplaints, listDrivers, getDriverStats, exportDrivers, sendDriverNotification, cancelTrip, getTripDetail, getDriverHeader, getDriverOverview, listDriverTrips, getDriverEvaluations, getAccountLog, getCarDetails, getDocuments, setDriverStatus, applyStandingAction, decideDocument, syncVerificationFromDocuments, listReservations };
 export default module.exports;
