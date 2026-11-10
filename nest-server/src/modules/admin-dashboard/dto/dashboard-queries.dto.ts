@@ -47,7 +47,7 @@ export class DriversListQuery extends PaginationQuery {
   search?: string;
 
   @IsOptional()
-  @IsIn(['active', 'suspended', 'pending', 'blocked', 'deletion_requested'])
+  @IsIn(['active', 'suspended', 'pending', 'blocked'])
   status?: string;
 
   @IsOptional()

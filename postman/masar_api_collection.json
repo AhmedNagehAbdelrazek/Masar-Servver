@@ -21295,7 +21295,7 @@
                                                 }
                                             ],
                                             "cookie": [],
-                                            "body": "{\n  \"total_drivers\": 120,\n  \"active_drivers\": 80,\n  \"suspended_drivers\": 10,\n  \"pending_drivers\": 30,\n  \"pending_deletion_drivers\": 0\n}"
+                                            "body": "{\n  \"total_drivers\": 120,\n  \"active_drivers\": 80,\n  \"suspended_drivers\": 10,\n  \"pending_drivers\": 30\n}"
                                         }
                                     ]
                                 },
@@ -21440,7 +21440,7 @@
                                                 }
                                             ],
                                             "cookie": [],
-                                            "body": "{\n  \"id\": \"d1\",\n  \"name\": \"Ahmad Al\",\n  \"phone\": \"+962791234567\",\n  \"age\": 26,\n  \"city\": \"Ø¹Ù…Ø§Ù†\",\n  \"avatar_url\": \"https://example.com/avatar.jpg\",\n  \"account_status\": \"active\",\n  \"trip_stats\": {\n    \"total_trips\": 312,\n    \"completed_trips\": 298,\n    \"canceled_trips\": 14\n  },\n  \"balance\": 50,\n  \"avg_rating\": 4.8,\n  \"reviews_count\": 289,\n  \"phone_full\": \"+962790000001\",\n  \"deletion_requested\": false,\n  \"deletion_requested_at\": null\n}"
+                                            "body": "{\n  \"id\": \"d1\",\n  \"name\": \"Ahmad Al\",\n  \"phone\": \"+962791234567\",\n  \"age\": 26,\n  \"city\": \"Ø¹Ù…Ø§Ù†\",\n  \"avatar_url\": \"https://example.com/avatar.jpg\",\n  \"account_status\": \"active\",\n  \"trip_stats\": {\n    \"total_trips\": 312,\n    \"completed_trips\": 298,\n    \"canceled_trips\": 14\n  },\n  \"balance\": 50,\n  \"avg_rating\": 4.8,\n  \"reviews_count\": 289,\n  \"phone_full\": \"+962790000001\"\n}"
                                         },
                                         {
                                             "name": "Not Found",
@@ -21470,7 +21470,7 @@
                                                 }
                                             ],
                                             "cookie": [],
-                                            "body": "{\n  \"status\": \"error\",\n  \"message\": \"Driver not found\",\n  \"code\": \"DRIVER_NOT_FOUND\",\n  \"phone_full\": \"+962790000001\",\n  \"deletion_requested\": false,\n  \"deletion_requested_at\": null\n}"
+                                            "body": "{\n  \"status\": \"error\",\n  \"message\": \"Driver not found\",\n  \"code\": \"DRIVER_NOT_FOUND\",\n  \"phone_full\": \"+962790000001\"\n}"
                                         }
                                     ]
                                 },

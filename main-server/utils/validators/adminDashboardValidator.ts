@@ -65,7 +65,7 @@ export const driversListValidation: ValidationChain[] = [
     .isLength({ max: 120 }).withMessage(V.SEARCH_MUST_BE_AT_MOST_100_CHARACTERS),
   query('status')
     .optional()
-    .isIn(['active', 'suspended', 'pending', 'blocked', 'deletion_requested'])
+    .isIn(['active', 'suspended', 'pending', 'blocked'])
     .withMessage('INVALID_DRIVER_STATUS_VALUE'),
   query('registration_from')
     .optional()
