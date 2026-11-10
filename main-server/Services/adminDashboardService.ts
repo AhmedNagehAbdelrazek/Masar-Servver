@@ -6,7 +6,7 @@ import { parsePagination, buildPagination } from '../utils/pagination';
 import { ApiErrors } from '../utils/ApiError';
 import { maskPhone } from '../utils/masking';
 import { daysAgo, percentChange } from '../utils/statChange';
-import { User, DriverProfile, Vehicle, UploadedImage, Trip, TripStop, Booking, Rating, Complaint, Penalty, DriverSubscription, DocumentReview, VerificationStatusChange, Notification, TripSeat, RideRequest } from '../Models';
+import { User, DriverProfile, Vehicle, UploadedImage, Trip, TripStop, Booking, Rating, Complaint, Penalty, DriverSubscription, DocumentReview, VerificationStatusChange, Notification, TripSeat, RideRequest, DeletionRequest } from '../Models';
 import notificationService from './notificationService';
 import { toAbsoluteMediaUrl } from '../utils/mediaUrl';
 
@@ -53,6 +53,22 @@ const PENDING_BUCKET = {
 };
 const SUSPENDED_BUCKET = { role: 'driver', status: 'suspended' };
 const BLOCKED_BUCKET = { role: 'driver', status: 'banned' };
+const DELETION_REQUEST_STATUSES = ['pending', 'approved'];
+
+// Accounts that asked to be deleted are no longer shown as normal drivers.
+// The row stays in the database until the deletion workflow is reviewed.
+async function pendingDeletionDriverIds() {
+  const rows = await DeletionRequest.findAll({
+    where: { status: { [Op.in]: DELETION_REQUEST_STATUSES } },
+    attributes: ['userId'],
+    raw: true,
+  });
+  return rows.map((row) => row.userId).filter(Boolean);
+}
+
+function notPendingDeletion(ids) {
+  return ids.length ? { id: { [Op.notIn]: ids } } : {};
+}
 
 function deriveAccountStatus(user) {
   if (user.status === 'banned') return 'blocked';
@@ -263,6 +279,8 @@ async function fetchRecentTrips({ limit, offset = 0, status = null, search = nul
 // ===== US1: Global dashboard =====
 
 async function getSummary() {
+  const deletionIds = await pendingDeletionDriverIds();
+  const excludeDeletion = notPendingDeletion(deletionIds);
   const [
     totalDrivers, activeDrivers, totalTrips, activeTrips, totalVehicles,
     pendingDocsCount, pendingDriversCount, pendingDriversRows, unresolvedComplaints,
@@ -270,14 +288,14 @@ async function getSummary() {
     bookingsToday, tripsToday, totalPassengers, pendingPayments, newRideRequests,
     completedTrips, cancelledTrips, upcomingTrips, inProgressTrips, abandonedTrips,
   ] = await Promise.all([
-    User.count({ where: { role: 'driver' } }),
-    User.count({ where: ACTIVE_BUCKET }),
+    User.count({ where: { role: 'driver', ...excludeDeletion } }),
+    User.count({ where: { ...ACTIVE_BUCKET, ...excludeDeletion } }),
     Trip.count(),
     Trip.count({ where: { status: { [Op.in]: TRIP_ACTIVE_STATUSES } } }),
     Vehicle.count(),
     countPendingDocuments(),
-    User.count({ where: PENDING_BUCKET }),
-    User.findAll({ where: PENDING_BUCKET, attributes: ['id', 'fullName', 'phone', 'verificationSubmittedAt', 'createdat'], order: [['createdat', 'ASC']], limit: 10 }),
+    User.count({ where: { ...PENDING_BUCKET, ...excludeDeletion } }),
+    User.findAll({ where: { ...PENDING_BUCKET, ...excludeDeletion }, attributes: ['id', 'fullName', 'phone', 'verificationSubmittedAt', 'createdat'], order: [['createdat', 'ASC']], limit: 10 }),
     Complaint.count({ where: { status: { [Op.in]: [COMPLAINT_STATUS.OPEN, COMPLAINT_STATUS.REVIEWING] } } }),
     Trip.findAll({
       attributes: ['originCity', 'destinationCity', [fn('COUNT', col('id')), 'trips_count']],
@@ -321,7 +339,7 @@ async function getSummary() {
     driversBefore, passengersBefore, tripsYesterday, bookingsYesterday,
     totalTripsBefore, completedTripsBefore,
   ] = await Promise.all([
-    User.count({ where: { role: 'driver', createdat: { [Op.lte]: cutoff } } }),
+    User.count({ where: { role: 'driver', createdat: { [Op.lte]: cutoff }, ...excludeDeletion } }),
     User.count({ where: { role: 'passenger', createdat: { [Op.lte]: cutoff } } }),
     Trip.count({ where: { departureTime: { [Op.gte]: yesterdayStart, [Op.lt]: todayStart } } }),
     Booking.count({ where: { createdat: { [Op.gte]: yesterdayStart, [Op.lt]: todayStart } } }),
@@ -471,7 +489,11 @@ const SORT_COLUMNS = {
 
 async function listDrivers(query) {
   const { page, limit, offset } = parsePagination(query);
-  const where = bucketWhereFor(query.status) || { role: 'driver' };
+  const deletionIds = await pendingDeletionDriverIds();
+  const where = {
+    ...(bucketWhereFor(query.status) || { role: 'driver' }),
+    ...notPendingDeletion(deletionIds),
+  };
 
   if (query.search) {
     const term = `%${query.search}%`;
@@ -552,11 +574,13 @@ async function listDrivers(query) {
 }
 
 async function getDriverStats() {
+  const deletionIds = await pendingDeletionDriverIds();
+  const exclude = notPendingDeletion(deletionIds);
   const [total, active, suspended, pending] = await Promise.all([
-    User.count({ where: { role: 'driver' } }),
-    User.count({ where: ACTIVE_BUCKET }),
-    User.count({ where: SUSPENDED_BUCKET }),
-    User.count({ where: PENDING_BUCKET }),
+    User.count({ where: { role: 'driver', ...exclude } }),
+    User.count({ where: { ...ACTIVE_BUCKET, ...exclude } }),
+    User.count({ where: { ...SUSPENDED_BUCKET, ...exclude } }),
+    User.count({ where: { ...PENDING_BUCKET, ...exclude } }),
   ]);
   return { total_drivers: total, active_drivers: active, suspended_drivers: suspended, pending_drivers: pending };
 }
@@ -564,7 +588,11 @@ async function getDriverStats() {
 // CSV export used by the drivers page and the home report button. Mirrors the
 // V2 contract: same filters as listDrivers, masked phones, capped at 5000.
 async function exportDrivers(query) {
-  const where = bucketWhereFor(query.status) || { role: 'driver' };
+  const deletionIds = await pendingDeletionDriverIds();
+  const where = {
+    ...(bucketWhereFor(query.status) || { role: 'driver' }),
+    ...notPendingDeletion(deletionIds),
+  };
   if (query.search) {
     const term = `%${query.search}%`;
     where[Op.or] = [{ fullName: { [Op.iLike]: term } }, { phone: { [Op.iLike]: term } }];

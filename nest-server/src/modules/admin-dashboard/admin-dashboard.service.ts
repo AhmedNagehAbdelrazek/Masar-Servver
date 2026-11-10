@@ -320,6 +320,8 @@ export class AdminDashboardService {
     const todayStart = new Date();
     todayStart.setUTCHours(0, 0, 0, 0);
     const tomorrowStart = new Date(todayStart.getTime() + 24 * 3600 * 1000);
+    const deletionIds = await this.pendingDeletionDriverIds();
+    const excludeDeletion = AdminDashboardService.notPendingDeletion(deletionIds);
     const [
       totalDrivers, activeDrivers, totalTrips, activeTrips, totalVehicles,
       pendingDocsCount, pendingDriversCount, pendingDriversRows, unresolvedComplaints,
@@ -327,15 +329,15 @@ export class AdminDashboardService {
       bookingsToday, tripsToday, totalPassengers, pendingPayments, newRideRequests,
       completedTrips, cancelledTrips, upcomingTrips, inProgressTrips, abandonedTrips,
     ] = await Promise.all([
-      this.prisma.user.count({ where: { role: 'driver' } }),
-      this.prisma.user.count({ where: ACTIVE_BUCKET }),
+      this.prisma.user.count({ where: { role: 'driver', ...excludeDeletion } }),
+      this.prisma.user.count({ where: { ...ACTIVE_BUCKET, ...excludeDeletion } }),
       this.prisma.trip.count(),
       this.prisma.trip.count({ where: { status: { in: [...TRIP_ACTIVE_STATUSES] } } }),
       this.prisma.vehicle.count(),
       this.countPendingDocuments(),
-      this.prisma.user.count({ where: PENDING_BUCKET }),
+      this.prisma.user.count({ where: { ...PENDING_BUCKET, ...excludeDeletion } }),
       this.prisma.user.findMany({
-        where: PENDING_BUCKET,
+        where: { ...PENDING_BUCKET, ...excludeDeletion },
         select: { id: true, fullName: true, phone: true, verificationSubmittedAt: true, createdAt: true },
         orderBy: { createdAt: 'asc' },
         take: 10,
@@ -384,7 +386,7 @@ export class AdminDashboardService {
       driversBefore, passengersBefore, tripsYesterday, bookingsYesterday,
       totalTripsBefore, completedTripsBefore,
     ] = await Promise.all([
-      this.prisma.user.count({ where: { role: 'driver', createdAt: { lte: cutoff } } }),
+      this.prisma.user.count({ where: { role: 'driver', createdAt: { lte: cutoff }, ...excludeDeletion } }),
       this.prisma.user.count({ where: { role: 'passenger', createdAt: { lte: cutoff } } }),
       this.prisma.trip.count({
         where: { departureTime: { gte: yesterdayStart, lt: todayStart } },
@@ -559,9 +561,25 @@ export class AdminDashboardService {
 
   // ===== US2: Drivers directory =====
 
+  private async pendingDeletionDriverIds(): Promise<string[]> {
+    const rows = await this.prisma.deletionRequest.findMany({
+      where: { status: { in: ['pending', 'approved'] } },
+      select: { userId: true },
+    });
+    return rows.map((row) => row.userId).filter(Boolean);
+  }
+
+  private static notPendingDeletion(ids: string[]): Prisma.UserWhereInput {
+    return ids.length ? { id: { notIn: ids } } : {};
+  }
+
   async listDrivers(query: DriversListQuery): Promise<Record<string, unknown>> {
     const { page, limit, offset } = parsePagination(query);
-    const where: Prisma.UserWhereInput = { ...(bucketWhereFor(query.status) || { role: 'driver' }) };
+    const deletionIds = await this.pendingDeletionDriverIds();
+    const where: Prisma.UserWhereInput = {
+      ...(bucketWhereFor(query.status) || { role: 'driver' }),
+      ...AdminDashboardService.notPendingDeletion(deletionIds),
+    };
 
     if (query.search) {
       const term = query.search;
@@ -646,11 +664,13 @@ export class AdminDashboardService {
   }
 
   async getDriverStats(): Promise<Record<string, unknown>> {
+    const deletionIds = await this.pendingDeletionDriverIds();
+    const exclude = AdminDashboardService.notPendingDeletion(deletionIds);
     const [total, active, suspended, pending] = await Promise.all([
-      this.prisma.user.count({ where: { role: 'driver' } }),
-      this.prisma.user.count({ where: ACTIVE_BUCKET }),
-      this.prisma.user.count({ where: SUSPENDED_BUCKET }),
-      this.prisma.user.count({ where: PENDING_BUCKET }),
+      this.prisma.user.count({ where: { role: 'driver', ...exclude } }),
+      this.prisma.user.count({ where: { ...ACTIVE_BUCKET, ...exclude } }),
+      this.prisma.user.count({ where: { ...SUSPENDED_BUCKET, ...exclude } }),
+      this.prisma.user.count({ where: { ...PENDING_BUCKET, ...exclude } }),
     ]);
     return { total_drivers: total, active_drivers: active, suspended_drivers: suspended, pending_drivers: pending };
   }
@@ -658,7 +678,11 @@ export class AdminDashboardService {
   // Figma 9695:33146 (تحميل التقرير): same filters as listDrivers, CSV with
   // masked phones, capped at 5000 rows.
   async exportDrivers(query: DriversListQuery): Promise<string> {
-    const where: Prisma.UserWhereInput = { ...(bucketWhereFor(query.status) || { role: 'driver' }) };
+    const deletionIds = await this.pendingDeletionDriverIds();
+    const where: Prisma.UserWhereInput = {
+      ...(bucketWhereFor(query.status) || { role: 'driver' }),
+      ...AdminDashboardService.notPendingDeletion(deletionIds),
+    };
     if (query.search) {
       const term = query.search;
       where.OR = [
