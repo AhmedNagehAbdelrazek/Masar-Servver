@@ -8,6 +8,7 @@ import {
 import type { Prisma } from '../../generated/prisma/client.js';
 import { maskPhone } from '../../common/utils/masking.js';
 import { buildPagination, parsePagination } from '../../common/utils/pagination.js';
+import { daysAgo, percentChange } from '../../common/utils/stat-change.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { PenaltyService } from '../driver/penalty.service.js';
 import {
@@ -297,7 +298,19 @@ export class ComplaintsService {
       this.prisma.complaint.count({ where: { status: 'resolved' } }),
       this.prisma.complaint.count({ where: { status: 'dismissed' } }),
     ]);
-    return { total_complaints: total, open, reviewing, resolved, dismissed };
+    const totalBefore = await this.prisma.complaint.count({
+      where: { createdAt: { lte: daysAgo(7) } },
+    });
+    return {
+      total_complaints: total,
+      open,
+      reviewing,
+      resolved,
+      dismissed,
+      changes: {
+        total_complaints: percentChange(total, totalBefore),
+      },
+    };
   }
 
   // Figma 10681:11590 + resolved variants (10698:23006, 10699:24545/25044):

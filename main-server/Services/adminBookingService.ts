@@ -5,6 +5,7 @@ import { Booking, Trip, User, TripSeat, Notification, RideRequest } from '../Mod
 import { parsePagination, buildPagination } from '../utils/pagination';
 import { ApiErrors } from '../utils/ApiError';
 import { maskPhone } from '../utils/masking';
+import { daysAgo, percentChange } from '../utils/statChange';
 
 const UPCOMING_TRIP = ['published', 'full'];
 const ACTIVE_TRIP = ['in_progress', 'ongoing'];
@@ -30,12 +31,23 @@ async function getStats() {
       include: [{ model: Trip, as: 'trip', attributes: [], where: { status: { [Op.in]: ACTIVE_TRIP } }, required: true }],
     }),
   ]);
+  const cutoff = daysAgo(7);
+  const [totalBefore, completedBefore, cancelledBefore] = await Promise.all([
+    Booking.count({ where: { createdat: { [Op.lte]: cutoff } } }),
+    Booking.count({ where: { status: 'completed', completedAt: { [Op.lte]: cutoff } } }),
+    Booking.count({ where: { status: 'cancelled', cancelledAt: { [Op.lte]: cutoff } } }),
+  ]);
   return {
     total_bookings: total,
     upcoming,
     in_progress: inProgress,
     completed,
     cancelled,
+    changes: {
+      total_bookings: percentChange(total, totalBefore),
+      completed: percentChange(completed, completedBefore),
+      cancelled: percentChange(cancelled, cancelledBefore),
+    },
   };
 }
 

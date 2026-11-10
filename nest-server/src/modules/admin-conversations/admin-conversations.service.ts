@@ -8,6 +8,7 @@ import {
 import type { Prisma } from '../../generated/prisma/client.js';
 import { maskPhone } from '../../common/utils/masking.js';
 import { buildPagination, parsePagination } from '../../common/utils/pagination.js';
+import { daysAgo, percentChange } from '../../common/utils/stat-change.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { PenaltyService } from '../driver/penalty.service.js';
 import type {
@@ -93,7 +94,8 @@ export class AdminConversationsService {
 
   async getStats(): Promise<Record<string, unknown>> {
     const since = new Date(Date.now() - ACTIVE_WINDOW_MS);
-    const [tripGroups, adminCount, tripActive, adminActive] = await Promise.all([
+    const cutoff = daysAgo(7);
+    const [tripGroups, adminCount, tripActive, adminActive, tripGroupsBefore, adminCountBefore] = await Promise.all([
       this.prisma.message.groupBy({ by: ['bookingId'], where: { bookingId: { not: null } } }),
       this.prisma.supportTicket.count(),
       this.prisma.message.groupBy({
@@ -104,12 +106,24 @@ export class AdminConversationsService {
         by: ['supportTicketId'],
         where: { supportTicketId: { not: null }, createdAt: { gte: since } },
       }),
+      this.prisma.message.groupBy({
+        by: ['bookingId'],
+        where: { bookingId: { not: null }, createdAt: { lte: cutoff } },
+      }),
+      this.prisma.supportTicket.count({ where: { createdAt: { lte: cutoff } } }),
     ]);
+    const total = tripGroups.length + adminCount;
+    const totalBefore = tripGroupsBefore.length + adminCountBefore;
     return {
-      total_conversations: tripGroups.length + adminCount,
+      total_conversations: total,
       trip_conversations: tripGroups.length,
       admin_conversations: adminCount,
       active: tripActive.length + adminActive.length,
+      changes: {
+        total_conversations: percentChange(total, totalBefore),
+        trip_conversations: percentChange(tripGroups.length, tripGroupsBefore.length),
+        admin_conversations: percentChange(adminCount, adminCountBefore),
+      },
     };
   }
 

@@ -223,6 +223,22 @@ describe('GET /api/admin/dashboard/summary — seeded platform', () => {
     expect(openComplaint.accused.name).toBe('Active Driver');
   });
 
+  it('returns real period comparisons for cumulative KPIs', async () => {
+    const old = new Date(Date.now() - 8 * 24 * 60 * 60 * 1000);
+    await ctx.prisma.user.update({ where: { id: SUM_DRIVER_A_ID }, data: { createdAt: old } });
+    await ctx.prisma.trip.update({ where: { id: SUM_TRIP_1_ID }, data: { createdAt: old } });
+
+    const res = await ctx.agent
+      .get('/api/admin/dashboard/summary')
+      .set('Authorization', `Bearer ${adminToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.kpi_changes.total_drivers.trend).toBe('up');
+    expect(res.body.kpi_changes.total_drivers.change).toBeGreaterThan(0);
+    expect(res.body.kpi_changes.total_trips.trend).toBe('up');
+    expect(res.body.kpi_changes.total_trips.change).toBeGreaterThan(0);
+  });
+
   it('separates pending drivers from pending document files', async () => {
     const profile = await ctx.prisma.driverProfile.findUnique({ where: { driverId: SUM_DRIVER_B_ID } });
     const imageId = profile?.userIdentificationFront;

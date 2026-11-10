@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common';
 import type { Prisma } from '../../generated/prisma/client.js';
 import { buildPagination, parsePagination } from '../../common/utils/pagination.js';
+import { daysAgo, percentChange } from '../../common/utils/stat-change.js';
 import { toAbsoluteMediaUrl } from '../../common/utils/media-url.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { NotificationsService, type NotifyUser } from '../notifications/notifications.service.js';
@@ -377,6 +378,34 @@ export class AdminDashboardService {
     const aggs = await this.tripPassengerAggregates(recentTripRows.map((t) => t.id));
     const pendingDocKeys = await this.pendingDocumentKeysFor(pendingDriversRows.map((u) => u.id));
 
+    const cutoff = daysAgo(7);
+    const yesterdayStart = new Date(todayStart.getTime() - 24 * 3600 * 1000);
+    const [
+      driversBefore, passengersBefore, tripsYesterday, bookingsYesterday,
+      totalTripsBefore, completedTripsBefore,
+    ] = await Promise.all([
+      this.prisma.user.count({ where: { role: 'driver', createdAt: { lte: cutoff } } }),
+      this.prisma.user.count({ where: { role: 'passenger', createdAt: { lte: cutoff } } }),
+      this.prisma.trip.count({
+        where: { departureTime: { gte: yesterdayStart, lt: todayStart } },
+      }),
+      this.prisma.booking.count({
+        where: { createdAt: { gte: yesterdayStart, lt: todayStart } },
+      }),
+      this.prisma.trip.count({ where: { createdAt: { lte: cutoff } } }),
+      this.prisma.trip.count({
+        where: { status: 'completed', completedAt: { lte: cutoff } },
+      }),
+    ]);
+    const kpiChanges = {
+      total_drivers: percentChange(totalDrivers, driversBefore),
+      total_passengers: percentChange(totalPassengers, passengersBefore),
+      trips_today: percentChange(tripsToday, tripsYesterday),
+      bookings_today: percentChange(bookingsToday, bookingsYesterday),
+      total_trips: percentChange(totalTrips, totalTripsBefore),
+      completed_trips: percentChange(completedTrips, completedTripsBefore),
+    };
+
     return {
       kpis: {
         total_drivers: totalDrivers,
@@ -397,6 +426,7 @@ export class AdminDashboardService {
         in_progress_trips: inProgressTrips,
         abandoned_trips: abandonedTrips,
       },
+      kpi_changes: kpiChanges,
       alerts: [
         { type: 'pending_verification_documents', message: 'ALERT_PENDING_VERIFICATION_DOCUMENTS', count: pendingDocsCount },
         { type: 'pending_review_drivers', message: 'ALERT_PENDING_REVIEW_DRIVERS', count: pendingDriversCount },

@@ -4,6 +4,7 @@ import { RideRequest, RequestOffer, Trip, User, Booking } from '../Models';
 import { parsePagination, buildPagination } from '../utils/pagination';
 import { ApiErrors } from '../utils/ApiError';
 import { maskPhone } from '../utils/masking';
+import { daysAgo, percentChange } from '../utils/statChange';
 
 const MATCHED_OFFER = ['sent', 'offered'];
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -30,6 +31,7 @@ async function getStats() {
     RideRequest.count({ where: { status: 'cancelled' } }),
     RideRequest.count({ where: { status: 'expired' } }),
   ]);
+  const totalBefore = await RideRequest.count({ where: { createdat: { [Op.lte]: daysAgo(7) } } });
   return {
     total_requests: total,
     searching: open,
@@ -37,6 +39,9 @@ async function getStats() {
     completed: accepted,
     cancelled,
     expired,
+    changes: {
+      total_requests: percentChange(total, totalBefore),
+    },
   };
 }
 

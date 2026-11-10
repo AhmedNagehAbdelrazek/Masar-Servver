@@ -7,6 +7,7 @@ import { parsePagination, buildPagination } from '../utils/pagination';
 import { maskPhone } from '../utils/masking';
 import * as penaltyService from './penaltyService';
 import auditService from './auditService';
+import { daysAgo, percentChange } from '../utils/statChange';
 
 function serializeCreate(complaint) {
   return {
@@ -197,7 +198,17 @@ async function getStats() {
     Complaint.count({ where: { status: COMPLAINT_STATUS.RESOLVED } }),
     Complaint.count({ where: { status: COMPLAINT_STATUS.DISMISSED } }),
   ]);
-  return { total_complaints: total, open, reviewing, resolved, dismissed };
+  const totalBefore = await Complaint.count({ where: { createdat: { [Op.lte]: daysAgo(7) } } });
+  return {
+    total_complaints: total,
+    open,
+    reviewing,
+    resolved,
+    dismissed,
+    changes: {
+      total_complaints: percentChange(total, totalBefore),
+    },
+  };
 }
 
 /**

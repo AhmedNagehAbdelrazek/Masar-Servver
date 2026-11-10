@@ -5,6 +5,7 @@ import { TRIP_STATUS, BOOKING_STATUS, COMPLAINT_STATUS, PENALTY_TYPES, VERIFICAT
 import { parsePagination, buildPagination } from '../utils/pagination';
 import { ApiErrors } from '../utils/ApiError';
 import { maskPhone } from '../utils/masking';
+import { daysAgo, percentChange } from '../utils/statChange';
 import { User, DriverProfile, Vehicle, UploadedImage, Trip, TripStop, Booking, Rating, Complaint, Penalty, DriverSubscription, DocumentReview, VerificationStatusChange, Notification, TripSeat, RideRequest } from '../Models';
 import notificationService from './notificationService';
 import { toAbsoluteMediaUrl } from '../utils/mediaUrl';
@@ -313,6 +314,29 @@ async function getSummary() {
   const aggs = await tripPassengerAggregates(recentTripRows.map((t) => t.id));
   const pendingDocKeys = await pendingDocumentKeysFor(pendingDriversRows.map((u) => u.id));
 
+  const cutoff = daysAgo(7);
+  const yesterdayStart = startOfUtcDay(-1);
+  const todayStart = startOfUtcDay();
+  const [
+    driversBefore, passengersBefore, tripsYesterday, bookingsYesterday,
+    totalTripsBefore, completedTripsBefore,
+  ] = await Promise.all([
+    User.count({ where: { role: 'driver', createdat: { [Op.lte]: cutoff } } }),
+    User.count({ where: { role: 'passenger', createdat: { [Op.lte]: cutoff } } }),
+    Trip.count({ where: { departureTime: { [Op.gte]: yesterdayStart, [Op.lt]: todayStart } } }),
+    Booking.count({ where: { createdat: { [Op.gte]: yesterdayStart, [Op.lt]: todayStart } } }),
+    Trip.count({ where: { createdat: { [Op.lte]: cutoff } } }),
+    Trip.count({ where: { status: TRIP_STATUS.COMPLETED, completedAt: { [Op.lte]: cutoff } } }),
+  ]);
+  const kpiChanges = {
+    total_drivers: percentChange(totalDrivers, driversBefore),
+    total_passengers: percentChange(totalPassengers, passengersBefore),
+    trips_today: percentChange(tripsToday, tripsYesterday),
+    bookings_today: percentChange(bookingsToday, bookingsYesterday),
+    total_trips: percentChange(totalTrips, totalTripsBefore),
+    completed_trips: percentChange(completedTrips, completedTripsBefore),
+  };
+
   return {
     kpis: {
       total_drivers: totalDrivers,
@@ -333,6 +357,7 @@ async function getSummary() {
       in_progress_trips: inProgressTrips,
       abandoned_trips: abandonedTrips,
     },
+    kpi_changes: kpiChanges,
     alerts: [
       { type: 'pending_verification_documents', message: 'ALERT_PENDING_VERIFICATION_DOCUMENTS', count: pendingDocsCount },
       { type: 'pending_review_drivers', message: 'ALERT_PENDING_REVIEW_DRIVERS', count: pendingDriversCount },

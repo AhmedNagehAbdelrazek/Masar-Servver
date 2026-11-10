@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import type { Prisma } from '../../generated/prisma/client.js';
 import { maskPhone } from '../../common/utils/masking.js';
 import { buildPagination, parsePagination } from '../../common/utils/pagination.js';
+import { daysAgo, percentChange } from '../../common/utils/stat-change.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import type { AdminRideRequestListQuery } from './dto/admin-ride-requests.dto.js';
 
@@ -66,6 +67,9 @@ export class AdminRideRequestsService {
       this.prisma.rideRequest.count({ where: { status: 'cancelled' } }),
       this.prisma.rideRequest.count({ where: { status: 'expired' } }),
     ]);
+    const totalBefore = await this.prisma.rideRequest.count({
+      where: { createdAt: { lte: daysAgo(7) } },
+    });
     return {
       total_requests: total,
       searching: open,
@@ -73,6 +77,9 @@ export class AdminRideRequestsService {
       completed: accepted,
       cancelled,
       expired,
+      changes: {
+        total_requests: percentChange(total, totalBefore),
+      },
     };
   }
 

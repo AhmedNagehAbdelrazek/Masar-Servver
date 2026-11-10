@@ -7,6 +7,7 @@ import {
 import type { Prisma } from '../../generated/prisma/client.js';
 import { maskPhone } from '../../common/utils/masking.js';
 import { buildPagination, parsePagination } from '../../common/utils/pagination.js';
+import { daysAgo, percentChange } from '../../common/utils/stat-change.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { withSerializableRetry } from '../../prisma/transaction.js';
 import type {
@@ -46,12 +47,23 @@ export class AdminBookingsService {
         where: { status: 'confirmed', trip: { status: { in: [...ACTIVE_TRIP] } } },
       }),
     ]);
+    const cutoff = daysAgo(7);
+    const [totalBefore, completedBefore, cancelledBefore] = await Promise.all([
+      this.prisma.booking.count({ where: { createdAt: { lte: cutoff } } }),
+      this.prisma.booking.count({ where: { status: 'completed', completedAt: { lte: cutoff } } }),
+      this.prisma.booking.count({ where: { status: 'cancelled', cancelledAt: { lte: cutoff } } }),
+    ]);
     return {
       total_bookings: total,
       upcoming,
       in_progress: inProgress,
       completed,
       cancelled,
+      changes: {
+        total_bookings: percentChange(total, totalBefore),
+        completed: percentChange(completed, completedBefore),
+        cancelled: percentChange(cancelled, cancelledBefore),
+      },
     };
   }
 

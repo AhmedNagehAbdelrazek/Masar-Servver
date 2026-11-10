@@ -136,6 +136,22 @@ describe('GET /api/admin/dashboard/summary â€” seeded platform', () => {
     expect(openComplaint.accused.name).toBe('Active Driver');
   });
 
+  it('returns real period comparisons for cumulative KPIs', async () => {
+    const old = new Date(Date.now() - 8 * 24 * 60 * 60 * 1000);
+    await User.update({ createdat: old }, { where: { id: DRIVER_A_ID } });
+    await Trip.update({ createdat: old }, { where: { id: TRIP_1_ID } });
+
+    const res = await getAgent()
+      .get('/api/admin/dashboard/summary')
+      .set('Authorization', `Bearer ${adminToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.kpi_changes.total_drivers).toMatchObject({ trend: 'up' });
+    expect(res.body.kpi_changes.total_drivers.change).toBeGreaterThan(0);
+    expect(res.body.kpi_changes.total_trips).toMatchObject({ trend: 'up' });
+    expect(res.body.kpi_changes.total_trips.change).toBeGreaterThan(0);
+  });
+
   it('separates pending drivers from pending document files', async () => {
     const profile = await DriverProfile.findOne({ where: { driverId: DRIVER_B_ID } });
     const imageId = profile.userIdentificationFront;

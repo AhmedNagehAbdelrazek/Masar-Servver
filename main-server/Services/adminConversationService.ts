@@ -13,6 +13,7 @@ import { parsePagination, buildPagination } from '../utils/pagination';
 import { ApiErrors } from '../utils/ApiError';
 import { maskPhone } from '../utils/masking';
 import * as penaltyService from './penaltyService';
+import { daysAgo, percentChange } from '../utils/statChange';
 
 const ACTIVE_WINDOW_MS = 7 * 24 * 3600 * 1000;
 const TEMP_DURATION_DAYS = { '1d': 1, '3d': 3, '7d': 7 };
@@ -51,17 +52,27 @@ function serializeMessage(row) {
 
 async function getStats() {
   const since = new Date(Date.now() - ACTIVE_WINDOW_MS);
-  const [tripGroups, adminCount, tripActive, adminActive] = await Promise.all([
+  const cutoff = daysAgo(7);
+  const [tripGroups, adminCount, tripActive, adminActive, tripGroupsBefore, adminCountBefore] = await Promise.all([
     Message.findAll({ attributes: ['booking_id'], where: { bookingId: { [Op.ne]: null } }, group: ['booking_id'], raw: true }),
     SupportTicket.count(),
     Message.findAll({ attributes: ['booking_id'], where: { bookingId: { [Op.ne]: null }, createdat: { [Op.gte]: since } }, group: ['booking_id'], raw: true }),
     Message.findAll({ attributes: ['support_ticket_id'], where: { supportTicketId: { [Op.ne]: null }, createdat: { [Op.gte]: since } }, group: ['support_ticket_id'], raw: true }),
+    Message.findAll({ attributes: ['booking_id'], where: { bookingId: { [Op.ne]: null }, createdat: { [Op.lte]: cutoff } }, group: ['booking_id'], raw: true }),
+    SupportTicket.count({ where: { createdat: { [Op.lte]: cutoff } } }),
   ]);
+  const total = tripGroups.length + adminCount;
+  const totalBefore = tripGroupsBefore.length + adminCountBefore;
   return {
-    total_conversations: tripGroups.length + adminCount,
+    total_conversations: total,
     trip_conversations: tripGroups.length,
     admin_conversations: adminCount,
     active: tripActive.length + adminActive.length,
+    changes: {
+      total_conversations: percentChange(total, totalBefore),
+      trip_conversations: percentChange(tripGroups.length, tripGroupsBefore.length),
+      admin_conversations: percentChange(adminCount, adminCountBefore),
+    },
   };
 }
 
