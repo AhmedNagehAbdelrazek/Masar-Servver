@@ -29,6 +29,12 @@ Default URLs:
 ### Admin
 
 - `Admin / Users Management / Permanently Delete Developer Account`
+- `Admin / Admin Dashboard / Global Dashboard / Get Dashboard Trip Detail`
+- `Admin / Admin Dashboard / Global Dashboard / Cancel Dashboard Trip`
+- `Admin / Arbitration / Reopen Complaint`
+- `Admin / Passenger Management / Set Passenger Account Status`
+- `Admin / Subscription Management / Permanently Delete Plan`
+- `Admin / Subscription Management / Permanently Delete Payment Method`
 
 ## Developer accounts
 

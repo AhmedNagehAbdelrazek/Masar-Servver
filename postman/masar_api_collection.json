@@ -17540,6 +17540,94 @@
                                     }
                                 }
                             }
+                        },
+                        {
+                            "name": "Permanently Delete Plan",
+                            "event": [
+                                {
+                                    "listen": "prerequest",
+                                    "script": {
+                                        "type": "text/javascript",
+                                        "exec": [
+                                            "const token = pm.variables.get('access_token') || pm.environment.get('access_token');",
+                                            "token ? pm.request.headers.add({ key: 'Authorization', value: 'Bearer ' + token }) : console.warn('No access_token set');"
+                                        ]
+                                    }
+                                },
+                                {
+                                    "listen": "test",
+                                    "script": {
+                                        "type": "text/javascript",
+                                        "exec": [
+                                            "pm.test('Status code is 200', function () { pm.response.to.have.status(200); });",
+                                            "pm.test('Response is valid JSON', function () { pm.response.to.be.json; });",
+                                            "pm.expect(pm.response.json()).to.be.an('object');"
+                                        ]
+                                    }
+                                }
+                            ],
+                            "request": {
+                                "method": "DELETE",
+                                "header": [],
+                                "url": {
+                                    "raw": "{{base_url}}/admin/plans/{{plan_id}}/permanent",
+                                    "host": [
+                                        "{{base_url}}"
+                                    ],
+                                    "path": [
+                                        "admin",
+                                        "plans",
+                                        "{{plan_id}}",
+                                        "permanent"
+                                    ]
+                                },
+                                "description": "Permanently delete a subscription plan. Requires role `admin`.\n\n**V2:** `DELETE {{nest_url}}/admin/plans/{{plan_id}}/permanent`\n\nNo body."
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "Permanently Delete Payment Method",
+                            "event": [
+                                {
+                                    "listen": "prerequest",
+                                    "script": {
+                                        "type": "text/javascript",
+                                        "exec": [
+                                            "const token = pm.variables.get('access_token') || pm.environment.get('access_token');",
+                                            "token ? pm.request.headers.add({ key: 'Authorization', value: 'Bearer ' + token }) : console.warn('No access_token set');"
+                                        ]
+                                    }
+                                },
+                                {
+                                    "listen": "test",
+                                    "script": {
+                                        "type": "text/javascript",
+                                        "exec": [
+                                            "pm.test('Status code is 200', function () { pm.response.to.have.status(200); });",
+                                            "pm.test('Response is valid JSON', function () { pm.response.to.be.json; });",
+                                            "pm.expect(pm.response.json()).to.be.an('object');"
+                                        ]
+                                    }
+                                }
+                            ],
+                            "request": {
+                                "method": "DELETE",
+                                "header": [],
+                                "url": {
+                                    "raw": "{{base_url}}/admin/payment-methods/{{payment_method_id}}/permanent",
+                                    "host": [
+                                        "{{base_url}}"
+                                    ],
+                                    "path": [
+                                        "admin",
+                                        "payment-methods",
+                                        "{{payment_method_id}}",
+                                        "permanent"
+                                    ]
+                                },
+                                "description": "Permanently delete a payment method. Requires role `admin`.\n\n**V2:** `DELETE {{nest_url}}/admin/payment-methods/{{payment_method_id}}/permanent`\n\nNo body."
+                            },
+                            "response": []
                         }
                     ]
                 },
@@ -19681,6 +19769,64 @@
                                 }
                             },
                             "description": "---\nBody variants & field notes (moved out of the request body so the body is valid JSON — copy back into the body to use):\nwarning | temporary | permanent\ntemporary only: 1d | 3d | 7d | custom\ncustom only\npermanent only, REQUIRED"
+                        },
+                        {
+                            "name": "Reopen Complaint",
+                            "event": [
+                                {
+                                    "listen": "prerequest",
+                                    "script": {
+                                        "type": "text/javascript",
+                                        "exec": [
+                                            "const token = pm.variables.get('access_token') || pm.environment.get('access_token');",
+                                            "token ? pm.request.headers.add({ key: 'Authorization', value: 'Bearer ' + token }) : console.warn('No access_token set');"
+                                        ]
+                                    }
+                                },
+                                {
+                                    "listen": "test",
+                                    "script": {
+                                        "type": "text/javascript",
+                                        "exec": [
+                                            "pm.test('Status code is 200', function () { pm.response.to.have.status(200); });",
+                                            "pm.test('Response is valid JSON', function () { pm.response.to.be.json; });",
+                                            "pm.expect(pm.response.json()).to.be.an('object');"
+                                        ]
+                                    }
+                                }
+                            ],
+                            "request": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{base_url}}/admin/complaints/{{complaint_id}}/reopen",
+                                    "host": [
+                                        "{{base_url}}"
+                                    ],
+                                    "path": [
+                                        "admin",
+                                        "complaints",
+                                        "{{complaint_id}}",
+                                        "reopen"
+                                    ]
+                                },
+                                "description": "Reopen a resolved/dismissed complaint. Requires role `admin`.\n\n**V2:** `POST {{nest_url}}/admin/complaints/{{complaint_id}}/reopen`",
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n  \"reason\": \"New evidence received\"\n}",
+                                    "options": {
+                                        "raw": {
+                                            "language": "json"
+                                        }
+                                    }
+                                }
+                            },
+                            "response": []
                         }
                     ]
                 },
@@ -20830,6 +20976,109 @@
                                             "body": "{\n  \"data\": [\n    {\n      \"id\": \"c1\",\n      \"complainant\": \"Sara\",\n      \"accused\": \"Ahmad\",\n      \"date\": \"2026-08-24\",\n      \"subject\": \"misconduct\",\n      \"status\": \"open\"\n    }\n  ],\n  \"pagination\": {\n    \"page\": 1,\n    \"limit\": 20,\n    \"total\": 2,\n    \"total_pages\": 1\n  }\n}"
                                         }
                                     ]
+                                },
+                                {
+                                    "name": "Get Dashboard Trip Detail",
+                                    "event": [
+                                        {
+                                            "listen": "prerequest",
+                                            "script": {
+                                                "type": "text/javascript",
+                                                "exec": [
+                                                    "const token = pm.variables.get('access_token') || pm.environment.get('access_token');",
+                                                    "token ? pm.request.headers.add({ key: 'Authorization', value: 'Bearer ' + token }) : console.warn('No access_token set');"
+                                                ]
+                                            }
+                                        },
+                                        {
+                                            "listen": "test",
+                                            "script": {
+                                                "type": "text/javascript",
+                                                "exec": [
+                                                    "pm.test('Status code is 200', function () { pm.response.to.have.status(200); });",
+                                                    "pm.test('Response is valid JSON', function () { pm.response.to.be.json; });",
+                                                    "pm.expect(pm.response.json()).to.be.an('object');"
+                                                ]
+                                            }
+                                        }
+                                    ],
+                                    "request": {
+                                        "method": "GET",
+                                        "header": [],
+                                        "url": {
+                                            "raw": "{{base_url}}/admin/dashboard/trips/{{trip_id}}",
+                                            "host": [
+                                                "{{base_url}}"
+                                            ],
+                                            "path": [
+                                                "admin",
+                                                "dashboard",
+                                                "trips",
+                                                "{{trip_id}}"
+                                            ]
+                                        },
+                                        "description": "Admin dashboard trip detail. Requires role `admin`.\n\n**V2:** `GET {{nest_url}}/admin/dashboard/trips/{{trip_id}}`\n\nNo body."
+                                    },
+                                    "response": []
+                                },
+                                {
+                                    "name": "Cancel Dashboard Trip",
+                                    "event": [
+                                        {
+                                            "listen": "prerequest",
+                                            "script": {
+                                                "type": "text/javascript",
+                                                "exec": [
+                                                    "const token = pm.variables.get('access_token') || pm.environment.get('access_token');",
+                                                    "token ? pm.request.headers.add({ key: 'Authorization', value: 'Bearer ' + token }) : console.warn('No access_token set');"
+                                                ]
+                                            }
+                                        },
+                                        {
+                                            "listen": "test",
+                                            "script": {
+                                                "type": "text/javascript",
+                                                "exec": [
+                                                    "pm.test('Status code is 200', function () { pm.response.to.have.status(200); });",
+                                                    "pm.test('Response is valid JSON', function () { pm.response.to.be.json; });",
+                                                    "pm.expect(pm.response.json()).to.be.an('object');"
+                                                ]
+                                            }
+                                        }
+                                    ],
+                                    "request": {
+                                        "method": "POST",
+                                        "header": [
+                                            {
+                                                "key": "Content-Type",
+                                                "value": "application/json"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{base_url}}/admin/dashboard/trips/{{trip_id}}/cancel",
+                                            "host": [
+                                                "{{base_url}}"
+                                            ],
+                                            "path": [
+                                                "admin",
+                                                "dashboard",
+                                                "trips",
+                                                "{{trip_id}}",
+                                                "cancel"
+                                            ]
+                                        },
+                                        "description": "Admin dashboard cancellation of a trip. Requires role `admin`.\n\n**V2:** `POST {{nest_url}}/admin/dashboard/trips/{{trip_id}}/cancel`",
+                                        "body": {
+                                            "mode": "raw",
+                                            "raw": "{\n  \"reason\": \"Admin cancellation\"\n}",
+                                            "options": {
+                                                "raw": {
+                                                    "language": "json"
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "response": []
                                 }
                             ]
                         },
@@ -23022,6 +23271,64 @@
                                 }
                             },
                             "description": "---\nBody variants & field notes (moved out of the request body so the body is valid JSON — copy back into the body to use):\ndangerous_behavior | severe_repeat | repeat_cancel | tos_violation | rules_violation | other\nREQUIRED checkbox"
+                        },
+                        {
+                            "name": "Set Passenger Account Status",
+                            "event": [
+                                {
+                                    "listen": "prerequest",
+                                    "script": {
+                                        "type": "text/javascript",
+                                        "exec": [
+                                            "const token = pm.variables.get('access_token') || pm.environment.get('access_token');",
+                                            "token ? pm.request.headers.add({ key: 'Authorization', value: 'Bearer ' + token }) : console.warn('No access_token set');"
+                                        ]
+                                    }
+                                },
+                                {
+                                    "listen": "test",
+                                    "script": {
+                                        "type": "text/javascript",
+                                        "exec": [
+                                            "pm.test('Status code is 200', function () { pm.response.to.have.status(200); });",
+                                            "pm.test('Response is valid JSON', function () { pm.response.to.be.json; });",
+                                            "const b=pm.response.json(); pm.expect(b.passenger.account_status).to.be.a('string');"
+                                        ]
+                                    }
+                                }
+                            ],
+                            "request": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{base_url}}/admin/passengers/{{passenger_id}}/account-status",
+                                    "host": [
+                                        "{{base_url}}"
+                                    ],
+                                    "path": [
+                                        "admin",
+                                        "passengers",
+                                        "{{passenger_id}}",
+                                        "account-status"
+                                    ]
+                                },
+                                "description": "Set a passenger account status. `action` is `suspend | reactivate | unblock`. Requires role `admin`.\n\n**V2:** `POST {{nest_url}}/admin/passengers/{{passenger_id}}/account-status`",
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n  \"action\": \"suspend\"\n}",
+                                    "options": {
+                                        "raw": {
+                                            "language": "json"
+                                        }
+                                    }
+                                }
+                            },
+                            "response": []
                         }
                     ]
                 },
