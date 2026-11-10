@@ -27,6 +27,10 @@ export const updateUserStatusValidation: ValidationChain[] = [
     .isString().trim().isLength({ max: 500 }).withMessage(V.REASON_MUST_BE_A_STRING_500_CHARACTERS),
 ];
 
+export const deleteUserValidation: ValidationChain[] = [
+  param('user_id').isUUID().withMessage(V.USER_ID_MUST_BE_A_VALID_UUID),
+];
+
 export const moderateTripValidation: ValidationChain[] = [
   param('trip_id').isUUID().withMessage(V.TRIP_ID_MUST_BE_A_VALID_UUID),
   body('action')
@@ -40,18 +44,20 @@ export const moderateTripValidation: ValidationChain[] = [
 
 
 
-const _exported = { adminUserListValidation, updateUserStatusValidation, moderateTripValidation };
+const _exported = { adminUserListValidation, updateUserStatusValidation, deleteUserValidation, moderateTripValidation };
 export default _exported;
 
 // CommonJS interop
 // @ts-ignore
 if (typeof module !== 'undefined' && module.exports) {
   // @ts-ignore
-  module.exports = { adminUserListValidation, updateUserStatusValidation, moderateTripValidation };
+  module.exports = { adminUserListValidation, updateUserStatusValidation, deleteUserValidation, moderateTripValidation };
   // @ts-ignore
   module.exports.adminUserListValidation = adminUserListValidation;
   // @ts-ignore
   module.exports.updateUserStatusValidation = updateUserStatusValidation;
+  // @ts-ignore
+  module.exports.deleteUserValidation = deleteUserValidation;
   // @ts-ignore
   module.exports.moderateTripValidation = moderateTripValidation;
   // @ts-ignore

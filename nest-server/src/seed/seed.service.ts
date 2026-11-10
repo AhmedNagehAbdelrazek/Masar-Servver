@@ -1,13 +1,18 @@
 import { Injectable, Logger } from '@nestjs/common';
 import bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service.js';
+import {
+  DEV_ACCOUNT_PASSWORD,
+  DEV_DRIVER_PHONE,
+  DEV_PASSENGER_PHONE,
+} from '../config/dev-accounts.js';
 
-// Boot seed (mirrors main-server/seed.ts: admin + two test accounts).
-// Idempotent and non-destructive: existing rows are left untouched —
-// in particular passwords are NEVER overwritten (Express seed.ts re-hashed
-// on every run; the boot seed must be safe to run on a live database).
+// Boot seed (mirrors main-server/seed.ts: admin + test accounts + dedicated
+// developer accounts). Idempotent: existing rows are left untouched, except
+// for the dedicated developer fixtures whose role/password are kept stable.
 // Runs at server start unless SEED_ON_BOOT=false (never in test env).
-// Test accounts are skipped entirely in production.
+// Legacy test accounts are skipped entirely in production; developer accounts
+// are seeded in every environment so app developers can use the live API.
 const TEST_ACCOUNTS = [
   {
     phone: '+962700000000',
@@ -27,6 +32,25 @@ const TEST_ACCOUNTS = [
   },
 ];
 
+const DEV_ACCOUNTS = [
+  {
+    phone: DEV_DRIVER_PHONE,
+    countryCode: 'JO',
+    role: 'driver' as const,
+    fullName: 'Developer Driver',
+    password: DEV_ACCOUNT_PASSWORD,
+    locale: 'en',
+  },
+  {
+    phone: DEV_PASSENGER_PHONE,
+    countryCode: 'JO',
+    role: 'passenger' as const,
+    fullName: 'Developer Passenger',
+    password: DEV_ACCOUNT_PASSWORD,
+    locale: 'en',
+  },
+];
+
 @Injectable()
 export class SeedService {
   private readonly logger = new Logger(SeedService.name);
@@ -35,8 +59,11 @@ export class SeedService {
 
   async seed(): Promise<void> {
     if (process.env.NODE_ENV === 'test') return;
+    if (process.env.SEED_DEV_ACCOUNTS !== 'false') {
+      await this.ensureDevAccounts();
+    }
     if (process.env.SEED_ON_BOOT === 'false') {
-      this.logger.log('SEED_ON_BOOT=false, skipping boot seed.');
+      this.logger.log('SEED_ON_BOOT=false, skipping remaining boot seed.');
       return;
     }
     await this.ensureAdmin();
@@ -75,6 +102,66 @@ export class SeedService {
       },
     });
     this.logger.log(`Admin seeded: ${username} (${phone}).`);
+  }
+
+  private async ensureDevAccounts(): Promise<void> {
+    for (const account of DEV_ACCOUNTS) {
+      const passwordHash = await bcrypt.hash(account.password, this.saltRounds());
+      const user = await this.prisma.user.upsert({
+        where: { phone: account.phone },
+        update: {
+          role: account.role,
+          fullName: account.fullName,
+          passwordHash,
+          isVerified: true,
+          verificationStatus: 'approved',
+          status: 'active',
+        },
+        create: {
+          phone: account.phone,
+          countryCode: account.countryCode,
+          role: account.role,
+          fullName: account.fullName,
+          passwordHash,
+          isVerified: true,
+          verificationStatus: 'approved',
+          status: 'active',
+          locale: account.locale,
+        },
+      });
+      this.logger.log(`Developer account ready: ${account.phone} (${account.role}).`);
+      if (account.role === 'driver') {
+        await this.ensureDevVehicle(user.id);
+      }
+    }
+  }
+
+  private async ensureDevVehicle(driverId: string): Promise<void> {
+    try {
+      await this.prisma.vehicle.upsert({
+        where: { driverId },
+        update: { isVerified: true },
+        create: {
+          driverId,
+          manufacturer: 'Toyota',
+          model: 'Corolla',
+          vehicleType: 'sedan',
+          modelYear: 2024,
+          plateNumber: 'DEV-0001',
+          codeNumber: 'DEV 01',
+          color: 'White',
+          seats: 4,
+          isVerified: true,
+        },
+      });
+      this.logger.log('Developer driver vehicle ready (verified).');
+    } catch (err: unknown) {
+      this.logger.warn(
+        `Could not create developer driver vehicle: ${
+          err instanceof Error ? err.message : String(err)
+        }`,
+      );
+    }
   }
 
   private async ensureTestAccounts(): Promise<void> {

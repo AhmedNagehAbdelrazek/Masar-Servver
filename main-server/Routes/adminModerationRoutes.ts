@@ -7,7 +7,7 @@ import { roleGuard } from '../middlewares/roleGuard';
 import validate from '../middlewares/validatorMiddleware';
 import { adminComplaintListValidation, resolveComplaintValidation, } from '../utils/validators/complaintValidator';
 import { penaltyValidation } from '../utils/validators/penaltyValidator';
-import { adminUserListValidation, updateUserStatusValidation, moderateTripValidation, } from '../utils/validators/adminModerationValidator';
+import { adminUserListValidation, updateUserStatusValidation, deleteUserValidation, moderateTripValidation, } from '../utils/validators/adminModerationValidator';
 
 const complaintId = [param('complaint_id').isUUID().withMessage('COMPLAINT_ID_MUST_BE_A_VALID_UUID')];
 const reopenBody = [body('reason').optional({ nullable: true }).isString().trim().isLength({ max: 2000 })];
@@ -23,6 +23,7 @@ router.put('/complaints/:complaint_id', protect, roleGuard(['admin']), ...resolv
 // Users (admin only)
 router.get('/users', protect, roleGuard(['admin']), ...adminUserListValidation, validate, c.listUsers);
 router.put('/users/:user_id', protect, roleGuard(['admin']), ...updateUserStatusValidation, validate, c.updateUserStatus);
+router.delete('/users/:user_id', protect, roleGuard(['admin']), ...deleteUserValidation, validate, c.permanentlyDeleteUser);
 
 // Trip moderation (admin only)
 router.put('/trips/:trip_id', protect, roleGuard(['admin']), ...moderateTripValidation, validate, c.moderateTrip);

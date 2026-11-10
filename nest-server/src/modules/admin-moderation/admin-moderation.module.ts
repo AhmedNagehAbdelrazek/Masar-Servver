@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { DriverModule } from '../driver/driver.module.js';
 import { AdminModerationService } from './admin-moderation.service.js';
+import { DevAccountService } from './dev-account.service.js';
 import { AdminPenaltiesController } from './admin-penalties.controller.js';
 import { AdminUsersController } from './admin-users.controller.js';
 
@@ -10,7 +11,7 @@ import { AdminUsersController } from './admin-users.controller.js';
 @Module({
   imports: [DriverModule],
   controllers: [AdminUsersController, AdminPenaltiesController],
-  providers: [AdminModerationService],
+  providers: [AdminModerationService, DevAccountService],
   exports: [AdminModerationService],
 })
 export class AdminModerationModule {}

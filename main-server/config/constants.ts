@@ -436,6 +436,23 @@ export const PAGINATION = {
 export const TEST_PHONES: readonly string[] = ['+962700000000', '+962711111111'] as const;
 export const TEST_OTP: string = '000000';
 
+// Dedicated developer accounts. These are intentionally separate from the
+// legacy TEST_PHONES so they can be safely seeded in production and deleted
+// through the admin-only purge endpoint.
+export const DEV_DRIVER_PHONE: string =
+  process.env.DEV_DRIVER_PHONE?.trim() || '+962700000001';
+export const DEV_PASSENGER_PHONE: string =
+  process.env.DEV_PASSENGER_PHONE?.trim() || '+962700000002';
+export const DEV_PHONES: readonly string[] = [
+  DEV_DRIVER_PHONE,
+  DEV_PASSENGER_PHONE,
+] as const;
+export const DEV_ACCOUNT_PASSWORD: string =
+  process.env.DEV_ACCOUNT_PASSWORD || 'Test@1234';
+export const FIXED_OTP_PHONES: readonly string[] = [
+  ...new Set([...TEST_PHONES, ...DEV_PHONES]),
+] as const;
+
 // Maps, tracking & journey (spec 013). Platform defaults live in config/maps.ts;
 // these are the allowed enum values — never hardcode the strings elsewhere.
 export const ROUTE_STATUS = {

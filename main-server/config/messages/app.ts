@@ -66,6 +66,8 @@ export const APP_MESSAGES = {
   ACCOUNT_MUST_BE_VERIFIED_AND_ACTIVE_TO_ACCESS_THIS_RESOURCE: { en: 'Account must be verified and active to access this resource.', ar: 'يجب أن يكون الحساب موثقاً وفعالاً للوصول إلى هذا المورد.' },
   SUSPENDED_ACCOUNTS_CANNOT_PERFORM_THIS_ACTION: { en: 'Suspended accounts cannot perform this action', ar: 'الحسابات المعلقة لا يمكنها تنفيذ هذا الإجراء' },
   USER_NOT_FOUND: { en: 'User not found', ar: 'المستخدم غير موجود' },
+  ONLY_DEVELOPER_ACCOUNTS_CAN_BE_DELETED: { en: 'Only developer accounts can be permanently deleted', ar: 'يمكن حذف حسابات المطورين فقط نهائيًا' },
+  DEVELOPER_ACCOUNT_DELETED_SUCCESSFULLY: { en: 'Developer account and all related history deleted successfully', ar: 'تم حذف حساب المطور وكل سجلاته المرتبطة بنجاح' },
 
   // ===== Trips =====
   TRIP_NOT_FOUND: { en: 'Trip not found', ar: 'الرحلة غير موجودة' },

@@ -660,3 +660,26 @@ Before deployment, also confirm:
 - `JOB_TRIP_REMINDER_CRON` is enabled.
 - `JOB_TRIP_LIFECYCLE_CRON` is enabled.
 - The driver app registers its FCM token.
+
+---
+
+## 9. Developer test accounts
+
+Two dedicated accounts are available with the fixed OTP `000000`:
+
+| Role | Phone | Password |
+|---|---|---|
+| Driver | `+962700000001` | `Test@1234` |
+| Passenger | `+962700000002` | `Test@1234` |
+
+The driver comes with a verified vehicle so it can publish trips immediately.
+Admins can permanently delete either account and all related history with:
+
+```http
+DELETE /api/v1/admin/users/:user_id
+Authorization: Bearer <admin_token>
+```
+
+V2 uses `/api/v2/admin/users/:user_id`. Only configured developer phones are
+eligible. See `docs/developer-accounts.md` for configuration and the full
+deletion list.

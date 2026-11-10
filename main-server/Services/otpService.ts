@@ -1,7 +1,7 @@
 // @ts-nocheck
 import crypto from 'crypto';
 import { setKey, getKey, deleteKey, incr, exists } from '../config/redis';
-import { TEST_PHONES, TEST_OTP } from '../config/constants';
+import { FIXED_OTP_PHONES, TEST_OTP } from '../config/constants';
 
 const OTP_LENGTH = 6;
 const OTP_TTL = 300; // 5 minutes
@@ -9,7 +9,7 @@ const OTP_MAX_ATTEMPTS = 3;
 const OTP_ATTEMPT_TTL = 300;
 
 function generateOTP(phone) {
-  if (TEST_PHONES.includes(phone)) {
+  if (FIXED_OTP_PHONES.includes(phone)) {
     return TEST_OTP;
   }
   const buffer = crypto.randomBuffer ? crypto.randomBuffer(3) : crypto.randomBytes(3);

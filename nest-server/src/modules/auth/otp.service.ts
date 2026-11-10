@@ -1,13 +1,17 @@
 import { Injectable } from '@nestjs/common';
 import { randomBytes } from 'node:crypto';
 import { RedisService } from '../../redis/redis.service.js';
+import {
+  FIXED_OTP_PHONES,
+  TEST_OTP,
+  TEST_PHONES,
+} from '../../config/dev-accounts.js';
 
 // Port of main-server/Services/otpService.ts.
 export const OTP_TTL = 300; // 5 minutes
 export const OTP_MAX_ATTEMPTS = 3;
 
-export const TEST_PHONES = ['+962700000000', '+962711111111'] as const;
-export const TEST_OTP = '000000';
+export { TEST_PHONES, TEST_OTP };
 
 function otpKey(phone: string, purpose = 'register'): string {
   return `${purpose === 'forgot_password' ? 'otp_reset' : 'otp'}:${phone}`;
@@ -22,7 +26,7 @@ export class OtpService {
   constructor(private readonly redis: RedisService) {}
 
   generateOTP(phone: string): string {
-    if ((TEST_PHONES as readonly string[]).includes(phone)) return TEST_OTP;
+    if ((FIXED_OTP_PHONES as readonly string[]).includes(phone)) return TEST_OTP;
     const num = parseInt(randomBytes(3).toString('hex'), 16) % 1_000_000;
     return num.toString().padStart(6, '0');
   }

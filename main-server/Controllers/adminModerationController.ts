@@ -7,6 +7,7 @@ import { ApiErrors } from '../utils/ApiError';
 import { TRIP_STATUS } from '../config/constants';
 import * as complaintService from '../Services/complaintService';
 import * as penaltyService from '../Services/penaltyService';
+import * as devAccountService from '../Services/devAccountService';
 import * as auditService from '../Services/auditService';
 import { User, Notification, Trip } from '../Models';
 
@@ -131,6 +132,23 @@ const updateUserStatus = catchAsync(async (req: Request, res: Response): Promise
   });
 });
 
+const permanentlyDeleteUser = catchAsync(async (req: Request, res: Response): Promise<void> => {
+  const authReq = req as AuthRequest;
+  const { user_id } = req.params as { user_id: string };
+  const result = await (devAccountService as unknown as {
+    permanentlyDeleteDevUser: (id: string, actorId?: string) => Promise<unknown>;
+  }).permanentlyDeleteDevUser(user_id, String(authReq.user?.id));
+  (auditService as unknown as { track: (p: unknown) => void }).track({
+    action: 'user.permanent_delete',
+    resourceType: 'user',
+    resourceId: user_id,
+    actorId: authReq.user?.id,
+    payload: { mode: 'developer_history_purge' },
+  });
+  (auditService as unknown as { markResource: (res: Response, r: unknown) => void }).markResource(res, { type: 'user', id: user_id });
+  successResponse(res, result);
+});
+
 const moderateTrip = catchAsync(async (req: Request, res: Response): Promise<void> => {
   const authReq = req as AuthRequest;
   const { trip_id } = req.params as { trip_id: string };
@@ -185,5 +203,5 @@ const issuePenalty = catchAsync(async (req: Request, res: Response): Promise<voi
   successResponse(res, result);
 });
 
-export { listComplaints, getComplaintStats, getComplaintDetail, penalizeComplaint, reopenComplaint, resolveComplaint, listUsers, updateUserStatus, moderateTrip, issuePenalty };
-export default { listComplaints, getComplaintStats, getComplaintDetail, penalizeComplaint, reopenComplaint, resolveComplaint, listUsers, updateUserStatus, moderateTrip, issuePenalty };
+export { listComplaints, getComplaintStats, getComplaintDetail, penalizeComplaint, reopenComplaint, resolveComplaint, listUsers, updateUserStatus, permanentlyDeleteUser, moderateTrip, issuePenalty };
+export default { listComplaints, getComplaintStats, getComplaintDetail, penalizeComplaint, reopenComplaint, resolveComplaint, listUsers, updateUserStatus, permanentlyDeleteUser, moderateTrip, issuePenalty };

@@ -6,7 +6,7 @@ import createApp from './app';
 import { createSocketServer } from './socketServer';
 import { initDatabase } from './config/database';
 import { startJobs } from './jobs';
-import { seedAdmin } from './seed';
+import { seedAdmin, seedDevAccounts } from './seed';
 import { seedMockData } from './seed-mock';
 
 const PORT: number = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
@@ -19,6 +19,7 @@ async function startServer(): Promise<void> {
   await initDatabase();
   await seedAdmin();
   await seedMockData();
+  await seedDevAccounts();
   startJobs();
 
   httpServer.listen(PORT, () => {
