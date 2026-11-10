@@ -1,0 +1,24 @@
+{
+  "name": "Masar Local E2E",
+  "_postman_variable_scope": "environment",
+  "values": [
+    { "key": "base_url", "value": "http://localhost:8000/api", "enabled": true },
+    { "key": "passenger_token", "value": "", "enabled": true },
+    { "key": "driver_token", "value": "", "enabled": true },
+    { "key": "passenger_id", "value": "", "enabled": true },
+    { "key": "search_date", "value": "", "enabled": true },
+    { "key": "trip_a_departure", "value": "", "enabled": true },
+    { "key": "request_1_origin_time", "value": "", "enabled": true },
+    { "key": "request_3_origin_time", "value": "", "enabled": true },
+    { "key": "request_4_origin_time", "value": "", "enabled": true },
+    { "key": "trip_a_id", "value": "", "enabled": true },
+    { "key": "trip_b_id", "value": "", "enabled": true },
+    { "key": "salt_trip_id", "value": "", "enabled": true },
+    { "key": "full_trip_id", "value": "", "enabled": true },
+    { "key": "request_1_id", "value": "", "enabled": true },
+    { "key": "request_2_id", "value": "", "enabled": true },
+    { "key": "request_3_id", "value": "", "enabled": true },
+    { "key": "booking_1_id", "value": "", "enabled": true },
+    { "key": "booking_2_id", "value": "", "enabled": true }
+  ]
+}

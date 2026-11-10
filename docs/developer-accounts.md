@@ -121,3 +121,6 @@ The purge runs in one transaction and removes the developer user plus:
 Rows owned by other users are left in place, except records that belong to the
 developer user's trips/bookings (for example, a passenger booking on the
 developer driver's trip).
+
+The matching Postman request is in `postman/masar_api_collection.json` under
+**Admin / Users Management / Permanently Delete Developer Account**.

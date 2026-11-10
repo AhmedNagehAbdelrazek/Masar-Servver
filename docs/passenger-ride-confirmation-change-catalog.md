@@ -373,3 +373,17 @@ Adds to `bookings`:
    - Listen to `tracking:ride_status`.
    - Update the booking card on `started`, `ended`, and `driver_confirmed`.
    - Keep the existing `tracking:pickup_status` listener.
+
+---
+
+## 10. Postman
+
+Import the root collection:
+
+```text
+postman/masar_api_collection.json
+postman/environments/local-e2e.json
+```
+
+It includes Start Ride, End Ride, Confirm Passengers, Abandon Trip, and
+Permanently Delete Developer Account.
