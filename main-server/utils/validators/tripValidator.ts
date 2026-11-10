@@ -524,14 +524,40 @@ export const abandonTripValidation: ValidationChain[] = [
 
 
 
-const _exported = { createTripValidation, searchAvailableTripsValidation, lockSeatValidation, releaseSeatLockValidation, updateTripValidation, tripParamValidation, tripPassengersValidation, cancelTripValidation, abandonTripValidation };
+export const confirmPassengersValidation: ValidationChain[] = [
+  param('trip_id').isUUID().withMessage(V.TRIP_ID_MUST_BE_A_VALID_UUID),
+  body('passengers')
+    .isArray({ min: 1 }).withMessage('PASSENGERS_MUST_BE_A_NON_EMPTY_ARRAY')
+    .custom((value: unknown) => {
+      if (!Array.isArray(value) || value.length === 0) {
+        throw new Error('PASSENGERS_MUST_BE_A_NON_EMPTY_ARRAY');
+      }
+      if (value.length > 100) throw new Error('PASSENGERS_MUST_CONTAIN_AT_MOST_100_ITEMS');
+      const ids = new Set<string>();
+      for (const item of value as Array<Record<string, unknown>>) {
+        const id = item && item.booking_id;
+        if (typeof id !== 'string' || !/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(id)) {
+          throw new Error('EACH_PASSENGER_MUST_HAVE_A_VALID_BOOKING_ID');
+        }
+        if (typeof item.was_on_trip !== 'boolean') {
+          throw new Error('WAS_ON_TRIP_MUST_BE_A_BOOLEAN');
+        }
+        if (ids.has(id)) throw new Error('DUPLICATE_BOOKING_ID');
+        ids.add(id);
+      }
+      return true;
+    }),
+];
+
+
+const _exported = { createTripValidation, searchAvailableTripsValidation, lockSeatValidation, releaseSeatLockValidation, updateTripValidation, tripParamValidation, tripPassengersValidation, cancelTripValidation, abandonTripValidation, confirmPassengersValidation };
 export default _exported;
 
 // CommonJS interop
 // @ts-ignore
 if (typeof module !== 'undefined' && module.exports) {
   // @ts-ignore
-  module.exports = { createTripValidation, searchAvailableTripsValidation, lockSeatValidation, releaseSeatLockValidation, updateTripValidation, tripParamValidation, tripPassengersValidation, cancelTripValidation, abandonTripValidation };
+  module.exports = { createTripValidation, searchAvailableTripsValidation, lockSeatValidation, releaseSeatLockValidation, updateTripValidation, tripParamValidation, tripPassengersValidation, cancelTripValidation, abandonTripValidation, confirmPassengersValidation };
   // @ts-ignore
   module.exports.createTripValidation = createTripValidation;
   // @ts-ignore
@@ -550,6 +576,8 @@ if (typeof module !== 'undefined' && module.exports) {
   module.exports.cancelTripValidation = cancelTripValidation;
   // @ts-ignore
   module.exports.abandonTripValidation = abandonTripValidation;
+  // @ts-ignore
+  module.exports.confirmPassengersValidation = confirmPassengersValidation;
   // @ts-ignore
   module.exports.default = _exported;
 }

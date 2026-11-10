@@ -1,4 +1,4 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import type { Prisma, PrismaClient } from '../../generated/prisma/client.js';
 import { buildPagination, parsePagination } from '../../common/utils/pagination.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
@@ -79,7 +79,7 @@ export class RatingsService {
   ): Promise<{ rating: Record<string, unknown>; already_rated: boolean }> {
     const booking = await this.prisma.booking.findUnique({
       where: { id: data.booking_id },
-      include: { trip: { select: { id: true, driverId: true } } },
+      include: { trip: { select: { id: true, driverId: true, status: true } } },
     });
     if (!booking) {
       throw new NotFoundException({ message: 'BOOKING_NOT_FOUND', code: 'BOOKING_NOT_FOUND' });
@@ -102,6 +102,20 @@ export class RatingsService {
         rating: serializeRating(existing as unknown as Parameters<typeof serializeRating>[0]),
         already_rated: true,
       };
+    }
+
+    if (isPassenger) {
+      if (!booking.passengerEndedAt) {
+        throw new ConflictException({
+          message: 'CONFIRM_YOU_LEFT_THE_RIDE_BEFORE_RATING',
+          code: 'RIDE_NOT_COMPLETED',
+        });
+      }
+    } else if (booking.trip.status !== 'completed' || booking.status !== 'completed') {
+      throw new ConflictException({
+        message: 'TRIP_MUST_BE_COMPLETED_BEFORE_RATING_A_PASSENGER',
+        code: 'TRIP_NOT_COMPLETED',
+      });
     }
 
     const rating = await this.prisma.$transaction(async (t) => {

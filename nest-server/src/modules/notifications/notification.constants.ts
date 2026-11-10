@@ -18,6 +18,9 @@ export const NOTIFICATION_TYPE = {
   SUBSCRIPTION_PAYMENT: 'subscription_payment',
   PAYMENT_CONFIRMED: 'payment_confirmed',
   SYSTEM_ANNOUNCEMENT: 'system_announcement',
+  PASSENGER_RIDE_START_PROMPT: 'passenger_ride_start_prompt',
+  PASSENGER_RIDE_END_PROMPT: 'passenger_ride_end_prompt',
+  DRIVER_CONFIRM_PASSENGERS: 'driver_confirm_passengers',
 } as const;
 
 export type NotificationType = (typeof NOTIFICATION_TYPE)[keyof typeof NOTIFICATION_TYPE];
@@ -40,6 +43,9 @@ export const NOTIFICATION_CATEGORIES = {
       NOTIFICATION_TYPE.TRIP_ABANDONED,
       NOTIFICATION_TYPE.TRIP_ABANDON_WARNING,
       NOTIFICATION_TYPE.DELAY_REPORT,
+      NOTIFICATION_TYPE.PASSENGER_RIDE_START_PROMPT,
+      NOTIFICATION_TYPE.PASSENGER_RIDE_END_PROMPT,
+      NOTIFICATION_TYPE.DRIVER_CONFIRM_PASSENGERS,
     ],
   },
   subscriptions: {
@@ -65,6 +71,9 @@ export const NOTIFICATION_GROUP_LABELS: Record<string, Record<string, string>> =
     subscription_payment: 'الباقات',
     payment_confirmed: 'اعتماد الدفع',
     subscription_expiring: 'انتهاء الباقة',
+    passenger_ride_start_prompt: 'تأكيد بدء الرحلة',
+    passenger_ride_end_prompt: 'تأكيد نهاية الرحلة',
+    driver_confirm_passengers: 'تأكيد الركاب',
   },
   en: {
     booking_confirmed: 'New bookings',
@@ -78,6 +87,9 @@ export const NOTIFICATION_GROUP_LABELS: Record<string, Record<string, string>> =
     subscription_payment: 'Plans',
     payment_confirmed: 'Payment confirmed',
     subscription_expiring: 'Plan expiring',
+    passenger_ride_start_prompt: 'Confirm ride start',
+    passenger_ride_end_prompt: 'Confirm ride end',
+    driver_confirm_passengers: 'Confirm passengers',
   },
 };
 
@@ -100,6 +112,9 @@ export const NOTIFICATION_TYPE_LABELS: Record<string, Record<string, string>> = 
     subscription_payment: 'الباقات',
     payment_confirmed: 'اعتماد الدفع',
     system_announcement: 'إعلانات النظام',
+    passenger_ride_start_prompt: 'تأكيد بدء الرحلة',
+    passenger_ride_end_prompt: 'تأكيد نهاية الرحلة',
+    driver_confirm_passengers: 'تأكيد الركاب',
   },
   en: {
     booking_confirmed: 'Booking confirmed',
@@ -119,5 +134,8 @@ export const NOTIFICATION_TYPE_LABELS: Record<string, Record<string, string>> = 
     subscription_payment: 'Subscription payment',
     payment_confirmed: 'Payment confirmed',
     system_announcement: 'System announcement',
+    passenger_ride_start_prompt: 'Confirm ride start',
+    passenger_ride_end_prompt: 'Confirm ride end',
+    driver_confirm_passengers: 'Confirm passengers',
   },
 };

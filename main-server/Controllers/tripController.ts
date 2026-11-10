@@ -148,6 +148,21 @@ const completeTrip = catchAsync(async (req: Request, res: Response): Promise<voi
   successResponse(res, result);
 });
 
+const confirmTripPassengers = catchAsync(async (req: Request, res: Response): Promise<void> => {
+  const authReq = req as AuthRequest;
+  const { trip_id } = req.params as { trip_id: string };
+  const { passengers } = req.body as { passengers: Array<{ booking_id: string; was_on_trip: boolean }> };
+  const result = await (tripService as unknown as {
+    confirmTripPassengers: (
+      userId: string,
+      id: string,
+      confirmations: Array<{ booking_id: string; was_on_trip: boolean }>
+    ) => Promise<Record<string, unknown>>;
+  }).confirmTripPassengers(String(authReq.user?.id), trip_id, passengers);
+  (auditService as unknown as { markResource: (res: Response, r: unknown) => void }).markResource(res, { type: 'trip', id: trip_id });
+  successResponse(res, result);
+});
+
 const abandonTrip = catchAsync(async (req: Request, res: Response): Promise<void> => {
   const authReq = req as AuthRequest;
   const { trip_id } = req.params as { trip_id: string };
@@ -263,6 +278,7 @@ export {
   getAvailableTrips,
   startTrip,
   completeTrip,
+  confirmTripPassengers,
   abandonTrip,
   updateTrip,
   updateTripStops,
@@ -286,6 +302,7 @@ export default {
   getAvailableTrips,
   startTrip,
   completeTrip,
+  confirmTripPassengers,
   abandonTrip,
   updateTrip,
   updateTripStops,

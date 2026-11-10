@@ -683,3 +683,11 @@ Authorization: Bearer <admin_token>
 V2 uses `/api/v2/admin/users/:user_id`. Only configured developer phones are
 eligible. See `docs/developer-accounts.md` for configuration and the full
 deletion list.
+
+---
+
+## 10. Passenger ride confirmation release
+
+The follow-up release adds passenger self check-in/check-out, driver post-trip
+passenger confirmation, rating gates, and no-show complaint gates. See
+`docs/passenger-ride-confirmation-change-catalog.md`.

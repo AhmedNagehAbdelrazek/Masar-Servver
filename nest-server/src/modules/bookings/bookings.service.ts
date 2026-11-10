@@ -44,6 +44,37 @@ interface StopRow {
   estimatedArrival: Date | null;
 }
 
+function rideFields(
+  booking: Record<string, unknown>,
+  tripStatus: string | null = null,
+): Record<string, unknown> {
+  const pickupStatus = String(booking.pickupStatus ?? '');
+  const status = String(booking.status ?? '');
+  const boarded = Boolean(booking.passengerStartedAt)
+    || ['picked_up', 'dropped_off'].includes(pickupStatus);
+  const rideStatus = status === 'cancelled'
+    ? 'cancelled'
+    : status === 'no_show'
+      ? 'no_show'
+      : booking.passengerEndedAt
+        ? 'completed'
+        : boarded
+          ? tripStatus === 'completed'
+            ? 'awaiting_end'
+            : 'in_progress'
+          : 'not_started';
+  return {
+    ride_status: rideStatus,
+    passenger_started_at: booking.passengerStartedAt ?? null,
+    passenger_ended_at: booking.passengerEndedAt ?? null,
+    driver_confirmed_at: booking.driverConfirmedAt ?? null,
+    driver_confirmed_on_trip: booking.driverConfirmedOnTrip ?? null,
+    passenger_can_rate: Boolean(booking.passengerEndedAt),
+    driver_can_rate:
+      tripStatus === 'completed' && status === 'completed',
+  };
+}
+
 function serializeRoutePoints(stops: StopRow[]): Record<string, unknown>[] {
   return [...stops]
     .sort((a, b) => a.stopOrder - b.stopOrder)
@@ -160,6 +191,7 @@ export class BookingsService {
       seats_booked: booking.seatsBooked,
       agreed_fare: Number(booking.agreedFare),
       status: booking.status,
+      ...rideFields(booking, (trip?.status as string) ?? null),
       reference_code: booking.referenceCode,
       booking_created_at: booking.createdAt,
       trip_id: booking.tripId,
@@ -228,6 +260,7 @@ export class BookingsService {
       reference_code: booking.referenceCode,
       status: booking.status,
       payment_status: booking.paymentStatus,
+      ...rideFields(booking, (trip?.status as string) ?? null),
       seats_booked: booking.seatsBooked,
       seat_number: booking.seatNumber,
       seat_numbers:
@@ -967,7 +1000,8 @@ export class BookingsService {
             },
           });
         } else if (trip?.status === 'completed') {
-          const boarded = ['picked_up', 'dropped_off'].includes(String(booking.pickupStatus));
+          const boarded = Boolean(booking.passengerStartedAt)
+            || ['picked_up', 'dropped_off'].includes(String(booking.pickupStatus));
           await this.prisma.booking.update({
             where: { id: booking.id },
             data: {
@@ -1182,6 +1216,165 @@ export class BookingsService {
     return {
       booking: { id: updated.id, status: updated.status, cancelled_at: updated.cancelledAt },
     };
+  }
+
+  private serializeRideConfirmation(booking: Record<string, unknown>): Record<string, unknown> {
+    const trip = booking.trip as Record<string, unknown> | null | undefined;
+    return {
+      booking_id: booking.id,
+      trip_id: booking.tripId,
+      booking_status: booking.status,
+      ...rideFields(booking, (trip?.status as string) ?? null),
+    };
+  }
+
+  private emitRideStatus(booking: Record<string, unknown>, state: string): void {
+    const trip = booking.trip as Record<string, unknown> | null | undefined;
+    const payload = {
+      trip_id: booking.tripId,
+      booking_id: booking.id,
+      state,
+      booking_status: booking.status,
+      ...rideFields(booking, (trip?.status as string) ?? null),
+    };
+    try {
+      this.realtime.emitToRoom(`trip:${String(booking.tripId)}`, 'tracking:ride_status', payload);
+    } catch {
+      // best-effort
+    }
+    if (state === 'started' || state === 'ended') {
+      try {
+        this.realtime.emitToRoom(`trip:${String(booking.tripId)}`, 'tracking:pickup_status', {
+          trip_id: booking.tripId,
+          booking_id: booking.id,
+          state: state === 'started' ? 'picked_up' : 'dropped_off',
+        });
+      } catch {
+        // best-effort
+      }
+    }
+  }
+
+  /**
+   * Passenger confirms they boarded the vehicle. This is the passenger-side
+   * counterpart to the driver's pickup status.
+   */
+  async startRide(
+    passengerId: string,
+    bookingId: string,
+  ): Promise<Record<string, unknown>> {
+    const booking = await this.prisma.booking.findUnique({
+      where: { id: bookingId },
+      include: {
+        trip: { select: { id: true, driverId: true, status: true, originCity: true, destinationCity: true } },
+      },
+    });
+    if (!booking) {
+      throw new NotFoundException({ message: 'BOOKING_NOT_FOUND', code: 'BOOKING_NOT_FOUND' });
+    }
+    if (booking.passengerId !== passengerId) {
+      throw new ForbiddenException({
+        message: 'YOU_CAN_ONLY_CONFIRM_YOUR_OWN_RIDE',
+        code: 'FORBIDDEN',
+      });
+    }
+    if (booking.status === 'cancelled' || booking.status === 'no_show') {
+      throw new ConflictException({ message: 'RIDE_IS_NOT_ACTIVE', code: 'RIDE_IS_NOT_ACTIVE' });
+    }
+    if (['cancelled', 'abandoned'].includes(booking.trip.status)) {
+      throw new ConflictException({
+        message: 'TRIP_IS_NO_LONGER_ACTIVE',
+        code: 'TRIP_IS_NO_LONGER_ACTIVE',
+      });
+    }
+    if (['published', 'full'].includes(booking.trip.status)) {
+      throw new ConflictException({
+        message: 'TRIP_HAS_NOT_STARTED_YET',
+        code: 'TRIP_HAS_NOT_STARTED_YET',
+      });
+    }
+    if (booking.passengerStartedAt) {
+      return this.serializeRideConfirmation(booking as unknown as Record<string, unknown>);
+    }
+
+    const now = new Date();
+    const updated = await this.prisma.booking.update({
+      where: { id: bookingId },
+      data: {
+        passengerStartedAt: now,
+        ...(!['picked_up', 'dropped_off'].includes(String(booking.pickupStatus))
+          ? { pickupStatus: 'picked_up', pickedUpAt: booking.pickedUpAt ?? now }
+          : {}),
+      },
+      include: {
+        trip: { select: { id: true, driverId: true, status: true, originCity: true, destinationCity: true } },
+      },
+    });
+    const result = updated as unknown as Record<string, unknown>;
+    this.emitRideStatus(result, 'started');
+    return this.serializeRideConfirmation(result);
+  }
+
+  /**
+   * Passenger confirms they left the vehicle. This completes the booking from
+   * the passenger's side and unlocks passenger ratings.
+   */
+  async endRide(
+    passengerId: string,
+    bookingId: string,
+  ): Promise<Record<string, unknown>> {
+    const booking = await this.prisma.booking.findUnique({
+      where: { id: bookingId },
+      include: {
+        trip: { select: { id: true, driverId: true, status: true, originCity: true, destinationCity: true } },
+      },
+    });
+    if (!booking) {
+      throw new NotFoundException({ message: 'BOOKING_NOT_FOUND', code: 'BOOKING_NOT_FOUND' });
+    }
+    if (booking.passengerId !== passengerId) {
+      throw new ForbiddenException({
+        message: 'YOU_CAN_ONLY_CONFIRM_YOUR_OWN_RIDE',
+        code: 'FORBIDDEN',
+      });
+    }
+    if (['cancelled', 'abandoned'].includes(booking.trip.status)) {
+      throw new ConflictException({
+        message: 'TRIP_IS_NO_LONGER_ACTIVE',
+        code: 'TRIP_IS_NO_LONGER_ACTIVE',
+      });
+    }
+    if (booking.status === 'cancelled') {
+      throw new ConflictException({ message: 'RIDE_IS_NOT_ACTIVE', code: 'RIDE_IS_NOT_ACTIVE' });
+    }
+    if (!booking.passengerStartedAt) {
+      throw new ConflictException({
+        message: 'PASSENGER_RIDE_NOT_STARTED',
+        code: 'PASSENGER_RIDE_NOT_STARTED',
+      });
+    }
+    if (booking.passengerEndedAt) {
+      return this.serializeRideConfirmation(booking as unknown as Record<string, unknown>);
+    }
+
+    const now = new Date();
+    const updated = await this.prisma.booking.update({
+      where: { id: bookingId },
+      data: {
+        passengerEndedAt: now,
+        pickupStatus: 'dropped_off',
+        droppedOffAt: booking.droppedOffAt ?? now,
+        status: 'completed',
+        completedAt: booking.completedAt ?? now,
+        paymentStatus: booking.paymentStatus === 'pending' ? 'paid_cash' : booking.paymentStatus,
+      },
+      include: {
+        trip: { select: { id: true, driverId: true, status: true, originCity: true, destinationCity: true } },
+      },
+    });
+    const result = updated as unknown as Record<string, unknown>;
+    this.emitRideStatus(result, 'ended');
+    return this.serializeRideConfirmation(result);
   }
 
   async editPickup(

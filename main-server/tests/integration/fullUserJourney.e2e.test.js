@@ -359,6 +359,16 @@ describe('End-to-end user journey (driver + passenger full flow)', () => {
     expect(start.status).toBe(200);
     expect(start.body.status).toBe(TRIP_STATUS.IN_PROGRESS);
 
+    // Passenger self-confirms boarding and leaving.
+    const passengerStart = await getAgent()
+      .post(`/api/bookings/${bookingId}/ride/start`)
+      .set('Authorization', `Bearer ${passengerToken}`);
+    expect(passengerStart.status).toBe(200);
+    const passengerEnd = await getAgent()
+      .post(`/api/bookings/${bookingId}/ride/end`)
+      .set('Authorization', `Bearer ${passengerToken}`);
+    expect(passengerEnd.status).toBe(200);
+
     // ------------------------------------------------------------------
     // 11. RIDE IS COMPLETED
     // ------------------------------------------------------------------

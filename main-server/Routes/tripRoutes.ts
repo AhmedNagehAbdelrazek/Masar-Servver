@@ -5,7 +5,7 @@ import * as mapsC from '../Controllers/mapsController';
 import protect from '../middlewares/protect';
 import { roleGuard } from '../middlewares/roleGuard';
 import validate from '../middlewares/validatorMiddleware';
-import { createTripValidation, updateTripValidation, tripParamValidation, tripPassengersValidation, searchAvailableTripsValidation, cancelTripValidation, abandonTripValidation } from '../utils/validators/tripValidator';
+import { createTripValidation, updateTripValidation, tripParamValidation, tripPassengersValidation, searchAvailableTripsValidation, cancelTripValidation, abandonTripValidation, confirmPassengersValidation } from '../utils/validators/tripValidator';
 import { replaceStopsValidation, pickupPreviewValidation, pickupStatusValidation } from '../utils/validators/mapsValidator';
 import { param } from 'express-validator';
 
@@ -33,6 +33,8 @@ router.post('/:trip_id/start', protect, roleGuard(['driver']), c.startTrip);
 
 // Complete a trip (driver only)
 router.post('/:trip_id/complete', protect, roleGuard(['driver']), c.completeTrip);
+// Driver confirms which passengers actually rode after the trip ends
+router.post('/:trip_id/confirm-passengers', protect, roleGuard(['driver']), ...confirmPassengersValidation, validate, c.confirmTripPassengers);
 
 // Edit a trip (driver owner only)
 router.put('/:trip_id', protect, roleGuard(['driver']), ...updateTripValidation, validate, c.updateTrip);

@@ -276,6 +276,9 @@ export const NOTIFICATION_TYPE = {
   DRIVER_ARRIVED: 'driver_arrived',
   PICKUP_MISSED: 'pickup_missed',
   NEXT_PICKUP: 'next_pickup',
+  PASSENGER_RIDE_START_PROMPT: 'passenger_ride_start_prompt',
+  PASSENGER_RIDE_END_PROMPT: 'passenger_ride_end_prompt',
+  DRIVER_CONFIRM_PASSENGERS: 'driver_confirm_passengers',
 } as const;
 export type NotificationType = (typeof NOTIFICATION_TYPE)[keyof typeof NOTIFICATION_TYPE];
 
@@ -305,6 +308,9 @@ export const NOTIFICATION_CATEGORIES = {
       NOTIFICATION_TYPE.DRIVER_NEARBY,
       NOTIFICATION_TYPE.DRIVER_ARRIVED,
       NOTIFICATION_TYPE.PICKUP_MISSED,
+      NOTIFICATION_TYPE.PASSENGER_RIDE_START_PROMPT,
+      NOTIFICATION_TYPE.PASSENGER_RIDE_END_PROMPT,
+      NOTIFICATION_TYPE.DRIVER_CONFIRM_PASSENGERS,
     ],
   },
   subscriptions: {
@@ -338,6 +344,9 @@ export const NOTIFICATION_GROUP_LABELS = {
     driver_nearby: 'السائق قريب',
     driver_arrived: 'وصل السائق',
     pickup_missed: 'تفويت الصعود',
+    passenger_ride_start_prompt: 'تأكيد بدء الرحلة',
+    passenger_ride_end_prompt: 'تأكيد نهاية الرحلة',
+    driver_confirm_passengers: 'تأكيد الركاب',
   },
   en: {
     booking_confirmed: 'New bookings',
@@ -358,6 +367,9 @@ export const NOTIFICATION_GROUP_LABELS = {
     driver_nearby: 'Driver nearby',
     driver_arrived: 'Driver arrived',
     pickup_missed: 'Pickup missed',
+    passenger_ride_start_prompt: 'Confirm ride start',
+    passenger_ride_end_prompt: 'Confirm ride end',
+    driver_confirm_passengers: 'Confirm passengers',
   },
 } as const;
 
@@ -415,6 +427,9 @@ export const NOTIFICATION_TYPE_LABELS = {
     driver_arrived: 'Driver arrived',
     pickup_missed: 'Pickup missed',
     next_pickup: 'Next pickup',
+    passenger_ride_start_prompt: 'Confirm ride start',
+    passenger_ride_end_prompt: 'Confirm ride end',
+    driver_confirm_passengers: 'Confirm passengers',
   },
 } as const;
 

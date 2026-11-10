@@ -1,4 +1,15 @@
-import { IsArray, IsDefined, IsIn, IsNotEmpty, IsString, IsUUID } from 'class-validator';
+import {
+  ArrayMinSize,
+  IsArray,
+  IsBoolean,
+  IsDefined,
+  IsIn,
+  IsNotEmpty,
+  IsString,
+  IsUUID,
+  ValidateNested,
+} from 'class-validator';
+import { Type } from 'class-transformer';
 
 // Port of replaceStopsValidation (count cap enforced in service).
 export class ReplaceStopsDto {
@@ -22,4 +33,20 @@ export class SetPickupStatusDto {
   @IsString()
   @IsIn(['arrived', 'picked_up', 'dropped_off', 'missed'])
   pickup_status!: string;
+}
+
+export class ConfirmPassengerDto {
+  @IsUUID()
+  booking_id!: string;
+
+  @IsBoolean()
+  was_on_trip!: boolean;
+}
+
+export class ConfirmPassengersDto {
+  @IsArray()
+  @ArrayMinSize(1)
+  @ValidateNested({ each: true })
+  @Type(() => ConfirmPassengerDto)
+  passengers!: ConfirmPassengerDto[];
 }

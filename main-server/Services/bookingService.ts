@@ -48,6 +48,29 @@ function serializeRoutePoints(trip) {
     }));
 }
 
+function deriveRideStatus(booking, tripStatus) {
+  if (booking.status === BOOKING_STATUS.CANCELLED) return 'cancelled';
+  if (booking.status === BOOKING_STATUS.NO_SHOW) return 'no_show';
+  if (booking.passengerEndedAt) return 'completed';
+  const boarded = Boolean(booking.passengerStartedAt)
+    || [PICKUP_STATUS.PICKED_UP, PICKUP_STATUS.DROPPED_OFF].includes(booking.pickupStatus);
+  if (boarded) return tripStatus === TRIP_STATUS.COMPLETED ? 'awaiting_end' : 'in_progress';
+  return 'not_started';
+}
+
+function rideFields(booking, tripStatus = null) {
+  const status = tripStatus || (booking.trip && booking.trip.status) || null;
+  return {
+    ride_status: deriveRideStatus(booking, status),
+    passenger_started_at: booking.passengerStartedAt || null,
+    passenger_ended_at: booking.passengerEndedAt || null,
+    driver_confirmed_at: booking.driverConfirmedAt || null,
+    driver_confirmed_on_trip: booking.driverConfirmedOnTrip ?? null,
+    passenger_can_rate: Boolean(booking.passengerEndedAt),
+    driver_can_rate: status === TRIP_STATUS.COMPLETED && booking.status === BOOKING_STATUS.COMPLETED,
+  };
+}
+
 function getMeetingPoint(trip) {
   const pickup =
     (trip.stops || []).find((s) => s.stopType === STOP_TYPE.PICKUP) ||
@@ -102,6 +125,7 @@ function serializeListRow(booking) {
     seats_booked: booking.seatsBooked,
     agreed_fare: Number(booking.agreedFare),
     status: booking.status,
+    ...rideFields(booking),
     reference_code: booking.referenceCode,
     booking_created_at: booking.createdat || booking.createdAt,
     trip_id: booking.tripId,
@@ -138,6 +162,7 @@ function serializeDetail(booking) {
     agreed_fare: Number(booking.agreedFare),
     status: booking.status,
     payment_status: booking.paymentStatus,
+    ...rideFields(booking),
     reference_code: booking.referenceCode,
     booking_created_at: booking.createdat || booking.createdAt,
     cancellation_reason: booking.cancellationReason,
@@ -629,6 +654,7 @@ function serializePassengerDetail(booking, trip, passenger) {
     reference_code: booking.referenceCode,
     status: booking.status,
     payment_status: booking.paymentStatus,
+    ...rideFields(booking, trip ? trip.status : null),
     seats_booked: booking.seatsBooked,
     seat_number: booking.seatNumber,
     seat_numbers: booking.seatNumbers || (booking.seatNumber != null ? [booking.seatNumber] : []),
@@ -705,7 +731,8 @@ async function syncBookingsWithTripStatus(passengerId) {
           cancelledAt: booking.cancelledAt || new Date(),
         });
       } else if (tripStatus === TRIP_STATUS.COMPLETED) {
-        const boarded = ['picked_up', 'dropped_off'].includes(booking.pickupStatus);
+        const boarded = Boolean(booking.passengerStartedAt)
+          || ['picked_up', 'dropped_off'].includes(booking.pickupStatus);
         await booking.update({
           status: boarded ? BOOKING_STATUS.COMPLETED : BOOKING_STATUS.NO_SHOW,
           ...(boarded
@@ -949,6 +976,139 @@ async function cancelBooking(passengerId, bookingId) {
 }
 
 /**
+ * Passenger confirms they boarded the vehicle. This is the passenger-side
+ * counterpart to the driver's pickup status: it sets the source-of-truth
+ * timestamp used by completion, rating and the driver's post-trip review.
+ */
+async function startRide(passengerId, bookingId) {
+  const booking = await Booking.findByPk(bookingId, {
+    include: [{ model: Trip, as: 'trip', attributes: ['id', 'driverId', 'status', 'originCity', 'destinationCity'] }],
+  });
+  if (!booking) throw ApiErrors.notFound('BOOKING_NOT_FOUND');
+  if (booking.passengerId !== passengerId) {
+    throw ApiErrors.forbidden('YOU_CAN_ONLY_CONFIRM_YOUR_OWN_RIDE');
+  }
+  if (booking.status === BOOKING_STATUS.CANCELLED || booking.status === BOOKING_STATUS.NO_SHOW) {
+    throw ApiErrors.custom('RIDE_IS_NOT_ACTIVE', 409, 'RIDE_IS_NOT_ACTIVE');
+  }
+  const tripStatus = booking.trip ? booking.trip.status : null;
+  if ([TRIP_STATUS.CANCELLED, TRIP_STATUS.ABANDONED].includes(tripStatus)) {
+    throw ApiErrors.custom('TRIP_IS_NO_LONGER_ACTIVE', 409, 'TRIP_IS_NO_LONGER_ACTIVE');
+  }
+  if ([TRIP_STATUS.PUBLISHED, TRIP_STATUS.FULL].includes(tripStatus)) {
+    throw ApiErrors.custom('TRIP_HAS_NOT_STARTED_YET', 409, 'TRIP_HAS_NOT_STARTED_YET');
+  }
+
+  if (booking.passengerStartedAt) {
+    return serializeRideConfirmation(booking);
+  }
+
+  const now = new Date();
+  const patch = { passengerStartedAt: now };
+  if ([PICKUP_STATUS.PENDING, PICKUP_STATUS.ARRIVED, PICKUP_STATUS.MISSED].includes(booking.pickupStatus)) {
+    patch.pickupStatus = PICKUP_STATUS.PICKED_UP;
+    patch.pickedUpAt = booking.pickedUpAt || now;
+  }
+  await booking.update(patch);
+
+  emitRideStatus(booking, 'started');
+  auditService.track({
+    action: 'booking.ride_started',
+    resourceType: 'booking',
+    resourceId: booking.id,
+    actorId: passengerId,
+    actorType: 'passenger',
+    payload: { trip_id: booking.tripId },
+  });
+  return serializeRideConfirmation(booking);
+}
+
+/**
+ * Passenger confirms they left the vehicle. This completes the booking from
+ * the passenger's side and unlocks passenger ratings.
+ */
+async function endRide(passengerId, bookingId) {
+  const booking = await Booking.findByPk(bookingId, {
+    include: [{ model: Trip, as: 'trip', attributes: ['id', 'driverId', 'status', 'originCity', 'destinationCity'] }],
+  });
+  if (!booking) throw ApiErrors.notFound('BOOKING_NOT_FOUND');
+  if (booking.passengerId !== passengerId) {
+    throw ApiErrors.forbidden('YOU_CAN_ONLY_CONFIRM_YOUR_OWN_RIDE');
+  }
+  const tripStatus = booking.trip ? booking.trip.status : null;
+  if ([TRIP_STATUS.CANCELLED, TRIP_STATUS.ABANDONED].includes(tripStatus)) {
+    throw ApiErrors.custom('TRIP_IS_NO_LONGER_ACTIVE', 409, 'TRIP_IS_NO_LONGER_ACTIVE');
+  }
+  if (booking.status === BOOKING_STATUS.CANCELLED) {
+    throw ApiErrors.custom('RIDE_IS_NOT_ACTIVE', 409, 'RIDE_IS_NOT_ACTIVE');
+  }
+  if (!booking.passengerStartedAt) {
+    throw ApiErrors.custom('PASSENGER_RIDE_NOT_STARTED', 409, 'PASSENGER_RIDE_NOT_STARTED');
+  }
+  if (booking.passengerEndedAt) {
+    return serializeRideConfirmation(booking);
+  }
+
+  const now = new Date();
+  await booking.update({
+    passengerEndedAt: now,
+    pickupStatus: PICKUP_STATUS.DROPPED_OFF,
+    droppedOffAt: booking.droppedOffAt || now,
+    status: BOOKING_STATUS.COMPLETED,
+    completedAt: booking.completedAt || now,
+    paymentStatus: booking.paymentStatus === PAYMENT_STATUS.PENDING
+      ? PAYMENT_STATUS.PAID_CASH
+      : booking.paymentStatus,
+  });
+
+  emitRideStatus(booking, 'ended');
+  auditService.track({
+    action: 'booking.ride_ended',
+    resourceType: 'booking',
+    resourceId: booking.id,
+    actorId: passengerId,
+    actorType: 'passenger',
+    payload: { trip_id: booking.tripId },
+  });
+  return serializeRideConfirmation(booking);
+}
+
+function serializeRideConfirmation(booking) {
+  return {
+    booking_id: booking.id,
+    trip_id: booking.tripId,
+    booking_status: booking.status,
+    ...rideFields(booking),
+  };
+}
+
+function emitRideStatus(booking, state) {
+  const payload = {
+    trip_id: booking.tripId,
+    booking_id: booking.id,
+    state,
+    booking_status: booking.status,
+    ...rideFields(booking),
+  };
+  try {
+    realtimeService.emitToRoom(`trip:${booking.tripId}`, 'tracking:ride_status', payload);
+  } catch (_err) {
+    // socket layer offline (e.g. tests) — ignore
+  }
+  if (state === 'started' || state === 'ended') {
+    try {
+      realtimeService.emitToRoom(`trip:${booking.tripId}`, 'tracking:pickup_status', {
+        trip_id: booking.tripId,
+        booking_id: booking.id,
+        state: state === 'started' ? PICKUP_STATUS.PICKED_UP : PICKUP_STATUS.DROPPED_OFF,
+      });
+    } catch (_err) {
+      // ignore
+    }
+  }
+}
+
+/**
  * Passenger changes their pickup before the cutoff (API10). Same shared
  * validation as booking; recompute + driver notify are best-effort.
  */
@@ -1090,6 +1250,6 @@ async function getDriverReveal(requesterId, requesterRole, bookingId) {
   };
 }
 
-module.exports = { listForDriver, getForDriver, createBooking, editPickup, listForPassenger, getForPassenger, cancelBooking, getDriverReveal };
-export { listForDriver, getForDriver, createBooking, editPickup, listForPassenger, getForPassenger, cancelBooking, getDriverReveal };
+module.exports = { listForDriver, getForDriver, createBooking, editPickup, listForPassenger, getForPassenger, cancelBooking, startRide, endRide, getDriverReveal };
+export { listForDriver, getForDriver, createBooking, editPickup, listForPassenger, getForPassenger, cancelBooking, startRide, endRide, getDriverReveal };
 export default module.exports;

@@ -346,6 +346,36 @@ const TEMPLATES = {
       body: 'Your trip {route} has ended. Do not forget to rate each other.',
     },
   },
+  PASSENGER_RIDE_START_PROMPT: {
+    ar: {
+      title: 'تأكيد بدء الرحلة',
+      body: 'اضغط لتأكيد أنك صعدت إلى الرحلة {route}.',
+    },
+    en: {
+      title: 'Confirm your ride started',
+      body: 'Tap to confirm you boarded the trip {route}.',
+    },
+  },
+  PASSENGER_RIDE_END_PROMPT: {
+    ar: {
+      title: 'تأكيد نهاية الرحلة',
+      body: 'اضغط لتأكيد أنك نزلت من الرحلة {route}.',
+    },
+    en: {
+      title: 'Confirm your ride ended',
+      body: 'Tap to confirm you left the trip {route}.',
+    },
+  },
+  DRIVER_CONFIRM_PASSENGERS: {
+    ar: {
+      title: 'تأكيد الركاب',
+      body: 'انتهت الرحلة {route}. أكد الركاب الذين كانوا معك.',
+    },
+    en: {
+      title: 'Confirm your passengers',
+      body: 'Trip {route} has ended. Confirm which passengers were on the trip.',
+    },
+  },
   SUPPORT_TICKET_NEW: {
     ar: {
       title: 'تذكرة دعم جديدة',

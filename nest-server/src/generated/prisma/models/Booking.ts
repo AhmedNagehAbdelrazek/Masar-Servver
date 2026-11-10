@@ -88,6 +88,10 @@ export type BookingMinAggregateOutputType = {
   paymentStatus: string | null
   completedAt: Date | null
   droppedOffAt: Date | null
+  passengerStartedAt: Date | null
+  passengerEndedAt: Date | null
+  driverConfirmedAt: Date | null
+  driverConfirmedOnTrip: boolean | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -126,6 +130,10 @@ export type BookingMaxAggregateOutputType = {
   paymentStatus: string | null
   completedAt: Date | null
   droppedOffAt: Date | null
+  passengerStartedAt: Date | null
+  passengerEndedAt: Date | null
+  driverConfirmedAt: Date | null
+  driverConfirmedOnTrip: boolean | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -165,6 +173,10 @@ export type BookingCountAggregateOutputType = {
   paymentStatus: number
   completedAt: number
   droppedOffAt: number
+  passengerStartedAt: number
+  passengerEndedAt: number
+  driverConfirmedAt: number
+  driverConfirmedOnTrip: number
   createdAt: number
   updatedAt: number
   _all: number
@@ -233,6 +245,10 @@ export type BookingMinAggregateInputType = {
   paymentStatus?: true
   completedAt?: true
   droppedOffAt?: true
+  passengerStartedAt?: true
+  passengerEndedAt?: true
+  driverConfirmedAt?: true
+  driverConfirmedOnTrip?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -271,6 +287,10 @@ export type BookingMaxAggregateInputType = {
   paymentStatus?: true
   completedAt?: true
   droppedOffAt?: true
+  passengerStartedAt?: true
+  passengerEndedAt?: true
+  driverConfirmedAt?: true
+  driverConfirmedOnTrip?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -310,6 +330,10 @@ export type BookingCountAggregateInputType = {
   paymentStatus?: true
   completedAt?: true
   droppedOffAt?: true
+  passengerStartedAt?: true
+  passengerEndedAt?: true
+  driverConfirmedAt?: true
+  driverConfirmedOnTrip?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -436,6 +460,10 @@ export type BookingGroupByOutputType = {
   paymentStatus: string | null
   completedAt: Date | null
   droppedOffAt: Date | null
+  passengerStartedAt: Date | null
+  passengerEndedAt: Date | null
+  driverConfirmedAt: Date | null
+  driverConfirmedOnTrip: boolean | null
   createdAt: Date
   updatedAt: Date
   _count: BookingCountAggregateOutputType | null
@@ -498,6 +526,10 @@ export type BookingWhereInput = {
   paymentStatus?: Prisma.StringNullableFilter<"Booking"> | string | null
   completedAt?: Prisma.DateTimeNullableFilter<"Booking"> | Date | string | null
   droppedOffAt?: Prisma.DateTimeNullableFilter<"Booking"> | Date | string | null
+  passengerStartedAt?: Prisma.DateTimeNullableFilter<"Booking"> | Date | string | null
+  passengerEndedAt?: Prisma.DateTimeNullableFilter<"Booking"> | Date | string | null
+  driverConfirmedAt?: Prisma.DateTimeNullableFilter<"Booking"> | Date | string | null
+  driverConfirmedOnTrip?: Prisma.BoolNullableFilter<"Booking"> | boolean | null
   createdAt?: Prisma.DateTimeFilter<"Booking"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Booking"> | Date | string
   trip?: Prisma.XOR<Prisma.TripScalarRelationFilter, Prisma.TripWhereInput>
@@ -543,6 +575,10 @@ export type BookingOrderByWithRelationInput = {
   paymentStatus?: Prisma.SortOrderInput | Prisma.SortOrder
   completedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   droppedOffAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  passengerStartedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  passengerEndedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  driverConfirmedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  driverConfirmedOnTrip?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   trip?: Prisma.TripOrderByWithRelationInput
@@ -591,6 +627,10 @@ export type BookingWhereUniqueInput = Prisma.AtLeast<{
   paymentStatus?: Prisma.StringNullableFilter<"Booking"> | string | null
   completedAt?: Prisma.DateTimeNullableFilter<"Booking"> | Date | string | null
   droppedOffAt?: Prisma.DateTimeNullableFilter<"Booking"> | Date | string | null
+  passengerStartedAt?: Prisma.DateTimeNullableFilter<"Booking"> | Date | string | null
+  passengerEndedAt?: Prisma.DateTimeNullableFilter<"Booking"> | Date | string | null
+  driverConfirmedAt?: Prisma.DateTimeNullableFilter<"Booking"> | Date | string | null
+  driverConfirmedOnTrip?: Prisma.BoolNullableFilter<"Booking"> | boolean | null
   createdAt?: Prisma.DateTimeFilter<"Booking"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Booking"> | Date | string
   trip?: Prisma.XOR<Prisma.TripScalarRelationFilter, Prisma.TripWhereInput>
@@ -636,6 +676,10 @@ export type BookingOrderByWithAggregationInput = {
   paymentStatus?: Prisma.SortOrderInput | Prisma.SortOrder
   completedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   droppedOffAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  passengerStartedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  passengerEndedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  driverConfirmedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  driverConfirmedOnTrip?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.BookingCountOrderByAggregateInput
@@ -683,6 +727,10 @@ export type BookingScalarWhereWithAggregatesInput = {
   paymentStatus?: Prisma.StringNullableWithAggregatesFilter<"Booking"> | string | null
   completedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Booking"> | Date | string | null
   droppedOffAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Booking"> | Date | string | null
+  passengerStartedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Booking"> | Date | string | null
+  passengerEndedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Booking"> | Date | string | null
+  driverConfirmedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Booking"> | Date | string | null
+  driverConfirmedOnTrip?: Prisma.BoolNullableWithAggregatesFilter<"Booking"> | boolean | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Booking"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Booking"> | Date | string
 }
@@ -720,6 +768,10 @@ export type BookingCreateInput = {
   paymentStatus?: string | null
   completedAt?: Date | string | null
   droppedOffAt?: Date | string | null
+  passengerStartedAt?: Date | string | null
+  passengerEndedAt?: Date | string | null
+  driverConfirmedAt?: Date | string | null
+  driverConfirmedOnTrip?: boolean | null
   createdAt?: Date | string
   updatedAt?: Date | string
   trip: Prisma.TripCreateNestedOneWithoutBookingsInput
@@ -765,6 +817,10 @@ export type BookingUncheckedCreateInput = {
   paymentStatus?: string | null
   completedAt?: Date | string | null
   droppedOffAt?: Date | string | null
+  passengerStartedAt?: Date | string | null
+  passengerEndedAt?: Date | string | null
+  driverConfirmedAt?: Date | string | null
+  driverConfirmedOnTrip?: boolean | null
   createdAt?: Date | string
   updatedAt?: Date | string
   ratings?: Prisma.RatingUncheckedCreateNestedManyWithoutBookingInput
@@ -806,6 +862,10 @@ export type BookingUpdateInput = {
   paymentStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   droppedOffAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  passengerStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  passengerEndedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  driverConfirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  driverConfirmedOnTrip?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   trip?: Prisma.TripUpdateOneRequiredWithoutBookingsNestedInput
@@ -851,6 +911,10 @@ export type BookingUncheckedUpdateInput = {
   paymentStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   droppedOffAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  passengerStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  passengerEndedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  driverConfirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  driverConfirmedOnTrip?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   ratings?: Prisma.RatingUncheckedUpdateManyWithoutBookingNestedInput
@@ -894,6 +958,10 @@ export type BookingCreateManyInput = {
   paymentStatus?: string | null
   completedAt?: Date | string | null
   droppedOffAt?: Date | string | null
+  passengerStartedAt?: Date | string | null
+  passengerEndedAt?: Date | string | null
+  driverConfirmedAt?: Date | string | null
+  driverConfirmedOnTrip?: boolean | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -931,6 +999,10 @@ export type BookingUpdateManyMutationInput = {
   paymentStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   droppedOffAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  passengerStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  passengerEndedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  driverConfirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  driverConfirmedOnTrip?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -970,6 +1042,10 @@ export type BookingUncheckedUpdateManyInput = {
   paymentStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   droppedOffAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  passengerStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  passengerEndedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  driverConfirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  driverConfirmedOnTrip?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -1019,6 +1095,10 @@ export type BookingCountOrderByAggregateInput = {
   paymentStatus?: Prisma.SortOrder
   completedAt?: Prisma.SortOrder
   droppedOffAt?: Prisma.SortOrder
+  passengerStartedAt?: Prisma.SortOrder
+  passengerEndedAt?: Prisma.SortOrder
+  driverConfirmedAt?: Prisma.SortOrder
+  driverConfirmedOnTrip?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -1071,6 +1151,10 @@ export type BookingMaxOrderByAggregateInput = {
   paymentStatus?: Prisma.SortOrder
   completedAt?: Prisma.SortOrder
   droppedOffAt?: Prisma.SortOrder
+  passengerStartedAt?: Prisma.SortOrder
+  passengerEndedAt?: Prisma.SortOrder
+  driverConfirmedAt?: Prisma.SortOrder
+  driverConfirmedOnTrip?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -1109,6 +1193,10 @@ export type BookingMinOrderByAggregateInput = {
   paymentStatus?: Prisma.SortOrder
   completedAt?: Prisma.SortOrder
   droppedOffAt?: Prisma.SortOrder
+  passengerStartedAt?: Prisma.SortOrder
+  passengerEndedAt?: Prisma.SortOrder
+  driverConfirmedAt?: Prisma.SortOrder
+  driverConfirmedOnTrip?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -1323,6 +1411,10 @@ export type BookingCreateWithoutPassengerInput = {
   paymentStatus?: string | null
   completedAt?: Date | string | null
   droppedOffAt?: Date | string | null
+  passengerStartedAt?: Date | string | null
+  passengerEndedAt?: Date | string | null
+  driverConfirmedAt?: Date | string | null
+  driverConfirmedOnTrip?: boolean | null
   createdAt?: Date | string
   updatedAt?: Date | string
   trip: Prisma.TripCreateNestedOneWithoutBookingsInput
@@ -1366,6 +1458,10 @@ export type BookingUncheckedCreateWithoutPassengerInput = {
   paymentStatus?: string | null
   completedAt?: Date | string | null
   droppedOffAt?: Date | string | null
+  passengerStartedAt?: Date | string | null
+  passengerEndedAt?: Date | string | null
+  driverConfirmedAt?: Date | string | null
+  driverConfirmedOnTrip?: boolean | null
   createdAt?: Date | string
   updatedAt?: Date | string
   ratings?: Prisma.RatingUncheckedCreateNestedManyWithoutBookingInput
@@ -1438,6 +1534,10 @@ export type BookingScalarWhereInput = {
   paymentStatus?: Prisma.StringNullableFilter<"Booking"> | string | null
   completedAt?: Prisma.DateTimeNullableFilter<"Booking"> | Date | string | null
   droppedOffAt?: Prisma.DateTimeNullableFilter<"Booking"> | Date | string | null
+  passengerStartedAt?: Prisma.DateTimeNullableFilter<"Booking"> | Date | string | null
+  passengerEndedAt?: Prisma.DateTimeNullableFilter<"Booking"> | Date | string | null
+  driverConfirmedAt?: Prisma.DateTimeNullableFilter<"Booking"> | Date | string | null
+  driverConfirmedOnTrip?: Prisma.BoolNullableFilter<"Booking"> | boolean | null
   createdAt?: Prisma.DateTimeFilter<"Booking"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Booking"> | Date | string
 }
@@ -1475,6 +1575,10 @@ export type BookingCreateWithoutTripInput = {
   paymentStatus?: string | null
   completedAt?: Date | string | null
   droppedOffAt?: Date | string | null
+  passengerStartedAt?: Date | string | null
+  passengerEndedAt?: Date | string | null
+  driverConfirmedAt?: Date | string | null
+  driverConfirmedOnTrip?: boolean | null
   createdAt?: Date | string
   updatedAt?: Date | string
   passenger: Prisma.UserCreateNestedOneWithoutBookingsInput
@@ -1518,6 +1622,10 @@ export type BookingUncheckedCreateWithoutTripInput = {
   paymentStatus?: string | null
   completedAt?: Date | string | null
   droppedOffAt?: Date | string | null
+  passengerStartedAt?: Date | string | null
+  passengerEndedAt?: Date | string | null
+  driverConfirmedAt?: Date | string | null
+  driverConfirmedOnTrip?: boolean | null
   createdAt?: Date | string
   updatedAt?: Date | string
   ratings?: Prisma.RatingUncheckedCreateNestedManyWithoutBookingInput
@@ -1585,6 +1693,10 @@ export type BookingCreateWithoutRatingsInput = {
   paymentStatus?: string | null
   completedAt?: Date | string | null
   droppedOffAt?: Date | string | null
+  passengerStartedAt?: Date | string | null
+  passengerEndedAt?: Date | string | null
+  driverConfirmedAt?: Date | string | null
+  driverConfirmedOnTrip?: boolean | null
   createdAt?: Date | string
   updatedAt?: Date | string
   trip: Prisma.TripCreateNestedOneWithoutBookingsInput
@@ -1629,6 +1741,10 @@ export type BookingUncheckedCreateWithoutRatingsInput = {
   paymentStatus?: string | null
   completedAt?: Date | string | null
   droppedOffAt?: Date | string | null
+  passengerStartedAt?: Date | string | null
+  passengerEndedAt?: Date | string | null
+  driverConfirmedAt?: Date | string | null
+  driverConfirmedOnTrip?: boolean | null
   createdAt?: Date | string
   updatedAt?: Date | string
   delayEvents?: Prisma.DelayEventUncheckedCreateNestedManyWithoutBookingInput
@@ -1685,6 +1801,10 @@ export type BookingUpdateWithoutRatingsInput = {
   paymentStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   droppedOffAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  passengerStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  passengerEndedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  driverConfirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  driverConfirmedOnTrip?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   trip?: Prisma.TripUpdateOneRequiredWithoutBookingsNestedInput
@@ -1729,6 +1849,10 @@ export type BookingUncheckedUpdateWithoutRatingsInput = {
   paymentStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   droppedOffAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  passengerStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  passengerEndedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  driverConfirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  driverConfirmedOnTrip?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   delayEvents?: Prisma.DelayEventUncheckedUpdateManyWithoutBookingNestedInput
@@ -1769,6 +1893,10 @@ export type BookingCreateWithoutDelayEventsInput = {
   paymentStatus?: string | null
   completedAt?: Date | string | null
   droppedOffAt?: Date | string | null
+  passengerStartedAt?: Date | string | null
+  passengerEndedAt?: Date | string | null
+  driverConfirmedAt?: Date | string | null
+  driverConfirmedOnTrip?: boolean | null
   createdAt?: Date | string
   updatedAt?: Date | string
   trip: Prisma.TripCreateNestedOneWithoutBookingsInput
@@ -1813,6 +1941,10 @@ export type BookingUncheckedCreateWithoutDelayEventsInput = {
   paymentStatus?: string | null
   completedAt?: Date | string | null
   droppedOffAt?: Date | string | null
+  passengerStartedAt?: Date | string | null
+  passengerEndedAt?: Date | string | null
+  driverConfirmedAt?: Date | string | null
+  driverConfirmedOnTrip?: boolean | null
   createdAt?: Date | string
   updatedAt?: Date | string
   ratings?: Prisma.RatingUncheckedCreateNestedManyWithoutBookingInput
@@ -1869,6 +2001,10 @@ export type BookingUpdateWithoutDelayEventsInput = {
   paymentStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   droppedOffAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  passengerStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  passengerEndedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  driverConfirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  driverConfirmedOnTrip?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   trip?: Prisma.TripUpdateOneRequiredWithoutBookingsNestedInput
@@ -1913,6 +2049,10 @@ export type BookingUncheckedUpdateWithoutDelayEventsInput = {
   paymentStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   droppedOffAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  passengerStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  passengerEndedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  driverConfirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  driverConfirmedOnTrip?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   ratings?: Prisma.RatingUncheckedUpdateManyWithoutBookingNestedInput
@@ -1953,6 +2093,10 @@ export type BookingCreateWithoutMessagesInput = {
   paymentStatus?: string | null
   completedAt?: Date | string | null
   droppedOffAt?: Date | string | null
+  passengerStartedAt?: Date | string | null
+  passengerEndedAt?: Date | string | null
+  driverConfirmedAt?: Date | string | null
+  driverConfirmedOnTrip?: boolean | null
   createdAt?: Date | string
   updatedAt?: Date | string
   trip: Prisma.TripCreateNestedOneWithoutBookingsInput
@@ -1997,6 +2141,10 @@ export type BookingUncheckedCreateWithoutMessagesInput = {
   paymentStatus?: string | null
   completedAt?: Date | string | null
   droppedOffAt?: Date | string | null
+  passengerStartedAt?: Date | string | null
+  passengerEndedAt?: Date | string | null
+  driverConfirmedAt?: Date | string | null
+  driverConfirmedOnTrip?: boolean | null
   createdAt?: Date | string
   updatedAt?: Date | string
   ratings?: Prisma.RatingUncheckedCreateNestedManyWithoutBookingInput
@@ -2053,6 +2201,10 @@ export type BookingUpdateWithoutMessagesInput = {
   paymentStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   droppedOffAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  passengerStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  passengerEndedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  driverConfirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  driverConfirmedOnTrip?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   trip?: Prisma.TripUpdateOneRequiredWithoutBookingsNestedInput
@@ -2097,6 +2249,10 @@ export type BookingUncheckedUpdateWithoutMessagesInput = {
   paymentStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   droppedOffAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  passengerStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  passengerEndedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  driverConfirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  driverConfirmedOnTrip?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   ratings?: Prisma.RatingUncheckedUpdateManyWithoutBookingNestedInput
@@ -2137,6 +2293,10 @@ export type BookingCreateWithoutSosEventsInput = {
   paymentStatus?: string | null
   completedAt?: Date | string | null
   droppedOffAt?: Date | string | null
+  passengerStartedAt?: Date | string | null
+  passengerEndedAt?: Date | string | null
+  driverConfirmedAt?: Date | string | null
+  driverConfirmedOnTrip?: boolean | null
   createdAt?: Date | string
   updatedAt?: Date | string
   trip: Prisma.TripCreateNestedOneWithoutBookingsInput
@@ -2181,6 +2341,10 @@ export type BookingUncheckedCreateWithoutSosEventsInput = {
   paymentStatus?: string | null
   completedAt?: Date | string | null
   droppedOffAt?: Date | string | null
+  passengerStartedAt?: Date | string | null
+  passengerEndedAt?: Date | string | null
+  driverConfirmedAt?: Date | string | null
+  driverConfirmedOnTrip?: boolean | null
   createdAt?: Date | string
   updatedAt?: Date | string
   ratings?: Prisma.RatingUncheckedCreateNestedManyWithoutBookingInput
@@ -2237,6 +2401,10 @@ export type BookingUpdateWithoutSosEventsInput = {
   paymentStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   droppedOffAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  passengerStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  passengerEndedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  driverConfirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  driverConfirmedOnTrip?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   trip?: Prisma.TripUpdateOneRequiredWithoutBookingsNestedInput
@@ -2281,6 +2449,10 @@ export type BookingUncheckedUpdateWithoutSosEventsInput = {
   paymentStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   droppedOffAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  passengerStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  passengerEndedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  driverConfirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  driverConfirmedOnTrip?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   ratings?: Prisma.RatingUncheckedUpdateManyWithoutBookingNestedInput
@@ -2322,6 +2494,10 @@ export type BookingCreateManyPassengerInput = {
   paymentStatus?: string | null
   completedAt?: Date | string | null
   droppedOffAt?: Date | string | null
+  passengerStartedAt?: Date | string | null
+  passengerEndedAt?: Date | string | null
+  driverConfirmedAt?: Date | string | null
+  driverConfirmedOnTrip?: boolean | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -2359,6 +2535,10 @@ export type BookingUpdateWithoutPassengerInput = {
   paymentStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   droppedOffAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  passengerStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  passengerEndedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  driverConfirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  driverConfirmedOnTrip?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   trip?: Prisma.TripUpdateOneRequiredWithoutBookingsNestedInput
@@ -2402,6 +2582,10 @@ export type BookingUncheckedUpdateWithoutPassengerInput = {
   paymentStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   droppedOffAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  passengerStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  passengerEndedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  driverConfirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  driverConfirmedOnTrip?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   ratings?: Prisma.RatingUncheckedUpdateManyWithoutBookingNestedInput
@@ -2444,6 +2628,10 @@ export type BookingUncheckedUpdateManyWithoutPassengerInput = {
   paymentStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   droppedOffAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  passengerStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  passengerEndedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  driverConfirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  driverConfirmedOnTrip?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -2482,6 +2670,10 @@ export type BookingCreateManyTripInput = {
   paymentStatus?: string | null
   completedAt?: Date | string | null
   droppedOffAt?: Date | string | null
+  passengerStartedAt?: Date | string | null
+  passengerEndedAt?: Date | string | null
+  driverConfirmedAt?: Date | string | null
+  driverConfirmedOnTrip?: boolean | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -2519,6 +2711,10 @@ export type BookingUpdateWithoutTripInput = {
   paymentStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   droppedOffAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  passengerStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  passengerEndedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  driverConfirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  driverConfirmedOnTrip?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   passenger?: Prisma.UserUpdateOneRequiredWithoutBookingsNestedInput
@@ -2562,6 +2758,10 @@ export type BookingUncheckedUpdateWithoutTripInput = {
   paymentStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   droppedOffAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  passengerStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  passengerEndedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  driverConfirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  driverConfirmedOnTrip?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   ratings?: Prisma.RatingUncheckedUpdateManyWithoutBookingNestedInput
@@ -2604,6 +2804,10 @@ export type BookingUncheckedUpdateManyWithoutTripInput = {
   paymentStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   droppedOffAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  passengerStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  passengerEndedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  driverConfirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  driverConfirmedOnTrip?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -2701,6 +2905,10 @@ export type BookingSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   paymentStatus?: boolean
   completedAt?: boolean
   droppedOffAt?: boolean
+  passengerStartedAt?: boolean
+  passengerEndedAt?: boolean
+  driverConfirmedAt?: boolean
+  driverConfirmedOnTrip?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   trip?: boolean | Prisma.TripDefaultArgs<ExtArgs>
@@ -2747,6 +2955,10 @@ export type BookingSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exten
   paymentStatus?: boolean
   completedAt?: boolean
   droppedOffAt?: boolean
+  passengerStartedAt?: boolean
+  passengerEndedAt?: boolean
+  driverConfirmedAt?: boolean
+  driverConfirmedOnTrip?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   trip?: boolean | Prisma.TripDefaultArgs<ExtArgs>
@@ -2788,6 +3000,10 @@ export type BookingSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exten
   paymentStatus?: boolean
   completedAt?: boolean
   droppedOffAt?: boolean
+  passengerStartedAt?: boolean
+  passengerEndedAt?: boolean
+  driverConfirmedAt?: boolean
+  driverConfirmedOnTrip?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   trip?: boolean | Prisma.TripDefaultArgs<ExtArgs>
@@ -2829,11 +3045,15 @@ export type BookingSelectScalar = {
   paymentStatus?: boolean
   completedAt?: boolean
   droppedOffAt?: boolean
+  passengerStartedAt?: boolean
+  passengerEndedAt?: boolean
+  driverConfirmedAt?: boolean
+  driverConfirmedOnTrip?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type BookingOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "tripId" | "passengerId" | "seatNumber" | "seatNumbers" | "seatsBooked" | "agreedFare" | "currency" | "pickupPlace" | "pickupLat" | "pickupLng" | "pickupOrder" | "pickupType" | "pickupStopId" | "pickupLabel" | "pickupCity" | "pickupArea" | "detourSeconds" | "pickupStatus" | "arrivedAt" | "pickedUpAt" | "dropoffPlace" | "dropoffLat" | "dropoffLng" | "dropoffDeadline" | "dropoffOrder" | "status" | "referenceCode" | "cancellationReason" | "cancelledBy" | "cancelledAt" | "paymentStatus" | "completedAt" | "droppedOffAt" | "createdAt" | "updatedAt", ExtArgs["result"]["booking"]>
+export type BookingOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "tripId" | "passengerId" | "seatNumber" | "seatNumbers" | "seatsBooked" | "agreedFare" | "currency" | "pickupPlace" | "pickupLat" | "pickupLng" | "pickupOrder" | "pickupType" | "pickupStopId" | "pickupLabel" | "pickupCity" | "pickupArea" | "detourSeconds" | "pickupStatus" | "arrivedAt" | "pickedUpAt" | "dropoffPlace" | "dropoffLat" | "dropoffLng" | "dropoffDeadline" | "dropoffOrder" | "status" | "referenceCode" | "cancellationReason" | "cancelledBy" | "cancelledAt" | "paymentStatus" | "completedAt" | "droppedOffAt" | "passengerStartedAt" | "passengerEndedAt" | "driverConfirmedAt" | "driverConfirmedOnTrip" | "createdAt" | "updatedAt", ExtArgs["result"]["booking"]>
 export type BookingInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   trip?: boolean | Prisma.TripDefaultArgs<ExtArgs>
   passenger?: boolean | Prisma.UserDefaultArgs<ExtArgs>
@@ -2897,6 +3117,10 @@ export type $BookingPayload<ExtArgs extends runtime.Types.Extensions.InternalArg
     paymentStatus: string | null
     completedAt: Date | null
     droppedOffAt: Date | null
+    passengerStartedAt: Date | null
+    passengerEndedAt: Date | null
+    driverConfirmedAt: Date | null
+    driverConfirmedOnTrip: boolean | null
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["booking"]>
@@ -3362,6 +3586,10 @@ export interface BookingFieldRefs {
   readonly paymentStatus: Prisma.FieldRef<"Booking", 'String'>
   readonly completedAt: Prisma.FieldRef<"Booking", 'DateTime'>
   readonly droppedOffAt: Prisma.FieldRef<"Booking", 'DateTime'>
+  readonly passengerStartedAt: Prisma.FieldRef<"Booking", 'DateTime'>
+  readonly passengerEndedAt: Prisma.FieldRef<"Booking", 'DateTime'>
+  readonly driverConfirmedAt: Prisma.FieldRef<"Booking", 'DateTime'>
+  readonly driverConfirmedOnTrip: Prisma.FieldRef<"Booking", 'Boolean'>
   readonly createdAt: Prisma.FieldRef<"Booking", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"Booking", 'DateTime'>
 }

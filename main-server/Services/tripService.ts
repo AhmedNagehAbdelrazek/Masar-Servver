@@ -2,7 +2,7 @@
 import { Op } from 'sequelize';
 import { ApiErrors } from '../utils/ApiError';
 import { hasTripDeparted } from '../utils/tripSchedule';
-import { TRIP_STATUS, GENDER_PREFERENCE, BOOKING_STATUS, FREE_OFFER_TYPE, PENALTY_TYPES, PENALTY_CATEGORY, PENALTY_SEVERITY, CANCELLATION_ESCALATION, TRIP_DURATION_HOURS, SEAT_TYPE, REQUEST_OFFER_STATUS } from '../config/constants';
+import { TRIP_STATUS, GENDER_PREFERENCE, BOOKING_STATUS, FREE_OFFER_TYPE, PENALTY_TYPES, PENALTY_CATEGORY, PENALTY_SEVERITY, CANCELLATION_ESCALATION, TRIP_DURATION_HOURS, SEAT_TYPE, REQUEST_OFFER_STATUS, PICKUP_STATUS } from '../config/constants';
 import commissionService from './commissionService';
 import notificationService from './notificationService';
 import realtimeService from './realtimeService';
@@ -26,6 +26,105 @@ import { hasFreeTripsOffer, freeTripsLimit } from '../utils/freeTrips';
 import searchConfig from '../config/search';
 import { matchTrip } from '../utils/tripSearchMatcher';
 import { Trip, TripSeat, TripStop, TripAttribute, Vehicle, User, Booking, DriverSubscription, SubscriptionPlan, Penalty, RequestOffer } from '../Models';
+
+function rideRouteLabel(trip) {
+  return `${trip.originCity} → ${trip.destinationCity}`;
+}
+
+function rideInfoForBooking(booking, tripStatus = null) {
+  const boarded = Boolean(booking.passengerStartedAt)
+    || [PICKUP_STATUS.PICKED_UP, PICKUP_STATUS.DROPPED_OFF].includes(booking.pickupStatus);
+  const rideStatus = booking.passengerEndedAt
+    ? 'completed'
+    : booking.status === BOOKING_STATUS.NO_SHOW
+      ? 'no_show'
+      : boarded
+        ? tripStatus === TRIP_STATUS.COMPLETED
+          ? 'awaiting_end'
+          : 'in_progress'
+        : 'not_started';
+  return {
+    ride_status: rideStatus,
+    passenger_started_at: booking.passengerStartedAt || null,
+    passenger_ended_at: booking.passengerEndedAt || null,
+    driver_confirmed_at: booking.driverConfirmedAt || null,
+    driver_confirmed_on_trip: booking.driverConfirmedOnTrip ?? null,
+    passenger_can_rate: Boolean(booking.passengerEndedAt),
+    driver_can_rate: tripStatus === TRIP_STATUS.COMPLETED && booking.status === BOOKING_STATUS.COMPLETED,
+  };
+}
+
+/** Ask passengers who have not self-confirmed boarding to tap “start ride”. */
+async function promptPassengersToStartRide(trip) {
+  const bookings = await Booking.findAll({
+    where: { tripId: trip.id, status: BOOKING_STATUS.CONFIRMED },
+    include: [{ model: User, as: 'passenger', attributes: ['id', 'phone', 'fcmToken', 'locale'] }],
+  });
+  let sent = 0;
+  for (const booking of bookings) {
+    if (!booking.passenger || booking.passengerStartedAt) continue;
+    try {
+      await notificationService.sendToUser(booking.passenger, 'PASSENGER_RIDE_START_PROMPT', {
+        channels: ['push', 'in_app'],
+        vars: { route: rideRouteLabel(trip) },
+        data: {
+          trip_id: trip.id,
+          booking_id: booking.id,
+          action: 'confirm_ride_start',
+          screen: 'booking_details',
+        },
+      });
+      sent += 1;
+    } catch (err) {
+      console.warn('[tripService] ride-start prompt failed:', err.message);
+    }
+  }
+  return sent;
+}
+
+/** Ask a boarded passenger who has not self-confirmed the end to tap “end ride”. */
+async function promptPassengerToEndRide(booking, trip) {
+  if (!booking.passenger || !booking.passengerStartedAt || booking.passengerEndedAt) return false;
+  try {
+    await notificationService.sendToUser(booking.passenger, 'PASSENGER_RIDE_END_PROMPT', {
+      channels: ['push', 'in_app'],
+      vars: { route: rideRouteLabel(trip) },
+      data: {
+        trip_id: trip.id,
+        booking_id: booking.id,
+        action: 'confirm_ride_end',
+        screen: 'booking_details',
+      },
+    });
+    return true;
+  } catch (err) {
+    console.warn('[tripService] ride-end prompt failed:', err.message);
+    return false;
+  }
+}
+
+/** Ask the driver to confirm which passengers were actually on the trip. */
+async function promptDriverToConfirmPassengers(trip) {
+  try {
+    const driver = await User.findByPk(trip.driverId, {
+      attributes: ['id', 'phone', 'fcmToken', 'locale'],
+    });
+    if (!driver) return false;
+    await notificationService.sendToUser(driver, 'DRIVER_CONFIRM_PASSENGERS', {
+      channels: ['push', 'in_app'],
+      vars: { route: rideRouteLabel(trip) },
+      data: {
+        trip_id: trip.id,
+        action: 'confirm_passengers',
+        screen: 'trip_details',
+      },
+    });
+    return true;
+  } catch (err) {
+    console.warn('[tripService] driver passenger-confirmation prompt failed:', err.message);
+    return false;
+  }
+}
 
 /**
  * Map trip id -> ride request ids whose ride materialized a booking on it.
@@ -745,6 +844,7 @@ const getTripById = async (tripId) => {
     seat_numbers: seatNumbersFor(b),
     agreed_fare: Number(b.agreedFare),
     booking_status: b.status,
+    ...rideInfoForBooking(b, data.status),
     pickup: {
       place: b.pickupPlace,
       label: b.pickupLabel,
@@ -1473,6 +1573,11 @@ const startTrip = async (driverId, tripId) => {
   } catch (err) {
     console.warn('[tripService] TRIP_STARTED notification failed:', err.message);
   }
+  try {
+    await promptPassengersToStartRide(trip);
+  } catch (err) {
+    console.warn('[tripService] ride-start prompts failed:', err.message);
+  }
 
   // US2: drop the cached home payload so it reflects the new trip status.
   try {
@@ -1630,10 +1735,11 @@ const completeTrip = async (driverId, tripId) => {
   // completed; unboarded passengers are recorded as no-show.
   const confirmedBookings = await Booking.findAll({
     where: { tripId: trip.id, status: BOOKING_STATUS.CONFIRMED },
-    include: [{ model: User, as: 'passenger', attributes: ['id', 'fullName'] }],
+    include: [{ model: User, as: 'passenger', attributes: ['id', 'fullName', 'phone', 'fcmToken', 'locale'] }],
   });
   for (const booking of confirmedBookings) {
-    const boarded = ['picked_up', 'dropped_off'].includes(booking.pickupStatus);
+    const boarded = Boolean(booking.passengerStartedAt)
+      || ['picked_up', 'dropped_off'].includes(booking.pickupStatus);
     await booking.update({
       status: boarded ? BOOKING_STATUS.COMPLETED : BOOKING_STATUS.NO_SHOW,
       ...(boarded
@@ -1653,7 +1759,33 @@ const completeTrip = async (driverId, tripId) => {
       } catch (err) {
         console.warn('[tripService] trip completed notification failed:', err.message);
       }
+      if (!booking.passengerStartedAt) {
+        try {
+          await notificationService.sendToUser(booking.passenger, 'PASSENGER_RIDE_START_PROMPT', {
+            channels: ['push', 'in_app'],
+            vars: { route: `${trip.originCity} - ${trip.destinationCity}` },
+            data: {
+              trip_id: trip.id,
+              booking_id: booking.id,
+              action: 'confirm_ride_start',
+              screen: 'booking_details',
+            },
+          });
+        } catch (err) {
+          console.warn('[tripService] late ride-start prompt failed:', err.message);
+        }
+      } else {
+        await promptPassengerToEndRide(booking, trip);
+      }
     }
+  }
+  if (confirmedBookings.length > 0) {
+    await promptDriverToConfirmPassengers(trip);
+  } else {
+    const tripBookingCount = await Booking.count({
+      where: { tripId: trip.id, status: { [Op.in]: [BOOKING_STATUS.COMPLETED, BOOKING_STATUS.NO_SHOW] } },
+    });
+    if (tripBookingCount > 0) await promptDriverToConfirmPassengers(trip);
   }
 
   // Increment free trips counter if the driver's subscription has a free trips offer.
@@ -1721,6 +1853,101 @@ const completeTrip = async (driverId, tripId) => {
   };
 };
 
+/**
+ * Driver post-trip attendance confirmation. A no-show booking can be
+ * restored to completed when the driver confirms the passenger rode; a
+ * completed booking cannot be downgraded to no-show (that needs admin
+ * intervention) so payment/commission history stays consistent.
+ */
+const confirmTripPassengers = async (driverId, tripId, confirmations) => {
+  const trip = await Trip.findByPk(tripId);
+  if (!trip) throw ApiErrors.notFound('TRIP_NOT_FOUND');
+  if (trip.driverId !== driverId) {
+    throw ApiErrors.forbidden('YOU_CAN_ONLY_CONFIRM_PASSENGERS_ON_YOUR_OWN_TRIPS');
+  }
+  if (trip.status !== TRIP_STATUS.COMPLETED) {
+    throw ApiErrors.custom('TRIP_MUST_BE_COMPLETED_BEFORE_CONFIRMING_PASSENGERS', 409, 'TRIP_NOT_COMPLETED');
+  }
+
+  const bookingIds = confirmations.map((c) => c.booking_id);
+  if (new Set(bookingIds).size !== bookingIds.length) {
+    throw ApiErrors.validation('DUPLICATE_BOOKING_ID');
+  }
+
+  const bookings = await Booking.findAll({
+    where: { tripId, id: { [Op.in]: bookingIds } },
+    include: [{ model: User, as: 'passenger', attributes: ['id', 'fullName'] }],
+  });
+  const byId = new Map(bookings.map((b) => [b.id, b]));
+  if (byId.size !== bookingIds.length) throw ApiErrors.notFound('BOOKING_NOT_FOUND');
+
+  const now = new Date();
+  const results = [];
+  for (const confirmation of confirmations) {
+    const booking = byId.get(confirmation.booking_id);
+    const wasOnTrip = confirmation.was_on_trip === true;
+    const patch = { driverConfirmedAt: now, driverConfirmedOnTrip: wasOnTrip };
+
+    if (wasOnTrip) {
+      if (booking.status === BOOKING_STATUS.NO_SHOW) {
+        patch.status = BOOKING_STATUS.COMPLETED;
+        patch.completedAt = booking.completedAt || now;
+        patch.droppedOffAt = booking.droppedOffAt || now;
+        if (booking.paymentStatus === 'pending' || booking.paymentStatus == null) {
+          patch.paymentStatus = 'paid_cash';
+        }
+      }
+    } else {
+      const boarded = Boolean(booking.passengerStartedAt)
+        || ['picked_up', 'dropped_off'].includes(booking.pickupStatus);
+      if (booking.status === BOOKING_STATUS.COMPLETED || boarded) {
+        throw ApiErrors.custom(
+          'PASSENGER_ALREADY_MARKED_AS_COMPLETED',
+          409,
+          'PASSENGER_ALREADY_MARKED_AS_COMPLETED'
+        );
+      }
+      patch.status = BOOKING_STATUS.NO_SHOW;
+    }
+
+    await booking.update(patch);
+    results.push({
+      booking_id: booking.id,
+      passenger_id: booking.passengerId,
+      was_on_trip: wasOnTrip,
+      booking_status: booking.status,
+      driver_confirmed_at: booking.driverConfirmedAt,
+    });
+    try {
+      realtimeService.emitToRoom(`trip:${tripId}`, 'tracking:ride_status', {
+        trip_id: tripId,
+        booking_id: booking.id,
+        state: 'driver_confirmed',
+        booking_status: booking.status,
+        driver_confirmed_at: booking.driverConfirmedAt,
+        driver_confirmed_on_trip: booking.driverConfirmedOnTrip,
+      });
+    } catch (_err) {
+      // socket layer offline (e.g. tests) — ignore
+    }
+  }
+
+  auditService.track({
+    action: 'trip.passengers_confirmed',
+    resourceType: 'trip',
+    resourceId: tripId,
+    actorId: driverId,
+    actorType: 'driver',
+    payload: { passengers: results },
+  });
+
+  return {
+    trip_id: tripId,
+    confirmed_at: now,
+    passengers: results,
+  };
+};
+
 module.exports = {
   createTrip,
   getTripById,
@@ -1730,6 +1957,7 @@ module.exports = {
   getAvailableTrips,
   startTrip,
   completeTrip,
+  confirmTripPassengers,
   abandonTrip,
   updateTrip,
   replaceTripStops,
@@ -1849,6 +2077,7 @@ async function getTripRoute(requesterId, requesterRole, tripId, { audited = fals
       lng: b.pickupLng != null ? Number(b.pickupLng) : null,
       pickup_order: b.pickupOrder,
       pickup_status: b.pickupStatus,
+      ...rideInfoForBooking(b, trip.status),
     })),
     navigation_url: nav.navigation_url,
     navigation_legs: nav.legs,
@@ -1864,12 +2093,12 @@ async function getTripRoute(requesterId, requesterRole, tripId, { audited = fals
  * : picked_up notifies via socket only — the passenger is in the car.
  */
 async function setPickupStatus(driverId, tripId, bookingId, status) {
-  const trip = await Trip.findByPk(tripId, { attributes: ['id', 'driverId'] });
+  const trip = await Trip.findByPk(tripId, { attributes: ['id', 'driverId', 'originCity', 'destinationCity'] });
   if (!trip) throw ApiErrors.notFound('TRIP_NOT_FOUND');
   if (trip.driverId !== driverId) throw ApiErrors.forbidden('YOU_CAN_ONLY_MANAGE_PICKUPS_ON_YOUR_OWN_TRIPS');
   const booking = await Booking.findOne({
     where: { id: bookingId, tripId },
-    include: [{ model: User, as: 'passenger', attributes: ['id', 'fullName'] }],
+    include: [{ model: User, as: 'passenger', attributes: ['id', 'fullName', 'phone', 'fcmToken', 'locale'] }],
   });
   if (!booking) throw ApiErrors.notFound('BOOKING_NOT_FOUND');
   if (booking.status !== BOOKING_STATUS.CONFIRMED) throw ApiErrors.conflict('BOOKING_IS_NOT_CONFIRMED');
@@ -1904,6 +2133,9 @@ async function setPickupStatus(driverId, tripId, bookingId, status) {
       console.warn('[tripService] pickup-status notification failed:', err.message);
     }
   }
+  if (status === PICKUP_STATUS.DROPPED_OFF) {
+    await promptPassengerToEndRide(booking, trip);
+  }
   auditService.track({ action: 'booking.pickup_status', resourceType: 'booking', resourceId: booking.id, actorId: driverId, actorType: 'driver', payload: { trip_id: tripId, pickup_status: status } });
   return { booking_id: booking.id, pickup_status: status };
 }
@@ -1925,6 +2157,7 @@ async function getBookingRoute(requesterId, requesterRole, bookingId) {
   return {
     trip_id: trip.id,
     booking_id: booking.id,
+    ...rideInfoForBooking(booking, trip.status),
     route_status: trip.routeStatus,
     route_version: trip.routeVersion,
     polyline: trip.routePolyline,
@@ -2014,6 +2247,7 @@ async function getTripPassengers(driverId, tripId, filters = {}) {
       seats_booked: b.seatsBooked,
       seat_numbers: seatNumbersFor(b),
       booking_status: b.status,
+      ...rideInfoForBooking(b, trip.status),
     })),
   };
 }
@@ -2384,5 +2618,5 @@ async function cancelTripWithPenalty(driverId, tripId, { reason, note }) {
     penalty_type: escalation.severity,
   };
 }
-export { createTrip, getTripById, getTripOptions, getTripSeats, getDriverTrips, getAvailableTrips, startTrip, completeTrip, abandonTrip, updateTrip, replaceTripStops, getTripRoute, setPickupStatus, getBookingRoute, getTripActual, cancelTrip, cancelTripWithPenalty, getTripAttributes, getTripPassengers, assertNoOverlappingTrip };
+export { createTrip, getTripById, getTripOptions, getTripSeats, getDriverTrips, getAvailableTrips, startTrip, completeTrip, confirmTripPassengers, abandonTrip, updateTrip, replaceTripStops, getTripRoute, setPickupStatus, getBookingRoute, getTripActual, cancelTrip, cancelTripWithPenalty, getTripAttributes, getTripPassengers, assertNoOverlappingTrip };
 export default module.exports;

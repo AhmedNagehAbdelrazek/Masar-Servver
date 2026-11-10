@@ -11,7 +11,7 @@ import {
 } from './dto/create-trip.dto.js';
 import { IsUUID } from 'class-validator';
 import { AbandonTripDto, CancelTripDto, UpdateTripDto } from './dto/create-trip.dto.js';
-import { ReplaceStopsDto, SetPickupStatusDto, TripPickupParams } from './dto/route.dto.js';
+import { ConfirmPassengersDto, ReplaceStopsDto, SetPickupStatusDto, TripPickupParams } from './dto/route.dto.js';
 import { AttachOfferBody } from '../ride-requests/dto/ride-request.dto.js';
 import { RideRequestsService } from '../ride-requests/ride-requests.service.js';
 import { TripsService } from './trips.service.js';
@@ -193,6 +193,21 @@ export class TripsController {
     is_in_debt: boolean;
   }> {
     return this.trips.completeTrip(user?.id ?? '', params.trip_id);
+  }
+
+  @Post(':trip_id/confirm-passengers')
+  @HttpCode(200)
+  @Roles('driver')
+  confirmTripPassengers(
+    @Param() params: TripIdParam,
+    @Body() dto: ConfirmPassengersDto,
+    @CurrentUser() user?: AuthUser,
+  ): Promise<Record<string, unknown>> {
+    return this.trips.confirmTripPassengers(
+      user?.id ?? '',
+      params.trip_id,
+      dto.passengers,
+    );
   }
 
   @Put(':trip_id')

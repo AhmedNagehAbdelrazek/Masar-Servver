@@ -357,6 +357,10 @@ model Booking {
   paymentStatus      String? @default("pending") @map("payment_status") @db.VarChar(20)
   completedAt        DateTime?      @map("completed_at") @db.Timestamptz
   droppedOffAt       DateTime?      @map("dropped_off_at") @db.Timestamptz
+  passengerStartedAt DateTime?      @map("passenger_started_at") @db.Timestamptz
+  passengerEndedAt   DateTime?      @map("passenger_ended_at") @db.Timestamptz
+  driverConfirmedAt  DateTime?      @map("driver_confirmed_at") @db.Timestamptz
+  driverConfirmedOnTrip Boolean?    @map("driver_confirmed_on_trip")
   createdAt          DateTime       @default(now()) @map("createdat") @db.Timestamptz
   updatedAt          DateTime       @default(now()) @updatedAt @map("updatedat") @db.Timestamptz
 

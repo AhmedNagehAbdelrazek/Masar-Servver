@@ -55,6 +55,26 @@ export class BookingsController {
     return this.bookings.getForPassenger(user?.id ?? '', bookingId);
   }
 
+  @Post('bookings/:booking_id/ride/start')
+  @HttpCode(200)
+  @Roles('passenger')
+  startRide(
+    @Param() params: BookingIdParam,
+    @CurrentUser() user?: AuthUser,
+  ): Promise<Record<string, unknown>> {
+    return this.bookings.startRide(user?.id ?? '', params.booking_id);
+  }
+
+  @Post('bookings/:booking_id/ride/end')
+  @HttpCode(200)
+  @Roles('passenger')
+  endRide(
+    @Param() params: BookingIdParam,
+    @CurrentUser() user?: AuthUser,
+  ): Promise<Record<string, unknown>> {
+    return this.bookings.endRide(user?.id ?? '', params.booking_id);
+  }
+
   @Get('bookings/:booking_id/driver-profile')
   getDriverProfile(
     @Param() params: BookingIdParam,

@@ -2,7 +2,7 @@
 import { Op } from 'sequelize';
 import { Booking, Complaint, Penalty, Rating, Trip, User, AuditLog } from '../Models';
 import { ApiErrors } from '../utils/ApiError';
-import { COMPLAINT_STATUS } from '../config/constants';
+import { COMPLAINT_STATUS, BOOKING_STATUS, TRIP_STATUS } from '../config/constants';
 import { parsePagination, buildPagination } from '../utils/pagination';
 import { maskPhone } from '../utils/masking';
 import * as penaltyService from './penaltyService';
@@ -67,6 +67,36 @@ async function create(reporterId, data) {
   });
   if (existing) {
     return { complaint: serializeCreate(existing), already_filed: true };
+  }
+
+  // Driver no-show complaints are tied to a completed booking. The passenger
+  // must be the booking passenger and must not have been confirmed as riding.
+  if (data.booking_id && data.category === 'no_show') {
+    const booking = await Booking.findByPk(data.booking_id, {
+      include: [{ model: Trip, as: 'trip', attributes: ['id', 'driverId', 'status'] }],
+    });
+    if (!booking) throw ApiErrors.notFound('BOOKING_NOT_FOUND');
+    if (booking.trip && booking.trip.driverId === reporterId) {
+      if (booking.passengerId !== data.accused_id) {
+        throw ApiErrors.validation('ACCUSED_USER_MUST_BE_THE_BOOKING_PASSENGER');
+      }
+      if (booking.trip.status !== TRIP_STATUS.COMPLETED) {
+        throw ApiErrors.custom(
+          'TRIP_MUST_BE_COMPLETED_BEFORE_REPORTING_A_NO_SHOW',
+          409,
+          'TRIP_NOT_COMPLETED'
+        );
+      }
+      const notOnTrip = booking.driverConfirmedOnTrip === false
+        || booking.status === BOOKING_STATUS.NO_SHOW;
+      if (!notOnTrip) {
+        throw ApiErrors.custom(
+          'PASSENGER_IS_NOT_MARKED_AS_NO_SHOW',
+          409,
+          'PASSENGER_IS_NOT_MARKED_AS_NO_SHOW'
+        );
+      }
+    }
   }
 
   const complaint = await Complaint.create({

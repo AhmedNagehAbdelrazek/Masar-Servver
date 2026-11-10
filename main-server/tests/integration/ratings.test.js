@@ -1,6 +1,6 @@
 const { getAgent } = require('../setup/setup');
 const { User, Vehicle, Trip, TripSeat, TripStop, Booking, Rating, SubscriptionPlan, DriverSubscription } = require('../../Models');
-const { BOOKING_STATUS, SUBSCRIPTION_STATUS } = require('../../config/constants');
+const { BOOKING_STATUS, SUBSCRIPTION_STATUS, TRIP_STATUS } = require('../../config/constants');
 const { generateAccessToken } = require('../setup/helpers');
 
 const DRIVER_PHONE = '+962791111111';
@@ -82,10 +82,14 @@ async function createBooking() {
     .set('Authorization', `Bearer ${driverToken}`)
     .send(VALID_TRIP_BODY);
   const tripId = tripRes.body.trip_id;
-  return Booking.create({
+  const booking = await Booking.create({
     tripId, passengerId: PASSENGER_ID, seatNumber: 2, seatsBooked: 1,
-    agreedFare: 15.5, status: BOOKING_STATUS.CONFIRMED, referenceCode: makeRef(),
+    agreedFare: 15.5, status: BOOKING_STATUS.COMPLETED, referenceCode: makeRef(),
+    pickupStatus: 'dropped_off', passengerStartedAt: new Date(),
+    passengerEndedAt: new Date(), droppedOffAt: new Date(), completedAt: new Date(),
   });
+  await Trip.update({ status: TRIP_STATUS.COMPLETED, completedAt: new Date() }, { where: { id: tripId } });
+  return booking;
 }
 
 describe('US3 - Ratings', () => {

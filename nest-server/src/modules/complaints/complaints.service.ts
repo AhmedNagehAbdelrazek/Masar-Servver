@@ -154,6 +154,36 @@ export class ComplaintsService {
         already_filed: true,
       };
     }
+
+    // Driver no-show complaints are tied to a completed booking. The passenger
+    // must be the booking passenger and must not have been confirmed as riding.
+    if (data.booking_id && data.category === 'no_show') {
+      const booking = await this.prisma.booking.findUnique({
+        where: { id: data.booking_id },
+        include: { trip: { select: { id: true, driverId: true, status: true } } },
+      });
+      if (!booking) {
+        throw new NotFoundException({ message: 'BOOKING_NOT_FOUND', code: 'BOOKING_NOT_FOUND' });
+      }
+      if (booking.trip.driverId === reporterId) {
+        if (booking.passengerId !== data.accused_id) {
+          throw validationError('accused_id', 'Accused user must be the booking passenger');
+        }
+        if (booking.trip.status !== 'completed') {
+          throw new ConflictException({
+            message: 'TRIP_MUST_BE_COMPLETED_BEFORE_REPORTING_A_NO_SHOW',
+            code: 'TRIP_NOT_COMPLETED',
+          });
+        }
+        const notOnTrip = booking.driverConfirmedOnTrip === false || booking.status === 'no_show';
+        if (!notOnTrip) {
+          throw new ConflictException({
+            message: 'PASSENGER_IS_NOT_MARKED_AS_NO_SHOW',
+            code: 'PASSENGER_IS_NOT_MARKED_AS_NO_SHOW',
+          });
+        }
+      }
+    }
     const complaint = await this.prisma.complaint.create({
       data: {
         bookingId: data.booking_id ?? null,

@@ -51,6 +51,26 @@ const getBookingRoute = catchAsync(async (req: Request, res: Response): Promise<
   successResponse(res, route);
 });
 
+const startRide = catchAsync(async (req: Request, res: Response): Promise<void> => {
+  const authReq = req as AuthRequest;
+  const { booking_id } = req.params as { booking_id: string };
+  const result = await (bookingService as unknown as {
+    startRide: (uid: string, bid: string) => Promise<Record<string, unknown>>;
+  }).startRide(String(authReq.user?.id), booking_id);
+  (auditService as unknown as { markResource: (res: Response, r: unknown) => void }).markResource(res, { type: 'booking', id: booking_id });
+  successResponse(res, result);
+});
+
+const endRide = catchAsync(async (req: Request, res: Response): Promise<void> => {
+  const authReq = req as AuthRequest;
+  const { booking_id } = req.params as { booking_id: string };
+  const result = await (bookingService as unknown as {
+    endRide: (uid: string, bid: string) => Promise<Record<string, unknown>>;
+  }).endRide(String(authReq.user?.id), booking_id);
+  (auditService as unknown as { markResource: (res: Response, r: unknown) => void }).markResource(res, { type: 'booking', id: booking_id });
+  successResponse(res, result);
+});
+
 const editBookingPickup = catchAsync(async (req: Request, res: Response): Promise<void> => {
   const authReq = req as AuthRequest;
   const { booking_id } = req.params as { booking_id: string };
@@ -74,5 +94,5 @@ const listDelays = catchAsync(async (req: Request, res: Response): Promise<void>
   successResponse(res, result);
 });
 
-export { createBooking, listMyBookings, getBooking, cancelBooking, getBookingRoute, editBookingPickup, getDriverProfile, reportDelay, listDelays };
-export default { createBooking, listMyBookings, getBooking, cancelBooking, getBookingRoute, editBookingPickup, getDriverProfile, reportDelay, listDelays };
+export { createBooking, listMyBookings, getBooking, cancelBooking, startRide, endRide, getBookingRoute, editBookingPickup, getDriverProfile, reportDelay, listDelays };
+export default { createBooking, listMyBookings, getBooking, cancelBooking, startRide, endRide, getBookingRoute, editBookingPickup, getDriverProfile, reportDelay, listDelays };

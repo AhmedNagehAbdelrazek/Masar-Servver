@@ -37,11 +37,15 @@ export interface BookingAttributes {
   paymentStatus?: string | null;
   completedAt?: Date | null;
   droppedOffAt?: Date | null;
+  passengerStartedAt?: Date | null;
+  passengerEndedAt?: Date | null;
+  driverConfirmedAt?: Date | null;
+  driverConfirmedOnTrip?: boolean | null;
   createdAt?: Date;
   updatedAt?: Date;
 }
 
-export interface BookingCreationAttributes extends Optional<BookingAttributes, 'id' | 'seatNumber' | 'seatNumbers' | 'seatsBooked' | 'currency' | 'pickupPlace' | 'pickupLat' | 'pickupLng' | 'pickupOrder' | 'pickupType' | 'pickupStopId' | 'pickupLabel' | 'pickupCity' | 'pickupArea' | 'detourSeconds' | 'pickupStatus' | 'arrivedAt' | 'pickedUpAt' | 'dropoffPlace' | 'dropoffLat' | 'dropoffLng' | 'dropoffDeadline' | 'dropoffOrder' | 'status' | 'cancellationReason' | 'cancelledBy' | 'cancelledAt' | 'paymentStatus' | 'completedAt' | 'droppedOffAt' | 'createdAt' | 'updatedAt'> {}
+export interface BookingCreationAttributes extends Optional<BookingAttributes, 'id' | 'seatNumber' | 'seatNumbers' | 'seatsBooked' | 'currency' | 'pickupPlace' | 'pickupLat' | 'pickupLng' | 'pickupOrder' | 'pickupType' | 'pickupStopId' | 'pickupLabel' | 'pickupCity' | 'pickupArea' | 'detourSeconds' | 'pickupStatus' | 'arrivedAt' | 'pickedUpAt' | 'dropoffPlace' | 'dropoffLat' | 'dropoffLng' | 'dropoffDeadline' | 'dropoffOrder' | 'status' | 'cancellationReason' | 'cancelledBy' | 'cancelledAt' | 'paymentStatus' | 'completedAt' | 'droppedOffAt' | 'passengerStartedAt' | 'passengerEndedAt' | 'driverConfirmedAt' | 'driverConfirmedOnTrip' | 'createdAt' | 'updatedAt'> {}
 
 export class Booking extends Model<BookingAttributes, BookingCreationAttributes> implements BookingAttributes {
   declare id: string;
@@ -78,6 +82,10 @@ export class Booking extends Model<BookingAttributes, BookingCreationAttributes>
   declare paymentStatus?: string | null;
   declare completedAt?: Date | null;
   declare droppedOffAt?: Date | null;
+  declare passengerStartedAt?: Date | null;
+  declare passengerEndedAt?: Date | null;
+  declare driverConfirmedAt?: Date | null;
+  declare driverConfirmedOnTrip?: boolean | null;
   declare readonly createdAt?: Date;
   declare readonly updatedAt?: Date;
 }
@@ -243,6 +251,26 @@ Booking.init(
     droppedOffAt: {
             type: DataTypes.DATE,
             field: 'dropped_off_at',
+            allowNull: true,
+        },
+    passengerStartedAt: {
+            type: DataTypes.DATE,
+            field: 'passenger_started_at',
+            allowNull: true,
+        },
+    passengerEndedAt: {
+            type: DataTypes.DATE,
+            field: 'passenger_ended_at',
+            allowNull: true,
+        },
+    driverConfirmedAt: {
+            type: DataTypes.DATE,
+            field: 'driver_confirmed_at',
+            allowNull: true,
+        },
+    driverConfirmedOnTrip: {
+            type: DataTypes.BOOLEAN,
+            field: 'driver_confirmed_on_trip',
             allowNull: true,
         },
   },

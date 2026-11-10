@@ -57,7 +57,24 @@ async function createBooking(
     .set('Authorization', `Bearer ${passengerToken}`)
     .send({ trip_id: tripId, seat_numbers: [2], agreed_fare: '15.50' });
   expect(bookingRes.status).toBe(201);
-  return { id: bookingRes.body.booking.id as string };
+  const bookingId = bookingRes.body.booking.id as string;
+  const now = new Date();
+  await ctx.prisma.booking.update({
+    where: { id: bookingId },
+    data: {
+      status: 'completed',
+      pickupStatus: 'dropped_off',
+      passengerStartedAt: now,
+      passengerEndedAt: now,
+      droppedOffAt: now,
+      completedAt: now,
+    },
+  });
+  await ctx.prisma.trip.update({
+    where: { id: tripId },
+    data: { status: 'completed', completedAt: now },
+  });
+  return { id: bookingId };
 }
 
 describe('US3 - Ratings', () => {

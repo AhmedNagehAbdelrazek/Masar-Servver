@@ -369,6 +369,10 @@ export const BookingScalarFieldEnum = {
   paymentStatus: 'paymentStatus',
   completedAt: 'completedAt',
   droppedOffAt: 'droppedOffAt',
+  passengerStartedAt: 'passengerStartedAt',
+  passengerEndedAt: 'passengerEndedAt',
+  driverConfirmedAt: 'driverConfirmedAt',
+  driverConfirmedOnTrip: 'driverConfirmedOnTrip',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const

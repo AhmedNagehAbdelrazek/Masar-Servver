@@ -49,6 +49,33 @@ import {
 } from './trip-search.matcher.js';
 import type { CreateTripDto } from './dto/create-trip.dto.js';
 
+function rideInfoForBooking(
+  booking: Record<string, unknown>,
+  tripStatus: string | null = null,
+): Record<string, unknown> {
+  const pickupStatus = String(booking.pickupStatus ?? '');
+  const boarded = Boolean(booking.passengerStartedAt)
+    || ['picked_up', 'dropped_off'].includes(pickupStatus);
+  const status = String(booking.status ?? '');
+  return {
+    ride_status: booking.passengerEndedAt
+      ? 'completed'
+      : status === 'no_show'
+        ? 'no_show'
+        : boarded
+          ? tripStatus === 'completed'
+            ? 'awaiting_end'
+            : 'in_progress'
+          : 'not_started',
+    passenger_started_at: booking.passengerStartedAt ?? null,
+    passenger_ended_at: booking.passengerEndedAt ?? null,
+    driver_confirmed_at: booking.driverConfirmedAt ?? null,
+    driver_confirmed_on_trip: booking.driverConfirmedOnTrip ?? null,
+    passenger_can_rate: Boolean(booking.passengerEndedAt),
+    driver_can_rate: tripStatus === 'completed' && status === 'completed',
+  };
+}
+
 // Express parity: service-level validation failures use the generic
 // VALIDATION_ERROR code (the specific key stays in `message`, and details are
 // optional). Previously the specific key was emitted as `code`, which diverged
@@ -657,6 +684,7 @@ export class TripsService {
         seat_numbers: seatNumbersFor(b as never),
         agreed_fare: Number(b.agreedFare),
         booking_status: b.status,
+        ...rideInfoForBooking(b as unknown as Record<string, unknown>, String(t.status)),
         pickup: {
           place: b.pickupPlace,
           label: b.pickupLabel,
@@ -1484,6 +1512,113 @@ export class TripsService {
     };
   }
 
+  private rideRouteLabel(originCity: string, destinationCity: string): string {
+    return `${originCity} → ${destinationCity}`;
+  }
+
+  private async promptPassengersToStartRide(
+    tripId: string,
+    originCity: string,
+    destinationCity: string,
+  ): Promise<number> {
+    const bookings = await this.prisma.booking.findMany({
+      where: { tripId, status: 'confirmed', passengerStartedAt: null },
+      include: {
+        passenger: { select: { id: true, phone: true, fcmToken: true, locale: true } },
+      },
+    });
+    let sent = 0;
+    for (const booking of bookings) {
+      if (!booking.passenger) continue;
+      try {
+        await this.notifications.sendToUser(
+          booking.passenger as unknown as NotifyUser,
+          'PASSENGER_RIDE_START_PROMPT',
+          {
+            channels: ['push', 'in_app'],
+            vars: { route: this.rideRouteLabel(originCity, destinationCity) },
+            data: {
+              trip_id: tripId,
+              booking_id: booking.id,
+              action: 'confirm_ride_start',
+              screen: 'booking_details',
+            },
+          },
+        );
+        sent += 1;
+      } catch {
+        // best-effort per passenger
+      }
+    }
+    return sent;
+  }
+
+  private async promptPassengerToEndRide(
+    booking: {
+      id: string;
+      passenger: { id: string; phone: string | null; fcmToken: string | null; locale: string | null } | null;
+      passengerStartedAt: Date | null;
+      passengerEndedAt: Date | null;
+    },
+    tripId: string,
+    originCity: string,
+    destinationCity: string,
+  ): Promise<boolean> {
+    if (!booking.passenger || !booking.passengerStartedAt || booking.passengerEndedAt) {
+      return false;
+    }
+    try {
+      await this.notifications.sendToUser(
+        booking.passenger as unknown as NotifyUser,
+        'PASSENGER_RIDE_END_PROMPT',
+        {
+          channels: ['push', 'in_app'],
+          vars: { route: this.rideRouteLabel(originCity, destinationCity) },
+          data: {
+            trip_id: tripId,
+            booking_id: booking.id,
+            action: 'confirm_ride_end',
+            screen: 'booking_details',
+          },
+        },
+      );
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  private async promptDriverToConfirmPassengers(
+    tripId: string,
+    driverId: string,
+    originCity: string,
+    destinationCity: string,
+  ): Promise<boolean> {
+    try {
+      const driver = await this.prisma.user.findUnique({
+        where: { id: driverId },
+        select: { id: true, phone: true, fcmToken: true, locale: true },
+      });
+      if (!driver) return false;
+      await this.notifications.sendToUser(
+        driver as unknown as NotifyUser,
+        'DRIVER_CONFIRM_PASSENGERS',
+        {
+          channels: ['push', 'in_app'],
+          vars: { route: this.rideRouteLabel(originCity, destinationCity) },
+          data: {
+            trip_id: tripId,
+            action: 'confirm_passengers',
+            screen: 'trip_details',
+          },
+        },
+      );
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   async startTrip(
     driverId: string,
     tripId: string,
@@ -1553,6 +1688,7 @@ export class TripsService {
     } catch {
       // best-effort
     }
+    await this.promptPassengersToStartRide(tripId, trip.originCity, trip.destinationCity);
     // invalidateHomeCache is a documented no-op in Express (homes are never
     // cached); the home test asserts the key stays absent.
     const base =
@@ -1622,12 +1758,19 @@ export class TripsService {
         where: { tripId, status: 'confirmed' },
         include: { passenger: { select: { id: true, phone: true, fcmToken: true, locale: true } } },
       });
-      const completedIds = confirmed
-        .filter((booking) => ['picked_up', 'dropped_off'].includes(String(booking.pickupStatus)))
-        .map((booking) => booking.id);
-      const noShowIds = confirmed
-        .filter((booking) => !['picked_up', 'dropped_off'].includes(String(booking.pickupStatus)))
-        .map((booking) => booking.id);
+      const totalBookings = await tx.booking.count({
+        where: { tripId, status: { in: ['confirmed', 'completed', 'no_show'] } },
+      });
+      const completedBookings = confirmed.filter(
+        (booking) =>
+          Boolean(booking.passengerStartedAt)
+          || ['picked_up', 'dropped_off'].includes(String(booking.pickupStatus)),
+      );
+      const noShowBookings = confirmed.filter(
+        (booking) => !completedBookings.includes(booking),
+      );
+      const completedIds = completedBookings.map((booking) => booking.id);
+      const noShowIds = noShowBookings.map((booking) => booking.id);
       if (completedIds.length > 0) {
         await tx.booking.updateMany({
           where: { id: { in: completedIds } },
@@ -1664,7 +1807,9 @@ export class TripsService {
 
       return {
         commission,
-        passengers: confirmed.map((b) => b.passenger),
+        passengers: completedBookings.map((b) => b.passenger),
+        completedBookings,
+        passengerCount: totalBookings,
         blockingNotify: commission.blockingNotify,
       };
     });
@@ -1682,10 +1827,11 @@ export class TripsService {
     // DEVIATION (documented fix): the route var uses the `X → Y` arrow format
     // from notifications.service.ts (notifyBookedPassengers/notifyConfirmedPassengers).
     // Express used `X - Y` here; the arrow is the canonical format.
-    for (const passenger of result.passengers) {
+    for (const booking of result.completedBookings) {
+      if (!booking.passenger) continue;
       try {
         await this.notifications.sendToUser(
-          passenger as unknown as Parameters<NotificationsService['sendToUser']>[0],
+          booking.passenger as unknown as Parameters<NotificationsService['sendToUser']>[0],
           'TRIP_COMPLETED_PROMPT',
           {
             channels: ['in_app'],
@@ -1698,6 +1844,41 @@ export class TripsService {
       } catch {
         // best-effort per passenger
       }
+      if (!booking.passengerStartedAt) {
+        try {
+          await this.notifications.sendToUser(
+            booking.passenger as unknown as Parameters<NotificationsService['sendToUser']>[0],
+            'PASSENGER_RIDE_START_PROMPT',
+            {
+              channels: ['push', 'in_app'],
+              vars: { route: `${originCity} → ${destinationCity}` },
+              data: {
+                trip_id: tripId,
+                booking_id: booking.id,
+                action: 'confirm_ride_start',
+                screen: 'booking_details',
+              },
+            },
+          );
+        } catch {
+          // best-effort
+        }
+      } else {
+        await this.promptPassengerToEndRide(
+          booking,
+          tripId,
+          originCity,
+          destinationCity,
+        );
+      }
+    }
+    if (result.passengerCount > 0) {
+      await this.promptDriverToConfirmPassengers(
+        tripId,
+        driverId,
+        originCity,
+        destinationCity,
+      );
     }
 
     if (result.blockingNotify) {
@@ -1743,6 +1924,104 @@ export class TripsService {
       balance_after: result.commission.balanceAfter,
       is_in_debt: result.commission.isInDebt,
     };
+  }
+
+  async confirmTripPassengers(
+    driverId: string,
+    tripId: string,
+    confirmations: Array<{ booking_id: string; was_on_trip: boolean }>,
+  ): Promise<Record<string, unknown>> {
+    const trip = await this.prisma.trip.findUnique({ where: { id: tripId } });
+    if (!trip) throw new NotFoundException({ message: 'TRIP_NOT_FOUND', code: 'TRIP_NOT_FOUND' });
+    if (trip.driverId !== driverId) {
+      throw new ForbiddenException({
+        message: 'YOU_CAN_ONLY_CONFIRM_PASSENGERS_ON_YOUR_OWN_TRIPS',
+        code: 'FORBIDDEN',
+      });
+    }
+    if (trip.status !== 'completed') {
+      throw new ConflictException({
+        message: 'TRIP_MUST_BE_COMPLETED_BEFORE_CONFIRMING_PASSENGERS',
+        code: 'TRIP_NOT_COMPLETED',
+      });
+    }
+    const bookingIds = confirmations.map((c) => c.booking_id);
+    if (new Set(bookingIds).size !== bookingIds.length) {
+      throw new UnprocessableEntityException({
+        message: 'DUPLICATE_BOOKING_ID',
+        code: 'VALIDATION_ERROR',
+      });
+    }
+
+    const bookings = await this.prisma.booking.findMany({
+      where: { tripId, id: { in: bookingIds } },
+      include: { passenger: { select: { id: true, fullName: true } } },
+    });
+    const byId = new Map(bookings.map((b) => [b.id, b]));
+    if (byId.size !== bookingIds.length) {
+      throw new NotFoundException({ message: 'BOOKING_NOT_FOUND', code: 'BOOKING_NOT_FOUND' });
+    }
+
+    const now = new Date();
+    const results: Record<string, unknown>[] = [];
+    for (const confirmation of confirmations) {
+      const booking = byId.get(confirmation.booking_id);
+      if (!booking) {
+        throw new NotFoundException({ message: 'BOOKING_NOT_FOUND', code: 'BOOKING_NOT_FOUND' });
+      }
+      const wasOnTrip = confirmation.was_on_trip === true;
+      const data: Record<string, unknown> = {
+        driverConfirmedAt: now,
+        driverConfirmedOnTrip: wasOnTrip,
+      };
+
+      if (wasOnTrip) {
+        if (booking.status === 'no_show') {
+          data.status = 'completed';
+          data.completedAt = booking.completedAt ?? now;
+          data.droppedOffAt = booking.droppedOffAt ?? now;
+          if (booking.paymentStatus === 'pending' || booking.paymentStatus == null) {
+            data.paymentStatus = 'paid_cash';
+          }
+        }
+      } else {
+        const boarded = Boolean(booking.passengerStartedAt)
+          || ['picked_up', 'dropped_off'].includes(String(booking.pickupStatus));
+        if (booking.status === 'completed' || boarded) {
+          throw new ConflictException({
+            message: 'PASSENGER_ALREADY_MARKED_AS_COMPLETED',
+            code: 'PASSENGER_ALREADY_MARKED_AS_COMPLETED',
+          });
+        }
+        data.status = 'no_show';
+      }
+
+      const updated = await this.prisma.booking.update({
+        where: { id: booking.id },
+        data: data as never,
+      });
+      results.push({
+        booking_id: updated.id,
+        passenger_id: updated.passengerId,
+        was_on_trip: wasOnTrip,
+        booking_status: updated.status,
+        driver_confirmed_at: updated.driverConfirmedAt,
+      });
+      try {
+        this.realtime.emitToRoom(`trip:${tripId}`, 'tracking:ride_status', {
+          trip_id: tripId,
+          booking_id: updated.id,
+          state: 'driver_confirmed',
+          booking_status: updated.status,
+          driver_confirmed_at: updated.driverConfirmedAt,
+          driver_confirmed_on_trip: updated.driverConfirmedOnTrip,
+        });
+      } catch {
+        // best-effort
+      }
+    }
+
+    return { trip_id: tripId, confirmed_at: now, passengers: results };
   }
 
   async updateTrip(
@@ -2225,6 +2504,7 @@ export class TripsService {
           lng: toNumber(b.pickupLng as unknown),
           pickup_order: b.pickupOrder,
           pickup_status: b.pickupStatus,
+          ...rideInfoForBooking(b as unknown as Record<string, unknown>, String(trip.status)),
         };
       }),
       navigation_url: nav.navigation_url,
@@ -2286,6 +2566,14 @@ export class TripsService {
     } catch {
       // best-effort
     }
+    if (status === 'dropped_off') {
+      await this.promptPassengerToEndRide(
+        booking,
+        tripId,
+        trip.originCity,
+        trip.destinationCity,
+      );
+    }
     return { booking_id: bookingId, pickup_status: status };
   }
 
@@ -2313,6 +2601,10 @@ export class TripsService {
     return {
       trip_id: booking.tripId,
       booking_id: booking.id,
+      ...rideInfoForBooking(
+        booking as unknown as Record<string, unknown>,
+        (trip?.status as string) ?? null,
+      ),
       route_status: (trip?.routeStatus as string) ?? null,
       route_version: (trip?.routeVersion as number) ?? 0,
       polyline: (trip?.routePolyline as string) ?? null,
@@ -2440,6 +2732,7 @@ export class TripsService {
           seats_booked: b.seatsBooked,
           seat_numbers: seatNumbersFor(b as unknown as never),
           booking_status: b.status,
+          ...rideInfoForBooking(b as unknown as Record<string, unknown>, trip.status),
         };
       }),
     };
