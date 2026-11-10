@@ -193,6 +193,7 @@ describe('GET /api/admin/dashboard/drivers/:driver_id — header', () => {
       account_status: 'active',
       balance: 0,
       reviews_count: 2,
+      signup_completed: true,
     });
     expect(res.body.trip_stats).toEqual({ total_trips: 3, completed_trips: 1, canceled_trips: 1 });
     expect(res.body.avg_rating).toBeCloseTo(4.5, 1);

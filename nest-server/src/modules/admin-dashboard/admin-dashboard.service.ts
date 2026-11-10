@@ -616,6 +616,7 @@ export class AdminDashboardService {
           verificationStatus: true,
           createdAt: true,
           driverProfile: { select: { totalTrips: true } },
+          vehicle: { select: { id: true } },
           driverSubscriptions: {
             where: { status: 'active' },
             orderBy: { createdAt: 'desc' },
@@ -646,19 +647,27 @@ export class AdminDashboardService {
     );
 
     return {
-      data: rows.map((u) => ({
-        id: u.id,
-        name: u.fullName,
-        phone: maskPhone(u.phone),
-        phone_full: u.phone,
-        registration_date: u.createdAt,
-        avg_rating: Number(u.avgRating || 0),
-        total_trips: tripCountByDriver.get(u.id) ?? 0,
-        completed_trips: completedTripCountByDriver.get(u.id) ?? 0,
-        plan_name: u.driverSubscriptions[0]?.planName ?? null,
-        balance: Number(u.totalBalance || 0),
-        account_status: deriveAccountStatus({ status: u.status, verificationStatus: u.verificationStatus }),
-      })),
+      data: rows.map((u) => {
+        const missing: string[] = [];
+        if (!u.fullName || !String(u.fullName).trim()) missing.push('name');
+        if (!u.driverProfile) missing.push('profile');
+        if (!u.vehicle) missing.push('vehicle');
+        return {
+          id: u.id,
+          name: u.fullName,
+          phone: maskPhone(u.phone),
+          phone_full: u.phone,
+          registration_date: u.createdAt,
+          avg_rating: Number(u.avgRating || 0),
+          total_trips: tripCountByDriver.get(u.id) ?? 0,
+          completed_trips: completedTripCountByDriver.get(u.id) ?? 0,
+          plan_name: u.driverSubscriptions[0]?.planName ?? null,
+          balance: Number(u.totalBalance || 0),
+          account_status: deriveAccountStatus({ status: u.status, verificationStatus: u.verificationStatus }),
+          signup_completed: missing.length === 0,
+          signup_missing: missing,
+        };
+      }),
       pagination: buildPagination(count, page, limit),
     };
   }
@@ -922,14 +931,20 @@ export class AdminDashboardService {
 
   async getDriverHeader(driverId: string): Promise<Record<string, unknown>> {
     const driver = await this.getDriverOrThrow(driverId);
-    const [totalTrips, completedTrips, canceledTrips, reviewsCount, ratingAgg] = await Promise.all([
+    const [totalTrips, completedTrips, canceledTrips, reviewsCount, ratingAgg, profile, vehicle] = await Promise.all([
       this.prisma.trip.count({ where: { driverId } }),
       this.prisma.trip.count({ where: { driverId, status: 'completed' } }),
       this.prisma.trip.count({ where: { driverId, status: 'cancelled' } }),
       this.prisma.rating.count({ where: { rateeId: driverId } }),
       this.prisma.rating.aggregate({ where: { rateeId: driverId }, _avg: { stars: true } }),
+      this.prisma.driverProfile.findUnique({ where: { driverId }, select: { id: true } }),
+      this.prisma.vehicle.findUnique({ where: { driverId }, select: { id: true } }),
     ]);
     const computedAvg = ratingAgg._avg.stars != null ? Number(ratingAgg._avg.stars) : null;
+    const missing: string[] = [];
+    if (!driver.fullName || !String(driver.fullName).trim()) missing.push('name');
+    if (!profile) missing.push('profile');
+    if (!vehicle) missing.push('vehicle');
     return {
       id: driver.id,
       name: driver.fullName,
@@ -939,6 +954,8 @@ export class AdminDashboardService {
       city: null,
       avatar_url: toAbsoluteMediaUrl(driver.avatarUrl),
       account_status: deriveAccountStatus(driver),
+      signup_completed: missing.length === 0,
+      signup_missing: missing,
       trip_stats: { total_trips: totalTrips, completed_trips: completedTrips, canceled_trips: canceledTrips },
       balance: Number(driver.totalBalance || 0),
       avg_rating: computedAvg ?? Number(driver.avgRating || 0),

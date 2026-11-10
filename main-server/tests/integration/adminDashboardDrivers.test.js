@@ -40,6 +40,7 @@ describe('GET /api/admin/dashboard/drivers â€” directory', () => {
       avg_rating: 4.9,
       total_trips: 0,
       balance: 0,
+      signup_completed: false,
     });
     expect(res.body.data[0].registration_date).toBeTruthy();
   });

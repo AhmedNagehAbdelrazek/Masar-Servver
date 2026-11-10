@@ -555,20 +555,45 @@ async function listDrivers(query) {
     }
   }
 
+  const profiles = ids.length
+    ? await DriverProfile.findAll({
+      attributes: ['driverId'],
+      where: { driverId: { [Op.in]: ids } },
+      raw: true,
+    })
+    : [];
+  const profileSet = new Set(profiles.map((row) => row.driverId));
+  const vehicles = ids.length
+    ? await Vehicle.findAll({
+      attributes: ['driverId'],
+      where: { driverId: { [Op.in]: ids } },
+      raw: true,
+    })
+    : [];
+  const vehicleSet = new Set(vehicles.map((row) => row.driverId));
+
   return {
-    data: rows.map((u) => ({
-      id: u.id,
-      name: u.fullName,
-      phone: maskPhone(u.phone),
-      phone_full: u.phone,
-      registration_date: u.createdat,
-      avg_rating: Number(u.avgRating || 0),
-      total_trips: tripCountByDriver.get(u.id) ?? 0,
-      completed_trips: completedTripCountByDriver.get(u.id) ?? 0,
-      plan_name: planByDriver.get(u.id) || null,
-      balance: Number(u.totalBalance || 0),
-      account_status: deriveAccountStatus(u),
-    })),
+    data: rows.map((u) => {
+      const missing = [];
+      if (!u.fullName || !String(u.fullName).trim()) missing.push('name');
+      if (!profileSet.has(u.id)) missing.push('profile');
+      if (!vehicleSet.has(u.id)) missing.push('vehicle');
+      return {
+        id: u.id,
+        name: u.fullName,
+        phone: maskPhone(u.phone),
+        phone_full: u.phone,
+        registration_date: u.createdat,
+        avg_rating: Number(u.avgRating || 0),
+        total_trips: tripCountByDriver.get(u.id) ?? 0,
+        completed_trips: completedTripCountByDriver.get(u.id) ?? 0,
+        plan_name: planByDriver.get(u.id) || null,
+        balance: Number(u.totalBalance || 0),
+        account_status: deriveAccountStatus(u),
+        signup_completed: missing.length === 0,
+        signup_missing: missing,
+      };
+    }),
     pagination: buildPagination(count, page, limit),
   };
 }
@@ -820,14 +845,20 @@ async function getTripDetail(tripId) {
 
 async function getDriverHeader(driverId) {
   const driver = await getDriverOrThrow(driverId);
-  const [totalTrips, completedTrips, canceledTrips, reviewsCount, ratingAgg] = await Promise.all([
+  const [totalTrips, completedTrips, canceledTrips, reviewsCount, ratingAgg, profile, vehicle] = await Promise.all([
     Trip.count({ where: { driverId } }),
     Trip.count({ where: { driverId, status: TRIP_STATUS.COMPLETED } }),
     Trip.count({ where: { driverId, status: TRIP_STATUS.CANCELLED } }),
     Rating.count({ where: { rateeId: driverId } }),
     Rating.findOne({ attributes: [[fn('AVG', col('stars')), 'avg']], where: { rateeId: driverId } }),
+    DriverProfile.findOne({ where: { driverId }, attributes: ['driverId'] }),
+    Vehicle.findOne({ where: { driverId }, attributes: ['driverId'] }),
   ]);
   const computedAvg = ratingAgg?.get('avg') ? parseFloat(ratingAgg.get('avg')) : null;
+  const missing = [];
+  if (!driver.fullName || !String(driver.fullName).trim()) missing.push('name');
+  if (!profile) missing.push('profile');
+  if (!vehicle) missing.push('vehicle');
   return {
     id: driver.id,
     name: driver.fullName,
@@ -837,6 +868,8 @@ async function getDriverHeader(driverId) {
     city: null,
     avatar_url: toAbsoluteMediaUrl(driver.avatarUrl),
     account_status: deriveAccountStatus(driver),
+    signup_completed: missing.length === 0,
+    signup_missing: missing,
     trip_stats: { total_trips: totalTrips, completed_trips: completedTrips, canceled_trips: canceledTrips },
     balance: Number(driver.totalBalance || 0),
     avg_rating: computedAvg ?? Number(driver.avgRating || 0),
