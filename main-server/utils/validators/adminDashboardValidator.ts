@@ -65,7 +65,7 @@ export const driversListValidation: ValidationChain[] = [
     .isLength({ max: 120 }).withMessage(V.SEARCH_MUST_BE_AT_MOST_100_CHARACTERS),
   query('status')
     .optional()
-    .isIn(['active', 'suspended', 'pending', 'blocked'])
+    .isIn(['active', 'suspended', 'pending', 'blocked', 'deletion_requested'])
     .withMessage('INVALID_DRIVER_STATUS_VALUE'),
   query('registration_from')
     .optional()
@@ -79,6 +79,14 @@ export const driversListValidation: ValidationChain[] = [
   query('sort_order')
     .optional()
     .isIn(['asc', 'desc']).withMessage('VALIDATION_FAILED'),
+];
+
+export const driverEvaluationsQueryValidation: ValidationChain[] = [
+  ...paginationQueryValidation,
+  query('direction')
+    .optional()
+    .isIn(['given', 'received'])
+    .withMessage('DIRECTION_MUST_BE_GIVEN_OR_RECEIVED'),
 ];
 
 export const driverTripsQueryValidation: ValidationChain[] = [
@@ -117,14 +125,14 @@ export const driverNotificationBodyValidation: ValidationChain[] = [
   body('type').optional().isString().trim().isLength({ max: 40 }).withMessage('VALIDATION_FAILED'),
 ];
 
-const _exported = { driverIdParamValidation, documentKeyParamValidation, statusBodyValidation, accountActionBodyValidation, rejectReasonBodyValidation, paginationQueryValidation, recentTripsQueryValidation, driversListValidation, driverTripsQueryValidation, reservationsQueryValidation, tripIdParamValidation, driverNotificationBodyValidation, cancelTripBodyValidation };
+const _exported = { driverIdParamValidation, documentKeyParamValidation, statusBodyValidation, accountActionBodyValidation, rejectReasonBodyValidation, paginationQueryValidation, recentTripsQueryValidation, driversListValidation, driverTripsQueryValidation, driverEvaluationsQueryValidation, reservationsQueryValidation, tripIdParamValidation, driverNotificationBodyValidation, cancelTripBodyValidation };
 export default _exported;
 
 // CommonJS interop
 // @ts-ignore
 if (typeof module !== 'undefined' && module.exports) {
   // @ts-ignore
-  module.exports = { driverIdParamValidation, documentKeyParamValidation, statusBodyValidation, accountActionBodyValidation, rejectReasonBodyValidation, paginationQueryValidation, recentTripsQueryValidation, driversListValidation, driverTripsQueryValidation, reservationsQueryValidation, tripIdParamValidation, driverNotificationBodyValidation, cancelTripBodyValidation };
+  module.exports = { driverIdParamValidation, documentKeyParamValidation, statusBodyValidation, accountActionBodyValidation, rejectReasonBodyValidation, paginationQueryValidation, recentTripsQueryValidation, driversListValidation, driverTripsQueryValidation, driverEvaluationsQueryValidation, reservationsQueryValidation, tripIdParamValidation, driverNotificationBodyValidation, cancelTripBodyValidation };
   // @ts-ignore
   module.exports.driverIdParamValidation = driverIdParamValidation;
   // @ts-ignore
@@ -143,6 +151,8 @@ if (typeof module !== 'undefined' && module.exports) {
   module.exports.driversListValidation = driversListValidation;
   // @ts-ignore
   module.exports.driverTripsQueryValidation = driverTripsQueryValidation;
+  // @ts-ignore
+  module.exports.driverEvaluationsQueryValidation = driverEvaluationsQueryValidation;
   // @ts-ignore
   module.exports.reservationsQueryValidation = reservationsQueryValidation;
   // @ts-ignore

@@ -21295,7 +21295,7 @@
                                                 }
                                             ],
                                             "cookie": [],
-                                            "body": "{\n  \"total_drivers\": 120,\n  \"active_drivers\": 80,\n  \"suspended_drivers\": 10,\n  \"pending_drivers\": 30\n}"
+                                            "body": "{\n  \"total_drivers\": 120,\n  \"active_drivers\": 80,\n  \"suspended_drivers\": 10,\n  \"pending_drivers\": 30,\n  \"pending_deletion_drivers\": 0\n}"
                                         }
                                     ]
                                 },
@@ -21440,7 +21440,7 @@
                                                 }
                                             ],
                                             "cookie": [],
-                                            "body": "{\n  \"id\": \"d1\",\n  \"name\": \"Ahmad Al\",\n  \"phone\": \"+962791234567\",\n  \"age\": 26,\n  \"city\": \"Ø¹Ù…Ø§Ù†\",\n  \"avatar_url\": \"https://example.com/avatar.jpg\",\n  \"account_status\": \"active\",\n  \"trip_stats\": {\n    \"total_trips\": 312,\n    \"completed_trips\": 298,\n    \"canceled_trips\": 14\n  },\n  \"balance\": 50.0,\n  \"avg_rating\": 4.8,\n  \"reviews_count\": 289\n}"
+                                            "body": "{\n  \"id\": \"d1\",\n  \"name\": \"Ahmad Al\",\n  \"phone\": \"+962791234567\",\n  \"age\": 26,\n  \"city\": \"Ø¹Ù…Ø§Ù†\",\n  \"avatar_url\": \"https://example.com/avatar.jpg\",\n  \"account_status\": \"active\",\n  \"trip_stats\": {\n    \"total_trips\": 312,\n    \"completed_trips\": 298,\n    \"canceled_trips\": 14\n  },\n  \"balance\": 50,\n  \"avg_rating\": 4.8,\n  \"reviews_count\": 289,\n  \"phone_full\": \"+962790000001\",\n  \"deletion_requested\": false,\n  \"deletion_requested_at\": null\n}"
                                         },
                                         {
                                             "name": "Not Found",
@@ -21470,7 +21470,7 @@
                                                 }
                                             ],
                                             "cookie": [],
-                                            "body": "{\n  \"status\": \"error\",\n  \"message\": \"Driver not found\",\n  \"code\": \"DRIVER_NOT_FOUND\"\n}"
+                                            "body": "{\n  \"status\": \"error\",\n  \"message\": \"Driver not found\",\n  \"code\": \"DRIVER_NOT_FOUND\",\n  \"phone_full\": \"+962790000001\",\n  \"deletion_requested\": false,\n  \"deletion_requested_at\": null\n}"
                                         }
                                     ]
                                 },
@@ -21699,7 +21699,7 @@
                                         "method": "GET",
                                         "header": [],
                                         "url": {
-                                            "raw": "{{base_url}}/admin/dashboard/drivers/{{dashboard_driver_id}}/evaluations",
+                                            "raw": "{{base_url}}/admin/dashboard/drivers/{{dashboard_driver_id}}/evaluations?direction=received",
                                             "host": [
                                                 "{{base_url}}"
                                             ],
@@ -21709,9 +21709,16 @@
                                                 "drivers",
                                                 "{{dashboard_driver_id}}",
                                                 "evaluations"
+                                            ],
+                                            "query": [
+                                                {
+                                                    "key": "direction",
+                                                    "value": "received",
+                                                    "description": "received (default) or given"
+                                                }
                                             ]
                                         },
-                                        "description": "Driver evaluations â€” rating summary, 5â†’1 star distribution, top tags, and individual reviews.\n\n**Path parameter:**\n- `driver_id` *(UUID, required)*."
+                                        "description": "Driver evaluations — rating summary, 5->1 star distribution, top tags, and individual reviews.\n\n**Path parameter:**\n- `driver_id` *(UUID, required)*.\n\n**Query:** `direction=received|given` (default `received`)."
                                     },
                                     "response": [
                                         {
@@ -21743,7 +21750,7 @@
                                                 }
                                             ],
                                             "cookie": [],
-                                            "body": "{\n  \"summary\": {\n    \"average_rating\": 4.8,\n    \"total_reviews\": 289\n  },\n  \"distribution\": [\n    {\n      \"rating\": 5,\n      \"count\": 58\n    },\n    {\n      \"rating\": 4,\n      \"count\": 12\n    },\n    {\n      \"rating\": 3,\n      \"count\": 0\n    },\n    {\n      \"rating\": 2,\n      \"count\": 0\n    },\n    {\n      \"rating\": 1,\n      \"count\": 0\n    }\n  ],\n  \"top_tags\": [\n    \"Clean Car\",\n    \"Safe Driving\"\n  ],\n  \"reviews\": [\n    {\n      \"passenger_name\": \"Sara\",\n      \"passenger_avatar\": \"https://example.com/sara.jpg\",\n      \"rating\": 5,\n      \"comment\": \"Great ride!\",\n      \"date\": \"2026-08-20\"\n    }\n  ]\n}"
+                                            "body": "{\n  \"summary\": {\n    \"average_rating\": 4.8,\n    \"total_reviews\": 289\n  },\n  \"distribution\": [\n    {\n      \"rating\": 5,\n      \"count\": 58\n    },\n    {\n      \"rating\": 4,\n      \"count\": 12\n    },\n    {\n      \"rating\": 3,\n      \"count\": 0\n    },\n    {\n      \"rating\": 2,\n      \"count\": 0\n    },\n    {\n      \"rating\": 1,\n      \"count\": 0\n    }\n  ],\n  \"top_tags\": [\n    \"Clean Car\",\n    \"Safe Driving\"\n  ],\n  \"reviews\": [\n    {\n      \"passenger_name\": \"Sara\",\n      \"passenger_avatar\": \"https://example.com/sara.jpg\",\n      \"rating\": 5,\n      \"comment\": \"Great ride!\",\n      \"date\": \"2026-08-20\"\n    }\n  ],\n  \"direction\": \"received\"\n}"
                                         }
                                     ]
                                 },
@@ -23047,7 +23054,7 @@
                                         }
                                     ]
                                 },
-                                "description": ""
+                                "description": "Ratings for a passenger.\n\n**Query:** `direction=given|received` (default `given`).\n- `given`: ratings the passenger submitted about drivers.\n- `received`: ratings drivers submitted about the passenger."
                             }
                         },
                         {

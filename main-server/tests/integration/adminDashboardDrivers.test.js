@@ -1,5 +1,5 @@
 ﻿const { getAgent } = require('../setup/setup');
-const { User } = require('../../Models');
+const { User, DeletionRequest } = require('../../Models');
 const { generateAccessToken } = require('../setup/helpers');
 
 const ADMIN_ID = 'a2000000-0000-4000-8000-000000000001';
@@ -119,6 +119,7 @@ describe('GET /api/admin/dashboard/drivers/stats/summary â€” platform-wide 
       active_drivers: 1,
       suspended_drivers: 1,
       pending_drivers: 1,
+      pending_deletion_drivers: 0,
     });
   });
 
@@ -130,5 +131,41 @@ describe('GET /api/admin/dashboard/drivers/stats/summary â€” platform-wide 
     expect(res.status).toBe(200);
     expect(res.body.total_drivers).toBe(4);
     expect(res.body.active_drivers).toBe(1);
+  });
+
+  it('hides drivers with a pending deletion request and lists them under their own filter', async () => {
+    await DeletionRequest.create({ userId: DRIVERS[0].id, status: 'pending', reason: 'moving away' });
+
+    const list = await getAgent()
+      .get('/api/admin/dashboard/drivers')
+      .set('Authorization', `Bearer ${adminToken}`);
+
+    expect(list.status).toBe(200);
+    expect(list.body.data).toHaveLength(3);
+    expect(list.body.data.map((d) => d.name)).not.toContain('Ahmad Ali');
+
+    const filtered = await getAgent()
+      .get('/api/admin/dashboard/drivers?status=deletion_requested')
+      .set('Authorization', `Bearer ${adminToken}`);
+
+    expect(filtered.status).toBe(200);
+    expect(filtered.body.data).toHaveLength(1);
+    expect(filtered.body.data[0]).toMatchObject({
+      name: 'Ahmad Ali',
+      account_status: 'deletion_requested',
+      deletion_requested: true,
+    });
+
+    const stats = await getAgent()
+      .get('/api/admin/dashboard/drivers/stats/summary')
+      .set('Authorization', `Bearer ${adminToken}`);
+
+    expect(stats.body).toEqual({
+      total_drivers: 3,
+      active_drivers: 0,
+      suspended_drivers: 1,
+      pending_drivers: 1,
+      pending_deletion_drivers: 1,
+    });
   });
 });

@@ -6,7 +6,7 @@ import { parsePagination, buildPagination } from '../utils/pagination';
 import { ApiErrors } from '../utils/ApiError';
 import { maskPhone } from '../utils/masking';
 import { daysAgo, percentChange } from '../utils/statChange';
-import { User, DriverProfile, Vehicle, UploadedImage, Trip, TripStop, Booking, Rating, Complaint, Penalty, DriverSubscription, DocumentReview, VerificationStatusChange, Notification, TripSeat, RideRequest } from '../Models';
+import { User, DriverProfile, Vehicle, UploadedImage, Trip, TripStop, Booking, Rating, Complaint, Penalty, DriverSubscription, DocumentReview, VerificationStatusChange, Notification, TripSeat, RideRequest, DeletionRequest } from '../Models';
 import notificationService from './notificationService';
 import { toAbsoluteMediaUrl } from '../utils/mediaUrl';
 
@@ -53,6 +53,23 @@ const PENDING_BUCKET = {
 };
 const SUSPENDED_BUCKET = { role: 'driver', status: 'suspended' };
 const BLOCKED_BUCKET = { role: 'driver', status: 'banned' };
+const DELETION_REQUEST_STATUSES = ['pending', 'approved'];
+
+// A driver who asked for account deletion is no longer operational, even
+// though the row survives until an admin completes the review. The dashboard
+// must not keep counting/showing them as a regular driver.
+async function pendingDeletionDriverIds() {
+  const rows = await DeletionRequest.findAll({
+    where: { status: { [Op.in]: DELETION_REQUEST_STATUSES } },
+    attributes: ['userId'],
+    raw: true,
+  });
+  return rows.map((row) => row.userId).filter(Boolean);
+}
+
+function notPendingDeletion(ids) {
+  return ids.length ? { id: { [Op.notIn]: ids } } : {};
+}
 
 function deriveAccountStatus(user) {
   if (user.status === 'banned') return 'blocked';
@@ -263,6 +280,8 @@ async function fetchRecentTrips({ limit, offset = 0, status = null, search = nul
 // ===== US1: Global dashboard =====
 
 async function getSummary() {
+  const deletionIds = await pendingDeletionDriverIds();
+  const excludeDeletion = notPendingDeletion(deletionIds);
   const [
     totalDrivers, activeDrivers, totalTrips, activeTrips, totalVehicles,
     pendingDocsCount, pendingDriversCount, pendingDriversRows, unresolvedComplaints,
@@ -270,14 +289,14 @@ async function getSummary() {
     bookingsToday, tripsToday, totalPassengers, pendingPayments, newRideRequests,
     completedTrips, cancelledTrips, upcomingTrips, inProgressTrips, abandonedTrips,
   ] = await Promise.all([
-    User.count({ where: { role: 'driver' } }),
-    User.count({ where: ACTIVE_BUCKET }),
+    User.count({ where: { role: 'driver', ...excludeDeletion } }),
+    User.count({ where: { ...ACTIVE_BUCKET, ...excludeDeletion } }),
     Trip.count(),
     Trip.count({ where: { status: { [Op.in]: TRIP_ACTIVE_STATUSES } } }),
     Vehicle.count(),
     countPendingDocuments(),
-    User.count({ where: PENDING_BUCKET }),
-    User.findAll({ where: PENDING_BUCKET, attributes: ['id', 'fullName', 'phone', 'verificationSubmittedAt', 'createdat'], order: [['createdat', 'ASC']], limit: 10 }),
+    User.count({ where: { ...PENDING_BUCKET, ...excludeDeletion } }),
+    User.findAll({ where: { ...PENDING_BUCKET, ...excludeDeletion }, attributes: ['id', 'fullName', 'phone', 'verificationSubmittedAt', 'createdat'], order: [['createdat', 'ASC']], limit: 10 }),
     Complaint.count({ where: { status: { [Op.in]: [COMPLAINT_STATUS.OPEN, COMPLAINT_STATUS.REVIEWING] } } }),
     Trip.findAll({
       attributes: ['originCity', 'destinationCity', [fn('COUNT', col('id')), 'trips_count']],
@@ -321,7 +340,7 @@ async function getSummary() {
     driversBefore, passengersBefore, tripsYesterday, bookingsYesterday,
     totalTripsBefore, completedTripsBefore,
   ] = await Promise.all([
-    User.count({ where: { role: 'driver', createdat: { [Op.lte]: cutoff } } }),
+    User.count({ where: { role: 'driver', createdat: { [Op.lte]: cutoff }, ...excludeDeletion } }),
     User.count({ where: { role: 'passenger', createdat: { [Op.lte]: cutoff } } }),
     Trip.count({ where: { departureTime: { [Op.gte]: yesterdayStart, [Op.lt]: todayStart } } }),
     Booking.count({ where: { createdat: { [Op.gte]: yesterdayStart, [Op.lt]: todayStart } } }),
@@ -471,7 +490,11 @@ const SORT_COLUMNS = {
 
 async function listDrivers(query) {
   const { page, limit, offset } = parsePagination(query);
-  const where = bucketWhereFor(query.status) || { role: 'driver' };
+  const deletionIds = await pendingDeletionDriverIds();
+  const deletionSet = new Set(deletionIds);
+  const where = query.status === 'deletion_requested'
+    ? { role: 'driver', id: { [Op.in]: deletionIds } }
+    : { ...(bucketWhereFor(query.status) || { role: 'driver' }), ...notPendingDeletion(deletionIds) };
 
   if (query.search) {
     const term = `%${query.search}%`;
@@ -538,32 +561,48 @@ async function listDrivers(query) {
       id: u.id,
       name: u.fullName,
       phone: maskPhone(u.phone),
+      phone_full: u.phone,
       registration_date: u.createdat,
       avg_rating: Number(u.avgRating || 0),
       total_trips: tripCountByDriver.get(u.id) ?? 0,
       completed_trips: completedTripCountByDriver.get(u.id) ?? 0,
       plan_name: planByDriver.get(u.id) || null,
       balance: Number(u.totalBalance || 0),
-      account_status: deriveAccountStatus(u),
+      account_status: deletionSet.has(u.id) ? 'deletion_requested' : deriveAccountStatus(u),
+      deletion_requested: deletionSet.has(u.id),
     })),
     pagination: buildPagination(count, page, limit),
   };
 }
 
 async function getDriverStats() {
-  const [total, active, suspended, pending] = await Promise.all([
-    User.count({ where: { role: 'driver' } }),
-    User.count({ where: ACTIVE_BUCKET }),
-    User.count({ where: SUSPENDED_BUCKET }),
-    User.count({ where: PENDING_BUCKET }),
+  const deletionIds = await pendingDeletionDriverIds();
+  const activeWhere = { ...ACTIVE_BUCKET, ...notPendingDeletion(deletionIds) };
+  const [total, active, suspended, pending, pendingDeletion] = await Promise.all([
+    User.count({ where: { role: 'driver', ...notPendingDeletion(deletionIds) } }),
+    User.count({ where: activeWhere }),
+    User.count({ where: { ...SUSPENDED_BUCKET, ...notPendingDeletion(deletionIds) } }),
+    User.count({ where: { ...PENDING_BUCKET, ...notPendingDeletion(deletionIds) } }),
+    deletionIds.length
+      ? User.count({ where: { role: 'driver', id: { [Op.in]: deletionIds } } })
+      : 0,
   ]);
-  return { total_drivers: total, active_drivers: active, suspended_drivers: suspended, pending_drivers: pending };
+  return {
+    total_drivers: total,
+    active_drivers: active,
+    suspended_drivers: suspended,
+    pending_drivers: pending,
+    pending_deletion_drivers: pendingDeletion,
+  };
 }
 
 // CSV export used by the drivers page and the home report button. Mirrors the
 // V2 contract: same filters as listDrivers, masked phones, capped at 5000.
 async function exportDrivers(query) {
-  const where = bucketWhereFor(query.status) || { role: 'driver' };
+  const deletionIds = await pendingDeletionDriverIds();
+  const where = query.status === 'deletion_requested'
+    ? { role: 'driver', id: { [Op.in]: deletionIds } }
+    : { ...(bucketWhereFor(query.status) || { role: 'driver' }), ...notPendingDeletion(deletionIds) };
   if (query.search) {
     const term = `%${query.search}%`;
     where[Op.or] = [{ fullName: { [Op.iLike]: term } }, { phone: { [Op.iLike]: term } }];
@@ -791,22 +830,29 @@ async function getTripDetail(tripId) {
 
 async function getDriverHeader(driverId) {
   const driver = await getDriverOrThrow(driverId);
-  const [totalTrips, completedTrips, canceledTrips, reviewsCount, ratingAgg] = await Promise.all([
+  const [totalTrips, completedTrips, canceledTrips, reviewsCount, ratingAgg, deletionRequest] = await Promise.all([
     Trip.count({ where: { driverId } }),
     Trip.count({ where: { driverId, status: TRIP_STATUS.COMPLETED } }),
     Trip.count({ where: { driverId, status: TRIP_STATUS.CANCELLED } }),
     Rating.count({ where: { rateeId: driverId } }),
     Rating.findOne({ attributes: [[fn('AVG', col('stars')), 'avg']], where: { rateeId: driverId } }),
+    DeletionRequest.findOne({
+      where: { userId: driverId, status: { [Op.in]: DELETION_REQUEST_STATUSES } },
+      attributes: ['id', 'status', 'createdat'],
+    }),
   ]);
   const computedAvg = ratingAgg?.get('avg') ? parseFloat(ratingAgg.get('avg')) : null;
   return {
     id: driver.id,
     name: driver.fullName,
     phone: maskPhone(driver.phone),
+    phone_full: driver.phone,
     age: driver.age != null ? Number(driver.age) : null,
     city: null,
     avatar_url: toAbsoluteMediaUrl(driver.avatarUrl),
-    account_status: deriveAccountStatus(driver),
+    account_status: deletionRequest ? 'deletion_requested' : deriveAccountStatus(driver),
+    deletion_requested: Boolean(deletionRequest),
+    deletion_requested_at: deletionRequest?.createdat ?? null,
     trip_stats: { total_trips: totalTrips, completed_trips: completedTrips, canceled_trips: canceledTrips },
     balance: Number(driver.totalBalance || 0),
     avg_rating: computedAvg ?? Number(driver.avgRating || 0),
@@ -828,6 +874,7 @@ async function getDriverOverview(driverId) {
     personal_info: {
       name: driver.fullName,
       phone: maskPhone(driver.phone),
+      phone_full: driver.phone,
       registration_date: driver.createdat,
       last_login: driver.lastLoginAt,
       city: null,
@@ -889,13 +936,18 @@ async function listDriverTrips(driverId, query) {
 async function getDriverEvaluations(driverId, query) {
   await getDriverOrThrow(driverId);
   const { page, limit, offset } = parsePagination(query);
+  const direction = query.direction === 'given' ? 'given' : 'received';
+  const where = direction === 'given' ? { raterId: driverId } : { rateeId: driverId };
   const [summaryRow, distRows, tagRows, { rows, count }] = await Promise.all([
-    Rating.findOne({ attributes: [[fn('AVG', col('stars')), 'avg'], [fn('COUNT', col('id')), 'total']], where: { rateeId: driverId } }),
-    Rating.findAll({ attributes: ['stars', [fn('COUNT', col('id')), 'cnt']], where: { rateeId: driverId }, group: ['stars'] }),
-    Rating.findAll({ attributes: ['tags'], where: { rateeId: driverId, tags: { [Op.ne]: null } } }),
+    Rating.findOne({ attributes: [[fn('AVG', col('stars')), 'avg'], [fn('COUNT', col('id')), 'total']], where }),
+    Rating.findAll({ attributes: ['stars', [fn('COUNT', col('id')), 'cnt']], where, group: ['stars'] }),
+    Rating.findAll({ attributes: ['tags'], where: { ...where, tags: { [Op.ne]: null } } }),
     Rating.findAndCountAll({
-      where: { rateeId: driverId },
-      include: [{ model: User, as: 'rater', attributes: ['id', 'fullName', 'avatarUrl'] }],
+      where,
+      include: [
+        { model: User, as: 'rater', attributes: ['id', 'fullName', 'avatarUrl'] },
+        { model: User, as: 'ratee', attributes: ['id', 'fullName', 'avatarUrl'] },
+      ],
       order: [['createdat', 'DESC']],
       offset,
       limit,
@@ -907,20 +959,25 @@ async function getDriverEvaluations(driverId, query) {
     for (const tag of row.tags || []) tagCounts.set(tag, (tagCounts.get(tag) || 0) + 1);
   }
   const topTags = [...tagCounts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 10).map(([t]) => t);
-  const reviews = rows.map((r) => ({
-    id: r.id,
-    passenger_name: r.rater?.fullName || 'Unknown',
-    passenger_avatar: toAbsoluteMediaUrl(r.rater?.avatarUrl),
-    rating: r.stars,
-    stars: r.stars,
-    comment: r.review,
-    text: r.review,
-    tags: r.tags || [],
-    was_late: r.wasLate,
-    date: r.createdat,
-    created_at: r.createdat,
-  }));
+  const reviews = rows.map((r) => {
+    const counterpart = direction === 'received' ? r.rater : r.ratee;
+    return {
+      id: r.id,
+      direction,
+      passenger_name: counterpart?.fullName || 'Unknown',
+      passenger_avatar: toAbsoluteMediaUrl(counterpart?.avatarUrl),
+      rating: r.stars,
+      stars: r.stars,
+      comment: r.review,
+      text: r.review,
+      tags: r.tags || [],
+      was_late: r.wasLate,
+      date: r.createdat,
+      created_at: r.createdat,
+    };
+  });
   return {
+    direction,
     summary: {
       average_rating: summaryRow?.get('avg') ? parseFloat(summaryRow.get('avg')) : 0,
       total_reviews: Number(summaryRow?.get('total') || 0),

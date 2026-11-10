@@ -12,7 +12,7 @@ import { daysAgo, percentChange } from '../../common/utils/stat-change.js';
 import { toAbsoluteMediaUrl } from '../../common/utils/media-url.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { NotificationsService, type NotifyUser } from '../notifications/notifications.service.js';
-import type { DriversListQuery, DriverTripsQuery, RecentTripsQuery, ReservationsQuery } from './dto/dashboard-queries.dto.js';
+import type { DriverEvaluationsQuery, DriversListQuery, DriverTripsQuery, RecentTripsQuery, ReservationsQuery } from './dto/dashboard-queries.dto.js';
 
 // Port of main-server/Services/adminDashboardService.ts (Sequelize -> Prisma).
 // Response shapes are kept 1:1 with the Express service; auditService.track
@@ -320,6 +320,8 @@ export class AdminDashboardService {
     const todayStart = new Date();
     todayStart.setUTCHours(0, 0, 0, 0);
     const tomorrowStart = new Date(todayStart.getTime() + 24 * 3600 * 1000);
+    const deletionIds = await this.pendingDeletionDriverIds();
+    const excludeDeletion = AdminDashboardService.notPendingDeletion(deletionIds);
     const [
       totalDrivers, activeDrivers, totalTrips, activeTrips, totalVehicles,
       pendingDocsCount, pendingDriversCount, pendingDriversRows, unresolvedComplaints,
@@ -327,15 +329,15 @@ export class AdminDashboardService {
       bookingsToday, tripsToday, totalPassengers, pendingPayments, newRideRequests,
       completedTrips, cancelledTrips, upcomingTrips, inProgressTrips, abandonedTrips,
     ] = await Promise.all([
-      this.prisma.user.count({ where: { role: 'driver' } }),
-      this.prisma.user.count({ where: ACTIVE_BUCKET }),
+      this.prisma.user.count({ where: { role: 'driver', ...excludeDeletion } }),
+      this.prisma.user.count({ where: { ...ACTIVE_BUCKET, ...excludeDeletion } }),
       this.prisma.trip.count(),
       this.prisma.trip.count({ where: { status: { in: [...TRIP_ACTIVE_STATUSES] } } }),
       this.prisma.vehicle.count(),
       this.countPendingDocuments(),
-      this.prisma.user.count({ where: PENDING_BUCKET }),
+      this.prisma.user.count({ where: { ...PENDING_BUCKET, ...excludeDeletion } }),
       this.prisma.user.findMany({
-        where: PENDING_BUCKET,
+        where: { ...PENDING_BUCKET, ...excludeDeletion },
         select: { id: true, fullName: true, phone: true, verificationSubmittedAt: true, createdAt: true },
         orderBy: { createdAt: 'asc' },
         take: 10,
@@ -384,7 +386,7 @@ export class AdminDashboardService {
       driversBefore, passengersBefore, tripsYesterday, bookingsYesterday,
       totalTripsBefore, completedTripsBefore,
     ] = await Promise.all([
-      this.prisma.user.count({ where: { role: 'driver', createdAt: { lte: cutoff } } }),
+      this.prisma.user.count({ where: { role: 'driver', createdAt: { lte: cutoff }, ...excludeDeletion } }),
       this.prisma.user.count({ where: { role: 'passenger', createdAt: { lte: cutoff } } }),
       this.prisma.trip.count({
         where: { departureTime: { gte: yesterdayStart, lt: todayStart } },
@@ -559,9 +561,28 @@ export class AdminDashboardService {
 
   // ===== US2: Drivers directory =====
 
+  private async pendingDeletionDriverIds(): Promise<string[]> {
+    const rows = await this.prisma.deletionRequest.findMany({
+      where: { status: { in: ['pending', 'approved'] } },
+      select: { userId: true },
+    });
+    return rows.map((row) => row.userId).filter(Boolean);
+  }
+
+  private static notPendingDeletion(ids: string[]): Prisma.UserWhereInput {
+    return ids.length ? { id: { notIn: ids } } : {};
+  }
+
   async listDrivers(query: DriversListQuery): Promise<Record<string, unknown>> {
     const { page, limit, offset } = parsePagination(query);
-    const where: Prisma.UserWhereInput = { ...(bucketWhereFor(query.status) || { role: 'driver' }) };
+    const deletionIds = await this.pendingDeletionDriverIds();
+    const deletionSet = new Set(deletionIds);
+    const where: Prisma.UserWhereInput = query.status === 'deletion_requested'
+      ? { role: 'driver', id: { in: deletionIds } }
+      : {
+        ...(bucketWhereFor(query.status) || { role: 'driver' }),
+        ...AdminDashboardService.notPendingDeletion(deletionIds),
+      };
 
     if (query.search) {
       const term = query.search;
@@ -632,32 +653,51 @@ export class AdminDashboardService {
         id: u.id,
         name: u.fullName,
         phone: maskPhone(u.phone),
+        phone_full: u.phone,
         registration_date: u.createdAt,
         avg_rating: Number(u.avgRating || 0),
         total_trips: tripCountByDriver.get(u.id) ?? 0,
         completed_trips: completedTripCountByDriver.get(u.id) ?? 0,
         plan_name: u.driverSubscriptions[0]?.planName ?? null,
         balance: Number(u.totalBalance || 0),
-        account_status: deriveAccountStatus({ status: u.status, verificationStatus: u.verificationStatus }),
+        account_status: deletionSet.has(u.id) ? 'deletion_requested' : deriveAccountStatus({ status: u.status, verificationStatus: u.verificationStatus }),
+        deletion_requested: deletionSet.has(u.id),
       })),
       pagination: buildPagination(count, page, limit),
     };
   }
 
   async getDriverStats(): Promise<Record<string, unknown>> {
-    const [total, active, suspended, pending] = await Promise.all([
-      this.prisma.user.count({ where: { role: 'driver' } }),
-      this.prisma.user.count({ where: ACTIVE_BUCKET }),
-      this.prisma.user.count({ where: SUSPENDED_BUCKET }),
-      this.prisma.user.count({ where: PENDING_BUCKET }),
+    const deletionIds = await this.pendingDeletionDriverIds();
+    const exclude = AdminDashboardService.notPendingDeletion(deletionIds);
+    const [total, active, suspended, pending, pendingDeletion] = await Promise.all([
+      this.prisma.user.count({ where: { role: 'driver', ...exclude } }),
+      this.prisma.user.count({ where: { ...ACTIVE_BUCKET, ...exclude } }),
+      this.prisma.user.count({ where: { ...SUSPENDED_BUCKET, ...exclude } }),
+      this.prisma.user.count({ where: { ...PENDING_BUCKET, ...exclude } }),
+      deletionIds.length
+        ? this.prisma.user.count({ where: { role: 'driver', id: { in: deletionIds } } })
+        : 0,
     ]);
-    return { total_drivers: total, active_drivers: active, suspended_drivers: suspended, pending_drivers: pending };
+    return {
+      total_drivers: total,
+      active_drivers: active,
+      suspended_drivers: suspended,
+      pending_drivers: pending,
+      pending_deletion_drivers: pendingDeletion,
+    };
   }
 
   // Figma 9695:33146 (تحميل التقرير): same filters as listDrivers, CSV with
   // masked phones, capped at 5000 rows.
   async exportDrivers(query: DriversListQuery): Promise<string> {
-    const where: Prisma.UserWhereInput = { ...(bucketWhereFor(query.status) || { role: 'driver' }) };
+    const deletionIds = await this.pendingDeletionDriverIds();
+    const where: Prisma.UserWhereInput = query.status === 'deletion_requested'
+      ? { role: 'driver', id: { in: deletionIds } }
+      : {
+        ...(bucketWhereFor(query.status) || { role: 'driver' }),
+        ...AdminDashboardService.notPendingDeletion(deletionIds),
+      };
     if (query.search) {
       const term = query.search;
       where.OR = [
@@ -897,22 +937,29 @@ export class AdminDashboardService {
 
   async getDriverHeader(driverId: string): Promise<Record<string, unknown>> {
     const driver = await this.getDriverOrThrow(driverId);
-    const [totalTrips, completedTrips, canceledTrips, reviewsCount, ratingAgg] = await Promise.all([
+    const [totalTrips, completedTrips, canceledTrips, reviewsCount, ratingAgg, deletionRequest] = await Promise.all([
       this.prisma.trip.count({ where: { driverId } }),
       this.prisma.trip.count({ where: { driverId, status: 'completed' } }),
       this.prisma.trip.count({ where: { driverId, status: 'cancelled' } }),
       this.prisma.rating.count({ where: { rateeId: driverId } }),
       this.prisma.rating.aggregate({ where: { rateeId: driverId }, _avg: { stars: true } }),
+      this.prisma.deletionRequest.findFirst({
+        where: { userId: driverId, status: { in: ['pending', 'approved'] } },
+        select: { id: true, status: true, createdAt: true },
+      }),
     ]);
     const computedAvg = ratingAgg._avg.stars != null ? Number(ratingAgg._avg.stars) : null;
     return {
       id: driver.id,
       name: driver.fullName,
       phone: maskPhone(driver.phone),
+      phone_full: driver.phone,
       age: driver.age != null ? Number(driver.age) : null,
       city: null,
       avatar_url: toAbsoluteMediaUrl(driver.avatarUrl),
-      account_status: deriveAccountStatus(driver),
+      account_status: deletionRequest ? 'deletion_requested' : deriveAccountStatus(driver),
+      deletion_requested: Boolean(deletionRequest),
+      deletion_requested_at: deletionRequest?.createdAt ?? null,
       trip_stats: { total_trips: totalTrips, completed_trips: completedTrips, canceled_trips: canceledTrips },
       balance: Number(driver.totalBalance || 0),
       avg_rating: computedAvg ?? Number(driver.avgRating || 0),
@@ -937,6 +984,7 @@ export class AdminDashboardService {
       personal_info: {
         name: driver.fullName,
         phone: maskPhone(driver.phone),
+        phone_full: driver.phone,
         registration_date: driver.createdAt,
         last_login: driver.lastLoginAt,
         city: null,
@@ -997,32 +1045,39 @@ export class AdminDashboardService {
     };
   }
 
-  async getDriverEvaluations(driverId: string, query: RecentTripsQuery): Promise<Record<string, unknown>> {
+  async getDriverEvaluations(driverId: string, query: DriverEvaluationsQuery): Promise<Record<string, unknown>> {
     await this.getDriverOrThrow(driverId);
     const { page, limit, offset } = parsePagination(query);
+    const direction = query.direction === 'given' ? 'given' : 'received';
+    const where: Prisma.RatingWhereInput = direction === 'given'
+      ? { raterId: driverId }
+      : { rateeId: driverId };
     const [summary, distRows, tagRows, rows, count] = await Promise.all([
       this.prisma.rating.aggregate({
-        where: { rateeId: driverId },
+        where,
         _avg: { stars: true },
         _count: { id: true },
       }),
       this.prisma.rating.groupBy({
         by: ['stars'],
-        where: { rateeId: driverId },
+        where,
         _count: { id: true },
       }),
       this.prisma.rating.findMany({
-        where: { rateeId: driverId, tags: { isEmpty: false } },
+        where: { ...where, tags: { isEmpty: false } },
         select: { tags: true },
       }),
       this.prisma.rating.findMany({
-        where: { rateeId: driverId },
-        include: { rater: { select: { id: true, fullName: true, avatarUrl: true } } },
+        where,
+        include: {
+          rater: { select: { id: true, fullName: true, avatarUrl: true } },
+          ratee: { select: { id: true, fullName: true, avatarUrl: true } },
+        },
         orderBy: { createdAt: 'desc' },
         skip: offset,
         take: limit,
       }),
-      this.prisma.rating.count({ where: { rateeId: driverId } }),
+      this.prisma.rating.count({ where }),
     ]);
     const countsByStar = new Map(distRows.map((r) => [r.stars, r._count.id]));
     const tagCounts = new Map<string, number>();
@@ -1030,19 +1085,25 @@ export class AdminDashboardService {
       for (const tag of row.tags || []) tagCounts.set(tag, (tagCounts.get(tag) || 0) + 1);
     }
     const topTags = [...tagCounts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 10).map(([t]) => t);
-    const reviews = rows.map((r) => ({
-      passenger_name: r.rater?.fullName || 'Unknown',
-      passenger_avatar: toAbsoluteMediaUrl(r.rater?.avatarUrl),
-      rating: r.stars,
-      stars: r.stars,
-      comment: r.review,
-      text: r.review,
-      tags: r.tags ?? [],
-      was_late: r.wasLate,
-      date: r.createdAt,
-      created_at: r.createdAt,
-    }));
+    const reviews = rows.map((r) => {
+      const counterpart = direction === 'received' ? r.rater : r.ratee;
+      return {
+        id: r.id,
+        direction,
+        passenger_name: counterpart?.fullName || 'Unknown',
+        passenger_avatar: toAbsoluteMediaUrl(counterpart?.avatarUrl),
+        rating: r.stars,
+        stars: r.stars,
+        comment: r.review,
+        text: r.review,
+        tags: r.tags ?? [],
+        was_late: r.wasLate,
+        date: r.createdAt,
+        created_at: r.createdAt,
+      };
+    });
     return {
+      direction,
       summary: {
         average_rating: summary._avg.stars != null ? Number(summary._avg.stars) : 0,
         total_reviews: summary._count.id,

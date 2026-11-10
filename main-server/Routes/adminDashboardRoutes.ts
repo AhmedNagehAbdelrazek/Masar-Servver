@@ -4,7 +4,7 @@ import * as c from '../Controllers/adminDashboardController';
 import protect from '../middlewares/protect';
 import { roleGuard } from '../middlewares/roleGuard';
 import validate from '../middlewares/validatorMiddleware';
-import { driverIdParamValidation, documentKeyParamValidation, statusBodyValidation, accountActionBodyValidation, rejectReasonBodyValidation, recentTripsQueryValidation, driversListValidation, driverTripsQueryValidation, reservationsQueryValidation, tripIdParamValidation, driverNotificationBodyValidation, cancelTripBodyValidation } from '../utils/validators/adminDashboardValidator';
+import { driverIdParamValidation, documentKeyParamValidation, statusBodyValidation, accountActionBodyValidation, rejectReasonBodyValidation, recentTripsQueryValidation, driversListValidation, driverTripsQueryValidation, driverEvaluationsQueryValidation, reservationsQueryValidation, tripIdParamValidation, driverNotificationBodyValidation, cancelTripBodyValidation } from '../utils/validators/adminDashboardValidator';
 
 // ===== US1: Global dashboard =====
 router.get('/summary', protect, roleGuard(['admin']), c.getSummary);
@@ -22,7 +22,7 @@ router.get('/drivers/export', protect, roleGuard(['admin']), ...driversListValid
 router.get('/drivers/:driver_id', protect, roleGuard(['admin']), ...driverIdParamValidation, validate, c.getDriverHeader);
 router.get('/drivers/:driver_id/overview', protect, roleGuard(['admin']), ...driverIdParamValidation, validate, c.getDriverOverview);
 router.get('/drivers/:driver_id/trips', protect, roleGuard(['admin']), ...driverIdParamValidation, ...driverTripsQueryValidation, validate, c.listDriverTrips);
-router.get('/drivers/:driver_id/evaluations', protect, roleGuard(['admin']), ...driverIdParamValidation, ...recentTripsQueryValidation, validate, c.getDriverEvaluations);
+router.get('/drivers/:driver_id/evaluations', protect, roleGuard(['admin']), ...driverIdParamValidation, ...driverEvaluationsQueryValidation, validate, c.getDriverEvaluations);
 router.get('/drivers/:driver_id/account-log', protect, roleGuard(['admin']), ...driverIdParamValidation, validate, c.getAccountLog);
 router.get('/drivers/:driver_id/car', protect, roleGuard(['admin']), ...driverIdParamValidation, validate, c.getCarDetails);
 router.get('/drivers/:driver_id/documents', protect, roleGuard(['admin']), ...driverIdParamValidation, validate, c.getDocuments);

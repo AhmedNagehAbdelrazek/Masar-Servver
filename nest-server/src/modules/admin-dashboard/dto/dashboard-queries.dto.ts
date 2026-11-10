@@ -31,6 +31,14 @@ export class RecentTripsQuery extends PaginationQuery {
   status?: string;
 }
 
+// Port of driverEvaluationsQueryValidation. The driver ratings screen shows
+// both directions: ratings the driver received and ratings the driver gave.
+export class DriverEvaluationsQuery extends RecentTripsQuery {
+  @IsOptional()
+  @IsIn(['given', 'received'])
+  direction?: 'given' | 'received';
+}
+
 // Port of driversListValidation.
 export class DriversListQuery extends PaginationQuery {
   @IsOptional()
@@ -39,7 +47,7 @@ export class DriversListQuery extends PaginationQuery {
   search?: string;
 
   @IsOptional()
-  @IsIn(['active', 'suspended', 'pending', 'blocked'])
+  @IsIn(['active', 'suspended', 'pending', 'blocked', 'deletion_requested'])
   status?: string;
 
   @IsOptional()

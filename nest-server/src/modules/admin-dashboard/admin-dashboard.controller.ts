@@ -6,6 +6,7 @@ import { AdminDashboardService } from './admin-dashboard.service.js';
 import { AccountActionDto, CancelTripDto, RejectDocumentDto, SetDriverStatusDto } from './dto/admin-actions.dto.js';
 import { SendDriverNotificationDto } from './dto/driver-notification.dto.js';
 import {
+  DriverEvaluationsQuery,
   DriversListQuery,
   DriverTripsQuery,
   RecentTripsQuery,
@@ -89,7 +90,7 @@ export class AdminDashboardController {
   @Get('drivers/:driver_id/evaluations')
   getDriverEvaluations(
     @Param() params: DriverIdParam,
-    @Query() query: RecentTripsQuery,
+    @Query() query: DriverEvaluationsQuery,
   ): Promise<Record<string, unknown>> {
     return this.dashboard.getDriverEvaluations(params.driver_id, query);
   }

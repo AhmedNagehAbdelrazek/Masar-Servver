@@ -130,6 +130,10 @@ async function seedDossier() {
     bookingId: bookingCompleted.id, raterId: PASSENGER_ID, rateeId: DRIVER_ID,
     stars: 4, review: 'Good', tags: ['Clean Car'], createdat: new Date(Date.now() - 86400000),
   });
+  await Rating.create({
+    bookingId: bookingCompleted.id, raterId: DRIVER_ID, rateeId: PASSENGER_ID,
+    stars: 3, review: 'Passenger was late', tags: ['Late'],
+  });
 
   await Penalty.create({
     userId: DRIVER_ID, type: PENALTY_TYPES.WARNING, penaltyType: 'speeding',
@@ -240,6 +244,33 @@ describe('GET /api/admin/dashboard/drivers/:driver_id/evaluations', () => {
     expect(res.body.top_tags[0]).toBe('Clean Car');
     expect(res.body.reviews[0].passenger_name).toBe('Sara Passenger');
     expect(res.body.reviews[0].comment).toBe('Great ride');
+  });
+
+  it('direction=given returns ratings the driver gave to passengers', async () => {
+    const res = await getAgent()
+      .get(`/api/admin/dashboard/drivers/${DRIVER_ID}/evaluations?direction=given`)
+      .set('Authorization', `Bearer ${adminToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.direction).toBe('given');
+    expect(res.body.summary).toMatchObject({ total_reviews: 1 });
+    expect(res.body.reviews).toHaveLength(1);
+    expect(res.body.reviews[0]).toMatchObject({
+      direction: 'given',
+      passenger_name: 'Sara Passenger',
+      stars: 3,
+      comment: 'Passenger was late',
+    });
+  });
+
+  it('direction=received only returns ratings the driver received', async () => {
+    const res = await getAgent()
+      .get(`/api/admin/dashboard/drivers/${DRIVER_ID}/evaluations?direction=received`)
+      .set('Authorization', `Bearer ${adminToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.summary).toMatchObject({ total_reviews: 2 });
+    expect(res.body.reviews.every((r) => r.direction === 'received')).toBe(true);
   });
 });
 

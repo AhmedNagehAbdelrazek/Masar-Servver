@@ -77,6 +77,63 @@ describe('Admin passengers', () => {
     });
   });
 
+  it('GET /api/admin/passengers/:id/ratings supports given and received directions', async () => {
+    const vehicle = await ctx.prisma.vehicle.create({
+      data: {
+        driverId: DRIVER_ID,
+        manufacturer: 'Kia',
+        model: 'Rio',
+        vehicleType: 'sedan',
+        plateNumber: 'PAX-RATINGS-1',
+        seats: 4,
+      },
+    });
+    const trip = await ctx.prisma.trip.create({
+      data: {
+        driverId: DRIVER_ID,
+        vehicleId: vehicle.id,
+        originCity: 'Amman',
+        destinationCity: 'Irbid',
+        departureTime: new Date('2026-09-01T08:00:00Z'),
+        totalSeats: 4,
+        availableSeats: 3,
+        farePerSeat: 10,
+        status: 'completed',
+      },
+    });
+    const booking = await ctx.prisma.booking.create({
+      data: {
+        tripId: trip.id,
+        passengerId: PASSENGER_ID,
+        agreedFare: 10,
+        referenceCode: 'PAXRAT01',
+        status: 'completed',
+      },
+    });
+    await ctx.prisma.rating.createMany({
+      data: [
+        { bookingId: booking.id, raterId: PASSENGER_ID, rateeId: DRIVER_ID, stars: 5, review: 'Great ride' },
+        { bookingId: booking.id, raterId: DRIVER_ID, rateeId: PASSENGER_ID, stars: 2, review: 'Was late' },
+      ],
+    });
+
+    const given = await ctx.agent
+      .get(`/api/admin/passengers/${PASSENGER_ID}/ratings?direction=given`)
+      .set('Authorization', `Bearer ${adminToken}`);
+    expect(given.status).toBe(200);
+    expect(given.body.data).toHaveLength(1);
+    expect(given.body.data[0]).toMatchObject({ direction: 'given', stars: 5, review: 'Great ride' });
+    expect(given.body.data[0].ratee.fullName).toBe('Omar Khaled');
+
+    const received = await ctx.agent
+      .get(`/api/admin/passengers/${PASSENGER_ID}/ratings?direction=received`)
+      .set('Authorization', `Bearer ${adminToken}`);
+    expect(received.status).toBe(200);
+    expect(received.body.data).toHaveLength(1);
+    expect(received.body.data[0]).toMatchObject({ direction: 'received', stars: 2, review: 'Was late' });
+    expect(received.body.data[0].rater.fullName).toBe('Omar Khaled');
+  });
+
   it('GET /api/admin/passengers lists with search + pagination', async () => {
     const res = await ctx.agent
       .get('/api/admin/passengers?search=Sara')
