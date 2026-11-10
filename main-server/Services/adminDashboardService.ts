@@ -173,19 +173,25 @@ async function pendingDocumentKeysFor(driverIds) {
 }
 
 async function countPendingDocuments() {
-  const fileColumns = [
-    'user_identification_front', 'user_identification_back', 'personal_image_with_id',
-    'lincese_front', 'lincese_back',
+  const documentSources = [
+    { table: 'driver_profiles', alias: 'dp', column: 'user_identification_front', key: 'id_front' },
+    { table: 'driver_profiles', alias: 'dp', column: 'user_identification_back', key: 'id_back' },
+    { table: 'driver_profiles', alias: 'dp', column: 'personal_image_with_id', key: 'face_photo' },
+    { table: 'driver_profiles', alias: 'dp', column: 'lincese_front', key: 'license_front' },
+    { table: 'driver_profiles', alias: 'dp', column: 'lincese_back', key: 'license_back' },
+    { table: 'vehicles', alias: 'v', column: 'registration_doc_front', key: 'registration_front' },
+    { table: 'vehicles', alias: 'v', column: 'registration_doc_back', key: 'registration_back' },
   ];
-  const vehicleColumns = ['registration_doc_front', 'registration_doc_back'];
-  const selects = [
-    ...fileColumns.map((c) => `SELECT COUNT(*)::int AS cnt FROM driver_profiles dp JOIN users u ON u.id = dp.driver_id AND u.role = 'driver' WHERE dp.${c} IS NOT NULL`),
-    ...vehicleColumns.map((c) => `SELECT COUNT(*)::int AS cnt FROM vehicles v JOIN users u ON u.id = v.driver_id AND u.role = 'driver' WHERE v.${c} IS NOT NULL`),
-  ].join(' UNION ALL ');
-  const [uploaded] = await sequelize.query(`SELECT SUM(cnt)::int AS total FROM (${selects}) s`);
-  const uploadedTotal = Number(uploaded?.[0]?.total || 0);
-  const decided = await DocumentReview.count();
-  return Math.max(0, uploadedTotal - decided);
+  const selects = documentSources.map(({ table, alias, column, key }) => (
+    `SELECT COUNT(*)::int AS cnt
+       FROM ${table} ${alias}
+       JOIN users u ON u.id = ${alias}.driver_id AND u.role = 'driver'
+       LEFT JOIN document_reviews dr
+         ON dr.driver_id = ${alias}.driver_id AND dr.document_key = '${key}'
+      WHERE ${alias}.${column} IS NOT NULL AND dr.id IS NULL`
+  )).join(' UNION ALL ');
+  const [rows] = await sequelize.query(`SELECT COALESCE(SUM(cnt), 0)::int AS total FROM (${selects}) s`);
+  return Number(rows?.[0]?.total || 0);
 }
 
 function tripPassengerAggregates(tripIds) {
@@ -258,7 +264,7 @@ async function fetchRecentTrips({ limit, offset = 0, status = null, search = nul
 async function getSummary() {
   const [
     totalDrivers, activeDrivers, totalTrips, activeTrips, totalVehicles,
-    pendingDocsCount, pendingDriversRows, unresolvedComplaints,
+    pendingDocsCount, pendingDriversCount, pendingDriversRows, unresolvedComplaints,
     topRoutes, recentTripRows, latestComplaints,
     bookingsToday, tripsToday, totalPassengers, pendingPayments, newRideRequests,
     completedTrips, cancelledTrips, upcomingTrips, inProgressTrips, abandonedTrips,
@@ -269,6 +275,7 @@ async function getSummary() {
     Trip.count({ where: { status: { [Op.in]: TRIP_ACTIVE_STATUSES } } }),
     Vehicle.count(),
     countPendingDocuments(),
+    User.count({ where: PENDING_BUCKET }),
     User.findAll({ where: PENDING_BUCKET, attributes: ['id', 'fullName', 'phone', 'verificationSubmittedAt', 'createdat'], order: [['createdat', 'ASC']], limit: 10 }),
     Complaint.count({ where: { status: { [Op.in]: [COMPLAINT_STATUS.OPEN, COMPLAINT_STATUS.REVIEWING] } } }),
     Trip.findAll({
@@ -314,6 +321,7 @@ async function getSummary() {
       active_trips: activeTrips,
       total_vehicles: totalVehicles,
       pending_documents: pendingDocsCount,
+      pending_drivers: pendingDriversCount,
       bookings_today: bookingsToday,
       trips_today: tripsToday,
       total_passengers: totalPassengers,
@@ -327,7 +335,7 @@ async function getSummary() {
     },
     alerts: [
       { type: 'pending_verification_documents', message: 'ALERT_PENDING_VERIFICATION_DOCUMENTS', count: pendingDocsCount },
-      { type: 'pending_review_drivers', message: 'ALERT_PENDING_REVIEW_DRIVERS', count: pendingDriversRows.length >= 10 ? `${pendingDriversRows.length}+` : pendingDriversRows.length },
+      { type: 'pending_review_drivers', message: 'ALERT_PENDING_REVIEW_DRIVERS', count: pendingDriversCount },
       { type: 'unresolved_complaints', message: 'ALERT_UNRESOLVED_COMPLAINTS', count: unresolvedComplaints },
     ],
     top_routes: topRoutes.map((r) => ({

@@ -235,22 +235,27 @@ export class AdminDashboardService {
   }
 
   private async countPendingDocuments(): Promise<number> {
-    const profileColumns = [
-      'userIdentificationFront', 'userIdentificationBack', 'personalImageWithId',
-      'linceseFront', 'linceseBack',
-    ] as const;
-    const vehicleColumns = ['registrationDocFront', 'registrationDocBack'] as const;
-    const counts = await Promise.all([
-      ...profileColumns.map((col) => this.prisma.driverProfile.count({
-        where: { [col]: { not: null }, driver: { role: 'driver' } },
-      })),
-      ...vehicleColumns.map((col) => this.prisma.vehicle.count({
-        where: { [col]: { not: null }, driver: { role: 'driver' } },
-      })),
-    ]);
-    const uploadedTotal = counts.reduce((sum, n) => sum + n, 0);
-    const decided = await this.prisma.documentReview.count();
-    return Math.max(0, uploadedTotal - decided);
+    const documentSources = [
+      { table: 'driver_profiles', alias: 'dp', column: 'user_identification_front', key: 'id_front' },
+      { table: 'driver_profiles', alias: 'dp', column: 'user_identification_back', key: 'id_back' },
+      { table: 'driver_profiles', alias: 'dp', column: 'personal_image_with_id', key: 'face_photo' },
+      { table: 'driver_profiles', alias: 'dp', column: 'lincese_front', key: 'license_front' },
+      { table: 'driver_profiles', alias: 'dp', column: 'lincese_back', key: 'license_back' },
+      { table: 'vehicles', alias: 'v', column: 'registration_doc_front', key: 'registration_front' },
+      { table: 'vehicles', alias: 'v', column: 'registration_doc_back', key: 'registration_back' },
+    ];
+    const selects = documentSources.map(({ table, alias, column, key }) => (
+      `SELECT COUNT(*)::int AS cnt
+         FROM ${table} ${alias}
+         JOIN users u ON u.id = ${alias}.driver_id AND u.role = 'driver'
+         LEFT JOIN document_reviews dr
+           ON dr.driver_id = ${alias}.driver_id AND dr.document_key = '${key}'
+        WHERE ${alias}.${column} IS NOT NULL AND dr.id IS NULL`
+    )).join(' UNION ALL ');
+    const rows = await this.prisma.$queryRawUnsafe<Array<{ total: number }>>(
+      `SELECT COALESCE(SUM(cnt), 0)::int AS total FROM (${selects}) s`,
+    );
+    return Number(rows[0]?.total || 0);
   }
 
   private async resolveImages(imageIds: (number | null | undefined)[]): Promise<Map<number, { id: number; url: string; createdAt: Date }>> {
@@ -316,7 +321,7 @@ export class AdminDashboardService {
     const tomorrowStart = new Date(todayStart.getTime() + 24 * 3600 * 1000);
     const [
       totalDrivers, activeDrivers, totalTrips, activeTrips, totalVehicles,
-      pendingDocsCount, pendingDriversRows, unresolvedComplaints,
+      pendingDocsCount, pendingDriversCount, pendingDriversRows, unresolvedComplaints,
       topRouteRows, recentTripRows, latestComplaints,
       bookingsToday, tripsToday, totalPassengers, pendingPayments, newRideRequests,
       completedTrips, cancelledTrips, upcomingTrips, inProgressTrips, abandonedTrips,
@@ -327,6 +332,7 @@ export class AdminDashboardService {
       this.prisma.trip.count({ where: { status: { in: [...TRIP_ACTIVE_STATUSES] } } }),
       this.prisma.vehicle.count(),
       this.countPendingDocuments(),
+      this.prisma.user.count({ where: PENDING_BUCKET }),
       this.prisma.user.findMany({
         where: PENDING_BUCKET,
         select: { id: true, fullName: true, phone: true, verificationSubmittedAt: true, createdAt: true },
@@ -379,6 +385,7 @@ export class AdminDashboardService {
         active_trips: activeTrips,
         total_vehicles: totalVehicles,
         pending_documents: pendingDocsCount,
+        pending_drivers: pendingDriversCount,
         bookings_today: bookingsToday,
         trips_today: tripsToday,
         total_passengers: totalPassengers,
@@ -392,7 +399,7 @@ export class AdminDashboardService {
       },
       alerts: [
         { type: 'pending_verification_documents', message: 'ALERT_PENDING_VERIFICATION_DOCUMENTS', count: pendingDocsCount },
-        { type: 'pending_review_drivers', message: 'ALERT_PENDING_REVIEW_DRIVERS', count: pendingDriversRows.length >= 10 ? `${pendingDriversRows.length}+` : pendingDriversRows.length },
+        { type: 'pending_review_drivers', message: 'ALERT_PENDING_REVIEW_DRIVERS', count: pendingDriversCount },
         { type: 'unresolved_complaints', message: 'ALERT_UNRESOLVED_COMPLAINTS', count: unresolvedComplaints },
       ],
       top_routes: topRouteRows.map((r) => ({

@@ -84,7 +84,7 @@ describe('GET /api/admin/dashboard/summary â€” empty platform', () => {
     expect(res.status).toBe(200);
     expect(res.body.kpis).toMatchObject({
       total_drivers: 0, active_drivers: 0, total_trips: 0,
-      active_trips: 0, total_vehicles: 0, pending_documents: 0,
+      active_trips: 0, total_vehicles: 0, pending_documents: 0, pending_drivers: 0,
     });
     expect(res.body.alerts.every((a) => typeof a.count === 'number')).toBe(true);
     expect(res.body.top_routes).toEqual([]);
@@ -108,6 +108,7 @@ describe('GET /api/admin/dashboard/summary â€” seeded platform', () => {
     expect(res.status).toBe(200);
     expect(res.body.kpis).toMatchObject({
       total_drivers: 3, active_drivers: 1, total_trips: 2, active_trips: 1, total_vehicles: 1,
+      pending_drivers: 1, pending_documents: 1,
     });
 
     const alertTypes = res.body.alerts.map((a) => a.type);
@@ -115,6 +116,7 @@ describe('GET /api/admin/dashboard/summary â€” seeded platform', () => {
       'pending_verification_documents', 'pending_review_drivers', 'unresolved_complaints',
     ]));
     expect(res.body.alerts.find((a) => a.type === 'unresolved_complaints').count).toBe(1);
+    expect(res.body.alerts.find((a) => a.type === 'pending_review_drivers').count).toBe(1);
 
     expect(res.body.top_routes.length).toBeGreaterThan(0);
     const ammanIrbid = res.body.top_routes.find((r) => r.origin === 'Amman' && r.destination === 'Irbid');
@@ -132,6 +134,42 @@ describe('GET /api/admin/dashboard/summary â€” seeded platform', () => {
     expect(res.body.latest_complaints).toHaveLength(2);
     const openComplaint = res.body.latest_complaints.find((c) => c.status === 'open');
     expect(openComplaint.accused.name).toBe('Active Driver');
+  });
+
+  it('separates pending drivers from pending document files', async () => {
+    const profile = await DriverProfile.findOne({ where: { driverId: DRIVER_B_ID } });
+    const imageId = profile.userIdentificationFront;
+    await profile.update({
+      userIdentificationFront: imageId,
+      userIdentificationBack: imageId,
+      personalImageWithId: imageId,
+      linceseFront: imageId,
+      linceseBack: imageId,
+    });
+    await Vehicle.create({
+      driverId: DRIVER_B_ID, manufacturer: 'Kia', model: 'Cerato',
+      vehicleType: 'sedan', modelYear: 2021, plateNumber: `B-${Date.now() % 100000}`,
+      color: 'Gray', seats: 4, isVerified: false,
+      registrationDocFront: imageId, registrationDocBack: imageId,
+    });
+    await DocumentReview.create({
+      driverId: DRIVER_B_ID, documentKey: 'id_front', decision: 'approved',
+      decidedBy: ADMIN_ID,
+    });
+
+    const res = await getAgent()
+      .get('/api/admin/dashboard/summary')
+      .set('Authorization', `Bearer ${adminToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.kpis).toMatchObject({
+      total_drivers: 3,
+      pending_drivers: 1,
+      pending_documents: 6,
+    });
+    expect(res.body.alerts.find((a) => a.type === 'pending_review_drivers').count).toBe(1);
+    const pendingReq = res.body.pending_requests.find((p) => p.driver_id === DRIVER_B_ID);
+    expect(pendingReq.pending_documents).toHaveLength(6);
   });
 });
 
