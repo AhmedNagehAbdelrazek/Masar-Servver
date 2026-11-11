@@ -83,8 +83,7 @@ export class NotificationsService {
     }
     if (allowedChannels.includes('push')) {
       try {
-        await this.push.send(user, message, data);
-        results.push = true;
+        results.push = await this.push.send(user, message, data);
       } catch (err) {
         results.push = false;
         this.logger.warn(`[notification] push failed: ${(err as Error).message}`);

@@ -1541,24 +1541,28 @@ export class AdminDashboardService {
     driverId: string,
     dto: { title: string; body: string; type: string },
   ): Promise<Record<string, unknown>> {
-    await this.getDriverOrThrow(driverId);
-    const notification = await this.prisma.notification.create({
-      data: {
-        userId: driverId,
-        type: 'ADMIN_NOTICE',
-        title: dto.title,
-        body: dto.body,
-        data: { category: dto.type, sent_by: adminId },
-        sentVia: ['in_app'],
-      },
+    const driver = await this.getDriverOrThrow(driverId);
+    const results = await this.notifications.sendToUser(driver as unknown as NotifyUser, 'ADMIN_NOTICE', {
+      channels: ['in_app', 'push'],
+      vars: { title: dto.title, body: dto.body },
+      data: { category: dto.type, sent_by: adminId },
     });
+    const inApp = results?.in_app as { id?: string } | null | undefined;
+    const notificationId = inApp?.id ?? null;
+    const notification = notificationId
+      ? await this.prisma.notification.findUnique({ where: { id: notificationId } })
+      : null;
     return {
       notification: {
-        id: notification.id,
-        user_id: notification.userId,
-        title: notification.title,
+        id: notificationId,
+        user_id: driverId,
+        title: dto.title,
         category: dto.type,
-        created_at: notification.createdAt,
+        created_at: notification?.createdAt ?? new Date().toISOString(),
+      },
+      delivery: {
+        in_app: Boolean(notificationId),
+        push: results?.push === true,
       },
     };
   }

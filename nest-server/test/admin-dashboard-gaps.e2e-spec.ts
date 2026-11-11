@@ -1,10 +1,11 @@
 // Dashboard audit gaps: driver notifications, home KPIs, drivers export,
 // ban confirmation + lift closes bans.
 // Figma: 9928:23297, 9524:10053, 9695:33146, 10012:23728/23988, 10004:22773.
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { resetTestState } from '../src/test/db.js';
 import { generateAccessToken } from '../src/test/jwt.js';
 import { createTestApp, type TestContext } from '../src/test/test-app.js';
+import { PushChannel } from '../src/modules/notifications/channels/push.channel.js';
 
 const ADMIN_ID = '8b9d6bcd-bbfd-4b2d-9b5d-ab8dfbbd4d90';
 const DRIVER_ID = '8b9d6bcd-bbfd-4b2d-9b5d-ab8dfbbd4d81';
@@ -70,17 +71,31 @@ describe('Admin dashboard audit gaps', () => {
       .send({ title: '', body: 'x', type: 'bogus' });
     expect([400, 422]).toContain(bad.status);
 
+    await ctx.prisma.user.update({
+      where: { id: DRIVER_ID },
+      data: { fcmToken: 'test-fcm-token' },
+    });
+    const push = ctx.app.get(PushChannel);
+    const pushSpy = vi.spyOn(push, 'send').mockResolvedValue(true);
+
     const ok = await ctx.agent
       .post(`/api/admin/dashboard/drivers/${DRIVER_ID}/notifications`)
       .set('Authorization', `Bearer ${adminToken}`)
       .send({ title: 'Package expiring', body: 'Renew soon', type: 'package' });
     expect(ok.status).toBe(200);
     expect(ok.body.notification).toMatchObject({ category: 'package' });
+    expect(ok.body.delivery).toEqual({ in_app: true, push: true });
 
     const row = await ctx.prisma.notification.findFirst({
       where: { userId: DRIVER_ID, type: 'ADMIN_NOTICE' },
     });
     expect(row?.title).toBe('Package expiring');
+    expect(pushSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ id: DRIVER_ID, fcmToken: 'test-fcm-token' }),
+      expect.objectContaining({ title: 'Package expiring', body: 'Renew soon' }),
+      expect.objectContaining({ category: 'package' }),
+    );
+    pushSpy.mockRestore();
   });
 
   it('summary carries the home KPI cards', async () => {

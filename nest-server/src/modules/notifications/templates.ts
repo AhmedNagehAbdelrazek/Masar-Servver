@@ -6,6 +6,10 @@ export interface TemplateEntry {
 }
 
 export const TEMPLATES: Record<string, { ar: TemplateEntry; en: TemplateEntry }> = {
+  ADMIN_NOTICE: {
+    ar: { title: '{title}', body: '{body}' },
+    en: { title: '{title}', body: '{body}' },
+  },
   SUBSCRIPTION_SUBMITTED: {
     ar: { title: 'تم استلام طلب الاشتراك', body: 'طلب الاشتراك الخاص بك قيد مراجعة الإدارة وسيتم إشعارك عند التفعيل.' },
     en: { title: 'Subscription submitted', body: 'Your subscription request is pending admin review. You will be notified once it is activated.' },

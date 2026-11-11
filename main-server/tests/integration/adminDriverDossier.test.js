@@ -1,7 +1,7 @@
 ﻿const { getAgent } = require('../setup/setup');
 const {
   User, Vehicle, Trip, Booking, Rating, Penalty, Complaint, DriverProfile,
-  DriverSubscription, UploadedImage, SubscriptionPlan,
+  DriverSubscription, UploadedImage, SubscriptionPlan, Notification,
 } = require('../../Models');
 const { TRIP_STATUS, BOOKING_STATUS, COMPLAINT_STATUS, PENALTY_TYPES } = require('../../config/constants');
 const { generateAccessToken } = require('../setup/helpers');
@@ -183,6 +183,34 @@ describe('GET /api/admin/dashboard/drivers/:driver_id â€” header', () => {
       .get('/api/admin/dashboard/drivers/00000000-0000-4000-8000-000000000099')
       .set('Authorization', `Bearer ${adminToken}`);
     expect(res.status).toBe(404);
+  });
+});
+
+describe('POST /api/admin/dashboard/drivers/:driver_id/notifications', () => {
+  it('creates the in-app notification and sends a push to the registered device', async () => {
+    await User.update({ fcmToken: 'test-fcm-token' }, { where: { id: DRIVER_ID } });
+    const pushChannel = require('../../Services/notificationService/channels/push');
+    const pushSpy = jest.spyOn(pushChannel, 'send').mockResolvedValue(true);
+
+    const res = await getAgent()
+      .post(`/api/admin/dashboard/drivers/${DRIVER_ID}/notifications`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ title: 'Package expiring', body: 'Renew soon', type: 'package' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.notification).toMatchObject({ category: 'package' });
+    expect(res.body.delivery).toEqual({ in_app: true, push: true });
+
+    const row = await Notification.findOne({
+      where: { userId: DRIVER_ID, type: 'ADMIN_NOTICE' },
+    });
+    expect(row?.title).toBe('Package expiring');
+    expect(pushSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ id: DRIVER_ID, fcmToken: 'test-fcm-token' }),
+      expect.objectContaining({ title: 'Package expiring', body: 'Renew soon' }),
+      expect.objectContaining({ category: 'package' }),
+    );
+    pushSpy.mockRestore();
   });
 });
 

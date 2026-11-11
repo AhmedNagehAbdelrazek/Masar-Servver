@@ -22482,7 +22482,7 @@
                                                 "notifications"
                                             ]
                                         },
-                                        "description": "Custom in-app notice to a driver (Figma: send-notification modal). Stored as ADMIN_NOTICE.",
+                                        "description": "Custom in-app notice to a driver (Figma: send-notification modal). Stored as ADMIN_NOTICE.\n\nDelivery now includes an in-app notification (persisted + realtime socket event) and an FCM push when the user has a registered device token. The response reports both channels in `delivery`.",
                                         "body": {
                                             "mode": "raw",
                                             "raw": "{\n  \"title\": \"\",\n  \"body\": \"\",\n  \"type\": \"trip\"\n}",
@@ -23099,7 +23099,7 @@
                                         "notifications"
                                     ]
                                 },
-                                "description": "",
+                                "description": "\n\nDelivery now includes an in-app notification (persisted + realtime socket event) and an FCM push when the user has a registered device token. The response reports both channels in `delivery`.",
                                 "body": {
                                     "mode": "raw",
                                     "raw": "{\n  \"title\": \"\",\n  \"body\": \"\",\n  \"type\": \"trip\"\n}",

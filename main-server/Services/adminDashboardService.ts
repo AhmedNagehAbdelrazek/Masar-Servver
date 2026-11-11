@@ -648,22 +648,25 @@ async function exportDrivers(query) {
 }
 
 async function sendDriverNotification(adminId, driverId, dto) {
-  await getDriverOrThrow(driverId);
-  const notification = await Notification.create({
-    userId: driverId,
-    type: 'ADMIN_NOTICE',
-    title: dto.title,
-    body: dto.body,
+  const driver = await getDriverOrThrow(driverId);
+  const results = await notificationService.sendToUser(driver, 'ADMIN_NOTICE', {
+    channels: ['in_app', 'push'],
+    vars: { title: dto.title, body: dto.body },
     data: { category: dto.type || 'general', sent_by: adminId },
-    sentVia: ['in_app'],
   });
+  const inApp = results?.in_app;
+  const notificationId = inApp && inApp.id ? inApp.id : null;
   return {
     notification: {
-      id: notification.id,
-      user_id: notification.userId,
-      title: notification.title,
+      id: notificationId,
+      user_id: driverId,
+      title: dto.title,
       category: dto.type || 'general',
-      created_at: notification.createdat || notification.createdAt,
+      created_at: inApp?.createdat || inApp?.createdAt || new Date().toISOString(),
+    },
+    delivery: {
+      in_app: Boolean(notificationId),
+      push: results?.push === true,
     },
   };
 }

@@ -16,6 +16,10 @@ import realtimeService from '../realtimeService';
  * Placeholders use {var} and are interpolated at send time.
  */
 const TEMPLATES = {
+  ADMIN_NOTICE: {
+    ar: { title: '{title}', body: '{body}' },
+    en: { title: '{title}', body: '{body}' },
+  },
   SUBSCRIPTION_SUBMITTED: {
     ar: {
       title: 'تم استلام طلب الاشتراك',
@@ -520,8 +524,7 @@ async function sendToUser(user, type, { channels = ['in_app'], vars = {}, data =
   }
   if (allowedChannels.includes('push')) {
     try {
-      await push.send(user, message, data);
-      results.push = true;
+      results.push = await push.send(user, message, data);
     } catch (err) {
       results.push = false;
       console.warn('[notification] push failed:', err.message);

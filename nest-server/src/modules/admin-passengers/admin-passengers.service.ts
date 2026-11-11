@@ -8,6 +8,7 @@ import { maskPhone } from '../../common/utils/masking.js';
 import { buildPagination, parsePagination } from '../../common/utils/pagination.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { PenaltyService } from '../driver/penalty.service.js';
+import { NotificationsService, type NotifyUser } from '../notifications/notifications.service.js';
 import type {
   PassengerBookingsQuery,
   PassengerComplaintsQuery,
@@ -89,6 +90,7 @@ export class AdminPassengersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly penalties: PenaltyService,
+    private readonly notifications: NotificationsService,
   ) {}
 
   private async getPassengerOrThrow(passengerId: string) {
@@ -518,25 +520,32 @@ export class AdminPassengersService {
     adminId: string,
     passengerId: string,
     dto: SendPassengerNotificationDto,
-  ): Promise<{ notification: Record<string, unknown> }> {
-    await this.getPassengerOrThrow(passengerId);
-    const notification = await this.prisma.notification.create({
-      data: {
-        userId: passengerId,
-        type: 'ADMIN_NOTICE',
-        title: dto.title,
-        body: dto.body,
-        data: { category: dto.type, sent_by: adminId },
-        sentVia: ['in_app'],
-      },
+  ): Promise<{
+    notification: Record<string, unknown>;
+    delivery: { in_app: boolean; push: boolean };
+  }> {
+    const passenger = await this.getPassengerOrThrow(passengerId);
+    const results = await this.notifications.sendToUser(passenger as unknown as NotifyUser, 'ADMIN_NOTICE', {
+      channels: ['in_app', 'push'],
+      vars: { title: dto.title, body: dto.body },
+      data: { category: dto.type, sent_by: adminId },
     });
+    const inApp = results?.in_app as { id?: string } | null | undefined;
+    const notificationId = inApp?.id ?? null;
+    const notification = notificationId
+      ? await this.prisma.notification.findUnique({ where: { id: notificationId } })
+      : null;
     return {
       notification: {
-        id: notification.id,
-        user_id: notification.userId,
-        title: notification.title,
+        id: notificationId,
+        user_id: passengerId,
+        title: dto.title,
         category: dto.type,
-        created_at: notification.createdAt,
+        created_at: notification?.createdAt ?? new Date().toISOString(),
+      },
+      delivery: {
+        in_app: Boolean(notificationId),
+        push: results?.push === true,
       },
     };
   }

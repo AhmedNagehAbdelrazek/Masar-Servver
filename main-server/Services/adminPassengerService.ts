@@ -7,13 +7,13 @@ import {
   Complaint,
   Rating,
   Penalty,
-  Notification,
   Trip,
 } from '../Models';
 import { parsePagination, buildPagination } from '../utils/pagination';
 import { ApiErrors } from '../utils/ApiError';
 import { maskPhone } from '../utils/masking';
 import * as penaltyService from './penaltyService';
+import notificationService from './notificationService';
 
 const PASSENGER_ROLE = 'passenger';
 
@@ -425,22 +425,25 @@ async function listRatings(passengerId, query = {}) {
 }
 
 async function sendNotification(adminId, passengerId, dto) {
-  await getPassengerOrThrow(passengerId);
-  const notification = await Notification.create({
-    userId: passengerId,
-    type: 'ADMIN_NOTICE',
-    title: dto.title,
-    body: dto.body,
+  const passenger = await getPassengerOrThrow(passengerId);
+  const results = await notificationService.sendToUser(passenger, 'ADMIN_NOTICE', {
+    channels: ['in_app', 'push'],
+    vars: { title: dto.title, body: dto.body },
     data: { category: dto.type || 'general', sent_by: adminId },
-    sentVia: ['in_app'],
   });
+  const inApp = results?.in_app;
+  const notificationId = inApp && inApp.id ? inApp.id : null;
   return {
     notification: {
-      id: notification.id,
-      user_id: notification.userId,
-      title: notification.title,
+      id: notificationId,
+      user_id: passengerId,
+      title: dto.title,
       category: dto.type || 'general',
-      created_at: notification.createdat,
+      created_at: inApp?.createdat || inApp?.createdAt || new Date().toISOString(),
+    },
+    delivery: {
+      in_app: Boolean(notificationId),
+      push: results?.push === true,
     },
   };
 }

@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { DriverModule } from '../driver/driver.module.js';
+import { NotificationsModule } from '../notifications/notifications.module.js';
 import { AdminPassengersController } from './admin-passengers.controller.js';
 import { AdminPassengersService } from './admin-passengers.service.js';
 
@@ -7,7 +8,7 @@ import { AdminPassengersService } from './admin-passengers.service.js';
 // action modals). PenaltyService is reused from DriverModule so warning /
 // suspension / ban semantics stay canonical across roles.
 @Module({
-  imports: [DriverModule],
+  imports: [DriverModule, NotificationsModule],
   controllers: [AdminPassengersController],
   providers: [AdminPassengersService],
   exports: [AdminPassengersService],

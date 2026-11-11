@@ -60,14 +60,14 @@ export class PushChannel {
     user: PushUser,
     message: { type?: string; title: string; body: string },
     data: Record<string, unknown> = {},
-  ): Promise<void> {
-    if (!user?.fcmToken) return;
+  ): Promise<boolean> {
+    if (!user?.fcmToken) return false;
     const app = this.getApp();
     if (!app) {
       this.logger.debug(
         `[push:log] target=${user.id} title=${message.title} (fcm unconfigured: ${this.initError?.message ?? 'no credentials'})`,
       );
-      return;
+      return false;
     }
     try {
       const type = message.type ? String(message.type) : undefined;
@@ -78,6 +78,7 @@ export class PushChannel {
         android: { priority: 'high' },
         apns: { headers: { 'apns-priority': '10' } },
       });
+      return true;
     } catch (err) {
       const code = (err as { code?: string; errorInfo?: { code?: string } })?.code ??
         (err as { errorInfo?: { code?: string } })?.errorInfo?.code;
@@ -90,6 +91,7 @@ export class PushChannel {
       } else {
         this.logger.warn(`[push] send failed: ${(err as Error).message}`);
       }
+      return false;
     }
   }
 }

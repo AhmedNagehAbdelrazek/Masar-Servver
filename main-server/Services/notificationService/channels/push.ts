@@ -20,7 +20,6 @@ function getApp() {
   if (initAttempted) return null;
   initAttempted = true;
   try {
-    // eslint-disable-next-line global-require
     const appMod = require('firebase-admin/app');
     const { initializeApp, getApps, cert } = appMod;
     if (getApps().length) {
@@ -78,7 +77,7 @@ function stringifyData(data = {}) {
 
 async function send(user, message, data = {}) {
   if (!user || !user.fcmToken) {
-    return;
+    return false;
   }
 
   const app = getApp();
@@ -86,11 +85,10 @@ async function send(user, message, data = {}) {
     console.log(
       `[push:log] target=${user.id} title=${message.title} body=${message.body} (fcm unconfigured: ${initError ? initError.message : 'no credentials'})`
     );
-    return;
+    return false;
   }
 
   try {
-    // eslint-disable-next-line global-require
     const { getMessaging } = require('firebase-admin/messaging');
     const type = message.type ? String(message.type) : undefined;
     await getMessaging(app).send({
@@ -103,6 +101,7 @@ async function send(user, message, data = {}) {
       android: { priority: 'high' },
       apns: { headers: { 'apns-priority': '10' } },
     });
+    return true;
   } catch (err) {
     const code = err && (err.code || err.errorInfo?.code);
     // Stale/uninstalled app tokens are normal — log so the token can be
@@ -116,6 +115,7 @@ async function send(user, message, data = {}) {
     } else {
       console.warn('[push] send failed:', err.message);
     }
+    return false;
   }
 }
 

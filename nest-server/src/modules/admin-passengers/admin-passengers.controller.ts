@@ -96,7 +96,10 @@ export class AdminPassengersController {
     @Param() params: PassengerIdParam,
     @Body() dto: SendPassengerNotificationDto,
     @CurrentUser() user?: AuthUser,
-  ): Promise<{ notification: Record<string, unknown> }> {
+  ): Promise<{
+    notification: Record<string, unknown>;
+    delivery: { in_app: boolean; push: boolean };
+  }> {
     return this.passengers.sendNotification(user?.id ?? '', params.passenger_id, dto);
   }
 

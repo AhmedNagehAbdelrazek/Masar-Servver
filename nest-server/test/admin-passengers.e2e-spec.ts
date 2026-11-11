@@ -1,10 +1,11 @@
 // Admin passenger dossier: stats/list/detail/tabs + action modals.
 // Figma: 10062:4551, 10063:18152, 10064:20466/22193/23604, 10069:27574/28429/30620,
 // modals 10063:18885/19165/18592/19348.
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { resetTestState } from '../src/test/db.js';
 import { generateAccessToken } from '../src/test/jwt.js';
 import { createTestApp, type TestContext } from '../src/test/test-app.js';
+import { PushChannel } from '../src/modules/notifications/channels/push.channel.js';
 
 const ADMIN_ID = '2b9d6bcd-bbfd-4b2d-9b5d-ab8dfbbd4d90';
 const PASSENGER_ID = '2b9d6bcd-bbfd-4b2d-9b5d-ab8dfbbd4d82';
@@ -225,12 +226,31 @@ describe('Admin passengers', () => {
       .send({ title: '', body: 'x', type: 'bogus' });
     expect([400, 422]).toContain(bad.status);
 
+    await ctx.prisma.user.update({
+      where: { id: PASSENGER_ID },
+      data: { fcmToken: 'test-passenger-token' },
+    });
+    const push = ctx.app.get(PushChannel);
+    const pushSpy = vi.spyOn(push, 'send').mockResolvedValue(true);
+
     const ok = await ctx.agent
       .post(`/api/admin/passengers/${PASSENGER_ID}/notifications`)
       .set('Authorization', `Bearer ${adminToken}`)
       .send({ title: 'Trip soon', body: 'Your trip starts in 30 minutes', type: 'trip' });
     expect(ok.status).toBe(200);
     expect(ok.body.notification).toMatchObject({ category: 'trip' });
+    expect(ok.body.delivery).toEqual({ in_app: true, push: true });
+
+    const row = await ctx.prisma.notification.findFirst({
+      where: { userId: PASSENGER_ID, type: 'ADMIN_NOTICE' },
+    });
+    expect(row?.title).toBe('Trip soon');
+    expect(pushSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ id: PASSENGER_ID, fcmToken: 'test-passenger-token' }),
+      expect.objectContaining({ title: 'Trip soon', body: 'Your trip starts in 30 minutes' }),
+      expect.objectContaining({ category: 'trip' }),
+    );
+    pushSpy.mockRestore();
   });
 
   it('non-admin role is forbidden', async () => {
