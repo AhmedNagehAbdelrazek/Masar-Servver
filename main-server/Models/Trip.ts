@@ -43,6 +43,12 @@ export interface TripAttributes {
   routeStatus?: string | null;
   routeComputedAt?: Date | null;
   routeVersion?: number | null;
+  mapRoutePolyline?: string | null;
+  mapRouteDistanceM?: number | null;
+  mapRouteDurationS?: number | null;
+  mapRouteWaypointHash?: string | null;
+  mapRouteComputedAt?: Date | null;
+  mapRouteSource?: string | null;
   actualPathPolyline?: string | null;
   actualDistanceM?: number | null;
   actualDurationS?: number | null;
@@ -280,6 +286,38 @@ Trip.init(
             field: 'route_version',
             allowNull: false,
             defaultValue: 0,
+        },
+    // dashboard map route (migration 036): cached road geometry through
+    // origin -> stops/pickups -> destination, invalidated by waypoint hash.
+    mapRoutePolyline: {
+            type: DataTypes.TEXT,
+            field: 'map_route_polyline',
+            allowNull: true,
+        },
+    mapRouteDistanceM: {
+            type: DataTypes.INTEGER,
+            field: 'map_route_distance_m',
+            allowNull: true,
+        },
+    mapRouteDurationS: {
+            type: DataTypes.INTEGER,
+            field: 'map_route_duration_s',
+            allowNull: true,
+        },
+    mapRouteWaypointHash: {
+            type: DataTypes.STRING(64),
+            field: 'map_route_waypoint_hash',
+            allowNull: true,
+        },
+    mapRouteComputedAt: {
+            type: DataTypes.DATE,
+            field: 'map_route_computed_at',
+            allowNull: true,
+        },
+    mapRouteSource: {
+            type: DataTypes.STRING(20),
+            field: 'map_route_source',
+            allowNull: true,
         },
     // spec 013 DB3: recorded driven path (see migration 030)
     actualPathPolyline: {

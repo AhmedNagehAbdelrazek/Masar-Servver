@@ -21076,7 +21076,7 @@
                                         "method": "GET",
                                         "header": [],
                                         "url": {
-                                            "raw": "{{base_url}}/admin/dashboard/trips/{{trip_id}}",
+                                            "raw": "{{base_url}}/admin/dashboard/trips/{{trip_id}}?include_map=1",
                                             "host": [
                                                 "{{base_url}}"
                                             ],
@@ -21085,9 +21085,16 @@
                                                 "dashboard",
                                                 "trips",
                                                 "{{trip_id}}"
+                                            ],
+                                            "query": [
+                                                {
+                                                    "key": "include_map",
+                                                    "value": "1",
+                                                    "description": "Include the persisted road-following map route and ordered waypoints"
+                                                }
                                             ]
                                         },
-                                        "description": "Admin dashboard trip detail. Requires role `admin`.\n\n**V2:** `GET {{nest_url}}/admin/dashboard/trips/{{trip_id}}`\n\nNo body."
+                                        "description": "Trip detail. With `include_map=1`, also returns `trip.map_route` with the persisted road polyline, ordered origin/stops/pickups/destination waypoints, distance and duration. The route is recomputed only when the waypoint hash changes."
                                     },
                                     "response": []
                                 },

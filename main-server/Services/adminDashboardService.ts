@@ -8,6 +8,7 @@ import { maskPhone } from '../utils/masking';
 import { daysAgo, percentChange } from '../utils/statChange';
 import { User, DriverProfile, Vehicle, UploadedImage, Trip, TripStop, Booking, Rating, Complaint, Penalty, DriverSubscription, DocumentReview, VerificationStatusChange, Notification, TripSeat, RideRequest, DeletionRequest } from '../Models';
 import notificationService from './notificationService';
+import { buildTripMapRoute } from './adminTripMapService';
 import { toAbsoluteMediaUrl } from '../utils/mediaUrl';
 
 // ===== Canonical document registry (data-model.md) =====
@@ -741,7 +742,7 @@ async function cancelTrip(adminId, tripId, reason) {
   };
 }
 
-async function getTripDetail(tripId) {
+async function getTripDetail(tripId, { includeMap = false } = {}) {
   const trip = await Trip.findByPk(tripId, {
     include: [
       { model: User, as: 'driver', attributes: ['id', 'fullName', 'phone', 'avgRating', 'avatarUrl'] },
@@ -763,6 +764,9 @@ async function getTripDetail(tripId) {
     (sum, booking) => sum + Number(booking.agreedFare || 0) * Number(booking.seatsBooked || 0),
     0,
   );
+  const mapRoute = includeMap
+    ? await buildTripMapRoute(trip).catch(() => null)
+    : null;
 
   return {
     trip: {
@@ -786,6 +790,7 @@ async function getTripDetail(tripId) {
       route_status: trip.routeStatus ?? null,
       route_distance_m: trip.routeDistanceM != null ? Number(trip.routeDistanceM) : null,
       route_duration_s: trip.routeDurationS != null ? Number(trip.routeDurationS) : null,
+      map_route: mapRoute,
       departure_time: trip.departureTime,
       arrival_time: trip.arrivalTime,
       total_seats: Number(trip.totalSeats),

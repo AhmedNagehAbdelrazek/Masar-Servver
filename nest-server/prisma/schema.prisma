@@ -200,6 +200,12 @@ model Trip {
   routeStatus            String           @default("pending") @map("route_status") @db.VarChar(20)
   routeComputedAt        DateTime?        @map("route_computed_at") @db.Timestamptz
   routeVersion           Int              @default(0) @map("route_version")
+  mapRoutePolyline       String?          @map("map_route_polyline") @db.Text
+  mapRouteDistanceM      Int?             @map("map_route_distance_m")
+  mapRouteDurationS      Int?             @map("map_route_duration_s")
+  mapRouteWaypointHash   String?          @map("map_route_waypoint_hash") @db.VarChar(64)
+  mapRouteComputedAt     DateTime?        @map("map_route_computed_at") @db.Timestamptz
+  mapRouteSource         String?          @map("map_route_source") @db.VarChar(20)
   actualPathPolyline     String?          @map("actual_path_polyline") @db.Text
   actualDistanceM        Int?             @map("actual_distance_m")
   actualDurationS        Int?             @map("actual_duration_s")

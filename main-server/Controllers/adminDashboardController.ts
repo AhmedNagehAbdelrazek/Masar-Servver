@@ -62,7 +62,8 @@ const sendDriverNotification = catchAsync(async (req: Request, res: Response): P
 
 const getTripDetail = catchAsync(async (req: Request, res: Response): Promise<void> => {
   const { trip_id } = req.params as { trip_id: string };
-  successResponse(res, await (adminDashboardService as unknown as { getTripDetail: (id: string) => Promise<unknown> }).getTripDetail(trip_id));
+  const includeMap = ['1', 'true'].includes(String(req.query.include_map ?? '').toLowerCase());
+  successResponse(res, await (adminDashboardService as unknown as { getTripDetail: (id: string, opts?: unknown) => Promise<unknown> }).getTripDetail(trip_id, { includeMap }));
 });
 
 const cancelTrip = catchAsync(async (req: Request, res: Response): Promise<void> => {
