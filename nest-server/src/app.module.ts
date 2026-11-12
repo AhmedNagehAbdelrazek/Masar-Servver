@@ -31,6 +31,7 @@ import { SubscriptionsModule } from './modules/subscriptions/subscriptions.modul
 import { SupportTicketsModule } from './modules/support-tickets/support-tickets.module.js';
 import { UploadModule } from './modules/upload/upload.module.js';
 import { AdminDashboardModule } from './modules/admin-dashboard/admin-dashboard.module.js';
+import { AdminSearchModule } from './modules/admin-search/admin-search.module.js';
 import { AdminModerationModule } from './modules/admin-moderation/admin-moderation.module.js';
 import { AdminPassengersModule } from './modules/admin-passengers/admin-passengers.module.js';
 import { AdminBookingsModule } from './modules/admin-bookings/admin-bookings.module.js';
@@ -68,6 +69,7 @@ import { SeedModule } from './seed/seed.module.js';
     SupportTicketsModule,
     UploadModule,
     AdminDashboardModule,
+    AdminSearchModule,
     AdminModerationModule,
     AdminPassengersModule,
     AdminBookingsModule,

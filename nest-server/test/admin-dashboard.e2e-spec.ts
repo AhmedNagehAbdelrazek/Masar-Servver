@@ -572,6 +572,75 @@ describe('GET /api/admin/dashboard/reservations', () => {
   });
 });
 
+describe('GET /api/admin/search - global admin search', () => {
+  let adminToken: string;
+
+  beforeEach(async () => {
+    await resetTestState(ctx.prisma, ctx.redis);
+    await seedSharedWorld();
+    await ctx.prisma.rideRequest.create({
+      data: {
+        passengerId: SHR_PASSENGER_ID,
+        originPlace: 'Amman',
+        originCity: 'Amman',
+        destinationPlace: 'Irbid',
+        destinationCity: 'Irbid',
+        seatsNeeded: 1,
+        status: 'open',
+        expiresAt: new Date(Date.now() + 86400000),
+      },
+    });
+    adminToken = generateAccessToken({ id: SHR_ADMIN_ID, role: 'admin' });
+  });
+
+  it('returns passengers, drivers, trips and requests in one payload', async () => {
+    const res = await ctx.agent
+      .get('/api/admin/search?q=Listing')
+      .set('Authorization', `Bearer ${adminToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.query).toBe('Listing');
+    expect(res.body.results.passengers).toHaveLength(1);
+    expect(res.body.results.drivers).toHaveLength(1);
+    expect(res.body.results.trips).toHaveLength(1);
+    expect(res.body.results.requests).toHaveLength(1);
+    expect(res.body.results.drivers[0]).toMatchObject({
+      kind: 'driver',
+      name: 'Listing Driver',
+      phone_full: '+962780009002',
+    });
+    expect(res.body.results.trips[0]).toMatchObject({
+      route: 'Amman → Irbid',
+      driver: 'Listing Driver',
+    });
+    expect(res.body.results.requests[0]).toMatchObject({
+      route: 'Amman → Irbid',
+      passenger: 'Listing Passenger',
+    });
+  });
+
+  it('matches routes and phone numbers, and returns empty groups for short queries', async () => {
+    const route = await ctx.agent
+      .get('/api/admin/search?q=Irbid')
+      .set('Authorization', `Bearer ${adminToken}`);
+    expect(route.status).toBe(200);
+    expect(route.body.results.trips).toHaveLength(1);
+    expect(route.body.results.requests).toHaveLength(1);
+
+    const phone = await ctx.agent
+      .get('/api/admin/search?q=780009003')
+      .set('Authorization', `Bearer ${adminToken}`);
+    expect(phone.status).toBe(200);
+    expect(phone.body.results.passengers).toHaveLength(1);
+
+    const short = await ctx.agent
+      .get('/api/admin/search?q=a')
+      .set('Authorization', `Bearer ${adminToken}`);
+    expect(short.status).toBe(200);
+    expect(short.body.total).toBe(0);
+  });
+});
+
 describe('Complaints interplay with existing moderation endpoints (R13 reuse)', () => {
   let adminToken: string;
 

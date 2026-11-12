@@ -20522,6 +20522,76 @@
                     "name": "Admin Dashboard",
                     "item": [
                         {
+                            "name": "Global Search",
+                            "request": {
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "{{base_url}}/admin/search?q=Listing&limit=5",
+                                    "host": [
+                                        "{{base_url}}"
+                                    ],
+                                    "path": [
+                                        "admin",
+                                        "search"
+                                    ],
+                                    "query": [
+                                        {
+                                            "key": "q",
+                                            "value": "Listing",
+                                            "description": "Name, phone, route, or UUID (min 2 chars)"
+                                        },
+                                        {
+                                            "key": "limit",
+                                            "value": "5",
+                                            "description": "Results per group (1-10)"
+                                        }
+                                    ]
+                                },
+                                "description": "Global admin search across passengers, drivers, trips and ride requests.\n\nReturns grouped results with the id needed to open each dashboard dossier."
+                            },
+                            "response": [
+                                {
+                                    "name": "Success",
+                                    "originalRequest": {
+                                        "method": "GET",
+                                        "header": [],
+                                        "url": {
+                                            "raw": "{{base_url}}/admin/search?q=Listing&limit=5",
+                                            "host": [
+                                                "{{base_url}}"
+                                            ],
+                                            "path": [
+                                                "admin",
+                                                "search"
+                                            ],
+                                            "query": [
+                                                {
+                                                    "key": "q",
+                                                    "value": "Listing"
+                                                },
+                                                {
+                                                    "key": "limit",
+                                                    "value": "5"
+                                                }
+                                            ]
+                                        }
+                                    },
+                                    "status": "OK",
+                                    "code": 200,
+                                    "_postman_previewlanguage": "json",
+                                    "header": [
+                                        {
+                                            "key": "Content-Type",
+                                            "value": "application/json"
+                                        }
+                                    ],
+                                    "cookie": [],
+                                    "body": "{\n  \"query\": \"Listing\",\n  \"results\": {\n    \"passengers\": [\n      {\n        \"id\": \"00000000-0000-4000-8000-000000000001\",\n        \"kind\": \"passenger\",\n        \"name\": \"Listing Passenger\",\n        \"phone\": \"+96278***0003\",\n        \"phone_full\": \"+962780009003\",\n        \"status\": \"active\",\n        \"verification_status\": null\n      }\n    ],\n    \"drivers\": [\n      {\n        \"id\": \"00000000-0000-4000-8000-000000000002\",\n        \"kind\": \"driver\",\n        \"name\": \"Listing Driver\",\n        \"phone\": \"+96278***0002\",\n        \"phone_full\": \"+962780009002\",\n        \"status\": \"active\",\n        \"verification_status\": \"approved\"\n      }\n    ],\n    \"trips\": [\n      {\n        \"id\": \"00000000-0000-4000-8000-000000000003\",\n        \"kind\": \"trip\",\n        \"route\": \"Amman → Irbid\",\n        \"origin\": \"Amman\",\n        \"destination\": \"Irbid\",\n        \"datetime\": \"2026-11-13T09:00:00.000Z\",\n        \"driver\": \"Listing Driver\",\n        \"status\": \"published\"\n      }\n    ],\n    \"requests\": [\n      {\n        \"id\": \"00000000-0000-4000-8000-000000000004\",\n        \"kind\": \"request\",\n        \"route\": \"Amman → Irbid\",\n        \"origin\": \"Amman\",\n        \"destination\": \"Irbid\",\n        \"datetime\": \"2026-11-12T12:00:00.000Z\",\n        \"passenger\": \"Listing Passenger\",\n        \"status\": \"open\"\n      }\n    ]\n  },\n  \"total\": 4\n}"
+                                }
+                            ]
+                        },
+                        {
                             "name": "Global Dashboard",
                             "item": [
                                 {

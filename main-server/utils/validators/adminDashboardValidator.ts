@@ -57,6 +57,17 @@ export const recentTripsQueryValidation: ValidationChain[] = [
     .withMessage('STATUS_MUST_BE_ONE_OF_PENDING_APPROVED_REJECTED_UNVERIFIED'),
 ];
 
+export const adminSearchQueryValidation: ValidationChain[] = [
+  query('q')
+    .optional()
+    .isString().trim()
+    .isLength({ max: 120 }).withMessage(V.SEARCH_MUST_BE_AT_MOST_100_CHARACTERS),
+  query('limit')
+    .optional()
+    .isInt({ min: 1, max: 10 }).withMessage('LIMIT_MUST_BE_BETWEEN_1_AND_10')
+    .toInt(),
+];
+
 export const driversListValidation: ValidationChain[] = [
   ...paginationQueryValidation,
   query('search')
@@ -125,7 +136,7 @@ export const driverNotificationBodyValidation: ValidationChain[] = [
   body('type').optional().isString().trim().isLength({ max: 40 }).withMessage('VALIDATION_FAILED'),
 ];
 
-const _exported = { driverIdParamValidation, documentKeyParamValidation, statusBodyValidation, accountActionBodyValidation, rejectReasonBodyValidation, paginationQueryValidation, recentTripsQueryValidation, driversListValidation, driverTripsQueryValidation, driverEvaluationsQueryValidation, reservationsQueryValidation, tripIdParamValidation, driverNotificationBodyValidation, cancelTripBodyValidation };
+const _exported = { driverIdParamValidation, documentKeyParamValidation, statusBodyValidation, accountActionBodyValidation, rejectReasonBodyValidation, paginationQueryValidation, recentTripsQueryValidation, driversListValidation, driverTripsQueryValidation, driverEvaluationsQueryValidation, adminSearchQueryValidation, reservationsQueryValidation, tripIdParamValidation, driverNotificationBodyValidation, cancelTripBodyValidation };
 export default _exported;
 
 // CommonJS interop
@@ -153,6 +164,8 @@ if (typeof module !== 'undefined' && module.exports) {
   module.exports.driverTripsQueryValidation = driverTripsQueryValidation;
   // @ts-ignore
   module.exports.driverEvaluationsQueryValidation = driverEvaluationsQueryValidation;
+  // @ts-ignore
+  module.exports.adminSearchQueryValidation = adminSearchQueryValidation;
   // @ts-ignore
   module.exports.reservationsQueryValidation = reservationsQueryValidation;
   // @ts-ignore

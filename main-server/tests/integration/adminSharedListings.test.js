@@ -1,6 +1,6 @@
 ﻿const { getAgent } = require('../setup/setup');
 const {
-  User, Vehicle, Trip, Booking, Complaint, DocumentReview,
+  User, Vehicle, Trip, Booking, Complaint, DocumentReview, RideRequest,
 } = require('../../Models');
 const { TRIP_STATUS, BOOKING_STATUS, COMPLAINT_STATUS } = require('../../config/constants');
 const { generateAccessToken } = require('../setup/helpers');
@@ -17,6 +17,7 @@ async function cleanAndSeed() {
   await DocumentReview.destroy({ where: {}, force: true });
   await Booking.destroy({ where: {}, force: true });
   await Complaint.destroy({ where: {}, force: true });
+  await RideRequest.destroy({ where: {}, force: true });
   await Trip.destroy({ where: {}, force: true });
   await Vehicle.destroy({ where: {}, force: true });
   await User.destroy({ where: {}, force: true });
@@ -47,6 +48,16 @@ async function cleanAndSeed() {
       cancellationReason: 'change of plans',
     },
   ]);
+  await RideRequest.create({
+    passengerId: PASSENGER_ID,
+    originPlace: 'Amman',
+    originCity: 'Amman',
+    destinationPlace: 'Irbid',
+    destinationCity: 'Irbid',
+    seatsNeeded: 1,
+    expiresAt: new Date(Date.now() + 86400000),
+    status: 'open',
+  });
 }
 
 beforeAll(async () => {
@@ -79,6 +90,55 @@ describe('GET /api/admin/dashboard/reservations', () => {
     expect(res.body.data).toHaveLength(1);
     expect(res.body.data[0].status).toBe('cancelled');
     expect(res.body.data[0].price).toBe(10);
+  });
+});
+
+describe('GET /api/admin/search - global admin search', () => {
+  it('returns passengers, drivers, trips and requests in one payload', async () => {
+    const res = await getAgent()
+      .get('/api/admin/search?q=Listing')
+      .set('Authorization', `Bearer ${adminToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.query).toBe('Listing');
+    expect(res.body.results.passengers).toHaveLength(1);
+    expect(res.body.results.drivers).toHaveLength(1);
+    expect(res.body.results.trips).toHaveLength(1);
+    expect(res.body.results.requests).toHaveLength(1);
+    expect(res.body.results.drivers[0]).toMatchObject({
+      kind: 'driver',
+      name: 'Listing Driver',
+      phone_full: '+962780009002',
+    });
+    expect(res.body.results.trips[0]).toMatchObject({
+      route: 'Amman → Irbid',
+      driver: 'Listing Driver',
+    });
+    expect(res.body.results.requests[0]).toMatchObject({
+      route: 'Amman → Irbid',
+      passenger: 'Listing Passenger',
+    });
+  });
+
+  it('matches routes and phone numbers, and returns empty groups for short queries', async () => {
+    const route = await getAgent()
+      .get('/api/admin/search?q=Irbid')
+      .set('Authorization', `Bearer ${adminToken}`);
+    expect(route.status).toBe(200);
+    expect(route.body.results.trips).toHaveLength(1);
+    expect(route.body.results.requests).toHaveLength(1);
+
+    const phone = await getAgent()
+      .get('/api/admin/search?q=780009003')
+      .set('Authorization', `Bearer ${adminToken}`);
+    expect(phone.status).toBe(200);
+    expect(phone.body.results.passengers).toHaveLength(1);
+
+    const short = await getAgent()
+      .get('/api/admin/search?q=a')
+      .set('Authorization', `Bearer ${adminToken}`);
+    expect(short.status).toBe(200);
+    expect(short.body.total).toBe(0);
   });
 });
 
