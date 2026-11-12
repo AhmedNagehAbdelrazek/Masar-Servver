@@ -12,6 +12,7 @@ import { daysAgo, percentChange } from '../../common/utils/stat-change.js';
 import { toAbsoluteMediaUrl } from '../../common/utils/media-url.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { NotificationsService, type NotifyUser } from '../notifications/notifications.service.js';
+import { PenaltyService } from '../driver/penalty.service.js';
 import type { DriverEvaluationsQuery, DriversListQuery, DriverTripsQuery, RecentTripsQuery, ReservationsQuery } from './dto/dashboard-queries.dto.js';
 
 // Port of main-server/Services/adminDashboardService.ts (Sequelize -> Prisma).
@@ -66,6 +67,7 @@ interface BucketUser {
 export function deriveAccountStatus(user: BucketUser): string {
   if (user.status === 'banned') return 'blocked';
   if (user.status === 'suspended') return 'suspended';
+  if (user.status === 'warned') return 'warned';
   if (['unverified', 'pending', 'rejected', 'approved'].includes(user.verificationStatus)
     && user.verificationStatus !== 'approved') return 'pending';
   return 'active';
@@ -172,6 +174,7 @@ export class AdminDashboardService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly notifications: NotificationsService,
+    private readonly penalties: PenaltyService,
   ) {}
 
   private async getDriverOrThrow(driverId: string): Promise<DossierDriver> {
@@ -1281,20 +1284,18 @@ export class AdminDashboardService {
     const currentDerived = deriveAccountStatus(driver as unknown as BucketUser);
 
     if (action === 'suspend') {
-      if (currentDerived === 'suspended') {
+      if (currentDerived === 'suspended' || currentDerived === 'blocked') {
         throw new ConflictException({ message: 'DRIVER_ALREADY_IN_STATE', code: 'DRIVER_ALREADY_IN_STATE' });
       }
-      await this.prisma.user.update({ where: { id: driverId }, data: { status: 'suspended' } });
-      await this.prisma.penalty.create({
-        data: {
-          userId: driverId,
-          type: 'suspension',
-          penaltyType: 'general',
-          severity: 'moderate',
-          reason: reason || 'Suspended by administrator from the dashboard',
-          issuedBy: adminId,
-          startsAt: new Date(),
-        },
+      // Route through PenaltyService so the dashboard action notifies the
+      // driver (in-app + push + SMS) and removes current/future inventory.
+      // The quick action has no end date, so the open suspension is lifted
+      // explicitly from the dossier.
+      await this.penalties.issue(adminId, {
+        user_id: driverId,
+        type: 'suspension',
+        reason: reason || 'Suspended by administrator from the dashboard',
+        allow_open_suspension: true,
       });
     } else {
       if (currentDerived === 'active') {

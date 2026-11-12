@@ -8,6 +8,7 @@ import { maskPhone } from '../utils/masking';
 import { daysAgo, percentChange } from '../utils/statChange';
 import { User, DriverProfile, Vehicle, UploadedImage, Trip, TripStop, Booking, Rating, Complaint, Penalty, DriverSubscription, DocumentReview, VerificationStatusChange, Notification, TripSeat, RideRequest, DeletionRequest } from '../Models';
 import notificationService from './notificationService';
+import * as penaltyService from './penaltyService';
 import { buildTripMapRoute } from './adminTripMapService';
 import { toAbsoluteMediaUrl } from '../utils/mediaUrl';
 
@@ -74,6 +75,7 @@ function notPendingDeletion(ids) {
 function deriveAccountStatus(user) {
   if (user.status === 'banned') return 'blocked';
   if (user.status === 'suspended') return 'suspended';
+  if (user.status === 'warned') return 'warned';
   if (Object.values(VERIFICATION_STATUS).includes(user.verificationStatus)
     && user.verificationStatus !== VERIFICATION_STATUS.APPROVED) return 'pending';
   return 'active';
@@ -1156,29 +1158,44 @@ async function applyStandingAction(adminId, driverId, action, reason) {
   if (!STANDING_ACTIONS.includes(action)) throw ApiErrors.validation('INVALID_ACCOUNT_ACTION');
   const driver = await getDriverOrThrow(driverId);
   const currentDerived = deriveAccountStatus(driver);
+  let inventory = null;
 
   if (action === 'suspend') {
-    if (currentDerived === 'suspended') throw ApiErrors.conflict('DRIVER_ALREADY_IN_STATE');
-    await driver.update({ status: 'suspended' });
-    await Penalty.create({
-      userId: driverId,
+    if (currentDerived === 'suspended' || currentDerived === 'blocked') {
+      throw ApiErrors.conflict('DRIVER_ALREADY_IN_STATE');
+    }
+    // Route through penaltyService so the dashboard action notifies the
+    // driver (in-app + push + SMS) and removes current/future inventory.
+    // An open suspension is intentional here: the quick action has no end
+    // date and is lifted explicitly from the dossier.
+    const result = await penaltyService.issue(adminId, {
+      user_id: driverId,
       type: PENALTY_TYPES.SUSPENSION,
-      penaltyType: 'general',
-      severity: 'moderate',
       reason: reason || 'Suspended by administrator from the dashboard',
-      issuedBy: adminId,
-      startsAt: new Date(),
+      allow_open_suspension: true,
     });
+    inventory = result.inventory || null;
   } else {
     if (currentDerived === 'active') throw ApiErrors.conflict('DRIVER_ALREADY_IN_STATE');
     await driver.update({ status: 'active' });
     await Penalty.update(
       { endsAt: new Date() },
-      { where: { userId: driverId, type: PENALTY_TYPES.SUSPENSION, endsAt: null } }
+      { where: { userId: driverId, type: { [Op.in]: [PENALTY_TYPES.SUSPENSION, PENALTY_TYPES.BAN] }, endsAt: null } }
     );
+    try {
+      await notificationService.sendToUser(await driver.reload(), 'ACCOUNT_REACTIVATED', {
+        channels: ['in_app', 'push', 'sms'],
+        data: { action, source: 'admin_dashboard' },
+      });
+    } catch (err) {
+      console.warn('[adminDashboardService] reactivation notification failed:', err.message);
+    }
   }
 
-  return { driver: { id: driver.id, account_status: deriveAccountStatus(await driver.reload()) } };
+  return {
+    driver: { id: driver.id, account_status: deriveAccountStatus(await driver.reload()) },
+    ...(inventory ? { inventory } : {}),
+  };
 }
 
 async function decideDocument(adminId, driverId, documentKey, decision, reason) {

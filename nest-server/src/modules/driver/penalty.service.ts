@@ -2,12 +2,47 @@ import { Injectable, Logger, NotFoundException, UnprocessableEntityException } f
 import { buildPagination, parsePagination } from '../../common/utils/pagination.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { EnforcementService } from './enforcement.service.js';
+import { AccountBlockingService } from './account-blocking.service.js';
+import { NotificationsService, type NotifyUser } from '../notifications/notifications.service.js';
 
 const STATUS_BY_TYPE: Record<string, string> = {
   warning: 'warned',
   suspension: 'suspended',
   ban: 'banned',
 };
+
+const STATUS_RANK: Record<string, number> = {
+  active: 0,
+  warned: 1,
+  suspended: 2,
+  banned: 3,
+};
+
+const REASON_LABELS: Record<string, string> = {
+  repeat_cancel: 'تكرار إلغاء الرحلات',
+  late: 'عدم الالتزام بالمواعيد',
+  misbehavior: 'سلوك غير لائق',
+  rules_violation: 'مخالفة قواعد المنصة',
+  driver_complaint: 'شكوى من راكب',
+  severe_repeat: 'انتهاكات متكررة جسيمة',
+  dangerous_behavior: 'سلوك خطير أثناء الرحلة',
+  tos_violation: 'انتهاك شروط الاستخدام',
+  other: 'أخرى',
+};
+
+function humanReason(reason: string): string {
+  return REASON_LABELS[reason] || reason;
+}
+
+function durationLabel(endsAt: string | null | undefined): string {
+  if (!endsAt) return 'غير محدد';
+  const date = new Date(endsAt);
+  if (Number.isNaN(date.getTime())) return String(endsAt);
+  return new Intl.DateTimeFormat('ar', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(date);
+}
 
 // Port of main-server/Services/penaltyService.ts. listForDriver serves the
 // driver endpoint now; issue() serves the admin endpoint (wired to
@@ -19,6 +54,8 @@ export class PenaltyService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly enforcement: EnforcementService,
+    private readonly blocking: AccountBlockingService,
+    private readonly notifications: NotificationsService,
   ) {}
 
   async listForDriver(
@@ -67,6 +104,7 @@ export class PenaltyService {
       complaint_id?: string | null;
       ends_at?: string | null;
       confirm_reviewed_log?: boolean | null;
+      allow_open_suspension?: boolean;
     },
   ): Promise<{ penalty: Record<string, unknown> }> {
     const { user_id: userId, type, reason, details, complaint_id: complaintId, ends_at: endsAt } = payload;
@@ -75,7 +113,7 @@ export class PenaltyService {
     // ends_at must be in the future). DTO format checks run first via the
     // global ApiValidationPipe; these throw the same 422 VALIDATION_ERROR
     // envelope as Express ApiErrors.validation().
-    if (type === 'suspension' && !endsAt) {
+    if (type === 'suspension' && !endsAt && !payload.allow_open_suspension) {
       throw new UnprocessableEntityException({
         message: 'ENDS_AT_IS_REQUIRED_FOR_A_SUSPENSION',
         code: 'VALIDATION_ERROR',
@@ -129,18 +167,56 @@ export class PenaltyService {
       },
     });
     const newStatus = STATUS_BY_TYPE[type];
-    if (newStatus) {
+    const currentRank = STATUS_RANK[user.status] ?? 0;
+    if (newStatus && (STATUS_RANK[newStatus] ?? 0) > currentRank) {
       await this.prisma.user.update({
         where: { id: userId },
         data: { status: newStatus as 'warned' | 'suspended' | 'banned' },
       });
     }
+
+    let blockedInventory: Record<string, number> | null = null;
+    if (type !== 'warning') {
+      try {
+        blockedInventory = await this.blocking.blockInventory(actorId, user, humanReason(reason));
+      } catch (err) {
+        this.logger.warn(`[penaltyService] account inventory block failed: ${(err as Error).message}`);
+      }
+    }
+
+    const template =
+      type === 'warning'
+        ? 'ACCOUNT_WARNING'
+        : type === 'suspension'
+          ? 'ACCOUNT_SUSPENDED'
+          : 'ACCOUNT_BANNED';
+    const channels: ('in_app' | 'push' | 'sms')[] =
+      type === 'warning'
+        ? ['in_app', 'push']
+        : ['in_app', 'push', 'sms'];
+    try {
+      await this.notifications.sendToUser(user as unknown as NotifyUser, template, {
+        channels,
+        vars: {
+          reason: humanReason(reason),
+          duration: durationLabel(endsAt),
+        },
+        data: {
+          penalty_id: penalty.id,
+          type,
+          ends_at: endsAt ?? null,
+        },
+      });
+    } catch (err) {
+      this.logger.warn(`[penaltyService] penalty notification failed: ${(err as Error).message}`);
+    }
+
     try {
       const plan = this.enforcement.revocationForPenalty(type);
       if (plan.applies) {
         this.enforcement.revoke(userId, {
           action: plan.action ?? 'suspend',
-          reason,
+          reason: humanReason(reason),
           actorId,
           duration: type === 'suspension' && endsAt ? String(endsAt) : null,
         });
@@ -159,6 +235,7 @@ export class PenaltyService {
         ends_at: penalty.endsAt,
         issued_by: penalty.issuedBy,
       },
+      ...(blockedInventory ? { inventory: blockedInventory } : {}),
     };
   }
 }

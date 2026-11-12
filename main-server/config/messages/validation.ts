@@ -52,6 +52,7 @@ export const VALIDATION_MESSAGES = {
   COLOR_MUST_BE_AT_MOST_40_CHARACTERS: { en: "Color must be at most 40 characters", ar: "يجب ألا يتجاوز اللون 40 حرفاً" },
   COMPLAINT_ID_MUST_BE_A_VALID_UUID: { en: "Complaint ID must be a valid UUID", ar: "معرف الشكوى يجب أن يكون معرّفاً فورياً صالحاً" },
   CONFIRM_PASSWORD_IS_REQUIRED: { en: "Confirm password is required", ar: "تأكيد كلمة المرور مطلوب" },
+  CONFIRM_REVIEWED_LOG_REQUIRED: { en: 'Review the account log before confirming', ar: '??? ????? ?????? ??? ?????? ??? ???????' },
   COST_CANNOT_BE_NEGATIVE: { en: "Cost cannot be negative", ar: "لا يمكن أن تكون التكلفة سالبة" },
   COST_MUST_BE_A_DECIMAL: { en: "Cost must be a decimal", ar: "يجب أن تكون التكلفة رقماً عشرياً" },
   COUNTRY_CODE_IS_REQUIRED: { en: "Country code is required", ar: "رمز الدولة مطلوب" },

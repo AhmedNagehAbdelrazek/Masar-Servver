@@ -1,4 +1,5 @@
 import {
+  ConflictException,
   Injectable,
   NotFoundException,
   UnprocessableEntityException,
@@ -601,23 +602,33 @@ export class AdminPassengersService {
   }
 
   async applyAccountStatus(
+    adminId: string,
     passengerId: string,
     action: 'reactivate' | 'unblock' | 'suspend',
   ): Promise<Record<string, unknown>> {
-    await this.getPassengerOrThrow(passengerId);
+    const passenger = await this.getPassengerOrThrow(passengerId);
     if (action === 'suspend') {
-      await this.prisma.user.update({ where: { id: passengerId }, data: { status: 'suspended' } });
-    } else {
-      await this.prisma.user.update({ where: { id: passengerId }, data: { status: 'active' } });
-      await this.prisma.penalty.updateMany({
-        where: {
-          userId: passengerId,
-          type: { in: ['suspension', 'ban'] },
-          endsAt: null,
-        },
-        data: { endsAt: new Date() },
+      if (['suspended', 'banned'].includes(passenger.status)) {
+        throw new ConflictException({ message: 'PASSENGER_ALREADY_IN_STATE', code: 'PASSENGER_ALREADY_IN_STATE' });
+      }
+      await this.penalties.issue(adminId, {
+        user_id: passengerId,
+        type: 'suspension',
+        reason: 'Suspended by administrator from the dashboard',
+        allow_open_suspension: true,
       });
+      const reloaded = await this.prisma.user.findUnique({ where: { id: passengerId } });
+      return { passenger: { id: passengerId, account_status: reloaded?.status ?? 'suspended' } };
     }
-    return { passenger: { id: passengerId, account_status: action === 'suspend' ? 'suspended' : 'active' } };
+    await this.prisma.user.update({ where: { id: passengerId }, data: { status: 'active' } });
+    await this.prisma.penalty.updateMany({
+      where: {
+        userId: passengerId,
+        type: { in: ['suspension', 'ban'] },
+        endsAt: null,
+      },
+      data: { endsAt: new Date() },
+    });
+    return { passenger: { id: passengerId, account_status: 'active' } };
   }
 }

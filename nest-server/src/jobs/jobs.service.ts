@@ -326,6 +326,46 @@ export class JobsService {
     return this.tripReminders.sendDueReminders();
   }
 
+  async runPenaltyExpiry(): Promise<{ reactivated: number; userIds: string[] }> {
+    const now = new Date();
+    const expired = await this.prisma.penalty.findMany({
+      where: { type: 'suspension', endsAt: { lte: now } },
+      select: { userId: true },
+    });
+    const userIds = [...new Set(expired.map((row) => row.userId))];
+    const reactivated: string[] = [];
+
+    for (const userId of userIds) {
+      const user = await this.prisma.user.findUnique({ where: { id: userId } });
+      if (!user || user.status !== 'suspended') continue;
+
+      const [activeBans, activeSuspensions] = await Promise.all([
+        this.prisma.penalty.count({ where: { userId, type: 'ban', endsAt: null } }),
+        this.prisma.penalty.count({
+          where: {
+            userId,
+            type: 'suspension',
+            OR: [{ endsAt: null }, { endsAt: { gt: now } }],
+          },
+        }),
+      ]);
+      if (activeBans > 0 || activeSuspensions > 0) continue;
+
+      await this.prisma.user.update({ where: { id: userId }, data: { status: 'active' } });
+      reactivated.push(userId);
+      try {
+        await this.notifications.sendToUser(user, 'ACCOUNT_REACTIVATED', {
+          channels: ['in_app', 'push', 'sms'],
+          data: { source: 'suspension_expiry' },
+        });
+      } catch (err) {
+        this.logger.warn(`[penaltyExpiryJob] notification failed: ${(err as Error).message}`);
+      }
+    }
+
+    return { reactivated: reactivated.length, userIds: reactivated };
+  }
+
   private isTestEnv(): boolean {
     return process.env.NODE_ENV === 'test';
   }
@@ -388,5 +428,11 @@ export class JobsService {
   tripLifecycle(): void {
     if (this.isTestEnv()) return;
     void this.guarded('tripLifecycle', () => this.runTripLifecycle());
+  }
+
+  @Cron(process.env.JOB_PENALTY_EXPIRY_CRON ?? '*/5 * * * *')
+  penaltyExpiry(): void {
+    if (this.isTestEnv()) return;
+    void this.guarded('penaltyExpiry', () => this.runPenaltyExpiry());
   }
 }

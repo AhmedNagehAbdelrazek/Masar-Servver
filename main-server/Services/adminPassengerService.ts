@@ -498,13 +498,30 @@ async function applyAccountStatus(adminId, passengerId, action) {
     throw ApiErrors.validation('INVALID_ACCOUNT_ACTION');
   }
   if (action === 'suspend') {
-    await user.update({ status: 'suspended' });
+    if (['suspended', 'banned'].includes(user.status)) {
+      throw ApiErrors.conflict('PASSENGER_ALREADY_IN_STATE');
+    }
+    await penaltyService.issue(adminId, {
+      user_id: passengerId,
+      type: 'suspension',
+      reason: 'Suspended by administrator from the dashboard',
+      allow_open_suspension: true,
+    });
+    await user.reload();
   } else {
     await user.update({ status: 'active' });
     await Penalty.update(
       { endsAt: new Date() },
       { where: { userId: passengerId, type: { [Op.in]: ['suspension', 'ban'] }, endsAt: null } }
     );
+    try {
+      await notificationService.sendToUser(user, 'ACCOUNT_REACTIVATED', {
+        channels: ['in_app', 'push', 'sms'],
+        data: { action, source: 'admin_dashboard' },
+      });
+    } catch (err) {
+      console.warn('[adminPassengerService] reactivation notification failed:', err.message);
+    }
   }
   return { passenger: { id: passengerId, account_status: user.status } };
 }

@@ -1,7 +1,7 @@
 ﻿const { getAgent } = require('../setup/setup');
 const {
   User, Vehicle, DriverProfile, UploadedImage, DocumentReview, Penalty,
-  VerificationStatusChange,
+  VerificationStatusChange, Notification,
 } = require('../../Models');
 const { PENALTY_TYPES } = require('../../config/constants');
 const { generateAccessToken } = require('../setup/helpers');
@@ -15,6 +15,7 @@ let adminToken;
 let driverToken;
 
 async function cleanAll() {
+  await Notification.destroy({ where: {}, force: true });
   await DocumentReview.destroy({ where: {}, force: true });
   await Penalty.destroy({ where: {}, force: true });
   await VerificationStatusChange.destroy({ where: {}, force: true });
@@ -68,6 +69,10 @@ describe('POST /api/admin/dashboard/drivers/:driver_id/account-status â€” s
       type: PENALTY_TYPES.SUSPENSION, issuedBy: ADMIN_ID, reason: 'Repeated complaints',
     });
     expect(penalties[0].endsAt).toBeNull();
+    const notices = await Notification.findAll({
+      where: { userId: DRIVER_ID, type: 'ACCOUNT_SUSPENDED' },
+    });
+    expect(notices).toHaveLength(1);
   });
 
   it('reactivate returns the driver to active and closes open suspensions', async () => {
@@ -85,6 +90,10 @@ describe('POST /api/admin/dashboard/drivers/:driver_id/account-status â€” s
 
     const penalties = await Penalty.findAll({ where: { userId: DRIVER_ID } });
     expect(penalties[0].endsAt).not.toBeNull();
+    const notices = await Notification.findAll({
+      where: { userId: DRIVER_ID, type: 'ACCOUNT_REACTIVATED' },
+    });
+    expect(notices).toHaveLength(1);
   });
 
   it('unblock works as an alias for reactivate (clarification Q1)', async () => {

@@ -138,7 +138,8 @@ export class AdminPassengersController {
   applyAccountStatus(
     @Param() params: PassengerIdParam,
     @Body() dto: PassengerAccountStatusDto,
+    @CurrentUser() user?: AuthUser,
   ): Promise<Record<string, unknown>> {
-    return this.passengers.applyAccountStatus(params.passenger_id, dto.action);
+    return this.passengers.applyAccountStatus(user?.id ?? '', params.passenger_id, dto.action);
   }
 }

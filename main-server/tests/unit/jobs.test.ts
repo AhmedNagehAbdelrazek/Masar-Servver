@@ -12,6 +12,7 @@ jest.mock('../../Models', () => ({
   DriverSubscription: { findAll: jest.fn() },
   User: { findByPk: jest.fn() },
   Trip: { findAll: jest.fn() },
+  Penalty: { findAll: jest.fn(), count: jest.fn() },
 }));
 
 jest.mock('../../Services/balanceService');
@@ -24,6 +25,12 @@ const { DriverSubscription, User, Trip } = require('../../Models') as {
   DriverSubscription: { findAll: jest.Mock<() => Promise<unknown>> };
   User: { findByPk: jest.Mock<(id: string) => Promise<unknown>> };
   Trip: { findAll: jest.Mock<() => Promise<unknown>> };
+};
+const { Penalty } = require('../../Models') as {
+  Penalty: {
+    findAll: jest.Mock<(arg?: unknown) => Promise<unknown>>;
+    count: jest.Mock<(arg?: unknown) => Promise<number>>;
+  };
 };
 const dbMock = jest.requireMock('../../config/database') as unknown as {
   transaction: jest.Mock<(cb: (t: unknown) => Promise<unknown>) => Promise<unknown>>;
@@ -48,6 +55,9 @@ const { runExpiryReminder } = require('../../jobs/expiryReminderJob') as {
 };
 const { runLowBalanceWarning } = require('../../jobs/lowBalanceWarningJob') as {
   runLowBalanceWarning: () => Promise<Array<{ driverId: string }>>;
+};
+const { runPenaltyExpiry } = require('../../jobs/penaltyExpiryJob') as {
+  runPenaltyExpiry: () => Promise<{ reactivated: number; userIds: string[] }>;
 };
 const { JOBS, startJobs } = require('../../jobs') as {
   JOBS: Record<string, { schedule: string }>;
@@ -184,13 +194,54 @@ describe('lowBalanceWarningJob', () => {
   });
 });
 
+describe('penaltyExpiryJob', () => {
+  it('reactivates an expired suspension and notifies through every channel', async () => {
+    const update = jest.fn(async (_data: { status: string }) => undefined);
+    Penalty.findAll.mockResolvedValue([{ userId: 'driver-1' }]);
+    User.findByPk.mockResolvedValue({
+      id: 'driver-1',
+      status: 'suspended',
+      phone: '+962790000001',
+      update,
+    });
+    Penalty.count.mockResolvedValue(0);
+
+    const result = await runPenaltyExpiry();
+
+    expect(update).toHaveBeenCalledWith({ status: 'active' });
+    expect(notificationService.sendToUser).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'driver-1' }),
+      'ACCOUNT_REACTIVATED',
+      expect.objectContaining({ channels: ['in_app', 'push', 'sms'] })
+    );
+    expect(result).toEqual({ reactivated: 1, userIds: ['driver-1'] });
+  });
+
+  it('keeps a suspension when a ban or another active suspension remains', async () => {
+    const update = jest.fn(async (_data: { status: string }) => undefined);
+    Penalty.findAll.mockResolvedValue([{ userId: 'driver-1' }]);
+    User.findByPk.mockResolvedValue({ id: 'driver-1', status: 'suspended', update });
+    Penalty.count.mockResolvedValueOnce(1).mockResolvedValueOnce(0);
+
+    const result = await runPenaltyExpiry();
+
+    expect(update).not.toHaveBeenCalled();
+    expect(notificationService.sendToUser).not.toHaveBeenCalled();
+    expect(Penalty.count).toHaveBeenNthCalledWith(1, {
+      where: { userId: 'driver-1', type: 'ban', endsAt: null },
+    });
+    expect(result).toEqual({ reactivated: 0, userIds: [] });
+  });
+});
+
 describe('jobs registry', () => {
   it('exposes all jobs with env-driven schedules', () => {
-    expect(Object.keys(JOBS)).toEqual(['expirySweep', 'expiryReminder', 'lowBalanceWarning', 'sosEscalation', 'dataRetention', 'routeRetry', 'actualPath', 'driverStats', 'tripLifecycle']);
+    expect(Object.keys(JOBS)).toEqual(['expirySweep', 'expiryReminder', 'lowBalanceWarning', 'sosEscalation', 'dataRetention', 'routeRetry', 'actualPath', 'driverStats', 'tripLifecycle', 'tripReminder', 'penaltyExpiry']);
     expect(JOBS.expirySweep.schedule).toBeTruthy();
     expect(JOBS.expiryReminder.schedule).toBeTruthy();
     expect(JOBS.lowBalanceWarning.schedule).toBeTruthy();
     expect(JOBS.tripLifecycle.schedule).toBeTruthy();
+    expect(JOBS.penaltyExpiry.schedule).toBeTruthy();
   });
 
   it('does not schedule cron jobs in the test environment', () => {

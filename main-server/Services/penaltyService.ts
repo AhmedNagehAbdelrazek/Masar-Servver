@@ -6,6 +6,41 @@ import { PENALTY_TYPES, USER_STATUS } from '../config/constants';
 import { parsePagination, buildPagination } from '../utils/pagination';
 import { revoke } from './enforcementService';
 import { revocationForPenalty } from './enforcementService';
+import notificationService from './notificationService';
+import { blockAccountInventory } from './accountBlockingService';
+
+const STATUS_RANK = {
+  [USER_STATUS.ACTIVE]: 0,
+  [USER_STATUS.WARNED]: 1,
+  [USER_STATUS.SUSPENDED]: 2,
+  [USER_STATUS.BANNED]: 3,
+};
+
+const REASON_LABELS = {
+  repeat_cancel: 'تكرار إلغاء الرحلات',
+  late: 'عدم الالتزام بالمواعيد',
+  misbehavior: 'سلوك غير لائق',
+  rules_violation: 'مخالفة قواعد المنصة',
+  driver_complaint: 'شكوى من راكب',
+  severe_repeat: 'انتهاكات متكررة جسيمة',
+  dangerous_behavior: 'سلوك خطير أثناء الرحلة',
+  tos_violation: 'انتهاك شروط الاستخدام',
+  other: 'أخرى',
+};
+
+function humanReason(reason) {
+  return REASON_LABELS[reason] || reason;
+}
+
+function durationLabel(endsAt) {
+  if (!endsAt) return 'غير محدد';
+  const date = new Date(endsAt);
+  if (Number.isNaN(date.getTime())) return String(endsAt);
+  return new Intl.DateTimeFormat('ar', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(date);
+}
 
 function serializePenalty(penalty, user) {
   return {
@@ -61,9 +96,17 @@ const STATUS_BY_TYPE = {
  * does not exist or a suspension is missing `ends_at` / a ban provides one.
  */
 async function issue(actorId, payload) {
-  const { user_id: userId, type, reason, details, complaint_id: complaintId, ends_at: endsAt } = payload;
+  const {
+    user_id: userId,
+    type,
+    reason,
+    details,
+    complaint_id: complaintId,
+    ends_at: endsAt,
+    allow_open_suspension: allowOpenSuspension,
+  } = payload;
 
-  if (type === PENALTY_TYPES.SUSPENSION && !endsAt) {
+  if (type === PENALTY_TYPES.SUSPENSION && !endsAt && !allowOpenSuspension) {
     throw ApiErrors.validation('ENDS_AT_IS_REQUIRED_FOR_A_SUSPENSION');
   }
   if (type === PENALTY_TYPES.BAN && endsAt) {
@@ -85,8 +128,45 @@ async function issue(actorId, payload) {
   });
 
   const newStatus = STATUS_BY_TYPE[type];
-  if (newStatus) {
+  const currentRank = STATUS_RANK[user.status] ?? 0;
+  if (newStatus && (STATUS_RANK[newStatus] ?? 0) > currentRank) {
     await user.update({ status: newStatus });
+  }
+
+  let blockedInventory = null;
+  if (type !== PENALTY_TYPES.WARNING) {
+    try {
+      blockedInventory = await blockAccountInventory(actorId, user, humanReason(reason));
+    } catch (err) {
+      console.warn('[penaltyService] account inventory block failed:', err.message);
+    }
+  }
+
+  const template =
+    type === PENALTY_TYPES.WARNING
+      ? 'ACCOUNT_WARNING'
+      : type === PENALTY_TYPES.SUSPENSION
+        ? 'ACCOUNT_SUSPENDED'
+        : 'ACCOUNT_BANNED';
+  const channels =
+    type === PENALTY_TYPES.WARNING
+      ? ['in_app', 'push']
+      : ['in_app', 'push', 'sms'];
+  try {
+    await notificationService.sendToUser(user, template, {
+      channels,
+      vars: {
+        reason: humanReason(reason),
+        duration: durationLabel(endsAt),
+      },
+      data: {
+        penalty_id: penalty.id,
+        type,
+        ends_at: endsAt || null,
+      },
+    });
+  } catch (err) {
+    console.warn('[penaltyService] penalty notification failed:', err.message);
   }
 
   // Realtime enforcement: suspensions and bans revoke live sessions so the
@@ -97,7 +177,7 @@ async function issue(actorId, payload) {
     if (plan.applies) {
       revoke(userId, {
         action: plan.action,
-        reason,
+        reason: humanReason(reason),
         actorId,
         duration: type === PENALTY_TYPES.SUSPENSION && endsAt ? String(endsAt) : null,
       });
@@ -117,6 +197,7 @@ async function issue(actorId, payload) {
       ends_at: penalty.endsAt,
       issued_by: penalty.issuedBy,
     },
+    ...(blockedInventory ? { inventory: blockedInventory } : {}),
   };
 }
 

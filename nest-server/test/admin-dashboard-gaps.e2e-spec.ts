@@ -122,6 +122,27 @@ describe('Admin dashboard audit gaps', () => {
     expect(res.text).not.toContain('+962798800001');
   });
 
+  it('dashboard suspension routes through the penalty pipeline', async () => {
+    const res = await ctx.agent
+      .post(`/api/admin/dashboard/drivers/${DRIVER_ID}/account-status`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ action: 'suspend', reason: 'Repeated complaints' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.driver).toMatchObject({ account_status: 'suspended' });
+
+    const user = await ctx.prisma.user.findUnique({ where: { id: DRIVER_ID } });
+    expect(user?.status).toBe('suspended');
+    const penalty = await ctx.prisma.penalty.findFirst({
+      where: { userId: DRIVER_ID, type: 'suspension', endsAt: null },
+    });
+    expect(penalty).not.toBeNull();
+    const notice = await ctx.prisma.notification.findFirst({
+      where: { userId: DRIVER_ID, type: 'ACCOUNT_SUSPENDED' },
+    });
+    expect(notice).not.toBeNull();
+  });
+
   it('generic ban requires the log-review confirmation', async () => {
     const denied = await ctx.agent
       .post('/api/admin/penalties')

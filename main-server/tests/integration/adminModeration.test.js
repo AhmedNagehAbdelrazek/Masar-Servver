@@ -1,5 +1,5 @@
 const { getAgent } = require('../setup/setup');
-const { User, Vehicle, Trip, Penalty } = require('../../Models');
+const { User, Vehicle, Trip, Booking, RideRequest, Penalty, Notification } = require('../../Models');
 const { TRIP_STATUS } = require('../../config/constants');
 const { generateAccessToken } = require('../setup/helpers');
 
@@ -18,6 +18,9 @@ function todayStr() {
 }
 
 beforeEach(async () => {
+  await Notification.destroy({ where: {}, force: true });
+  await Booking.destroy({ where: {}, force: true });
+  await RideRequest.destroy({ where: {}, force: true });
   await Penalty.destroy({ where: {}, force: true });
   await Trip.destroy({ where: {}, force: true });
   await Vehicle.destroy({ where: {}, force: true });
@@ -29,7 +32,8 @@ beforeEach(async () => {
   });
   await User.create({
     id: DRIVER_ID, fullName: 'Omar Khaled', phone: '+962798800001',
-    countryCode: 'JO', role: 'driver', passwordHash: 'hashed', isVerified: true, avgRating: 4.8,
+    countryCode: 'JO', role: 'driver', passwordHash: 'hashed', isVerified: true,
+    verificationStatus: 'approved', avgRating: 4.8,
   });
   await User.create({
     id: PASSENGER_ID, fullName: 'Sara Ali', phone: '+962798800002',
@@ -56,6 +60,22 @@ async function seedTrip(status = TRIP_STATUS.PUBLISHED) {
     totalSeats: 4,
     availableSeats: 3,
     farePerSeat: 10,
+    status,
+  });
+}
+
+let bookingSequence = 0;
+
+async function seedBooking(status = 'confirmed') {
+  bookingSequence += 1;
+  return Booking.create({
+    tripId: TRIP_ID,
+    passengerId: PASSENGER_ID,
+    seatNumber: 2,
+    seatNumbers: [2],
+    seatsBooked: 1,
+    agreedFare: 10,
+    referenceCode: `MODBK${String(bookingSequence).padStart(4, '0')}`,
     status,
   });
 }
@@ -204,6 +224,135 @@ describe('POST /api/admin/penalties', () => {
 
     const user = await User.findByPk(DRIVER_ID);
     expect(user.status).toBe('suspended');
+  });
+
+  it('should cancel the driver trips and bookings when suspended', async () => {
+    await seedTrip();
+    await seedBooking();
+
+    const res = await getAgent()
+      .post('/api/admin/penalties')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({
+        user_id: DRIVER_ID,
+        type: 'suspension',
+        reason: 'Repeated no-shows',
+        ends_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+      });
+
+    expect(res.status).toBe(200);
+    expect(res.body.inventory).toMatchObject({ trips_cancelled: 1, bookings_cancelled: 1 });
+
+    const trip = await Trip.findByPk(TRIP_ID);
+    expect(trip.status).toBe(TRIP_STATUS.CANCELLED);
+    const booking = await Booking.findOne({ where: { passengerId: PASSENGER_ID } });
+    expect(booking.status).toBe('cancelled');
+
+    const driverNotice = await Notification.findOne({
+      where: { userId: DRIVER_ID, type: 'ACCOUNT_SUSPENDED' },
+    });
+    expect(driverNotice).not.toBeNull();
+    const passengerNotice = await Notification.findOne({
+      where: { userId: PASSENGER_ID, type: 'TRIP_CANCELLED' },
+    });
+    expect(passengerNotice).not.toBeNull();
+  });
+
+  it('should cancel the passenger bookings when banned', async () => {
+    await seedTrip();
+    await seedBooking();
+
+    const res = await getAgent()
+      .post('/api/admin/penalties')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({
+        user_id: PASSENGER_ID,
+        type: 'ban',
+        reason: 'Fraud',
+        confirm_reviewed_log: true,
+      });
+
+    expect(res.status).toBe(200);
+    expect(res.body.inventory).toMatchObject({ bookings_cancelled: 1 });
+
+    const booking = await Booking.findOne({ where: { passengerId: PASSENGER_ID } });
+    expect(booking.status).toBe('cancelled');
+    const trip = await Trip.findByPk(TRIP_ID);
+    expect(trip.status).toBe(TRIP_STATUS.PUBLISHED);
+    expect(trip.availableSeats).toBe(4);
+
+    const passengerNotice = await Notification.findOne({
+      where: { userId: PASSENGER_ID, type: 'ACCOUNT_BANNED' },
+    });
+    expect(passengerNotice).not.toBeNull();
+    const driverNotice = await Notification.findOne({
+      where: { userId: DRIVER_ID, type: 'BOOKING_CANCELLED_DRIVER' },
+    });
+    expect(driverNotice).not.toBeNull();
+  });
+
+  it.each(['suspended', 'banned'])('a warning never downgrades a %s account', async (status) => {
+    await User.update({ status }, { where: { id: DRIVER_ID } });
+
+    const res = await getAgent()
+      .post('/api/admin/penalties')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({
+        user_id: DRIVER_ID,
+        type: 'warning',
+        reason: 'Late responses',
+      });
+
+    expect(res.status).toBe(200);
+    const user = await User.findByPk(DRIVER_ID);
+    expect(user.status).toBe(status);
+    expect(await Penalty.count({ where: { userId: DRIVER_ID, type: 'warning' } })).toBe(1);
+  });
+
+  it('should require the reviewed-log confirmation for a ban', async () => {
+    const denied = await getAgent()
+      .post('/api/admin/penalties')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ user_id: DRIVER_ID, type: 'ban', reason: 'Repeated fraud' });
+    expect(denied.status).toBe(422);
+
+    const ok = await getAgent()
+      .post('/api/admin/penalties')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({
+        user_id: DRIVER_ID,
+        type: 'ban',
+        reason: 'Repeated fraud',
+        confirm_reviewed_log: true,
+      });
+    expect(ok.status).toBe(200);
+    expect(ok.body.penalty).toMatchObject({ type: 'ban' });
+    const user = await User.findByPk(DRIVER_ID);
+    expect(user.status).toBe('banned');
+  });
+
+  it('reactivation closes the open ban record', async () => {
+    await getAgent()
+      .post('/api/admin/penalties')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({
+        user_id: DRIVER_ID,
+        type: 'ban',
+        reason: 'Repeated fraud',
+        confirm_reviewed_log: true,
+      });
+
+    const lift = await getAgent()
+      .post(`/api/admin/dashboard/drivers/${DRIVER_ID}/account-status`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ action: 'unblock' });
+
+    expect(lift.status).toBe(200);
+    expect(lift.body.driver.account_status).toBe('active');
+    const openBan = await Penalty.findOne({
+      where: { userId: DRIVER_ID, type: 'ban', endsAt: null },
+    });
+    expect(openBan).toBeNull();
   });
 
   it('should issue a ban and forbid ends_at', async () => {

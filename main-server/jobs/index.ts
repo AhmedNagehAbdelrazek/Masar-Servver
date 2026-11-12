@@ -11,6 +11,7 @@ import { runActualPath } from './actualPathJob';
 import { runDriverStats } from './driverStatsJob';
 import { runTripLifecycle } from './tripLifecycleJob';
 import { runTripReminder } from './tripReminderJob';
+import { runPenaltyExpiry } from './penaltyExpiryJob';
 
 interface JobDef {
   schedule: string;
@@ -57,6 +58,10 @@ const JOBS: Record<string, JobDef> = {
   tripReminder: {
     schedule: process.env.JOB_TRIP_REMINDER_CRON || '* * * * *',
     task: runTripReminder,
+  },
+  penaltyExpiry: {
+    schedule: process.env.JOB_PENALTY_EXPIRY_CRON || '*/5 * * * *',
+    task: runPenaltyExpiry,
   },
 };
 

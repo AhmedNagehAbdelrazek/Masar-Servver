@@ -202,6 +202,23 @@ export const TEMPLATES: Record<string, { ar: TemplateEntry; en: TemplateEntry }>
     ar: { title: 'الصعود التالي', body: 'الصعود التالي: {label} على بعد {distance_m} متر.' },
     en: { title: 'Next pickup', body: 'Next pickup: {label}, {distance_m} meters away.' },
   },
+
+  ACCOUNT_WARNING: {
+    ar: { title: 'تم إصدار إنذار على حسابك', body: 'تم تسجيل إنذار على حسابك. السبب: {reason}. يرجى الالتزام بقواعد المنصة.' },
+    en: { title: 'Warning issued', body: 'A warning has been recorded on your account. Reason: {reason}. Please follow the platform rules.' },
+  },
+  ACCOUNT_SUSPENDED: {
+    ar: { title: 'تم إيقاف حسابك مؤقتًا', body: 'تم إيقاف حسابك مؤقتًا. السبب: {reason}. مدة الإيقاف: {duration}.' },
+    en: { title: 'Account temporarily suspended', body: 'Your account has been temporarily suspended. Reason: {reason}. Duration: {duration}.' },
+  },
+  ACCOUNT_BANNED: {
+    ar: { title: 'تم إيقاف حسابك نهائيًا', body: 'تم إيقاف حسابك نهائيًا. السبب: {reason}. للاستفسار يرجى التواصل مع الدعم.' },
+    en: { title: 'Account permanently suspended', body: 'Your account has been permanently suspended. Reason: {reason}. Please contact support if you believe this is a mistake.' },
+  },
+  ACCOUNT_REACTIVATED: {
+    ar: { title: 'تم رفع الإيقاف عن حسابك', body: 'تمت إعادة تفعيل حسابك ويمكنك استخدام تطبيق مسار مرة أخرى.' },
+    en: { title: 'Account reactivated', body: 'Your account has been reactivated. You can use the Masar app again.' },
+  },
 };
 
 export function interpolate(template: string, vars: Record<string, unknown> = {}): string {

@@ -15,6 +15,7 @@ import { DriverService } from './driver.service.js';
 import { DriverStatsService } from './driver-stats.service.js';
 import { EarningsService } from './earnings.service.js';
 import { EnforcementService } from './enforcement.service.js';
+import { AccountBlockingService } from './account-blocking.service.js';
 import { PenaltyService } from './penalty.service.js';
 import { PersonalDataService } from './personal-data.service.js';
 import { StatsService } from './stats.service.js';
@@ -35,6 +36,7 @@ import { VerificationService } from './verification.service.js';
     DeletionService,
     PenaltyService,
     EnforcementService,
+    AccountBlockingService,
     EarningsService,
     StatsService,
     DashboardService,

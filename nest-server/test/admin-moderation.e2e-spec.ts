@@ -304,5 +304,128 @@ describe('Admin moderation', () => {
 
       expect(res.status).toBe(404);
     });
+    it('should cancel the driver trips and bookings when suspended', async () => {
+      await seedTrip();
+      await ctx.prisma.booking.create({
+        data: {
+          tripId: TRIP_ID,
+          passengerId: PASSENGER_ID,
+          seatNumber: 2,
+          seatNumbers: [2],
+          seatsBooked: 1,
+          agreedFare: 10,
+          referenceCode: 'NMOD0001',
+          status: 'confirmed',
+        },
+      });
+
+      const res = await ctx.agent
+        .post('/api/admin/penalties')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          user_id: DRIVER_ID,
+          type: 'suspension',
+          reason: 'Repeated no-shows',
+          ends_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+        });
+
+      expect(res.status).toBe(200);
+      expect(res.body.inventory).toMatchObject({ trips_cancelled: 1, bookings_cancelled: 1 });
+
+      const trip = await ctx.prisma.trip.findUnique({ where: { id: TRIP_ID } });
+      expect(trip?.status).toBe('cancelled');
+      const booking = await ctx.prisma.booking.findFirst({ where: { passengerId: PASSENGER_ID } });
+      expect(booking?.status).toBe('cancelled');
+
+      expect(
+        await ctx.prisma.notification.findFirst({ where: { userId: DRIVER_ID, type: 'ACCOUNT_SUSPENDED' } }),
+      ).not.toBeNull();
+      expect(
+        await ctx.prisma.notification.findFirst({ where: { userId: PASSENGER_ID, type: 'TRIP_CANCELLED' } }),
+      ).not.toBeNull();
+    });
+
+    it('should cancel the passenger bookings when banned', async () => {
+      await seedTrip();
+      await ctx.prisma.booking.create({
+        data: {
+          tripId: TRIP_ID,
+          passengerId: PASSENGER_ID,
+          seatNumber: 2,
+          seatNumbers: [2],
+          seatsBooked: 1,
+          agreedFare: 10,
+          referenceCode: 'NMOD0002',
+          status: 'confirmed',
+        },
+      });
+
+      const res = await ctx.agent
+        .post('/api/admin/penalties')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          user_id: PASSENGER_ID,
+          type: 'ban',
+          reason: 'Fraud',
+          confirm_reviewed_log: true,
+        });
+
+      expect(res.status).toBe(200);
+      expect(res.body.inventory).toMatchObject({ bookings_cancelled: 1 });
+
+      const booking = await ctx.prisma.booking.findFirst({ where: { passengerId: PASSENGER_ID } });
+      expect(booking?.status).toBe('cancelled');
+      const trip = await ctx.prisma.trip.findUnique({ where: { id: TRIP_ID } });
+      expect(trip?.status).toBe('published');
+      expect(trip?.availableSeats).toBe(4);
+
+      expect(
+        await ctx.prisma.notification.findFirst({ where: { userId: PASSENGER_ID, type: 'ACCOUNT_BANNED' } }),
+      ).not.toBeNull();
+      expect(
+        await ctx.prisma.notification.findFirst({ where: { userId: DRIVER_ID, type: 'BOOKING_CANCELLED_DRIVER' } }),
+      ).not.toBeNull();
+    });
+
+    it.each(['suspended', 'banned'])('a warning never downgrades a %s account', async (status) => {
+      await ctx.prisma.user.update({
+        where: { id: DRIVER_ID },
+        data: { status: status as 'suspended' | 'banned' },
+      });
+
+      const res = await ctx.agent
+        .post('/api/admin/penalties')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ user_id: DRIVER_ID, type: 'warning', reason: 'Late responses' });
+
+      expect(res.status).toBe(200);
+      const user = await ctx.prisma.user.findUnique({ where: { id: DRIVER_ID } });
+      expect(user?.status).toBe(status);
+      expect(
+        await ctx.prisma.penalty.count({ where: { userId: DRIVER_ID, type: 'warning' } }),
+      ).toBe(1);
+    });
+
+    it('should require the reviewed-log confirmation for a ban', async () => {
+      const denied = await ctx.agent
+        .post('/api/admin/penalties')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ user_id: DRIVER_ID, type: 'ban', reason: 'Repeated fraud' });
+      expect(denied.status).toBe(422);
+
+      const ok = await ctx.agent
+        .post('/api/admin/penalties')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          user_id: DRIVER_ID,
+          type: 'ban',
+          reason: 'Repeated fraud',
+          confirm_reviewed_log: true,
+        });
+      expect(ok.status).toBe(200);
+      expect(ok.body.penalty).toMatchObject({ type: 'ban' });
+      const user = await ctx.prisma.user.findUnique({ where: { id: DRIVER_ID } });
+      expect(user?.status).toBe('banned');
+    });
   });
 });

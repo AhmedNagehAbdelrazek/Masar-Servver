@@ -45,6 +45,12 @@ export const penaltyValidation: ValidationChain[] = [
       }
       return true;
     }),
+  body('confirm_reviewed_log').custom((value: unknown, { req }: Meta) => {
+    if (req.body.type === PENALTY_TYPES.BAN && value !== true) {
+      throw new Error(V.CONFIRM_REVIEWED_LOG_REQUIRED);
+    }
+    return true;
+  }),
 ];
 
 

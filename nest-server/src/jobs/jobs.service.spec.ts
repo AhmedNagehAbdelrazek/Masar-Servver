@@ -8,11 +8,12 @@ import { JobsService } from './jobs.service.js';
 function makeDeps() {
   const prisma = {
     driverSubscription: { findMany: vi.fn() },
-    user: { findUnique: vi.fn() },
+    user: { findUnique: vi.fn(), update: vi.fn() },
     trip: { findMany: vi.fn() },
     tripLocation: { deleteMany: vi.fn() },
     message: { deleteMany: vi.fn() },
     sosEvent: { findMany: vi.fn() },
+    penalty: { findMany: vi.fn(), count: vi.fn() },
     $transaction: vi.fn(async (cb: (t: unknown) => Promise<unknown>) => cb({})),
   };
   const redis = { setKey: vi.fn().mockResolvedValue(undefined), getKey: vi.fn() };
@@ -161,6 +162,44 @@ describe('lowBalanceWarningJob', () => {
   });
 });
 
+describe('penaltyExpiryJob', () => {
+  it('reactivates an expired suspension and notifies through every channel', async () => {
+    const { prisma, notifications, service } = makeDeps();
+    prisma.penalty.findMany.mockResolvedValue([{ userId: 'driver-1' }]);
+    prisma.user.findUnique.mockResolvedValue({ id: 'driver-1', status: 'suspended' });
+    prisma.penalty.count.mockResolvedValue(0);
+
+    const result = await service.runPenaltyExpiry();
+
+    expect(prisma.user.update).toHaveBeenCalledWith({
+      where: { id: 'driver-1' },
+      data: { status: 'active' },
+    });
+    expect(notifications.sendToUser).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'driver-1' }),
+      'ACCOUNT_REACTIVATED',
+      expect.objectContaining({ channels: ['in_app', 'push', 'sms'] }),
+    );
+    expect(result).toEqual({ reactivated: 1, userIds: ['driver-1'] });
+  });
+
+  it('keeps a suspension when a ban or another active suspension remains', async () => {
+    const { prisma, notifications, service } = makeDeps();
+    prisma.penalty.findMany.mockResolvedValue([{ userId: 'driver-1' }]);
+    prisma.user.findUnique.mockResolvedValue({ id: 'driver-1', status: 'suspended' });
+    prisma.penalty.count.mockResolvedValueOnce(1).mockResolvedValueOnce(0);
+
+    const result = await service.runPenaltyExpiry();
+
+    expect(prisma.user.update).not.toHaveBeenCalled();
+    expect(notifications.sendToUser).not.toHaveBeenCalled();
+    expect(prisma.penalty.count).toHaveBeenNthCalledWith(1, {
+      where: { userId: 'driver-1', type: 'ban', endsAt: null },
+    });
+    expect(result).toEqual({ reactivated: 0, userIds: [] });
+  });
+});
+
 describe('remaining jobs delegate to the owning services', () => {
   it('sosEscalation delegates to SosService.runEscalation', async () => {
     const { sos, service } = makeDeps();
@@ -211,6 +250,8 @@ describe('remaining jobs delegate to the owning services', () => {
     tripExpiry.refreshStaleTrips.mockResolvedValue({
       autoCompleted: ['t1'],
       expiredUnoperated: [],
+      abandoned: [],
+      warned: [],
       noShowBookings: 0,
       errors: [],
       touched: 1,
@@ -234,10 +275,12 @@ describe('scheduler semantics', () => {
     service.actualPath();
     service.driverStats();
     service.tripLifecycle();
+    service.penaltyExpiry();
     expect(prisma.driverSubscription.findMany).not.toHaveBeenCalled();
+    expect(prisma.penalty.findMany).not.toHaveBeenCalled();
   });
 
-  it('exposes all 9 schedules', () => {
+  it('exposes all 10 schedules', () => {
     const { service } = makeDeps();
     for (const name of [
       'expirySweep',
@@ -249,6 +292,7 @@ describe('scheduler semantics', () => {
       'actualPath',
       'driverStats',
       'tripLifecycle',
+      'penaltyExpiry',
     ] as const) {
       expect(typeof service[name]).toBe('function');
     }

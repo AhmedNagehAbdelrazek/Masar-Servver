@@ -19151,7 +19151,7 @@
                   "body": "{\n  \"status\": \"error\",\n  \"message\": \"Penalty type is required\",\n  \"code\": \"VALIDATION_ERROR\"\n}"
                 }
               ],
-              "description": "---\nBody variants & field notes (moved out of the request body so the body is valid JSON — copy back into the body to use):\nUUID (required)\nwarning | suspension | ban (required)\nstring (required)\noptional notes\noptional link\nISO date — REQUIRED for suspension, FORBIDDEN for ban\nREQUIRED for ban (checkbox in ban modal)"
+              "description": "---\nBody variants & field notes (moved out of the request body so the body is valid JSON — copy back into the body to use):\nUUID (required)\nwarning | suspension | ban (required)\nstring (required)\noptional notes\noptional link\nISO date — REQUIRED for suspension, FORBIDDEN for ban\nREQUIRED for ban (checkbox in ban modal)\n\nNotifications: warning -> in-app + push; suspension/ban -> in-app + push + SMS. Suspension/ban also cancels the user's current and future trips/bookings."
             }
           ]
         },
@@ -21235,7 +21235,7 @@
                         "account-status"
                       ]
                     },
-                    "description": "Standing-action alias for driver status transitions.\n\n**Path parameter:**\n- `driver_id` *(UUID, required)*.\n\n**Body fields:**\n- `action` *(string, required)* â€” `suspend` (â†’ suspended + penalty row), `reactivate` (â†’ active, close open suspensions), `unblock` (â†’ active, close open suspensions).\n- `reason` *(string, optional)* â€” note appended to the account log."
+                    "description": "Standing-action alias for driver status transitions.\n\n**Path parameter:**\n- `driver_id` *(UUID, required)*.\n\n**Body fields:**\n- `action` *(string, required)* â€” `suspend` (â†’ suspended + penalty row; sends in-app + push + SMS and cancels current/future trips/bookings), `reactivate` (â†’ active, close open suspensions and bans), `unblock` (â†’ active, close open suspensions and bans).\n- `reason` *(string, optional)* â€” note appended to the account log."
                   },
                   "response": [
                     {
