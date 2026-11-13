@@ -18,6 +18,7 @@ export const APP_MESSAGES = {
   UNAUTHORIZED: { en: 'Unauthorized', ar: 'غير مصرح' },
   VALIDATION_FAILED: { en: 'Validation failed', ar: 'فشل التحقق من صحة البيانات' },
   DUPLICATE_VALUE_FOR: { en: 'Duplicate value for: {fields}', ar: 'قيمة مكررة في: {fields}' },
+  DUPLICATE_IMAGE_ACCEPTED: { en: 'This image was already uploaded. It was accepted, but please make sure it is the correct document.', ar: 'تم رفع هذه الصورة مسبقًا وتم قبولها. تأكد من أنها الصورة الصحيحة لهذا المستند.' },
   INVALID_UPLOAD: { en: 'Invalid upload.', ar: 'رفع غير صالح.' },
   FILE_TOO_LARGE_10MB: { en: 'File too large. Maximum allowed size is 10 MB.', ar: 'الملف كبير جداً. الحد الأقصى للحجم هو 10 ميغابايت.' },
   INVALID_OR_EXPIRED_TOKEN: { en: 'Invalid or expired token.', ar: 'الرمز غير صالح أو منتهي الصلاحية.' },

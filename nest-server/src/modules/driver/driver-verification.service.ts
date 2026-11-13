@@ -339,6 +339,10 @@ export class DriverVerificationService {
             verificationRejectionFields: [],
           },
         });
+        // Resubmission replaces the current document set; clear stale
+        // per-document decisions so the dashboard shows the new uploads as
+        // pending instead of carrying over old rejections.
+        await tx.documentReview.deleteMany({ where: { driverId } });
         await this.verification.recordStatusChange(driverId, currentStatus, 'pending', { tx });
       });
     } catch (err) {

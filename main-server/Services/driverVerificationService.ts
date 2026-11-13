@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { Op } from 'sequelize';
 import sequelize from '../config/database';
-import { User, DriverProfile, Vehicle, UploadedImage } from '../Models';
+import { User, DriverProfile, Vehicle, UploadedImage, DocumentReview } from '../Models';
 import { ApiErrors } from '../utils/ApiError';
 import { VERIFICATION_STATUS } from '../config/constants';
 import { recordStatusChange, alertAdminsOfNewSubmission } from './verificationService';
@@ -260,6 +260,11 @@ async function submitOrResubmit(driverId, body) {
       },
       { transaction }
     );
+
+    // A resubmission replaces the current document set. Clear the previous
+    // per-document decisions so the dashboard shows the new uploads as
+    // pending instead of carrying over stale rejections.
+    await DocumentReview.destroy({ where: { driverId }, transaction });
 
     await recordStatusChange(driverId, currentStatus, VERIFICATION_STATUS.PENDING, { transaction });
 

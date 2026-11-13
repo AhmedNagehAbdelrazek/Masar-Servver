@@ -64,6 +64,25 @@ describe('POST /api/upload', () => {
     expect(fileRes.headers['content-type']).toContain('image/png');
   });
 
+  it('should accept a duplicate image and flag it as a duplicate', async () => {
+    const first = await getAgent()
+      .post('/api/upload')
+      .set('Authorization', `Bearer ${userToken}`)
+      .attach('file', pngBuffer(), { filename: 'photo.png', contentType: 'image/png' });
+    expect(first.status).toBe(200);
+
+    const second = await getAgent()
+      .post('/api/upload')
+      .set('Authorization', `Bearer ${userToken}`)
+      .attach('file', pngBuffer(), { filename: 'photo-copy.png', contentType: 'image/png' });
+
+    expect(second.status).toBe(200);
+    expect(second.body.id).toBe(first.body.id);
+    expect(second.body.cached).toBe(true);
+    expect(second.body.duplicate).toBe(true);
+    expect(second.body.message).toContain('already uploaded');
+  });
+
   it('should reject a non-image file with 400 INVALID_FILE_TYPE', async () => {
     const res = await getAgent()
       .post('/api/upload')

@@ -269,6 +269,16 @@ describe('US1 - Driver verification status', () => {
     let user = await ctx.prisma.user.findUnique({ where: { id: DRIVER_ID } });
     expect(user?.verificationStatus).toBe('rejected');
 
+    await ctx.prisma.documentReview.create({
+      data: {
+        driverId: DRIVER_ID,
+        documentKey: 'license_front',
+        decision: 'rejected',
+        reason: 'Documents illegible',
+        decidedBy: ADMIN_ID,
+      },
+    });
+
     const res = await ctx.agent
       .put('/api/driver/verification')
       .set('Authorization', `Bearer ${driverToken}`)
@@ -286,6 +296,9 @@ describe('US1 - Driver verification status', () => {
     const vehicles = await ctx.prisma.vehicle.findMany({ where: { driverId: DRIVER_ID } });
     expect(vehicles.length).toBe(1);
     expect(vehicles[0].color).toBe('black');
+
+    const reviews = await ctx.prisma.documentReview.findMany({ where: { driverId: DRIVER_ID } });
+    expect(reviews).toHaveLength(0);
 
     const transitions = await ctx.prisma.verificationStatusChange.findMany({
       where: { driverId: DRIVER_ID },

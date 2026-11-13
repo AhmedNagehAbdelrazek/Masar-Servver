@@ -25066,7 +25066,7 @@
                 "upload"
               ]
             },
-            "description": "Upload an image file (multipart/form-data). Returns an image ID used by the onboarding endpoints and subscription `screenshot_id`.\n\n**Form field**\n- `file` *(file, required)* â€” select an image from the `file` value picker."
+            "description": "Upload an image file (multipart/form-data). Returns an image ID used by the onboarding endpoints and subscription `screenshot_id`. Duplicate files are accepted; the response then uses the existing image ID with `cached: true`, `duplicate: true`, and a localized duplicate message.\n\n**Form field**\n- `file` *(file, required)* â€” select an image from the `file` value picker."
           },
           "response": [
             {
@@ -25100,7 +25100,7 @@
                     "upload"
                   ]
                 },
-                "description": "Upload an image file (multipart/form-data). Returns an image ID used by the onboarding endpoints and subscription `screenshot_id`.\n\n**Form field**\n- `file` *(file, required)* â€” select an image from the `file` value picker."
+                "description": "Upload an image file (multipart/form-data). Returns an image ID used by the onboarding endpoints and subscription `screenshot_id`. Duplicate files are accepted; the response then uses the existing image ID with `cached: true`, `duplicate: true`, and a localized duplicate message.\n\n**Form field**\n- `file` *(file, required)* â€” select an image from the `file` value picker."
               },
               "status": "OK",
               "code": 200,
@@ -25113,7 +25113,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"image\": {\n    \"id\": 10,\n    \"url\": \"https://cdn.example.com/uploads/abc.png\",\n    \"filename\": \"abc.png\",\n    \"mimetype\": \"image/png\",\n    \"size\": 24576\n  }\n}"
+              "body": "{\n  \"id\": 10,\n  \"url\": \"https://cdn.example.com/uploads/abc.png\",\n  \"filename\": \"abc.png\",\n  \"cached\": false,\n  \"duplicate\": false,\n  \"provider\": \"local\"\n}"
             },
             {
               "name": "Validation",
@@ -25146,7 +25146,7 @@
                     "upload"
                   ]
                 },
-                "description": "Upload an image file (multipart/form-data). Returns an image ID used by the onboarding endpoints and subscription `screenshot_id`.\n\n**Form field**\n- `file` *(file, required)* â€” select an image from the `file` value picker."
+                "description": "Upload an image file (multipart/form-data). Returns an image ID used by the onboarding endpoints and subscription `screenshot_id`. Duplicate files are accepted; the response then uses the existing image ID with `cached: true`, `duplicate: true`, and a localized duplicate message.\n\n**Form field**\n- `file` *(file, required)* â€” select an image from the `file` value picker."
               },
               "status": "Unprocessable Entity",
               "code": 422,

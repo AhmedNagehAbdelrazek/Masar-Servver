@@ -18,6 +18,8 @@ export interface UploadResult {
   url: string;
   filename: string;
   cached: boolean;
+  duplicate: boolean;
+  message?: string;
   provider: string | null;
 }
 
@@ -70,32 +72,59 @@ export class UploadService implements OnModuleInit {
       throw new BadRequestException({ message: 'NO_FILE_UPLOADED', code: 'BAD_REQUEST' });
     }
     const hash = createHash('sha256').update(file.buffer).digest('hex');
+
+    const duplicateResult = (existing: {
+      id: number;
+      url: string;
+      filename: string;
+      provider: string | null;
+    }): UploadResult => ({
+      id: existing.id,
+      url: existing.url,
+      filename: existing.filename,
+      cached: true,
+      duplicate: true,
+      message: 'DUPLICATE_IMAGE_ACCEPTED',
+      provider: existing.provider,
+    });
+
     const existing = await this.prisma.uploadedImage.findUnique({ where: { hash } });
     if (existing) {
-      return {
-        id: existing.id,
-        url: existing.url,
-        filename: existing.filename,
-        cached: true,
-        provider: existing.provider,
-      };
+      return duplicateResult(existing);
     }
     const { uploader, provider } = this.uploader();
     const { url, filename } = await uploader.upload(file.buffer, {
       mimetype: file.mimetype,
       originalname: file.originalname,
     });
-    const image = await this.prisma.uploadedImage.create({
-      data: {
-        hash,
+    try {
+      const image = await this.prisma.uploadedImage.create({
+        data: {
+          hash,
+          url,
+          filename,
+          mimetype: file.mimetype,
+          size: file.size,
+          provider,
+        },
+      });
+      return {
+        id: image.id,
         url,
         filename,
-        mimetype: file.mimetype,
-        size: file.size,
-        provider,
-      },
-    });
-    return { id: image.id, url, filename, cached: false, provider: image.provider };
+        cached: false,
+        duplicate: false,
+        provider: image.provider,
+      };
+    } catch (err) {
+      // Accept concurrent duplicate uploads: if another request inserted the
+      // same hash first, return that row with a duplicate warning.
+      if ((err as { code?: string }).code === 'P2002') {
+        const duplicate = await this.prisma.uploadedImage.findUnique({ where: { hash } });
+        if (duplicate) return duplicateResult(duplicate);
+      }
+      throw err;
+    }
   }
 
   async remove(imageId: number): Promise<void> {

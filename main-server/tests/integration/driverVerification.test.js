@@ -1,6 +1,6 @@
 const { getAgent } = require('../setup/setup');
 const {
-  User, Vehicle, DriverProfile, Notification, VerificationStatusChange,
+  User, Vehicle, DriverProfile, DocumentReview, Notification, VerificationStatusChange,
 } = require('../../Models');
 const { generateAccessToken } = require('../setup/helpers');
 
@@ -12,6 +12,7 @@ let adminToken;
 
 beforeEach(async () => {
   await VerificationStatusChange.destroy({ where: {}, force: true });
+  await DocumentReview.destroy({ where: {}, force: true });
   await Notification.destroy({ where: {}, force: true });
   await DriverProfile.destroy({ where: {}, force: true });
   await Vehicle.destroy({ where: {}, force: true });
@@ -262,6 +263,14 @@ describe('US3 - Resubmit after rejection', () => {
     let user = await User.findByPk(DRIVER_ID);
     expect(user.verificationStatus).toBe('rejected');
 
+    await DocumentReview.create({
+      driverId: DRIVER_ID,
+      documentKey: 'license_front',
+      decision: 'rejected',
+      reason: 'Documents illegible',
+      decidedBy: ADMIN_ID,
+    });
+
     const res = await getAgent()
       .put('/api/driver/verification')
       .set('Authorization', `Bearer ${driverToken}`)
@@ -279,6 +288,9 @@ describe('US3 - Resubmit after rejection', () => {
     const vehicles = await Vehicle.findAll({ where: { driverId: DRIVER_ID } });
     expect(vehicles.length).toBe(1);
     expect(vehicles[0].color).toBe('black');
+
+    const reviews = await DocumentReview.findAll({ where: { driverId: DRIVER_ID } });
+    expect(reviews).toHaveLength(0);
 
     const transitions = await VerificationStatusChange.findAll({
       where: { driverId: DRIVER_ID },
