@@ -1,5 +1,7 @@
 # Passenger Flow Specification (Add/Modify Backend)
 
+> For passenger account creation, role selection, and required profile fields, see [PASSENGER_SIGNUP_GUIDE.md](./PASSENGER_SIGNUP_GUIDE.md).
+
 ## 1. Overview of the Flow
 1. **Search & Filter (Home):** Passenger enters filters (time range, seats, vehicle type, gender pref, instructions) and searches for available trips.
 2. **Trip Details (Image 2):** Passenger selects a trip and views basic trip, driver, and vehicle details.

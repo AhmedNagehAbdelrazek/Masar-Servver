@@ -4,6 +4,8 @@
 
 This document covers the complete auth flow for the Masar ride-sharing platform, including registration, login, password recovery, and driver onboarding.
 
+> **Passenger signup:** for the full passenger flow (role selection, required profile fields, database state, and troubleshooting), see [PASSENGER_SIGNUP_GUIDE.md](./PASSENGER_SIGNUP_GUIDE.md).
+
 **Base URL:** `http://localhost:8000/api`
 
 **Authentication:** JWT Bearer tokens in the `Authorization` header.
@@ -20,12 +22,15 @@ This document covers the complete auth flow for the Masar ride-sharing platform,
 6. [Forgot Password Flow](#6-forgot-password-flow)
 7. [Resend OTP](#7-resend-otp)
 8. [Driver Onboarding](#8-driver-onboarding)
+9. [Passenger Signup & Profile Completion](./PASSENGER_SIGNUP_GUIDE.md)
 
 ---
 
 ## 1. Registration Flow
 
 Registration is a **3-step process** for `passenger` or `driver` roles.
+
+> **Role is chosen here and cannot be changed through the API.** Use `"role": "passenger"` for a passenger account. The saved Postman request body uses `"role": "driver"`; change it before running the request if you are testing a passenger.
 
 ### Step 1: Send Phone → Get OTP
 
@@ -599,9 +604,15 @@ Authorization: Bearer <access_token>
 ```
 1. POST /auth/register/phone          { country_code, phone, role: "passenger" }
 2. POST /auth/register/verify-otp     { phone, otp }
-3. POST /auth/register/password       { password, confirmPassword }
-4. POST /auth/login                   { phone, password }
+3. POST /auth/register/password       { password, confirmPassword }  ← Bearer: registration_token
+4. POST /auth/onboarding/profile/passenger
+                                      { fullname, national_id, age, home_address, gender }
+                                      ← Bearer: access_token
+5. GET  /profile/passenger            ← Verify the stored passenger profile
+6. POST /auth/login                   { phone, password, role: "passenger" } (future logins)
 ```
+
+Full details: [PASSENGER_SIGNUP_GUIDE.md](./PASSENGER_SIGNUP_GUIDE.md).
 
 ### Password Recovery
 
