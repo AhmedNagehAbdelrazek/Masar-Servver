@@ -2,6 +2,7 @@
 import { Op } from 'sequelize';
 import sequelize from '../config/database';
 import { Booking, Trip, User, TripSeat, Notification, RideRequest } from '../Models';
+import * as tripEventService from './tripEventService';
 import { parsePagination, buildPagination } from '../utils/pagination';
 import { ApiErrors } from '../utils/ApiError';
 import { maskPhone } from '../utils/masking';
@@ -266,6 +267,25 @@ async function cancelBooking(adminId, bookingId, dto = {}) {
       console.warn('[adminBookingService] cancel notification failed:', err.message);
     }
     return Booking.findByPk(bookingId, { transaction: t });
+  });
+
+  const passenger = await User.findByPk(booking.passengerId, { attributes: ['id', 'fullName', 'phone'] });
+  await tripEventService.record({
+    tripId: booking.tripId,
+    bookingId: booking.id,
+    passengerId: booking.passengerId,
+    eventType: 'booking.cancelled',
+    toStatus: 'cancelled',
+    actorId: adminId,
+    actorRole: 'admin',
+    details: {
+      reason,
+      booking_no: booking.referenceCode,
+      passenger_name: passenger ? passenger.fullName : null,
+      passenger_phone: passenger ? passenger.phone : null,
+      source: 'admin_booking_cancel',
+    },
+    occurredAt: updated.cancelledAt || new Date(),
   });
 
   return {

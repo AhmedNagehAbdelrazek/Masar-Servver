@@ -110,6 +110,28 @@ export async function isRefreshTokenValid(userId: string, jti: string): Promise<
   return exists(key);
 }
 
+// Access tokens are stateless. A per-user "revoked before" timestamp makes
+// bans, soft deletes and role changes effective immediately without a DB read
+// on every request: any token issued at or before the timestamp is rejected.
+const USER_REVOKED_BEFORE_PREFIX = 'user:revoked_before:';
+const USER_REVOKED_BEFORE_TTL = 30 * 24 * 60 * 60; // access tokens live <= 24h
+
+export async function revokeUserSessions(userId: string): Promise<void> {
+  if (!userId) return;
+  await setKey(
+    `${USER_REVOKED_BEFORE_PREFIX}${userId}`,
+    String(Math.floor(Date.now() / 1000)),
+    USER_REVOKED_BEFORE_TTL
+  );
+}
+
+export async function isUserSessionRevoked(userId: string, issuedAt?: number): Promise<boolean> {
+  if (!userId) return false;
+  const raw = await getKey(`${USER_REVOKED_BEFORE_PREFIX}${userId}`);
+  if (!raw) return false;
+  return Number(issuedAt || 0) <= Number(raw);
+}
+
 export function normalizePhone(phone: string, countryCode?: string | null): string {
   if (phone.startsWith('+')) return phone;
   if (!countryCode) return phone;
@@ -915,6 +937,11 @@ export async function submitPassengerProfile(userId: string, data: PassengerProf
     fullName: data.fullname,
     age: numericAge,
     gender: data.gender,
+    verificationStatus: VERIFICATION_STATUS.PENDING,
+    verificationSubmittedAt: new Date(),
+    verificationRejectedAt: null,
+    verificationRejectionReason: null,
+    verificationRejectionFields: [],
   });
 
   await profile.update({
@@ -1082,6 +1109,8 @@ const authService = {
   storeRefreshToken,
   removeRefreshToken,
   isRefreshTokenValid,
+  revokeUserSessions,
+  isUserSessionRevoked,
   blacklistAccessToken,
   forgotPasswordSms,
   resetPasswordSms,

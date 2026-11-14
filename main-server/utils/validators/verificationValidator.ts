@@ -24,9 +24,23 @@ export const driverParamValidation: ValidationChain[] = [
     .isUUID().withMessage(V.DRIVER_ID_MUST_BE_A_VALID_UUID),
 ];
 
+export const passengerParamValidation: ValidationChain[] = [
+  param('passenger_id')
+    .isUUID().withMessage(V.USER_ID_MUST_BE_A_VALID_UUID),
+];
+
 export const vehicleParamValidation: ValidationChain[] = [
   param('vehicle_id')
     .isUUID().withMessage(V.VEHICLE_ID_MUST_BE_A_VALID_UUID),
+];
+
+export const passengerRejectValidation: ValidationChain[] = [
+  body('reason')
+    .notEmpty().withMessage(V.REASON_IS_REQUIRED)
+    .isLength({ max: 2000 }).withMessage(V.REASON_MUST_BE_AT_MOST_2000_CHARACTERS),
+  body('fields_to_fix')
+    .optional()
+    .isArray().withMessage(V.FIELDS_TO_FIX_MUST_BE_A_NON_EMPTY_ARRAY),
 ];
 
 export const rejectValidation: ValidationChain[] = [
@@ -42,18 +56,22 @@ export const rejectValidation: ValidationChain[] = [
 
 
 
-const _exported = { verificationQueueValidation, driverParamValidation, vehicleParamValidation, rejectValidation };
+const _exported = { verificationQueueValidation, driverParamValidation, passengerParamValidation, passengerRejectValidation, vehicleParamValidation, rejectValidation };
 export default _exported;
 
 // CommonJS interop
 // @ts-ignore
 if (typeof module !== 'undefined' && module.exports) {
   // @ts-ignore
-  module.exports = { verificationQueueValidation, driverParamValidation, vehicleParamValidation, rejectValidation };
+  module.exports = { verificationQueueValidation, driverParamValidation, passengerParamValidation, passengerRejectValidation, vehicleParamValidation, rejectValidation };
   // @ts-ignore
   module.exports.verificationQueueValidation = verificationQueueValidation;
   // @ts-ignore
   module.exports.driverParamValidation = driverParamValidation;
+  // @ts-ignore
+  module.exports.passengerParamValidation = passengerParamValidation;
+  // @ts-ignore
+  module.exports.passengerRejectValidation = passengerRejectValidation;
   // @ts-ignore
   module.exports.vehicleParamValidation = vehicleParamValidation;
   // @ts-ignore

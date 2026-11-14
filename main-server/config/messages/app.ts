@@ -255,6 +255,11 @@ export const APP_MESSAGES = {
 
   // ===== Account deletion =====
   A_DELETION_REQUEST_IS_ALREADY_PENDING: { en: 'A deletion request is already pending', ar: 'يوجد بالفعل طلب حذف قيد الانتظار' },
+  DELETION_REQUEST_NOT_FOUND: { en: 'Deletion request not found', ar: 'طلب الحذف غير موجود' },
+  DELETION_REQUEST_ALREADY_REVIEWED: { en: 'This deletion request has already been reviewed', ar: 'تمت مراجعة طلب الحذف هذا بالفعل' },
+  DELETION_REQUEST_REVIEW_STATUS_MUST_BE_APPROVED_OR_REJECTED: { en: 'Deletion request review status must be approved or rejected', ar: 'يجب أن تكون حالة مراجعة طلب الحذف approved أو rejected' },
+  PASSENGER_NOT_FOUND: { en: 'Passenger not found', ar: 'الراكب غير موجود' },
+  PASSENGER_PROFILE_INCOMPLETE: { en: 'Passenger profile is incomplete. National ID and home address are required before verification.', ar: 'ملف الراكب غير مكتمل. الهوية الوطنية والعنوان مطلوبان قبل التوثيق.' },
   CONFIRMATION_IS_REQUIRED_TO_REQUEST_ACCOUNT_DELETION: { en: 'Confirmation is required to request account deletion', ar: 'التأكيد مطلوب لطلب حذف الحساب' },
   NO_PENDING_DELETION_REQUEST_FOUND: { en: 'No pending deletion request found', ar: 'لا يوجد طلب حذف قيد الانتظار' },
 

@@ -1,12 +1,13 @@
 // @ts-nocheck
 import { Op } from 'sequelize';
-import { DriverProfile, Vehicle, User, UploadedImage, VerificationStatusChange } from '../Models';
+import { DriverProfile, PassengerProfile, Vehicle, User, UploadedImage, VerificationStatusChange } from '../Models';
 import { ApiErrors } from '../utils/ApiError';
 import { maskPhone } from '../utils/masking';
 import { parsePagination, buildPagination } from '../utils/pagination';
 import { VERIFICATION_STATUS } from '../config/constants';
 import notificationService from './notificationService';
 import auditService from './auditService';
+import * as adminAuditService from './adminAuditService';
 import { toAbsoluteMediaUrl } from '../utils/mediaUrl';
 
 async function syncUserVerification(driverId) {
@@ -316,6 +317,110 @@ async function rejectDriver(adminId, driverId, reason, fieldsToFix) {
   return { driver_id: driverId, id_verified: false, reason, notified: true };
 }
 
+async function approvePassenger(adminId, passengerId) {
+  const user = await User.findByPk(passengerId);
+  if (!user || user.role !== 'passenger') throw ApiErrors.notFound('PASSENGER_NOT_FOUND');
+
+  const profile = await PassengerProfile.findOne({ where: { passengerId } });
+  if (!profile || !profile.nationalID || !profile.homeAddress) {
+    throw ApiErrors.validation('PASSENGER_PROFILE_INCOMPLETE');
+  }
+
+  const fromStatus = user.verificationStatus;
+  await user.update({
+    isVerified: true,
+    verificationStatus: VERIFICATION_STATUS.APPROVED,
+    verificationRejectedAt: null,
+    verificationRejectionReason: null,
+    verificationRejectionFields: [],
+  });
+
+  try {
+    await notificationService.sendToUser(user, 'VERIFICATION_APPROVED', {
+      channels: ['in_app', 'push'],
+      vars: { subject: 'passenger identity' },
+      data: { passenger_id: passengerId },
+    });
+  } catch (err) {
+    console.warn('[verificationService] passenger approval notification failed:', err.message);
+  }
+
+  auditService.track({
+    action: 'verification.passenger.approve',
+    resourceType: 'passenger_profile',
+    resourceId: passengerId,
+    resourceLabel: user.fullName,
+    actorId: adminId,
+    payload: { passenger_id: passengerId, from_status: fromStatus },
+  });
+  await adminAuditService.record({
+    actorId: adminId,
+    userId: passengerId,
+    action: 'verification_approved',
+    before: { verification_status: fromStatus },
+    after: { verification_status: VERIFICATION_STATUS.APPROVED, is_verified: true },
+    reason: null,
+    source: 'admin_passenger_verification',
+  });
+
+  return {
+    passenger_id: passengerId,
+    verification_status: VERIFICATION_STATUS.APPROVED,
+    is_verified: true,
+    notified: true,
+  };
+}
+
+async function rejectPassenger(adminId, passengerId, reason, fieldsToFix) {
+  const user = await User.findByPk(passengerId);
+  if (!user || user.role !== 'passenger') throw ApiErrors.notFound('PASSENGER_NOT_FOUND');
+
+  const fromStatus = user.verificationStatus;
+  await user.update({
+    isVerified: false,
+    verificationStatus: VERIFICATION_STATUS.REJECTED,
+    verificationRejectedAt: new Date(),
+    verificationRejectionReason: reason,
+    verificationRejectionFields: fieldsToFix || [],
+  });
+
+  try {
+    await notificationService.sendToUser(user, 'VERIFICATION_REJECTED', {
+      channels: ['in_app', 'push'],
+      vars: { subject: 'passenger identity', reason },
+      data: { passenger_id: passengerId, reason, fields_to_fix: fieldsToFix || [] },
+    });
+  } catch (err) {
+    console.warn('[verificationService] passenger rejection notification failed:', err.message);
+  }
+
+  auditService.track({
+    action: 'verification.passenger.reject',
+    resourceType: 'passenger_profile',
+    resourceId: passengerId,
+    resourceLabel: user.fullName,
+    actorId: adminId,
+    payload: { passenger_id: passengerId, reason, fields_to_fix: fieldsToFix || [] },
+  });
+  await adminAuditService.record({
+    actorId: adminId,
+    userId: passengerId,
+    action: 'verification_rejected',
+    before: { verification_status: fromStatus },
+    after: { verification_status: VERIFICATION_STATUS.REJECTED, is_verified: false },
+    reason,
+    source: 'admin_passenger_verification',
+  });
+
+  return {
+    passenger_id: passengerId,
+    verification_status: VERIFICATION_STATUS.REJECTED,
+    is_verified: false,
+    reason,
+    notified: true,
+  };
+}
+
 async function approveVehicle(adminId, vehicleId) {
   const vehicle = await Vehicle.findByPk(vehicleId);
   if (!vehicle) throw ApiErrors.notFound('VEHICLE_NOT_FOUND');
@@ -413,8 +518,10 @@ module.exports = {
   getQueue,
   approveDriver,
   rejectDriver,
+  approvePassenger,
+  rejectPassenger,
   approveVehicle,
   rejectVehicle,
 };
-export { syncUserVerification, recordStatusChange, getVerificationHistory, alertAdminsOfNewSubmission, getQueue, approveDriver, rejectDriver, approveVehicle, rejectVehicle };
+export { syncUserVerification, recordStatusChange, getVerificationHistory, alertAdminsOfNewSubmission, getQueue, approveDriver, rejectDriver, approvePassenger, rejectPassenger, approveVehicle, rejectVehicle };
 export default module.exports;

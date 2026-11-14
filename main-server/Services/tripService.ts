@@ -12,6 +12,7 @@ import { releaseSeatLock, checkSeatLock } from '../utils/seatLock';
 import homeService from './homeService';
 import { seatNumbersFor } from '../utils/seatSerializer';
 import auditService from './auditService';
+import * as tripEventService from './tripEventService';
 import {
   parseTimezoneAware,
   parseJordanDateOnly,
@@ -660,6 +661,23 @@ const createTrip = async (driverId, data) => {
       fare_per_seat: trip.farePerSeat,
       total_seats: trip.totalSeats,
       available_seats: trip.availableSeats,
+    },
+  });
+
+  await tripEventService.record({
+    tripId: trip.id,
+    eventType: 'trip.created',
+    toStatus: trip.status,
+    actorId: driverId,
+    actorRole: 'driver',
+    details: {
+      origin: trip.originCity,
+      destination: trip.destinationCity,
+      departure_time: trip.departureTime,
+      total_seats: Number(trip.totalSeats),
+      available_seats: Number(trip.availableSeats),
+      seat_price: Number(trip.farePerSeat),
+      driver_name: driver.fullName || null,
     },
   });
 
@@ -1561,7 +1579,16 @@ const startTrip = async (driverId, tripId) => {
     );
   }
 
+  const previousStatus = trip.status;
   await trip.update({ status: TRIP_STATUS.IN_PROGRESS, startedAt: new Date() });
+  await tripEventService.recordTripStatus({
+    trip,
+    fromStatus: previousStatus,
+    toStatus: trip.status,
+    actorId: driverId,
+    actorRole: 'driver',
+    details: { started_at: trip.startedAt },
+  });
 
   // US2: best-effort notify confirmed passengers that the trip has started.
   try {
@@ -1617,6 +1644,7 @@ const abandonTrip = async (driverId, tripId, reason = null) => {
   }
 
   const now = new Date();
+  const previousStatus = trip.status;
   const [claimed] = await Trip.update(
     {
       status: TRIP_STATUS.ABANDONED,
@@ -1631,6 +1659,15 @@ const abandonTrip = async (driverId, tripId, reason = null) => {
     }
   );
   if (!claimed) throw ApiErrors.custom('ONLY_A_STARTED_TRIP_CAN_BE_ABANDONED', 409, 'TRIP_NOT_IN_PROGRESS');
+  await tripEventService.recordTripStatus({
+    trip,
+    fromStatus: previousStatus,
+    toStatus: TRIP_STATUS.ABANDONED,
+    actorId: driverId,
+    actorRole: 'driver',
+    details: { reason: reason || 'stopped_by_driver', abandoned_at: now },
+    occurredAt: now,
+  });
 
   const bookings = await Booking.findAll({
     where: { tripId, status: { [Op.in]: [BOOKING_STATUS.CONFIRMED, BOOKING_STATUS.PENDING] } },
@@ -1717,7 +1754,17 @@ const completeTrip = async (driverId, tripId) => {
 
   const result = await commissionService.deductCommission(trip, driverId);
 
+  const previousStatus = trip.status;
   await trip.update({ status: TRIP_STATUS.COMPLETED, completedAt: new Date() });
+  await tripEventService.recordTripStatus({
+    trip,
+    fromStatus: previousStatus,
+    toStatus: trip.status,
+    actorId: driverId,
+    actorRole: 'driver',
+    details: { completed_at: trip.completedAt },
+    occurredAt: trip.completedAt || new Date(),
+  });
 
   // spec 013: compact the driven path best-effort; the job retries if empty.
   try {
@@ -1911,6 +1958,22 @@ const confirmTripPassengers = async (driverId, tripId, confirmations) => {
     }
 
     await booking.update(patch);
+    await tripEventService.record({
+      tripId,
+      bookingId: booking.id,
+      passengerId: booking.passengerId,
+      eventType: 'booking.driver_confirmed',
+      toStatus: booking.status,
+      actorId: driverId,
+      actorRole: 'driver',
+      details: {
+        was_on_trip: wasOnTrip,
+        booking_no: booking.referenceCode,
+        passenger_name: booking.passenger ? booking.passenger.fullName : null,
+        passenger_phone: booking.passenger ? booking.passenger.phone : null,
+      },
+      occurredAt: now,
+    });
     results.push({
       booking_id: booking.id,
       passenger_id: booking.passengerId,
@@ -2031,6 +2094,13 @@ async function replaceTripStops(driverId, tripId, stops) {
     // socket layer offline (e.g. tests) — ignore
   }
   trackTripMutation({ action: 'trip.stops_replaced', driverId, tripId: trip.id, payload: { stops: records.length, route_status: routeStatus } });
+  await tripEventService.record({
+    tripId: trip.id,
+    eventType: 'trip.stops_updated',
+    actorId: driverId,
+    actorRole: 'driver',
+    details: { stops: records.length, route_status: routeStatus },
+  });
   return { trip_id: trip.id, stops: records.length, route_status: routeStatus };
 }
 
@@ -2117,6 +2187,34 @@ async function setPickupStatus(driverId, tripId, bookingId, status) {
   // so the driver no-show rate (expiry-driven NO_SHOW rows) is never polluted
   // by passenger misses. Passenger-side no-show tracking is out of scope.
   await booking.update(patch);
+
+  const pickupEventType = status === PICKUP_STATUS.ARRIVED
+    ? 'booking.pickup_arrived'
+    : status === PICKUP_STATUS.PICKED_UP
+      ? 'booking.picked_up'
+      : status === PICKUP_STATUS.DROPPED_OFF
+        ? 'booking.pickup_dropped_off'
+        : status === PICKUP_STATUS.MISSED
+          ? 'booking.pickup_missed'
+          : 'booking.pickup_status_changed';
+  await tripEventService.record({
+    tripId,
+    bookingId: booking.id,
+    passengerId: booking.passengerId,
+    eventType: pickupEventType,
+    toStatus: status,
+    actorId: driverId,
+    actorRole: 'driver',
+    details: {
+      pickup_status: status,
+      booking_no: booking.referenceCode,
+      passenger_name: booking.passenger ? booking.passenger.fullName : null,
+      passenger_phone: booking.passenger ? booking.passenger.phone : null,
+      pickup: booking.pickupLabel || booking.pickupPlace || null,
+      seat_numbers: booking.seatNumbers || (booking.seatNumber != null ? [booking.seatNumber] : []),
+    },
+    occurredAt: now,
+  });
 
   try {
     realtimeService.emitToRoom(`trip:${tripId}`, 'tracking:pickup_status', { trip_id: tripId, booking_id: booking.id, state: status });
@@ -2351,6 +2449,14 @@ async function updateTrip(driverId, tripId, data) {
     payload: { fields: Object.keys(fields), notified_passengers: notifiedPassengers },
   });
 
+  await tripEventService.record({
+    tripId: trip.id,
+    eventType: 'trip.updated',
+    actorId: driverId,
+    actorRole: 'driver',
+    details: { fields: Object.keys(fields), notified_passengers: notifiedPassengers },
+  });
+
   return {
     trip: {
       id: trip.id,
@@ -2384,7 +2490,16 @@ async function cancelTrip(driverId, tripId) {
     throw ApiErrors.custom('TRIP_IS_ALREADY_CANCELLED', 409, 'ALREADY_CANCELLED');
   }
 
+  const previousStatus = trip.status;
   await trip.update({ status: TRIP_STATUS.CANCELLED });
+  await tripEventService.recordTripStatus({
+    trip,
+    fromStatus: previousStatus,
+    toStatus: trip.status,
+    actorId: driverId,
+    actorRole: 'driver',
+    details: { reason: 'cancelled_by_driver' },
+  });
 
   let notifiedPassengers = 0;
   try {
@@ -2566,7 +2681,16 @@ async function cancelTripWithPenalty(driverId, tripId, { reason, note }) {
     throw ApiErrors.conflict('CANNOT_CANCEL_TRIP_THERE_ARE_CONFIRMED_BOOKINGS_PLEASE_CONTACT_SUPPORT');
   }
 
+  const previousStatus = trip.status;
   await trip.update({ status: TRIP_STATUS.CANCELLED });
+  await tripEventService.recordTripStatus({
+    trip,
+    fromStatus: previousStatus,
+    toStatus: trip.status,
+    actorId: driverId,
+    actorRole: 'driver',
+    details: { reason, note: note || null, cancellation_penalty: true },
+  });
 
   const penalty = await Penalty.create({
     userId: driverId,

@@ -294,6 +294,8 @@ export const VALIDATION_MESSAGES = {
   STATUS_MUST_BE_ONE_OF_OPEN_REVIEWING_RESOLVED_DISMISSED: { en: "Status must be one of: open, reviewing, resolved, dismissed", ar: "يجب أن تكون الحالة أحد: open، reviewing، resolved، dismissed" },
   STATUS_MUST_BE_ONE_OF_PENDING_ACKNOWLEDGED_RESOLVED_CANCELLED: { en: "status must be one of: pending, acknowledged, resolved, cancelled", ar: "يجب أن تكون الحالة أحد: pending، acknowledged، resolved، cancelled" },
   STATUS_MUST_BE_ONE_OF_PENDING_APPROVED_REJECTED_UNVERIFIED: { en: "status must be one of pending, approved, rejected, unverified", ar: "يجب أن تكون الحالة أحد: pending أو approved أو rejected أو unverified" },
+  STATUS_MUST_BE_ONE_OF_PENDING_APPROVED_REJECTED_CANCELLED_2: { en: "status must be one of all, pending, approved, rejected, cancelled", ar: "يجب أن تكون الحالة أحد: all أو pending أو approved أو rejected أو cancelled" },
+  STATUS_MUST_BE_ONE_OF_APPROVED_REJECTED: { en: "status must be approved or rejected", ar: "يجب أن تكون الحالة approved أو rejected" },
   STATUS_MUST_BE_ONE_OF_PENDING_CONFIRMED_CANCELLED_COMPLETED_NO_SHOW: { en: "Status must be one of: pending, confirmed, cancelled, completed, no_show", ar: "يجب أن تكون الحالة أحد: pending، confirmed، cancelled، completed، no_show" },
   STATUS_MUST_BE_ONE_OF_REVIEWING_RESOLVED_DISMISSED: { en: "Status must be one of: reviewing, resolved, dismissed", ar: "يجب أن تكون الحالة أحد: reviewing، resolved، dismissed" },
   STATUS_MUST_BE_ONE_OF_SENT_ACCEPTED_DECLINED_EXPIRED: { en: "Status must be one of: sent, accepted, declined, expired", ar: "يجب أن تكون الحالة أحد: sent، accepted، declined، expired" },

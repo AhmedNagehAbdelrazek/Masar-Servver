@@ -2,7 +2,7 @@
 import { Op } from 'sequelize';
 import { User, PassengerProfile, Penalty, Complaint } from '../Models';
 import { ApiErrors } from '../utils/ApiError';
-import { PENALTY_TYPES } from '../config/constants';
+import { PENALTY_TYPES, VERIFICATION_STATUS } from '../config/constants';
 import auditService from './auditService';
 
 function serializeProfile(profile) {
@@ -67,7 +67,25 @@ async function updateMyProfile(passengerId, payload) {
     throw ApiErrors.validation('NO_UPDATABLE_FIELDS_PROVIDED');
   }
 
+  const identityChanged =
+    (payload.national_id !== undefined && payload.national_id !== profile.nationalID) ||
+    (payload.home_address !== undefined && payload.home_address !== profile.homeAddress);
+
   await profile.update(updates);
+
+  if (identityChanged) {
+    const user = await User.findByPk(passengerId);
+    if (user && user.role === 'passenger') {
+      await user.update({
+        isVerified: false,
+        verificationStatus: VERIFICATION_STATUS.PENDING,
+        verificationSubmittedAt: new Date(),
+        verificationRejectedAt: null,
+        verificationRejectionReason: null,
+        verificationRejectionFields: [],
+      });
+    }
+  }
 
   auditService.track({
     action: 'passenger_profile.updated',

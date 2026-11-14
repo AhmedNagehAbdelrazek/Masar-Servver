@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { ApiErrors } from '../utils/ApiError';
-import { isAccessTokenBlacklisted } from '../Services/authService';
+import { isAccessTokenBlacklisted, isUserSessionRevoked } from '../Services/authService';
 
 const JWT_SECRET: string = process.env.JWT_SECRET || 'dev-secret-change-in-production';
 
@@ -34,6 +34,11 @@ async function protect(req: Request, res: Response, next: NextFunction): Promise
 
     const blacklisted: boolean = await isAccessTokenBlacklisted(token);
     if (blacklisted) {
+      return next(ApiErrors.unauthorized('AUTH_TOKEN_REVOKED'));
+    }
+
+    const revokedForUser: boolean = await isUserSessionRevoked(decoded.id, decoded.iat);
+    if (revokedForUser) {
       return next(ApiErrors.unauthorized('AUTH_TOKEN_REVOKED'));
     }
 

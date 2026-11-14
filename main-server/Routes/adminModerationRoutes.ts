@@ -12,6 +12,8 @@ import {
   adminUserIdValidation,
   updateAdminUserValidation,
   deleteAdminUserValidation,
+  deletionRequestListValidation,
+  deletionRequestReviewValidation,
   moderateTripValidation,
 } from '../utils/validators/adminModerationValidator';
 
@@ -31,6 +33,10 @@ router.get('/users', protect, roleGuard(['admin']), ...adminUserListValidation, 
 router.get('/users/:user_id', protect, roleGuard(['admin']), ...adminUserIdValidation, validate, c.getUser);
 router.put('/users/:user_id', protect, roleGuard(['admin']), ...updateAdminUserValidation, validate, c.updateUserStatus);
 router.delete('/users/:user_id', protect, roleGuard(['admin']), ...deleteAdminUserValidation, validate, c.permanentlyDeleteUser);
+
+// Account deletion requests (admin review queue)
+router.get('/deletion-requests', protect, roleGuard(['admin']), ...deletionRequestListValidation, validate, c.listDeletionRequests);
+router.post('/deletion-requests/:request_id/review', protect, roleGuard(['admin']), ...deletionRequestReviewValidation, validate, c.reviewDeletionRequest);
 
 // Trip moderation (admin only)
 router.put('/trips/:trip_id', protect, roleGuard(['admin']), ...moderateTripValidation, validate, c.moderateTrip);

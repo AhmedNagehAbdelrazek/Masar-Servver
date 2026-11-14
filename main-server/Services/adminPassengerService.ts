@@ -8,12 +8,14 @@ import {
   Rating,
   Penalty,
   Trip,
+  PassengerProfile,
   DeletionRequest,
 } from '../Models';
 import { parsePagination, buildPagination } from '../utils/pagination';
 import { ApiErrors } from '../utils/ApiError';
 import { maskPhone } from '../utils/masking';
 import * as penaltyService from './penaltyService';
+import * as adminAuditService from './adminAuditService';
 import notificationService from './notificationService';
 
 const PASSENGER_ROLE = 'passenger';
@@ -220,7 +222,7 @@ async function exportPassengers(query = {}) {
 
 async function getOverview(passengerId) {
   const user = await getPassengerOrThrow(passengerId);
-  const [totalBookings, completedBookings, cancelledBookings, lastBooking, ratingAgg, ratingsCount] = await Promise.all([
+  const [totalBookings, completedBookings, cancelledBookings, lastBooking, ratingAgg, ratingsCount, profile] = await Promise.all([
     Booking.count({ where: { passengerId } }),
     Booking.count({ where: { passengerId, status: 'completed' } }),
     Booking.count({ where: { passengerId, status: 'cancelled' } }),
@@ -231,6 +233,7 @@ async function getOverview(passengerId) {
     }),
     Rating.findOne({ attributes: [[fn('AVG', col('stars')), 'avg']], where: { raterId: passengerId } }),
     Rating.count({ where: { raterId: passengerId } }),
+    PassengerProfile.findOne({ where: { passengerId } }),
   ]);
   return {
     personal_info: {
@@ -245,6 +248,9 @@ async function getOverview(passengerId) {
       account_status: user.status,
       verification_status: user.verificationStatus ?? null,
       is_verified: user.isVerified === true,
+      profile_complete: Boolean(profile && profile.nationalID && profile.homeAddress),
+      national_id: profile?.nationalID ?? null,
+      home_address: profile?.homeAddress ?? null,
       registration_date: user.createdAt ?? user.createdat,
       last_login: user.lastLoginAt,
     },
@@ -269,14 +275,45 @@ async function getOverview(passengerId) {
   };
 }
 
+const PASSENGER_ADMIN_ACTION_TITLES = {
+  role_changed: 'تغيير دور الحساب',
+  status_changed: 'تحديث حالة الحساب',
+  profile_updated: 'تحديث بيانات الحساب',
+  account_deleted: 'حذف الحساب',
+  deletion_request_approved: 'اعتماد طلب حذف الحساب',
+  deletion_request_rejected: 'رفض طلب حذف الحساب',
+  standing_action: 'إجراء إداري على الحساب',
+  verification_approved: 'اعتماد توثيق الحساب',
+  verification_rejected: 'رفض توثيق الحساب',
+};
+
+function passengerAdminActionReason(meta) {
+  if (!meta) return 'تم تنفيذ إجراء إداري من لوحة التحكم.';
+  if (meta.reason) return String(meta.reason);
+  const after = meta.after && typeof meta.after === 'object' ? meta.after : null;
+  if (after && after.role) {
+    return `تغيير الدور: ${after.role.from || '—'} ← ${after.role.to || '—'}`;
+  }
+  if (after && after.status) {
+    return `تغيير الحالة: ${after.status.from || '—'} ← ${after.status.to || '—'}`;
+  }
+  if (after && typeof after === 'object') {
+    const fields = Object.keys(after);
+    if (fields.length) return `تحديث الحقول: ${fields.join('، ')}`;
+  }
+  return 'تم تنفيذ إجراء إداري من لوحة التحكم.';
+}
+
 async function getAccountLog(passengerId) {
   await getPassengerOrThrow(passengerId);
-  const [penalties, complaints] = await Promise.all([
+  const [penalties, complaints, adminActions, deletionRequests] = await Promise.all([
     Penalty.findAll({ where: { userId: passengerId }, order: [['startsAt', 'DESC']] }),
     Complaint.findAll({
       where: { [Op.or]: [{ reporterId: passengerId }, { accusedId: passengerId }] },
       order: [['createdat', 'DESC']],
     }),
+    adminAuditService.listForUser(passengerId),
+    DeletionRequest.findAll({ where: { userId: passengerId }, order: [['createdat', 'DESC']] }),
   ]);
   const log = [
     ...penalties.map((p) => ({
@@ -296,6 +333,29 @@ async function getAccountLog(passengerId) {
       status: ['open', 'reviewing'].includes(c.status) ? 'pending' : 'resolved',
       direction: c.reporterId === passengerId ? 'filed' : 'against',
     })),
+    ...adminActions.map((row) => {
+      const meta = row.newData || {};
+      const action = meta.action || row.action;
+      return {
+        id: row.id,
+        title: PASSENGER_ADMIN_ACTION_TITLES[action] || 'إجراء إداري',
+        reason: passengerAdminActionReason(meta),
+        related_trip_id: null,
+        date: row.createdAt ?? row.createdat,
+        type: 'admin_action',
+        action,
+        status: 'resolved',
+      };
+    }),
+    ...deletionRequests.map((request) => ({
+      id: request.id,
+      title: 'طلب حذف الحساب',
+      reason: request.reason || '—',
+      related_trip_id: null,
+      date: request.createdAt ?? request.createdat,
+      type: 'deletion_request',
+      status: request.status,
+    })),
   ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   return {
     summary: {
@@ -305,6 +365,8 @@ async function getAccountLog(passengerId) {
       bans: penalties.filter((p) => p.type === 'ban').length,
       complaints_against: complaints.filter((c) => c.accusedId === passengerId).length,
       complaints_filed: complaints.filter((c) => c.reporterId === passengerId).length,
+      admin_actions: adminActions.length,
+      deletion_requests: deletionRequests.length,
     },
     log,
     rows: log,

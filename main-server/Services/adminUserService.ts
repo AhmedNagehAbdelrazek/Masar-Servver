@@ -12,7 +12,9 @@ import { DEV_PHONES, USER_STATUS, VERIFICATION_STATUS } from '../config/constant
 import { codes } from '../config/phoneCodes';
 import { findByCountryCode, validatePhone } from '../utils/phoneValidator';
 import { redis } from '../config/redis';
+import { revokeUserSessions } from './authService';
 import * as auditService from './auditService';
+import * as adminAuditService from './adminAuditService';
 import * as notificationService from './notificationService';
 import * as devAccountService from './devAccountService';
 import { blockAccountInventory } from './accountBlockingService';
@@ -258,6 +260,14 @@ async function updateUser(actorId, userId, payload = {}) {
 
   await user.update(updates);
 
+  if (roleChanged || changes.status?.to === USER_STATUS.BANNED) {
+    try {
+      await revokeUserSessions(user.id);
+    } catch (err) {
+      console.warn('[adminUserService] session revocation failed:', err.message);
+    }
+  }
+
   if (roleChanged && payload.role === 'passenger') {
     try {
       await PassengerProfile.findOrCreate({
@@ -310,6 +320,20 @@ async function updateUser(actorId, userId, payload = {}) {
       changes,
       reason: payload.reason || null,
     },
+  });
+
+  await adminAuditService.record({
+    actorId,
+    userId: user.id,
+    action: roleChanged
+      ? 'role_changed'
+      : changes.status
+        ? 'status_changed'
+        : 'profile_updated',
+    before: null,
+    after: changes,
+    reason: payload.reason || null,
+    source: 'admin_user_update',
   });
 
   const extras = await profileFlags(user.id);
@@ -374,6 +398,11 @@ async function softDeleteUser(actorId, user, reason) {
     console.warn('[adminUserService] enforcement revoke failed:', err.message);
   }
   await revokeRefreshTokens(user.id);
+  try {
+    await revokeUserSessions(user.id);
+  } catch (err) {
+    console.warn('[adminUserService] session revocation failed:', err.message);
+  }
 
   auditService.track({
     action: 'user.deleted',
@@ -383,6 +412,16 @@ async function softDeleteUser(actorId, user, reason) {
     actorId,
     actorType: 'admin',
     payload: { mode: 'soft', reason: deleteReason },
+  });
+
+  await adminAuditService.record({
+    actorId,
+    userId: user.id,
+    action: 'account_deleted',
+    before: { status: user.status },
+    after: { status: USER_STATUS.BANNED },
+    reason: deleteReason,
+    source: 'admin_user_delete',
   });
 
   return {
@@ -434,6 +473,7 @@ export {
   getUser,
   updateUser,
   deleteUser,
+  softDeleteUser,
   canChangeRole,
   shapeUser,
 };
@@ -442,6 +482,7 @@ export default {
   getUser,
   updateUser,
   deleteUser,
+  softDeleteUser,
   canChangeRole,
   shapeUser,
 };
@@ -449,6 +490,7 @@ module.exports = {
   getUser,
   updateUser,
   deleteUser,
+  softDeleteUser,
   canChangeRole,
   shapeUser,
 };

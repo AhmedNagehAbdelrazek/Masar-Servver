@@ -8,8 +8,10 @@ import { TRIP_STATUS } from '../config/constants';
 import { Op } from 'sequelize';
 import * as complaintService from '../Services/complaintService';
 import * as penaltyService from '../Services/penaltyService';
+import * as deletionRequestService from '../Services/deletionRequestService';
 import * as adminUserService from '../Services/adminUserService';
 import * as auditService from '../Services/auditService';
+import * as tripEventService from '../Services/tripEventService';
 import { DeletionRequest, User, Trip } from '../Models';
 
 type AuthRequest = Request & { user?: { id: string; role: string } };
@@ -152,12 +154,30 @@ const permanentlyDeleteUser = catchAsync(async (req: Request, res: Response): Pr
   successResponse(res, result);
 });
 
+const listDeletionRequests = catchAsync(async (req: Request, res: Response): Promise<void> => {
+  const result = await (deletionRequestService as unknown as {
+    listAdmin: (query: unknown) => Promise<unknown>;
+  }).listAdmin(req.query);
+  successResponse(res, result);
+});
+
+const reviewDeletionRequest = catchAsync(async (req: Request, res: Response): Promise<void> => {
+  const authReq = req as AuthRequest;
+  const { request_id } = req.params as { request_id: string };
+  const result = await (deletionRequestService as unknown as {
+    review: (actorId: string, id: string, body: unknown) => Promise<unknown>;
+  }).review(String(authReq.user?.id), request_id, req.body);
+  (auditService as unknown as { markResource: (res: Response, r: unknown) => void }).markResource(res, { type: 'deletion_request', id: request_id });
+  successResponse(res, result);
+});
+
 const moderateTrip = catchAsync(async (req: Request, res: Response): Promise<void> => {
   const authReq = req as AuthRequest;
   const { trip_id } = req.params as { trip_id: string };
   const trip = await (Trip as unknown as { findByPk: (id: string) => Promise<Record<string, unknown> | null> }).findByPk(trip_id);
   if (!trip) throw ApiErrors.notFound('TRIP_NOT_FOUND');
   const { action, reason } = req.body as { action: string; reason?: string };
+  const previousStatus = trip['status'];
   if (action === 'restore') {
     await (trip as unknown as { update: (data: unknown) => Promise<void> }).update({
       isModerated: false,
@@ -173,6 +193,15 @@ const moderateTrip = catchAsync(async (req: Request, res: Response): Promise<voi
       ...(action === 'block' ? { status: TRIP_STATUS.CANCELLED } : {}),
     });
   }
+  await tripEventService.record({
+    tripId: trip_id,
+    eventType: action === 'block' ? 'trip.cancelled' : 'trip.moderated',
+    fromStatus: previousStatus ? String(previousStatus) : null,
+    toStatus: trip['status'] ? String(trip['status']) : null,
+    actorId: authReq.user?.id,
+    actorRole: 'admin',
+    details: { action, reason: reason || null, source: 'admin_moderation' },
+  });
   (auditService as unknown as { track: (p: unknown) => void }).track({
     action: `trip.${action}`,
     resourceType: 'trip',
@@ -206,5 +235,5 @@ const issuePenalty = catchAsync(async (req: Request, res: Response): Promise<voi
   successResponse(res, result);
 });
 
-export { listComplaints, getComplaintStats, getComplaintDetail, penalizeComplaint, reopenComplaint, resolveComplaint, listUsers, getUser, updateUserStatus, permanentlyDeleteUser, moderateTrip, issuePenalty };
-export default { listComplaints, getComplaintStats, getComplaintDetail, penalizeComplaint, reopenComplaint, resolveComplaint, listUsers, getUser, updateUserStatus, permanentlyDeleteUser, moderateTrip, issuePenalty };
+export { listComplaints, getComplaintStats, getComplaintDetail, penalizeComplaint, reopenComplaint, resolveComplaint, listUsers, getUser, updateUserStatus, permanentlyDeleteUser, listDeletionRequests, reviewDeletionRequest, moderateTrip, issuePenalty };
+export default { listComplaints, getComplaintStats, getComplaintDetail, penalizeComplaint, reopenComplaint, resolveComplaint, listUsers, getUser, updateUserStatus, permanentlyDeleteUser, listDeletionRequests, reviewDeletionRequest, moderateTrip, issuePenalty };

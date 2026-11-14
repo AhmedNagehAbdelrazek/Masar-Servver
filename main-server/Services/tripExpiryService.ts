@@ -6,6 +6,7 @@ import * as tripService from './tripService';
 import notificationService from './notificationService';
 import homeService from './homeService';
 import auditService from './auditService';
+import * as tripEventService from './tripEventService';
 import { releaseSeatLock } from '../utils/seatLock';
 
 const { abandonTrip } = tripService;
@@ -30,13 +31,31 @@ function lifecycleCutoff(now = new Date()) {
 }
 
 async function expireUnoperatedTrip(trip) {
+  const previousStatus = trip.status;
   await trip.update({ status: TRIP_STATUS.CANCELLED });
+  await tripEventService.recordTripStatus({
+    trip,
+    fromStatus: previousStatus,
+    toStatus: TRIP_STATUS.CANCELLED,
+    actorId: null,
+    actorRole: 'system',
+    details: { reason: 'trip_expired_unoperated', source: 'trip_expiry_job' },
+  });
 
   const bookings = await Booking.findAll({
     where: { tripId: trip.id, status: { [Op.in]: [BOOKING_STATUS.CONFIRMED, BOOKING_STATUS.PENDING] } },
   });
   for (const booking of bookings) {
     await booking.update({ status: BOOKING_STATUS.NO_SHOW });
+    await tripEventService.record({
+      tripId: trip.id,
+      bookingId: booking.id,
+      passengerId: booking.passengerId,
+      eventType: 'booking.no_show',
+      toStatus: BOOKING_STATUS.NO_SHOW,
+      actorRole: 'system',
+      details: { reason: 'trip_expired_unoperated', booking_no: booking.referenceCode },
+    });
   }
 
   // Release any lingering seat locks so they never outlive the trip.

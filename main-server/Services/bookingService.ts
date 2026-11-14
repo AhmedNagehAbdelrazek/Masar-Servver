@@ -16,6 +16,7 @@ import mapsConfig from '../config/maps';
 import { generateReferenceCode } from '../utils/referenceCode';
 import homeService, { toTripDetails } from './homeService';
 import realtimeService from './realtimeService';
+import * as tripEventService from './tripEventService';
 import { BOOKING_STATUS, PAYMENT_STATUS, TRIP_STATUS, SEAT_TYPE, USER_STATUS, STOP_TYPE, PICKUP_TYPE, PICKUP_STATUS } from '../config/constants';
 import { parseOptionalTimezoneAware } from '../utils/time';
 
@@ -563,6 +564,28 @@ async function createBooking(passengerId, payload) {
     payload: { trip_id, seat_number: hasLockedSeats ? lockedSeats[0] : null, seat_numbers: hasLockedSeats ? lockedSeats : [], seats: requestedSeats, reference_code: booking.referenceCode },
   });
 
+  await tripEventService.record({
+    tripId: trip.id,
+    bookingId: booking.id,
+    passengerId,
+    eventType: 'booking.created',
+    toStatus: booking.status,
+    actorId: passengerId,
+    actorRole: 'passenger',
+    details: {
+      booking_no: booking.referenceCode,
+      seats: Number(booking.seatsBooked),
+      seat_numbers: booking.seatNumbers || (booking.seatNumber != null ? [booking.seatNumber] : []),
+      fare: Number(booking.agreedFare),
+      pickup: booking.pickupLabel || booking.pickupPlace || null,
+      pickup_city: booking.pickupCity || null,
+      dropoff: booking.dropoffPlace || null,
+      passenger_name: user.fullName || null,
+      passenger_phone: user.phone || null,
+    },
+    occurredAt: booking.createdAt || booking.createdat || new Date(),
+  });
+
   // Consume the seat locks now that the seats are booked — otherwise they
   // linger until TTL expiry and the seats keep showing as locked.
   if (hasLockedSeats) {
@@ -935,6 +958,23 @@ async function cancelBooking(passengerId, bookingId) {
     payload: { trip_id: booking.tripId, reference_code: booking.referenceCode },
   });
 
+  await tripEventService.record({
+    tripId: booking.tripId,
+    bookingId: booking.id,
+    passengerId,
+    eventType: 'booking.cancelled',
+    toStatus: BOOKING_STATUS.CANCELLED,
+    actorId: passengerId,
+    actorRole: 'passenger',
+    details: {
+      reason: 'cancelled_by_passenger',
+      booking_no: booking.referenceCode,
+      passenger_name: user.fullName || null,
+      passenger_phone: user.phone || null,
+      seat_numbers: booking.seatNumbers || (booking.seatNumber != null ? [booking.seatNumber] : []),
+    },
+  });
+
   await notifyDriver(booking.trip, 'BOOKING_CANCELLED_DRIVER', {
     passenger: user.fullName,
     seat_number: booking.seatNumber,
@@ -1011,6 +1051,25 @@ async function startRide(passengerId, bookingId) {
   }
   await booking.update(patch);
 
+  const passenger = await User.findByPk(passengerId, { attributes: ['id', 'fullName', 'phone'] });
+  await tripEventService.record({
+    tripId: booking.tripId,
+    bookingId: booking.id,
+    passengerId,
+    eventType: 'booking.passenger_boarded',
+    toStatus: PICKUP_STATUS.PICKED_UP,
+    actorId: passengerId,
+    actorRole: 'passenger',
+    details: {
+      booking_no: booking.referenceCode,
+      passenger_name: passenger ? passenger.fullName : null,
+      passenger_phone: passenger ? passenger.phone : null,
+      seat_numbers: booking.seatNumbers || (booking.seatNumber != null ? [booking.seatNumber] : []),
+      source: 'passenger_confirmation',
+    },
+    occurredAt: now,
+  });
+
   emitRideStatus(booking, 'started');
   auditService.track({
     action: 'booking.ride_started',
@@ -1059,6 +1118,25 @@ async function endRide(passengerId, bookingId) {
     paymentStatus: booking.paymentStatus === PAYMENT_STATUS.PENDING
       ? PAYMENT_STATUS.PAID_CASH
       : booking.paymentStatus,
+  });
+
+  const passenger = await User.findByPk(passengerId, { attributes: ['id', 'fullName', 'phone'] });
+  await tripEventService.record({
+    tripId: booking.tripId,
+    bookingId: booking.id,
+    passengerId,
+    eventType: 'booking.passenger_left',
+    toStatus: BOOKING_STATUS.COMPLETED,
+    actorId: passengerId,
+    actorRole: 'passenger',
+    details: {
+      booking_no: booking.referenceCode,
+      passenger_name: passenger ? passenger.fullName : null,
+      passenger_phone: passenger ? passenger.phone : null,
+      seat_numbers: booking.seatNumbers || (booking.seatNumber != null ? [booking.seatNumber] : []),
+      source: 'passenger_confirmation',
+    },
+    occurredAt: now,
   });
 
   emitRideStatus(booking, 'ended');
@@ -1174,6 +1252,23 @@ async function editPickup(passengerId, bookingId, input) {
     console.warn('[bookingService] pickup_changed notification failed:', err.message);
   }
   auditService.track({ action: 'booking.pickup_changed', resourceType: 'booking', resourceId: booking.id, actorId: passengerId, actorType: 'passenger', payload: { trip_id: booking.tripId } });
+  const eventPassenger = await User.findByPk(passengerId, { attributes: ['id', 'fullName', 'phone'] });
+  await tripEventService.record({
+    tripId: booking.tripId,
+    bookingId: booking.id,
+    passengerId,
+    eventType: 'booking.pickup_updated',
+    actorId: passengerId,
+    actorRole: 'passenger',
+    details: {
+      booking_no: booking.referenceCode,
+      pickup_type: type,
+      pickup: booking.pickupLabel || booking.pickupPlace || null,
+      detour_seconds: checked.detourSeconds,
+      passenger_name: eventPassenger ? eventPassenger.fullName : null,
+      passenger_phone: eventPassenger ? eventPassenger.phone : null,
+    },
+  });
   return { booking_id: booking.id, pickup_type: type, detour_seconds: checked.detourSeconds };
 }
 

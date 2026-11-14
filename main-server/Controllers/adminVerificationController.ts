@@ -28,6 +28,23 @@ const rejectDriver = catchAsync(async (req: Request, res: Response): Promise<voi
   successResponse(res, result);
 });
 
+const approvePassenger = catchAsync(async (req: Request, res: Response): Promise<void> => {
+  const authReq = req as AuthRequest;
+  const { passenger_id } = req.params as { passenger_id: string };
+  const result = await (verificationService as unknown as { approvePassenger: (actorId: string, passengerId: string) => Promise<unknown> }).approvePassenger(String(authReq.user?.id), passenger_id);
+  (auditService as unknown as { markResource: (res: Response, r: unknown) => void }).markResource(res, { type: 'passenger_profile', id: passenger_id });
+  successResponse(res, result);
+});
+
+const rejectPassenger = catchAsync(async (req: Request, res: Response): Promise<void> => {
+  const authReq = req as AuthRequest;
+  const { passenger_id } = req.params as { passenger_id: string };
+  const { reason, fields_to_fix } = req.body as { reason: string; fields_to_fix?: string[] };
+  const result = await (verificationService as unknown as { rejectPassenger: (actorId: string, passengerId: string, reason: string, fields: string[] | undefined) => Promise<unknown> }).rejectPassenger(String(authReq.user?.id), passenger_id, reason, fields_to_fix);
+  (auditService as unknown as { markResource: (res: Response, r: unknown) => void }).markResource(res, { type: 'passenger_profile', id: passenger_id });
+  successResponse(res, result);
+});
+
 const approveVehicle = catchAsync(async (req: Request, res: Response): Promise<void> => {
   const authReq = req as AuthRequest;
   const { vehicle_id } = req.params as { vehicle_id: string };
@@ -45,5 +62,5 @@ const rejectVehicle = catchAsync(async (req: Request, res: Response): Promise<vo
   successResponse(res, result);
 });
 
-export { getQueue, approveDriver, rejectDriver, approveVehicle, rejectVehicle };
-export default { getQueue, approveDriver, rejectDriver, approveVehicle, rejectVehicle };
+export { getQueue, approveDriver, rejectDriver, approvePassenger, rejectPassenger, approveVehicle, rejectVehicle };
+export default { getQueue, approveDriver, rejectDriver, approvePassenger, rejectPassenger, approveVehicle, rejectVehicle };

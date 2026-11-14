@@ -74,6 +74,34 @@ export const deleteAdminUserValidation: ValidationChain[] = [
     .isString().trim().isLength({ max: 500 }).withMessage(V.REASON_MUST_BE_A_STRING_500_CHARACTERS),
 ];
 
+export const deletionRequestListValidation: ValidationChain[] = [
+  query('status')
+    .optional()
+    .isIn(['all', 'pending', 'approved', 'rejected', 'cancelled'])
+    .withMessage(V.STATUS_MUST_BE_ONE_OF_PENDING_APPROVED_REJECTED_CANCELLED_2),
+  query('search')
+    .optional()
+    .isString().withMessage(V.SEARCH_MUST_BE_A_STRING)
+    .trim()
+    .isLength({ max: 100 }).withMessage(V.SEARCH_MUST_BE_AT_MOST_100_CHARACTERS),
+  query('page')
+    .optional()
+    .isInt({ min: 1 }).withMessage(V.PAGE_MUST_BE_A_POSITIVE_INTEGER),
+  query('limit')
+    .optional()
+    .isInt({ min: 1, max: 100 }).withMessage(V.LIMIT_MUST_BE_AN_INTEGER_BETWEEN_1_AND_100),
+];
+
+export const deletionRequestReviewValidation: ValidationChain[] = [
+  param('request_id').isUUID().withMessage(V.REQUEST_ID_MUST_BE_A_VALID_UUID),
+  body('status')
+    .notEmpty().withMessage(V.STATUS_IS_REQUIRED)
+    .isIn(['approved', 'rejected']).withMessage(V.STATUS_MUST_BE_ONE_OF_APPROVED_REJECTED),
+  body('review_notes')
+    .optional({ nullable: true })
+    .isString().trim().isLength({ max: 2000 }).withMessage(V.REASON_MUST_BE_AT_MOST_2000_CHARACTERS),
+];
+
 export const moderateTripValidation: ValidationChain[] = [
   param('trip_id').isUUID().withMessage(V.TRIP_ID_MUST_BE_A_VALID_UUID),
   body('action')
@@ -94,6 +122,8 @@ const _exported = {
   adminUserIdValidation,
   updateAdminUserValidation,
   deleteAdminUserValidation,
+  deletionRequestListValidation,
+  deletionRequestReviewValidation,
   moderateTripValidation,
 };
 export default _exported;
@@ -109,6 +139,8 @@ if (typeof module !== 'undefined' && module.exports) {
     adminUserIdValidation,
     updateAdminUserValidation,
     deleteAdminUserValidation,
+    deletionRequestListValidation,
+    deletionRequestReviewValidation,
     moderateTripValidation,
   };
   // @ts-ignore
@@ -123,6 +155,10 @@ if (typeof module !== 'undefined' && module.exports) {
   module.exports.updateAdminUserValidation = updateAdminUserValidation;
   // @ts-ignore
   module.exports.deleteAdminUserValidation = deleteAdminUserValidation;
+  // @ts-ignore
+  module.exports.deletionRequestListValidation = deletionRequestListValidation;
+  // @ts-ignore
+  module.exports.deletionRequestReviewValidation = deletionRequestReviewValidation;
   // @ts-ignore
   module.exports.moderateTripValidation = moderateTripValidation;
   // @ts-ignore

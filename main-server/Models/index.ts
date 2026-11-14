@@ -34,6 +34,7 @@ import NotificationSetting from './NotificationSetting';
 import SupportTicketMessage from './SupportTicketMessage';
 import DeletionRequest from './DeletionRequest';
 import DocumentReview from './DocumentReview';
+import TripEvent from './TripEvent';
 
 // ===== USER RELATIONS =====
 (User as unknown as { hasOne: (m: unknown, o: unknown) => void }).hasOne(DriverProfile, { foreignKey: 'driverId', as: 'driverProfile' });
@@ -51,6 +52,12 @@ import DocumentReview from './DocumentReview';
 
 (User as unknown as { hasMany: (m: unknown, o: unknown) => void }).hasMany(Trip, { foreignKey: 'driver_id', as: 'trips' });
 (Trip as unknown as { belongsTo: (m: unknown, o: unknown) => void }).belongsTo(User, { foreignKey: 'driver_id', as: 'driver' });
+
+(Trip as unknown as { hasMany: (m: unknown, o: unknown) => void }).hasMany(TripEvent, { foreignKey: 'trip_id', as: 'events' });
+(TripEvent as unknown as { belongsTo: (m: unknown, o: unknown) => void }).belongsTo(Trip, { foreignKey: 'trip_id', as: 'trip' });
+(TripEvent as unknown as { belongsTo: (m: unknown, o: unknown) => void }).belongsTo(Booking, { foreignKey: 'booking_id', as: 'booking' });
+(TripEvent as unknown as { belongsTo: (m: unknown, o: unknown) => void }).belongsTo(User, { foreignKey: 'passenger_id', as: 'passenger' });
+(TripEvent as unknown as { belongsTo: (m: unknown, o: unknown) => void }).belongsTo(User, { foreignKey: 'actor_id', as: 'actor' });
 
 (User as unknown as { hasMany: (m: unknown, o: unknown) => void }).hasMany(Booking, { foreignKey: 'passenger_id', as: 'bookings' });
 (Booking as unknown as { belongsTo: (m: unknown, o: unknown) => void }).belongsTo(User, { foreignKey: 'passenger_id', as: 'passenger' });
@@ -220,6 +227,7 @@ export {
   SupportTicketMessage,
   DeletionRequest,
   DocumentReview,
+  TripEvent,
 };
 export default {
   sequelize,
@@ -258,6 +266,7 @@ export default {
   SupportTicketMessage,
   DeletionRequest,
   DocumentReview,
+  TripEvent,
 };
 module.exports = {
   sequelize,
@@ -296,4 +305,5 @@ module.exports = {
   SupportTicketMessage,
   DeletionRequest,
   DocumentReview,
+  TripEvent,
 };

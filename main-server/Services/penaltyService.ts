@@ -5,6 +5,7 @@ import { ApiErrors } from '../utils/ApiError';
 import { PENALTY_TYPES, USER_STATUS } from '../config/constants';
 import { parsePagination, buildPagination } from '../utils/pagination';
 import { revoke } from './enforcementService';
+import { revokeUserSessions } from './authService';
 import { revocationForPenalty } from './enforcementService';
 import notificationService from './notificationService';
 import { blockAccountInventory } from './accountBlockingService';
@@ -181,6 +182,12 @@ async function issue(actorId, payload) {
         actorId,
         duration: type === PENALTY_TYPES.SUSPENSION && endsAt ? String(endsAt) : null,
       });
+      // Bans are terminal for the session: invalidate every HTTP access token
+      // immediately. Suspensions keep read-only access, so only their sockets
+      // are revoked above.
+      if (type === PENALTY_TYPES.BAN) {
+        await revokeUserSessions(userId);
+      }
     }
   } catch (err) {
     console.warn('[penaltyService] enforcement revocation failed:', err.message);

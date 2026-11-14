@@ -4,7 +4,7 @@ import * as c from '../Controllers/adminVerificationController';
 import protect from '../middlewares/protect';
 import { roleGuard } from '../middlewares/roleGuard';
 import validate from '../middlewares/validatorMiddleware';
-import { verificationQueueValidation, driverParamValidation, vehicleParamValidation, rejectValidation, } from '../utils/validators/verificationValidator';
+import { verificationQueueValidation, driverParamValidation, passengerParamValidation, passengerRejectValidation, vehicleParamValidation, rejectValidation, } from '../utils/validators/verificationValidator';
 
 // Verification queue
 router.get('/queue', protect, roleGuard(['admin']), ...verificationQueueValidation, validate, c.getQueue);
@@ -12,6 +12,10 @@ router.get('/queue', protect, roleGuard(['admin']), ...verificationQueueValidati
 // Approve / reject driver
 router.post('/drivers/:driver_id/approve', protect, roleGuard(['admin']), ...driverParamValidation, validate, c.approveDriver);
 router.post('/drivers/:driver_id/reject', protect, roleGuard(['admin']), ...driverParamValidation, ...rejectValidation, validate, c.rejectDriver);
+
+// Approve / reject passenger
+router.post('/passengers/:passenger_id/approve', protect, roleGuard(['admin']), ...passengerParamValidation, validate, c.approvePassenger);
+router.post('/passengers/:passenger_id/reject', protect, roleGuard(['admin']), ...passengerParamValidation, ...passengerRejectValidation, validate, c.rejectPassenger);
 
 // Approve / reject vehicle
 router.post('/vehicles/:vehicle_id/approve', protect, roleGuard(['admin']), ...vehicleParamValidation, validate, c.approveVehicle);

@@ -11,6 +11,9 @@ import notificationService from './notificationService';
 import * as penaltyService from './penaltyService';
 import { buildTripMapRoute } from './adminTripMapService';
 import { toAbsoluteMediaUrl } from '../utils/mediaUrl';
+import * as tripEventService from './tripEventService';
+import * as adminAuditService from './adminAuditService';
+import { revokeUserSessions } from './authService';
 
 // ===== Canonical document registry (data-model.md) =====
 const DOCUMENT_KEYS = {
@@ -690,6 +693,7 @@ async function cancelTrip(adminId, tripId, reason) {
     throw ApiErrors.conflict('TRIP_ALREADY_COMPLETED_OR_CANCELLED');
   }
 
+  const previousStatus = trip.status;
   const result = await sequelize.transaction(async (t) => {
     const [claimed] = await Trip.update(
       { status: TRIP_STATUS.CANCELLED, isModerated: true, moderationReason: reason || 'Cancelled by administrator', moderatedBy: adminId },
@@ -744,6 +748,19 @@ async function cancelTrip(adminId, tripId, reason) {
     console.warn('[adminDashboardService] driver trip cancellation notification failed:', err.message);
   }
 
+  await tripEventService.recordTripStatus({
+    trip,
+    fromStatus: previousStatus,
+    toStatus: TRIP_STATUS.CANCELLED,
+    actorId: adminId,
+    actorRole: 'admin',
+    details: {
+      reason: reason || 'Cancelled by administrator',
+      cancelled_bookings: result.bookings,
+      source: 'admin_dashboard',
+    },
+  });
+
   return {
     trip: { id: tripId, status: TRIP_STATUS.CANCELLED, cancellation_reason: reason || null },
     cancelled_bookings: result.bookings,
@@ -775,6 +792,7 @@ async function getTripDetail(tripId, { includeMap = false } = {}) {
   const mapRoute = includeMap
     ? await buildTripMapRoute(trip).catch(() => null)
     : null;
+  const tripEvents = await tripEventService.listForTrip(tripId).catch(() => []);
 
   return {
     trip: {
@@ -819,6 +837,35 @@ async function getTripDetail(tripId, { includeMap = false } = {}) {
         lat: stop.lat != null ? Number(stop.lat) : stop.stopLat != null ? Number(stop.stopLat) : null,
         lng: stop.lng != null ? Number(stop.lng) : stop.stopLng != null ? Number(stop.stopLng) : null,
       })),
+      history: tripEvents.map((event) => {
+        const details = { ...(event.details || {}) };
+        if (details.passenger_phone) details.passenger_phone = maskPhone(details.passenger_phone);
+        return {
+          id: event.id,
+          event_type: event.eventType,
+          from_status: event.fromStatus,
+          to_status: event.toStatus,
+          occurred_at: event.occurredAt,
+          booking_id: event.bookingId,
+          passenger: event.passenger
+            ? {
+              id: event.passenger.id,
+              name: event.passenger.fullName,
+              phone: maskPhone(event.passenger.phone),
+            }
+            : null,
+          actor: event.actor
+            ? {
+              id: event.actor.id,
+              name: event.actor.fullName,
+              role: event.actor.role || event.actorRole,
+            }
+            : event.actorId
+              ? { id: event.actorId, name: null, role: event.actorRole }
+              : null,
+          details,
+        };
+      }),
     },
     driver: trip.driver
       ? {
@@ -1043,10 +1090,70 @@ async function getDriverEvaluations(driverId, query) {
   };
 }
 
+const ADMIN_ACTION_TITLES = {
+  role_changed: 'تغيير دور الحساب',
+  status_changed: 'تحديث حالة الحساب',
+  profile_updated: 'تحديث بيانات الحساب',
+  account_deleted: 'حذف الحساب',
+  deletion_request_approved: 'اعتماد طلب حذف الحساب',
+  deletion_request_rejected: 'رفض طلب حذف الحساب',
+  standing_action: 'إجراء إداري على الحساب',
+  verification_approved: 'اعتماد توثيق الحساب',
+  verification_rejected: 'رفض توثيق الحساب',
+};
+
+function adminActionTitle(action) {
+  return ADMIN_ACTION_TITLES[action] || 'إجراء إداري';
+}
+
+function adminActionReason(meta) {
+  if (!meta) return 'تم تنفيذ إجراء إداري من لوحة التحكم.';
+  if (meta.reason) return String(meta.reason);
+  const after = meta.after && typeof meta.after === 'object' ? meta.after : null;
+  if (after && after.role) {
+    return `تغيير الدور: ${after.role.from || '—'} ← ${after.role.to || '—'}`;
+  }
+  if (after && after.status) {
+    return `تغيير الحالة: ${after.status.from || '—'} ← ${after.status.to || '—'}`;
+  }
+  if (after && typeof after === 'object') {
+    const fields = Object.keys(after);
+    if (fields.length) return `تحديث الحقول: ${fields.join('، ')}`;
+  }
+  return 'تم تنفيذ إجراء إداري من لوحة التحكم.';
+}
+
+function mapAdminAuditRow(row) {
+  const meta = row.newData || {};
+  const action = meta.action || row.action;
+  return {
+    id: row.id,
+    title: adminActionTitle(action),
+    reason: adminActionReason(meta),
+    related_trip_id: null,
+    date: row.createdAt ?? row.createdat,
+    type: 'admin_action',
+    action,
+    status: 'resolved',
+  };
+}
+
+function mapDeletionRequestRow(request) {
+  return {
+    id: request.id,
+    title: 'طلب حذف الحساب',
+    reason: request.reason || '—',
+    related_trip_id: null,
+    date: request.createdAt ?? request.createdat,
+    type: 'deletion_request',
+    status: request.status,
+  };
+}
+
 async function getAccountLog(driverId) {
   await getDriverOrThrow(driverId);
   const now = new Date();
-  const [penalties, complaints, profile, vehicle, reviews] = await Promise.all([
+  const [penalties, complaints, profile, vehicle, reviews, adminActions, deletionRequests] = await Promise.all([
     Penalty.findAll({ where: { userId: driverId }, order: [['starts_at', 'DESC']] }),
     Complaint.findAll({
       where: { [Op.or]: [{ reporterId: driverId }, { accusedId: driverId }] },
@@ -1055,6 +1162,8 @@ async function getAccountLog(driverId) {
     DriverProfile.findOne({ where: { driverId } }),
     Vehicle.findOne({ where: { driverId } }),
     DocumentReview.findAll({ where: { driverId } }),
+    adminAuditService.listForUser(driverId),
+    DeletionRequest.findAll({ where: { userId: driverId }, order: [['createdat', 'DESC']] }),
   ]);
   const uploadedDocuments = REQUIRED_DOCUMENTS.filter((def) => {
     const imageId = def.source === 'profile' ? profile?.[def.column] : vehicle?.[def.column];
@@ -1083,6 +1192,8 @@ async function getAccountLog(driverId) {
       status: [COMPLAINT_STATUS.OPEN, COMPLAINT_STATUS.REVIEWING].includes(c.status) ? 'pending' : 'resolved',
       direction: c.reporterId === driverId ? 'by_driver' : 'against_driver',
     })),
+    ...adminActions.map(mapAdminAuditRow),
+    ...deletionRequests.map(mapDeletionRequestRow),
   ].sort((a, b) => new Date(b.date) - new Date(a.date));
 
   return {
@@ -1093,6 +1204,8 @@ async function getAccountLog(driverId) {
       complaints_against: complaints.filter((c) => c.accusedId === driverId).length,
       complaints_by: complaints.filter((c) => c.reporterId === driverId).length,
       pending_documents: pendingDocuments,
+      admin_actions: adminActions.length,
+      deletion_requests: deletionRequests.length,
     },
     log,
     entries: log,
@@ -1156,6 +1269,24 @@ async function setDriverStatus(adminId, driverId, requestedStatus) {
 
   await driver.update(updates);
 
+  if (requestedStatus === 'blocked') {
+    try {
+      await revokeUserSessions(driverId);
+    } catch (err) {
+      console.warn('[adminDashboardService] session revocation failed:', err.message);
+    }
+  }
+
+  await adminAuditService.record({
+    actorId: adminId,
+    userId: driverId,
+    action: 'status_changed',
+    before: { account_status: currentDerived, verification_status: originalVerification },
+    after: { account_status: requestedStatus, verification_status: updates.verificationStatus || originalVerification },
+    reason: 'Status changed from the dashboard',
+    source: 'admin_driver_status',
+  });
+
   if (updates.verificationStatus && originalVerification !== updates.verificationStatus) {
     await VerificationStatusChange.create({
       driverId,
@@ -1206,6 +1337,16 @@ async function applyStandingAction(adminId, driverId, action, reason) {
       console.warn('[adminDashboardService] reactivation notification failed:', err.message);
     }
   }
+
+  await adminAuditService.record({
+    actorId: adminId,
+    userId: driverId,
+    action: 'standing_action',
+    before: { account_status: currentDerived },
+    after: { account_status: deriveAccountStatus(await driver.reload()) },
+    reason: reason || null,
+    source: `admin_driver_${action}`,
+  });
 
   return {
     driver: { id: driver.id, account_status: deriveAccountStatus(await driver.reload()) },
