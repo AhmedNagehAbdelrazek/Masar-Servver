@@ -215,6 +215,7 @@ export const APP_MESSAGES = {
   PARTY_MUST_BE_DRIVER_OR_PASSENGER: { en: 'party must be "driver" or "passenger"', ar: 'يجب أن يكون الطرف "سائقاً" أو "راكباً"' },
   ACCUSED_USER_NOT_FOUND: { en: 'Accused user not found', ar: 'المستخدم المشتكي منه غير موجود' },
   COMPLAINT_NOT_FOUND: { en: 'Complaint not found', ar: 'الشكوى غير موجودة' },
+  COMPLAINT_ALREADY_CLOSED: { en: 'Complaint is already closed', ar: 'الشكوى مغلقة بالفعل' },
 
   // ===== Favorites =====
   FAVORITE_DRIVER_NOT_FOUND: { en: 'Favorite driver not found', ar: 'السائق المفضل غير موجود' },

@@ -5,7 +5,7 @@ import * as c from '../Controllers/adminModerationController';
 import protect from '../middlewares/protect';
 import { roleGuard } from '../middlewares/roleGuard';
 import validate from '../middlewares/validatorMiddleware';
-import { adminComplaintListValidation, resolveComplaintValidation, } from '../utils/validators/complaintValidator';
+import { adminComplaintListValidation, resolveComplaintValidation, closeComplaintValidation, } from '../utils/validators/complaintValidator';
 import { penaltyValidation } from '../utils/validators/penaltyValidator';
 import {
   adminUserListValidation,
@@ -26,6 +26,7 @@ router.get('/complaints/stats', protect, roleGuard(['admin']), c.getComplaintSta
 router.get('/complaints/:complaint_id', protect, roleGuard(['admin']), ...complaintId, validate, c.getComplaintDetail);
 router.post('/complaints/:complaint_id/penalties', protect, roleGuard(['admin']), ...complaintId, validate, c.penalizeComplaint);
 router.post('/complaints/:complaint_id/reopen', protect, roleGuard(['admin']), ...complaintId, ...reopenBody, validate, c.reopenComplaint);
+router.post('/complaints/:complaint_id/close', protect, roleGuard(['admin']), ...closeComplaintValidation, validate, c.closeComplaint);
 router.put('/complaints/:complaint_id', protect, roleGuard(['admin']), ...resolveComplaintValidation, validate, c.resolveComplaint);
 
 // Users (admin only)

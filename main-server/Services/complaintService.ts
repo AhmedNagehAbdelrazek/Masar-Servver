@@ -19,18 +19,70 @@ function serializeCreate(complaint) {
   };
 }
 
-function serializeAdmin(complaint) {
+function serializeAdmin(complaint, lastAction = null) {
   return {
     id: complaint.id,
     category: complaint.category,
     description: complaint.description,
     status: complaint.status,
+    last_action: lastAction,
     reporter_name: complaint.reporter ? complaint.reporter.fullName : null,
     accused_name: complaint.accused ? complaint.accused.fullName : null,
     booking_id: complaint.bookingId,
     evidence_urls: complaint.evidenceUrls,
     created_at: complaint.createdat || complaint.createdAt,
   };
+}
+
+// The dashboard presents the complaint status as "the last action taken on it".
+// Merge the audit trail and penalty rows into one ordered list per complaint so
+// lists and the detail page can render that without another round trip.
+function emptyLastAction() {
+  return { event: 'filed', at: null, by: null, reason: null, action: null, note: null };
+}
+
+function newestOf(current, candidate) {
+  if (!current || !current.at) return candidate;
+  return new Date(candidate.at).getTime() >= new Date(current.at).getTime() ? candidate : current;
+}
+
+async function loadLastActions(complaintIds) {
+  const map = new Map();
+  if (!complaintIds.length) return map;
+  const [logs, penalties] = await Promise.all([
+    AuditLog.findAll({
+      where: { tableName: 'complaints', recordId: { [Op.in]: complaintIds } },
+      order: [['createdat', 'ASC']],
+    }),
+    Penalty.findAll({
+      where: { complaintId: { [Op.in]: complaintIds } },
+      order: [['startsAt', 'ASC']],
+    }),
+  ]);
+
+  for (const id of complaintIds) map.set(id, emptyLastAction());
+  for (const entry of logs) {
+    const data = entry.newData || {};
+    map.set(entry.recordId, newestOf(map.get(entry.recordId), {
+      event: data.action_type ? 'penalty' : (data.event || 'updated'),
+      at: entry.createdat,
+      by: entry.performedBy ? { id: entry.performedBy, name: null } : null,
+      reason: data.reason || null,
+      action: data.action_type || null,
+      note: data.note || null,
+    }));
+  }
+  for (const row of penalties) {
+    map.set(row.complaintId, newestOf(map.get(row.complaintId), {
+      event: 'penalty',
+      at: row.startsAt,
+      by: row.issuedBy ? { id: row.issuedBy, name: null } : null,
+      reason: row.reason || null,
+      action: row.type,
+      note: null,
+    }));
+  }
+  return map;
 }
 
 function serializeDriver(complaint, direction) {
@@ -181,8 +233,17 @@ async function listAdmin(filters = {}) {
     limit,
   });
 
+  const lastActions = await loadLastActions(rows.map((row) => row.id));
+
   return {
-    data: rows.map(serializeAdmin),
+    data: rows.map((row) => {
+      const lastAction = lastActions.get(row.id) || emptyLastAction();
+      if (!lastAction.at) {
+        lastAction.at = row.createdat;
+        lastAction.by = row.reporter ? { id: row.reporter.id, name: row.reporter.fullName } : null;
+      }
+      return serializeAdmin(row, lastAction);
+    }),
     pagination: buildPagination(count, page, limit),
   };
 }
@@ -305,6 +366,12 @@ async function getDetail(complaintId) {
       ends_at: row.endsAt,
     })),
   ].sort((a, b) => new Date(a.at).getTime() - new Date(b.at).getTime());
+  const lastEvent = history.length ? history[history.length - 1] : null;
+  // A penalty is recorded as `resolved` in the audit log; the action type is
+  // what the dashboard shows as the status, so surface it as a penalty event.
+  const lastAction = lastEvent && lastEvent.event === 'resolved' && lastEvent.action
+    ? { ...lastEvent, event: 'penalty' }
+    : lastEvent;
 
   const log = [{ event: 'filed', at: complaint.createdat }];
   if (complaint.resolvedAt) {
@@ -373,6 +440,7 @@ async function getDetail(complaintId) {
       }
       : null,
     history,
+    last_action: lastAction,
     log,
   };
 }
@@ -518,6 +586,43 @@ async function reopen(adminId, complaintId, reason) {
   };
 }
 
-module.exports = { create, listForDriver, listAdmin, getStats, getDetail, penalize, resolve, reopen };
-export { create, listForDriver, listAdmin, getStats, getDetail, penalize, resolve, reopen };
+/**
+ * Close a complaint without a penalty. Closing is a decision: the row moves to
+ * `dismissed` and the event trail records who closed it, when, and why.
+ */
+async function close(adminId, complaintId, data = {}) {
+  const complaint = await Complaint.findByPk(complaintId);
+  if (!complaint) throw ApiErrors.notFound('COMPLAINT_NOT_FOUND');
+  if ([COMPLAINT_STATUS.RESOLVED, COMPLAINT_STATUS.DISMISSED].includes(complaint.status)) {
+    throw ApiErrors.conflict('COMPLAINT_ALREADY_CLOSED');
+  }
+
+  const reason = String(data.reason || data.resolution || '').trim() || 'Closed by administrator';
+  const note = data.notes != null ? String(data.notes).trim() || null : null;
+  const closedAt = new Date();
+  await complaint.update({
+    status: COMPLAINT_STATUS.DISMISSED,
+    resolution: reason,
+    resolvedBy: adminId,
+    resolvedAt: closedAt,
+  });
+  await recordComplaintEvent(complaintId, adminId, 'dismissed', {
+    reason,
+    note,
+    source: 'admin_close',
+  });
+
+  return {
+    complaint: {
+      id: complaint.id,
+      status: complaint.status,
+      resolution: complaint.resolution,
+      resolved_by: complaint.resolvedBy,
+      resolved_at: complaint.resolvedAt,
+    },
+  };
+}
+
+module.exports = { create, listForDriver, listAdmin, getStats, getDetail, penalize, resolve, close, reopen };
+export { create, listForDriver, listAdmin, getStats, getDetail, penalize, resolve, close, reopen };
 export default module.exports;

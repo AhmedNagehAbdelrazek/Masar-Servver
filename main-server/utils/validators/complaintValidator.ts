@@ -91,14 +91,29 @@ export const resolveComplaintValidation: ValidationChain[] = [
 
 
 
-const _exported = { complaintValidation, driverComplaintListValidation, adminComplaintListValidation, resolveComplaintValidation };
+export const closeComplaintValidation: ValidationChain[] = [
+  param('complaint_id')
+    .isUUID().withMessage(V.COMPLAINT_ID_MUST_BE_A_VALID_UUID),
+  body('reason')
+    .optional({ nullable: true })
+    .isString().trim()
+    .isLength({ max: 2000 }).withMessage(V.REASON_MUST_BE_AT_MOST_2000_CHARACTERS),
+  body('notes')
+    .optional({ nullable: true })
+    .isString().trim()
+    .isLength({ max: 500 }).withMessage(V.NOTE_MUST_BE_AT_MOST_500_CHARACTERS),
+];
+
+
+
+const _exported = { complaintValidation, driverComplaintListValidation, adminComplaintListValidation, resolveComplaintValidation, closeComplaintValidation };
 export default _exported;
 
 // CommonJS interop
 // @ts-ignore
 if (typeof module !== 'undefined' && module.exports) {
   // @ts-ignore
-  module.exports = { complaintValidation, driverComplaintListValidation, adminComplaintListValidation, resolveComplaintValidation };
+  module.exports = { complaintValidation, driverComplaintListValidation, adminComplaintListValidation, resolveComplaintValidation, closeComplaintValidation };
   // @ts-ignore
   module.exports.complaintValidation = complaintValidation;
   // @ts-ignore
@@ -107,6 +122,8 @@ if (typeof module !== 'undefined' && module.exports) {
   module.exports.adminComplaintListValidation = adminComplaintListValidation;
   // @ts-ignore
   module.exports.resolveComplaintValidation = resolveComplaintValidation;
+  // @ts-ignore
+  module.exports.closeComplaintValidation = closeComplaintValidation;
   // @ts-ignore
   module.exports.default = _exported;
 }
