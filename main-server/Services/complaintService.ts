@@ -338,6 +338,10 @@ async function getDetail(complaintId) {
     complaint.accusedId ? Rating.count({ where: { rateeId: complaint.accusedId } }) : 0,
   ]);
 
+  const loggedPenaltyIds = new Set(
+    auditLogs.map((entry) => (entry.newData || {}).penalty_id).filter(Boolean)
+  );
+
   const history = [
     {
       event: 'filed',
@@ -347,7 +351,7 @@ async function getDetail(complaintId) {
     ...auditLogs.map((entry) => {
       const data = entry.newData || {};
       return {
-        event: data.event || 'updated',
+        event: data.action_type ? 'penalty' : (data.event || 'updated'),
         at: entry.createdat,
         by: entry.performedBy ? actorById.get(entry.performedBy) || { id: entry.performedBy, name: null } : null,
         reason: data.reason || null,
@@ -356,15 +360,17 @@ async function getDetail(complaintId) {
         note: data.note || null,
       };
     }),
-    ...penalties.map((row) => ({
-      event: 'penalty',
-      at: row.startsAt,
-      by: row.issuedBy ? actorById.get(row.issuedBy) || { id: row.issuedBy, name: null } : null,
-      reason: row.reason,
-      action: row.type,
-      penalty_id: row.id,
-      ends_at: row.endsAt,
-    })),
+    ...penalties
+      .filter((row) => !loggedPenaltyIds.has(row.id))
+      .map((row) => ({
+        event: 'penalty',
+        at: row.startsAt,
+        by: row.issuedBy ? actorById.get(row.issuedBy) || { id: row.issuedBy, name: null } : null,
+        reason: row.reason,
+        action: row.type,
+        penalty_id: row.id,
+        ends_at: row.endsAt,
+      })),
   ].sort((a, b) => new Date(a.at).getTime() - new Date(b.at).getTime());
   const lastEvent = history.length ? history[history.length - 1] : null;
   // A penalty is recorded as `resolved` in the audit log; the action type is
@@ -448,10 +454,19 @@ async function getDetail(complaintId) {
 async function penalize(adminId, complaintId, dto) {
   const complaint = await Complaint.findByPk(complaintId);
   if (!complaint) throw ApiErrors.notFound('COMPLAINT_NOT_FOUND');
+  if (complaint.status === COMPLAINT_STATUS.DISMISSED) {
+    throw ApiErrors.conflict('COMPLAINT_ALREADY_CLOSED');
+  }
 
   let result;
   if (dto.kind === 'temporary') {
-    const days = dto.duration === 'custom' ? dto.durationDays : dto.duration != null ? ({ '1d': 1, '3d': 3, '7d': 7 })[dto.duration] : undefined;
+    const days = dto.durationDays != null
+      ? Number(dto.durationDays)
+      : dto.duration === 'custom'
+        ? Number(dto.durationDays)
+        : dto.duration != null
+          ? ({ '1d': 1, '3d': 3, '7d': 7 })[dto.duration]
+          : undefined;
     if (!days) throw ApiErrors.validation('DURATION_DAYS_REQUIRED_FOR_CUSTOM_DURATION');
     result = await penaltyService.issue(adminId, {
       user_id: complaint.accusedId,
@@ -481,18 +496,16 @@ async function penalize(adminId, complaintId, dto) {
     });
   }
 
-  // Any enforcement action is a decision on the ticket: resolve it so the
-  // dashboard reflects what the admin actually did and stops offering the
-  // action buttons again.
-  const actionLabel = dto.kind === 'warning' ? 'إنذار' : dto.kind === 'temporary' ? 'إيقاف مؤقت' : 'إيقاف نهائي';
-  const resolvedAt = new Date();
+  // An enforcement action is recorded on the ticket but does not close it:
+  // the admin can issue another action (e.g. warning then suspension) before
+  // explicitly closing the complaint.
   await complaint.update({
-    status: COMPLAINT_STATUS.RESOLVED,
-    resolution: `${actionLabel}: ${dto.reason}`,
-    resolvedBy: adminId,
-    resolvedAt,
+    status: COMPLAINT_STATUS.REVIEWING,
+    resolution: null,
+    resolvedBy: null,
+    resolvedAt: null,
   });
-  await recordComplaintEvent(complaintId, adminId, 'resolved', {
+  await recordComplaintEvent(complaintId, adminId, 'penalty', {
     reason: dto.reason,
     action_type: result?.penalty?.type || dto.kind,
     penalty_id: result?.penalty?.id || null,
