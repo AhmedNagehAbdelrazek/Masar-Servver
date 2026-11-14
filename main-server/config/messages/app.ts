@@ -69,6 +69,12 @@ export const APP_MESSAGES = {
   USER_NOT_FOUND: { en: 'User not found', ar: 'المستخدم غير موجود' },
   ONLY_DEVELOPER_ACCOUNTS_CAN_BE_DELETED: { en: 'Only developer accounts can be permanently deleted', ar: 'يمكن حذف حسابات المطورين فقط نهائيًا' },
   DEVELOPER_ACCOUNT_DELETED_SUCCESSFULLY: { en: 'Developer account and all related history deleted successfully', ar: 'تم حذف حساب المطور وكل سجلاته المرتبطة بنجاح' },
+  ACCOUNT_DELETED_SUCCESSFULLY: { en: 'Account deleted successfully', ar: 'تم حذف الحساب بنجاح' },
+  ROLE_CHANGE_NOT_ALLOWED_AFTER_VERIFICATION: { en: 'Role cannot be changed after verification. You can update the profile only.', ar: 'لا يمكن تغيير الدور بعد التوثيق. يمكنك تحديث البيانات فقط.' },
+  VERIFIED_ACCOUNTS_CANNOT_BE_DELETED: { en: 'Verified accounts cannot be deleted. Update or suspend the account instead.', ar: 'لا يمكن حذف الحسابات الموثقة. يمكنك تحديث الحساب أو إيقافه بدلاً من ذلك.' },
+  CANNOT_DELETE_YOUR_OWN_ACCOUNT: { en: 'You cannot delete your own account', ar: 'لا يمكنك حذف حسابك الخاص' },
+  ONLY_PASSENGER_OR_DRIVER_ACCOUNTS_CAN_BE_DELETED: { en: 'Only passenger or driver accounts can be deleted from this endpoint', ar: 'يمكن حذف حسابات الركاب أو السائقين فقط من هذا المسار' },
+  ONLY_PASSENGER_OR_DRIVER_ACCOUNTS_CAN_CHANGE_ROLE: { en: 'Only passenger or driver accounts can change role through this endpoint', ar: 'يمكن تغيير دور حسابات الركاب أو السائقين فقط من هذا المسار' },
 
   // ===== Trips =====
   TRIP_NOT_FOUND: { en: 'Trip not found', ar: 'الرحلة غير موجودة' },

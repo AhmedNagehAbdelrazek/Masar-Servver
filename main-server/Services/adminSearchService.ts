@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { Op } from 'sequelize';
-import { User, Trip, RideRequest } from '../Models';
+import { DeletionRequest, User, Trip, RideRequest } from '../Models';
 import { maskPhone } from '../utils/masking';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -16,8 +16,10 @@ function userResult(user, role) {
     name: str(user.fullName) || (role === 'driver' ? 'سائق' : 'راكب'),
     phone: maskPhone(user.phone),
     phone_full: user.phone,
+    email: user.email ?? null,
     status: user.status,
     verification_status: user.verificationStatus ?? null,
+    is_verified: user.isVerified === true,
   };
 }
 
@@ -63,24 +65,31 @@ async function search(query = {}) {
 
   const like = `%${q}%`;
   const uuid = UUID_RE.test(q);
+  const deletionRows = await DeletionRequest.findAll({
+    where: { status: { [Op.in]: ['pending', 'approved'] } },
+    attributes: ['userId'],
+    raw: true,
+  });
+  const deletionIds = deletionRows.map((row) => row.userId).filter(Boolean);
   const userWhere = {
     [Op.or]: [
       { fullName: { [Op.iLike]: like } },
       { phone: { [Op.iLike]: like } },
       ...(uuid ? [{ id: q }] : []),
     ],
+    ...(deletionIds.length ? { id: { [Op.notIn]: deletionIds } } : {}),
   };
 
   const [passengers, drivers, trips, requests] = await Promise.all([
     User.findAll({
       where: { role: 'passenger', ...userWhere },
-      attributes: ['id', 'fullName', 'phone', 'status'],
+      attributes: ['id', 'fullName', 'phone', 'email', 'status', 'verificationStatus', 'isVerified'],
       order: [['fullName', 'ASC']],
       limit,
     }),
     User.findAll({
       where: { role: 'driver', ...userWhere },
-      attributes: ['id', 'fullName', 'phone', 'status', 'verificationStatus'],
+      attributes: ['id', 'fullName', 'phone', 'email', 'status', 'verificationStatus', 'isVerified'],
       order: [['fullName', 'ASC']],
       limit,
     }),

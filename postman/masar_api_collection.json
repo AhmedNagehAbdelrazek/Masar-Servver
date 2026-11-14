@@ -18842,7 +18842,7 @@
                             ]
                         },
                         {
-                            "name": "Update User Status",
+                            "name": "Update User (Profile / Role / Status)",
                             "event": [
                                 {
                                     "listen": "prerequest",
@@ -18888,7 +18888,7 @@
                                 ],
                                 "body": {
                                     "mode": "raw",
-                                    "raw": "{\n  \"status\": \"suspended\",\n  \"reason\": \"No-show rate above threshold\"\n}",
+                                    "raw": "{\n  \"full_name\": \"Ahmad Ali\",\n  \"phone\": \"+962791234567\",\n  \"email\": \"ahmad@example.com\",\n  \"age\": 28,\n  \"gender\": \"male\",\n  \"role\": \"driver\",\n  \"status\": \"active\",\n  \"reason\": \"Correcting the account role before verification\"\n}",
                                     "options": {
                                         "raw": {
                                             "language": "json"
@@ -18906,7 +18906,7 @@
                                         "{{user_id}}"
                                     ]
                                 },
-                                "description": "Update a user's status. body: status required (\"active\"|\"warned\"|\"suspended\"|\"banned\"), reason optional (string â‰¤ 500, recorded in audit)."
+                                "description": "Update a user's profile, role, or status. All fields are optional, but at least one must change.\n\n- `full_name`, `phone`, `email`, `age`, `gender` — profile fields.\n- `role` — `passenger` or `driver`. Only editable before verification; after verification the role is locked (`403 ROLE_CHANGE_NOT_ALLOWED_AFTER_VERIFICATION`). Changing the role resets `verification_status` to `unverified`.\n- `status` — `active`, `warned`, `suspended`, or `banned`.\n- `reason` — optional, max 500 chars, recorded in the audit log.\n\nPhone/email must be unique (`409 PHONE_ALREADY_IN_USE` / `EMAIL_ALREADY_IN_USE`)."
                             },
                             "response": [
                                 {
@@ -18945,7 +18945,7 @@
                                                 "{{user_id}}"
                                             ]
                                         },
-                                        "description": "Update a user's status. body: status required (\"active\"|\"warned\"|\"suspended\"|\"banned\"), reason optional (string â‰¤ 500, recorded in audit)."
+                                        "description": "Update a user's profile, role, or status. All fields are optional, but at least one must change.\n\n- `full_name`, `phone`, `email`, `age`, `gender` — profile fields.\n- `role` — `passenger` or `driver`. Only editable before verification; after verification the role is locked (`403 ROLE_CHANGE_NOT_ALLOWED_AFTER_VERIFICATION`). Changing the role resets `verification_status` to `unverified`.\n- `status` — `active`, `warned`, `suspended`, or `banned`.\n- `reason` — optional, max 500 chars, recorded in the audit log.\n\nPhone/email must be unique (`409 PHONE_ALREADY_IN_USE` / `EMAIL_ALREADY_IN_USE`)."
                                     },
                                     "status": "OK",
                                     "code": 200,
@@ -18996,7 +18996,7 @@
                                                 "{{user_id}}"
                                             ]
                                         },
-                                        "description": "Update a user's status. body: status required (\"active\"|\"warned\"|\"suspended\"|\"banned\"), reason optional (string â‰¤ 500, recorded in audit)."
+                                        "description": "Update a user's profile, role, or status. All fields are optional, but at least one must change.\n\n- `full_name`, `phone`, `email`, `age`, `gender` — profile fields.\n- `role` — `passenger` or `driver`. Only editable before verification; after verification the role is locked (`403 ROLE_CHANGE_NOT_ALLOWED_AFTER_VERIFICATION`). Changing the role resets `verification_status` to `unverified`.\n- `status` — `active`, `warned`, `suspended`, or `banned`.\n- `reason` — optional, max 500 chars, recorded in the audit log.\n\nPhone/email must be unique (`409 PHONE_ALREADY_IN_USE` / `EMAIL_ALREADY_IN_USE`)."
                                     },
                                     "status": "Unprocessable Entity",
                                     "code": 422,
@@ -19053,7 +19053,7 @@
                                         "{{user_id}}"
                                     ]
                                 },
-                                "description": "Admin-only hard delete for the configured developer accounts (`+962700000001` driver, `+962700000002` passenger). Removes the user plus trips, bookings, messages, ratings, vehicles, subscriptions, notifications, complaints, support tickets, audit rows, and uploaded documents in one transaction. Other accounts return `403 NOT_A_DEVELOPER_ACCOUNT`.\n\nRequires role `admin`.\n\n**V2:** `DELETE {{nest_url}}/admin/users/{{user_id}}`\n\nNo body."
+                                "description": "Admin-only user deletion.\n\n- Developer accounts (`+962700000001` driver, `+962700000002` passenger) are **permanently purged** with trips, bookings, messages, ratings, vehicles, subscriptions, notifications, complaints, support tickets, audit rows, and uploaded documents.\n- Other passenger/driver accounts are **soft-deleted**: status becomes `banned`, refresh tokens are revoked, the account is hidden from user lists, and an approved deletion request is recorded; history is retained.\n- Verified accounts cannot be deleted (`403 VERIFIED_ACCOUNTS_CANNOT_BE_DELETED`); suspend or ban them instead.\n\nOptional body: `{ \"reason\": \"...\" }` (max 500 chars, recorded in audit).\n\nRequires role `admin`.\n\n**V2:** currently supports the developer-account purge only; profile/role/soft-delete parity is pending."
                             },
                             "response": [
                                 {
@@ -19072,7 +19072,7 @@
                                                 "{{user_id}}"
                                             ]
                                         },
-                                        "description": "Admin-only hard delete for the configured developer accounts (`+962700000001` driver, `+962700000002` passenger). Removes the user plus trips, bookings, messages, ratings, vehicles, subscriptions, notifications, complaints, support tickets, audit rows, and uploaded documents in one transaction. Other accounts return `403 NOT_A_DEVELOPER_ACCOUNT`.\n\nRequires role `admin`.\n\n**V2:** `DELETE {{nest_url}}/admin/users/{{user_id}}`\n\nNo body."
+                                        "description": "Admin-only user deletion.\n\n- Developer accounts (`+962700000001` driver, `+962700000002` passenger) are **permanently purged** with trips, bookings, messages, ratings, vehicles, subscriptions, notifications, complaints, support tickets, audit rows, and uploaded documents.\n- Other passenger/driver accounts are **soft-deleted**: status becomes `banned`, refresh tokens are revoked, the account is hidden from user lists, and an approved deletion request is recorded; history is retained.\n- Verified accounts cannot be deleted (`403 VERIFIED_ACCOUNTS_CANNOT_BE_DELETED`); suspend or ban them instead.\n\nOptional body: `{ \"reason\": \"...\" }` (max 500 chars, recorded in audit).\n\nRequires role `admin`.\n\n**V2:** currently supports the developer-account purge only; profile/role/soft-delete parity is pending."
                                     },
                                     "status": "OK",
                                     "code": 200,
@@ -19103,7 +19103,7 @@
                                                 "{{user_id}}"
                                             ]
                                         },
-                                        "description": "Admin-only hard delete for the configured developer accounts (`+962700000001` driver, `+962700000002` passenger). Removes the user plus trips, bookings, messages, ratings, vehicles, subscriptions, notifications, complaints, support tickets, audit rows, and uploaded documents in one transaction. Other accounts return `403 NOT_A_DEVELOPER_ACCOUNT`.\n\nRequires role `admin`.\n\n**V2:** `DELETE {{nest_url}}/admin/users/{{user_id}}`\n\nNo body."
+                                        "description": "Admin-only user deletion.\n\n- Developer accounts (`+962700000001` driver, `+962700000002` passenger) are **permanently purged** with trips, bookings, messages, ratings, vehicles, subscriptions, notifications, complaints, support tickets, audit rows, and uploaded documents.\n- Other passenger/driver accounts are **soft-deleted**: status becomes `banned`, refresh tokens are revoked, the account is hidden from user lists, and an approved deletion request is recorded; history is retained.\n- Verified accounts cannot be deleted (`403 VERIFIED_ACCOUNTS_CANNOT_BE_DELETED`); suspend or ban them instead.\n\nOptional body: `{ \"reason\": \"...\" }` (max 500 chars, recorded in audit).\n\nRequires role `admin`.\n\n**V2:** currently supports the developer-account purge only; profile/role/soft-delete parity is pending."
                                     },
                                     "status": "Forbidden",
                                     "code": 403,

@@ -5,11 +5,12 @@ import { parsePagination, buildPagination } from '../utils/pagination';
 import { maskPhone } from '../utils/masking';
 import { ApiErrors } from '../utils/ApiError';
 import { TRIP_STATUS } from '../config/constants';
+import { Op } from 'sequelize';
 import * as complaintService from '../Services/complaintService';
 import * as penaltyService from '../Services/penaltyService';
-import * as devAccountService from '../Services/devAccountService';
+import * as adminUserService from '../Services/adminUserService';
 import * as auditService from '../Services/auditService';
-import { User, Notification, Trip } from '../Models';
+import { DeletionRequest, User, Trip } from '../Models';
 
 type AuthRequest = Request & { user?: { id: string; role: string } };
 
@@ -79,9 +80,25 @@ const listUsers = catchAsync(async (req: Request, res: Response): Promise<void> 
   const where: Record<string, unknown> = {};
   if (role) where['role'] = role;
   if (status) where['status'] = status;
+
+  // Soft-deleted accounts stay in the database for history/audit but are no
+  // longer part of the active user directory.
+  const deletionRows = await (DeletionRequest as unknown as {
+    findAll: (opts: unknown) => Promise<Array<{ userId: string }>>;
+  }).findAll({
+    where: { status: { [Op.in]: ['pending', 'approved'] } },
+    attributes: ['userId'],
+    raw: true,
+  });
+  const deletionIds = deletionRows.map((row) => row.userId).filter(Boolean);
+  if (deletionIds.length) where['id'] = { [Op.notIn]: deletionIds };
+
   const { rows, count } = await (User as unknown as { findAndCountAll: (opts: unknown) => Promise<{ rows: Array<Record<string, unknown>>; count: number }> }).findAndCountAll({
     where,
-    attributes: ['id', 'fullName', 'phone', 'role', 'status', 'avgRating', 'createdat'],
+    attributes: [
+      'id', 'fullName', 'phone', 'email', 'age', 'gender', 'role', 'status',
+      'verificationStatus', 'isVerified', 'avgRating', 'lastLoginAt', 'createdat',
+    ],
     order: [['createdat', 'DESC']],
     offset,
     limit,
@@ -91,60 +108,46 @@ const listUsers = catchAsync(async (req: Request, res: Response): Promise<void> 
       id: u['id'],
       full_name: u['fullName'],
       phone: maskPhone(u['phone'] as string),
+      email: u['email'] ?? null,
+      age: u['age'] == null ? null : Number(u['age']),
+      gender: u['gender'] ?? null,
       role: u['role'],
       status: u['status'],
+      verification_status: u['verificationStatus'] ?? null,
+      is_verified: u['isVerified'] === true,
       avg_rating: Number((u['avgRating'] as number) || 0),
-      created_at: u['createdat'],
+      last_login_at: u['lastLoginAt'] ?? null,
+      created_at: u['createdAt'] ?? u['createdat'],
     })),
     pagination: buildPagination(count, page, limit),
   });
 });
 
+const getUser = catchAsync(async (req: Request, res: Response): Promise<void> => {
+  const { user_id } = req.params as { user_id: string };
+  const result = await (adminUserService as unknown as {
+    getUser: (id: string) => Promise<unknown>;
+  }).getUser(user_id);
+  (auditService as unknown as { markResource: (res: Response, r: unknown) => void }).markResource(res, { type: 'user', id: user_id });
+  successResponse(res, result);
+});
+
 const updateUserStatus = catchAsync(async (req: Request, res: Response): Promise<void> => {
   const authReq = req as AuthRequest;
   const { user_id } = req.params as { user_id: string };
-  const { status, reason } = req.body as { status: string; reason?: string };
-  const user = await (User as unknown as { findByPk: (id: string) => Promise<Record<string, unknown> | null> }).findByPk(user_id);
-  if (!user) {
-    throw ApiErrors.notFound('USER_NOT_FOUND');
-  }
-  await (user as unknown as { update: (data: unknown) => Promise<void> }).update({ status });
-  (auditService as unknown as { track: (p: unknown) => void }).track({
-    action: `user.status.${status}`,
-    resourceType: 'user',
-    resourceId: user['id'],
-    actorId: authReq.user?.id,
-    payload: { reason: reason || null },
-  });
-  (auditService as unknown as { markResource: (res: Response, r: unknown) => void }).markResource(res, { type: 'user', id: user['id'] });
-  if (reason) {
-    await (Notification as unknown as { create: (data: unknown) => Promise<unknown> }).create({
-      userId: user['id'],
-      type: 'VERIFICATION_REJECTED',
-      title: 'Account status updated',
-      body: `Your account status was changed to ${status}. Reason: ${reason}`,
-      data: { status },
-      sentVia: ['in_app'],
-    });
-  }
-  successResponse(res, {
-    user: { id: user['id'], status: (user as Record<string, unknown>)['status'], updated_by: authReq.user?.id },
-  });
+  const result = await (adminUserService as unknown as {
+    updateUser: (actorId: string, id: string, payload: unknown) => Promise<unknown>;
+  }).updateUser(String(authReq.user?.id), user_id, req.body);
+  (auditService as unknown as { markResource: (res: Response, r: unknown) => void }).markResource(res, { type: 'user', id: user_id });
+  successResponse(res, result);
 });
 
 const permanentlyDeleteUser = catchAsync(async (req: Request, res: Response): Promise<void> => {
   const authReq = req as AuthRequest;
   const { user_id } = req.params as { user_id: string };
-  const result = await (devAccountService as unknown as {
-    permanentlyDeleteDevUser: (id: string, actorId?: string) => Promise<unknown>;
-  }).permanentlyDeleteDevUser(user_id, String(authReq.user?.id));
-  (auditService as unknown as { track: (p: unknown) => void }).track({
-    action: 'user.permanent_delete',
-    resourceType: 'user',
-    resourceId: user_id,
-    actorId: authReq.user?.id,
-    payload: { mode: 'developer_history_purge' },
-  });
+  const result = await (adminUserService as unknown as {
+    deleteUser: (actorId: string, id: string, payload: unknown) => Promise<unknown>;
+  }).deleteUser(String(authReq.user?.id), user_id, req.body);
   (auditService as unknown as { markResource: (res: Response, r: unknown) => void }).markResource(res, { type: 'user', id: user_id });
   successResponse(res, result);
 });
@@ -203,5 +206,5 @@ const issuePenalty = catchAsync(async (req: Request, res: Response): Promise<voi
   successResponse(res, result);
 });
 
-export { listComplaints, getComplaintStats, getComplaintDetail, penalizeComplaint, reopenComplaint, resolveComplaint, listUsers, updateUserStatus, permanentlyDeleteUser, moderateTrip, issuePenalty };
-export default { listComplaints, getComplaintStats, getComplaintDetail, penalizeComplaint, reopenComplaint, resolveComplaint, listUsers, updateUserStatus, permanentlyDeleteUser, moderateTrip, issuePenalty };
+export { listComplaints, getComplaintStats, getComplaintDetail, penalizeComplaint, reopenComplaint, resolveComplaint, listUsers, getUser, updateUserStatus, permanentlyDeleteUser, moderateTrip, issuePenalty };
+export default { listComplaints, getComplaintStats, getComplaintDetail, penalizeComplaint, reopenComplaint, resolveComplaint, listUsers, getUser, updateUserStatus, permanentlyDeleteUser, moderateTrip, issuePenalty };

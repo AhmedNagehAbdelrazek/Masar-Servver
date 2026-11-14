@@ -8,6 +8,7 @@ import {
   Rating,
   Penalty,
   Trip,
+  DeletionRequest,
 } from '../Models';
 import { parsePagination, buildPagination } from '../utils/pagination';
 import { ApiErrors } from '../utils/ApiError';
@@ -16,10 +17,26 @@ import * as penaltyService from './penaltyService';
 import notificationService from './notificationService';
 
 const PASSENGER_ROLE = 'passenger';
+const DELETION_STATUSES = ['pending', 'approved'];
 
 const ACTIVE_BUCKET = { role: PASSENGER_ROLE, status: { [Op.in]: ['active', 'warned'] } };
 const SUSPENDED_BUCKET = { role: PASSENGER_ROLE, status: 'suspended' };
 const BANNED_BUCKET = { role: PASSENGER_ROLE, status: 'banned' };
+
+// Accounts that requested/were soft-deleted are kept for history but hidden
+// from the active passenger directory (mirrors the driver dashboard).
+async function deletionUserIds() {
+  const rows = await DeletionRequest.findAll({
+    where: { status: { [Op.in]: DELETION_STATUSES } },
+    attributes: ['userId'],
+    raw: true,
+  });
+  return rows.map((row) => row.userId).filter(Boolean);
+}
+
+function notDeleted(ids) {
+  return ids.length ? { id: { [Op.notIn]: ids } } : {};
+}
 
 function dateGte(filter) {
   if (!filter || filter === 'any') return null;
@@ -41,7 +58,7 @@ function dateGte(filter) {
   }
 }
 
-function baseWhere(query) {
+function baseWhere(query, deletionIds = []) {
   let where;
   switch (query.accountStatus) {
     case 'active': where = { ...ACTIVE_BUCKET }; break;
@@ -51,6 +68,7 @@ function baseWhere(query) {
     // awkward, so the list method applies it after fetching (documented).
     default: where = { role: PASSENGER_ROLE };
   }
+  Object.assign(where, notDeleted(deletionIds));
   if (query.search) {
     const term = `%${query.search}%`;
     where[Op.and] = [
@@ -68,18 +86,34 @@ async function getPassengerOrThrow(passengerId) {
   if (!user || user.role !== PASSENGER_ROLE) {
     throw ApiErrors.notFound('PASSENGER_NOT_FOUND');
   }
+  const deleted = await DeletionRequest.findOne({
+    where: { userId: passengerId, status: { [Op.in]: DELETION_STATUSES } },
+    attributes: ['id'],
+  });
+  if (deleted) throw ApiErrors.notFound('PASSENGER_NOT_FOUND');
   return user;
 }
 
 async function getStats() {
+  const deletionIds = await deletionUserIds();
   const violationRows = await Penalty.findAll({ attributes: ['user_id'], group: ['user_id'], raw: true });
   const violationIds = violationRows.map((r) => r.user_id).filter(Boolean);
   const [total, active, suspendedTemporary, suspendedPermanent, withViolations] = await Promise.all([
-    User.count({ where: { role: PASSENGER_ROLE } }),
-    User.count({ where: ACTIVE_BUCKET }),
-    User.count({ where: SUSPENDED_BUCKET }),
-    User.count({ where: BANNED_BUCKET }),
-    violationIds.length ? User.count({ where: { role: PASSENGER_ROLE, id: { [Op.in]: violationIds } } }) : 0,
+    User.count({ where: { role: PASSENGER_ROLE, ...notDeleted(deletionIds) } }),
+    User.count({ where: { ...ACTIVE_BUCKET, ...notDeleted(deletionIds) } }),
+    User.count({ where: { ...SUSPENDED_BUCKET, ...notDeleted(deletionIds) } }),
+    User.count({ where: { ...BANNED_BUCKET, ...notDeleted(deletionIds) } }),
+    violationIds.length
+      ? User.count({
+        where: {
+          role: PASSENGER_ROLE,
+          id: {
+            [Op.in]: violationIds,
+            ...(deletionIds.length ? { [Op.notIn]: deletionIds } : {}),
+          },
+        },
+      })
+      : 0,
   ]);
   return {
     total_passengers: total,
@@ -92,16 +126,26 @@ async function getStats() {
 
 async function listPassengers(query = {}) {
   const { page, limit, offset } = parsePagination(query);
-  let where = baseWhere(query);
+  const deletionIds = await deletionUserIds();
+  let where = baseWhere(query, deletionIds);
   if (query.accountStatus === 'with_violations') {
     const violationRows = await Penalty.findAll({ attributes: ['user_id'], group: ['user_id'], raw: true });
     const ids = violationRows.map((r) => r.user_id).filter(Boolean);
-    where = { ...where, id: { [Op.in]: ids } };
+    where = {
+      ...where,
+      id: {
+        [Op.in]: ids,
+        ...(deletionIds.length ? { [Op.notIn]: deletionIds } : {}),
+      },
+    };
   }
 
   const { rows, count } = await User.findAndCountAll({
     where,
-    attributes: ['id', 'fullName', 'phone', 'status', 'avgRating', 'createdat'],
+    attributes: [
+      'id', 'fullName', 'phone', 'email', 'age', 'gender', 'status',
+      'verificationStatus', 'isVerified', 'avgRating', 'createdat',
+    ],
     order: [['createdat', 'DESC']],
     offset,
     limit,
@@ -128,25 +172,37 @@ async function listPassengers(query = {}) {
       name: u.fullName,
       phone: maskPhone(u.phone),
       phone_full: u.phone,
+      email: u.email ?? null,
+      age: u.age == null ? null : Number(u.age),
+      gender: u.gender ?? null,
       account_status: u.status,
       status: u.status,
+      verification_status: u.verificationStatus ?? null,
+      is_verified: u.isVerified === true,
       avg_rating: Number(u.avgRating) || 0,
       completed_bookings: completedBy.get(u.id) || 0,
       cancelled_bookings: cancelledBy.get(u.id) || 0,
       complaints_against: complaintsBy.get(u.id) || 0,
       total_bookings: bookingsBy.get(u.id) || 0,
-      created_at: u.createdat,
+      created_at: u.createdAt ?? u.createdat,
     })),
     pagination: buildPagination(count, page, limit),
   };
 }
 
 async function exportPassengers(query = {}) {
-  let where = baseWhere(query);
+  const deletionIds = await deletionUserIds();
+  let where = baseWhere(query, deletionIds);
   if (query.accountStatus === 'with_violations') {
     const violationRows = await Penalty.findAll({ attributes: ['user_id'], group: ['user_id'], raw: true });
     const ids = violationRows.map((r) => r.user_id).filter(Boolean);
-    where = { ...where, id: { [Op.in]: ids } };
+    where = {
+      ...where,
+      id: {
+        [Op.in]: ids,
+        ...(deletionIds.length ? { [Op.notIn]: deletionIds } : {}),
+      },
+    };
   }
   const rows = await User.findAll({
     where,
@@ -182,11 +238,14 @@ async function getOverview(passengerId) {
       full_name: user.fullName,
       phone: maskPhone(user.phone),
       phone_full: user.phone,
+      email: user.email ?? null,
       age: user.age != null ? Number(user.age) : null,
       gender: user.gender,
       city: null,
       account_status: user.status,
-      registration_date: user.createdat,
+      verification_status: user.verificationStatus ?? null,
+      is_verified: user.isVerified === true,
+      registration_date: user.createdAt ?? user.createdat,
       last_login: user.lastLoginAt,
     },
     booking_stats: {

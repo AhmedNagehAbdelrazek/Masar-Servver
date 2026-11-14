@@ -221,6 +221,7 @@ export const VALIDATION_MESSAGES = {
   PHONE_CANNOT_BE_CHANGED_DURING_VERIFICATION: { en: "phone cannot be changed during verification", ar: "لا يمكن تغيير رقم الهاتف أثناء التوثيق" },
   PHONE_CANNOT_BE_EMPTY: { en: "Phone cannot be empty", ar: "لا يمكن أن يكون رقم الهاتف فارغاً" },
   PHONE_NUMBER_IS_REQUIRED: { en: "Phone number is required", ar: "رقم الهاتف مطلوب" },
+  PHONE_NUMBER_MUST_BE_A_VALID_INTERNATIONAL_NUMBER: { en: "Phone number must be a valid international number", ar: "يجب أن يكون رقم الهاتف رقماً دولياً صالحاً" },
   PLAN_ID_MUST_BE_A_VALID_UUID: { en: "Plan ID must be a valid UUID", ar: "معرف الخطة يجب أن يكون معرّفاً فورياً صالحاً" },
   PLAN_NAME_IS_REQUIRED: { en: "Plan name is required", ar: "اسم الخطة مطلوب" },
   PLAN_NAME_MUST_BE_AT_MOST_100_CHARACTERS: { en: "Plan name must be at most 100 characters", ar: "يجب ألا يتجاوز اسم الخطة 100 حرف" },

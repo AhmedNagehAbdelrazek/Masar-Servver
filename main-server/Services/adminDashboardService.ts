@@ -106,6 +106,11 @@ function mapTripStatusFilter(status) {
 async function getDriverOrThrow(driverId) {
   const driver = await User.findByPk(driverId);
   if (!driver || driver.role !== 'driver') throw ApiErrors.notFound('DRIVER_NOT_FOUND');
+  const deleted = await DeletionRequest.findOne({
+    where: { userId: driverId, status: 'approved' },
+    attributes: ['id'],
+  });
+  if (deleted) throw ApiErrors.notFound('DRIVER_NOT_FOUND');
   return driver;
 }
 
@@ -322,7 +327,7 @@ async function getSummary() {
     }),
     Booking.count({ where: { createdat: { [Op.gte]: startOfUtcDay() } } }),
     Trip.count({ where: { departureTime: { [Op.gte]: startOfUtcDay(), [Op.lt]: startOfUtcDay(1) } } }),
-    User.count({ where: { role: 'passenger' } }),
+    User.count({ where: { role: 'passenger', ...excludeDeletion } }),
     DriverSubscription.count({ where: { status: 'pending_approval' } }),
     RideRequest.count({ where: { status: 'open' } }),
     Trip.count({ where: { status: TRIP_STATUS.COMPLETED } }),
@@ -343,7 +348,7 @@ async function getSummary() {
     totalTripsBefore, completedTripsBefore,
   ] = await Promise.all([
     User.count({ where: { role: 'driver', createdat: { [Op.lte]: cutoff }, ...excludeDeletion } }),
-    User.count({ where: { role: 'passenger', createdat: { [Op.lte]: cutoff } } }),
+    User.count({ where: { role: 'passenger', createdat: { [Op.lte]: cutoff }, ...excludeDeletion } }),
     Trip.count({ where: { departureTime: { [Op.gte]: yesterdayStart, [Op.lt]: todayStart } } }),
     Booking.count({ where: { createdat: { [Op.gte]: yesterdayStart, [Op.lt]: todayStart } } }),
     Trip.count({ where: { createdat: { [Op.lte]: cutoff } } }),
@@ -438,8 +443,9 @@ async function getTopRoutes() {
 
 async function getPendingRequests(query) {
   const { page, limit, offset } = parsePagination(query);
+  const deletionIds = await pendingDeletionDriverIds();
   const { rows, count } = await User.findAndCountAll({
-    where: PENDING_BUCKET,
+    where: { ...PENDING_BUCKET, ...notPendingDeletion(deletionIds) },
     attributes: ['id', 'fullName', 'phone', 'verificationSubmittedAt', 'createdat'],
     order: [['createdat', 'ASC']],
     offset,
@@ -885,10 +891,14 @@ async function getDriverHeader(driverId) {
     name: driver.fullName,
     phone: maskPhone(driver.phone),
     phone_full: driver.phone,
+    email: driver.email ?? null,
     age: driver.age != null ? Number(driver.age) : null,
+    gender: driver.gender ?? null,
     city: null,
     avatar_url: toAbsoluteMediaUrl(driver.avatarUrl),
     account_status: deriveAccountStatus(driver),
+    verification_status: driver.verificationStatus ?? null,
+    is_verified: driver.isVerified === true,
     signup_completed: missing.length === 0,
     signup_missing: missing,
     trip_stats: { total_trips: totalTrips, completed_trips: completedTrips, canceled_trips: canceledTrips },
@@ -913,7 +923,12 @@ async function getDriverOverview(driverId) {
       name: driver.fullName,
       phone: maskPhone(driver.phone),
       phone_full: driver.phone,
-      registration_date: driver.createdat,
+      email: driver.email ?? null,
+      age: driver.age != null ? Number(driver.age) : null,
+      gender: driver.gender ?? null,
+      verification_status: driver.verificationStatus ?? null,
+      is_verified: driver.isVerified === true,
+      registration_date: driver.createdAt ?? driver.createdat,
       last_login: driver.lastLoginAt,
       city: null,
     },
