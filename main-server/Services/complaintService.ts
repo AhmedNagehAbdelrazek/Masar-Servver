@@ -606,7 +606,8 @@ async function reopen(adminId, complaintId, reason) {
 async function close(adminId, complaintId, data = {}) {
   const complaint = await Complaint.findByPk(complaintId);
   if (!complaint) throw ApiErrors.notFound('COMPLAINT_NOT_FOUND');
-  if ([COMPLAINT_STATUS.RESOLVED, COMPLAINT_STATUS.DISMISSED].includes(complaint.status)) {
+  // `resolved` is still closable: older penalties used to set it automatically.
+  if (complaint.status === COMPLAINT_STATUS.DISMISSED) {
     throw ApiErrors.conflict('COMPLAINT_ALREADY_CLOSED');
   }
 
