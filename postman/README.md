@@ -21,6 +21,22 @@ Default URLs:
 - `Passenger / Booking / Start Ride (Passenger Confirms Boarding)`
 - `Passenger / Booking / End Ride (Passenger Confirms Leaving)`
 
+### Driver ride confirmation (new)
+
+The same ride confirmations are now available to the trip's driver, so the
+driver can confirm for a passenger who forgot to tap:
+
+- `Driver / Trip Management / Confirm Passenger Boarded (Driver)` — `POST /bookings/{booking_id}/ride/start`
+- `Driver / Trip Management / Confirm Passenger Finished Ride (Driver)` — `POST /bookings/{booking_id}/ride/end`
+
+### Ratings timing (changed)
+
+- `POST /ratings` (both `Driver / Ratings & Reviews / Rate Passenger` and
+  `Passenger / Ratings & Reviews / Rate Driver`) now works **anytime after the
+  trip starts** — the passenger no longer needs to tap End Ride first and the
+  driver no longer needs to complete the trip first. Still idempotent: one
+  rating per (booking, rater).
+
 ### Driver post-trip confirmation
 
 - `Driver / Trip Management / Confirm Passengers (Post-trip)`

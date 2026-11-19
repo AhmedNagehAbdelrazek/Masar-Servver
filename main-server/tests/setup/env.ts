@@ -1,4 +1,7 @@
 process.env.NODE_ENV = 'test';
+// Tests target the legacy '/api' mount; production compose sets API_BASE_PATH=/api/v1
+// without touching the app default.
+process.env.API_BASE_PATH = process.env.API_BASE_PATH || '/api';
 // Never call the real SMS gateway from tests.
 process.env.SMS_PROVIDER = 'log';
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-secret-key-for-jwt';

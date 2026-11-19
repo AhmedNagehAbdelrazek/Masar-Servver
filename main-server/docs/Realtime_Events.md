@@ -50,6 +50,36 @@ Broadcast to room `trip:{tripId}` while a driver is en route.
 }
 ```
 
+### `tracking:ride_status`
+Broadcast to room `trip:{tripId}` when a booking's ride state changes: a
+passenger confirms boarding/leaving, **or the trip's driver confirms it on
+their behalf**, or the driver sends the post-trip attendance confirmation.
+
+```json
+{
+  "trip_id": "<trip uuid>",
+  "booking_id": "<booking uuid>",
+  "state": "started",            // started | ended | driver_confirmed
+  "booking_status": "confirmed",
+  "confirmed_by": "passenger",   // passenger | driver
+  "ride_status": "in_progress",  // not_started | in_progress | awaiting_end | completed | no_show | cancelled
+  "passenger_started_at": "2026-11-10T12:00:00.000Z",
+  "passenger_ended_at": null,
+  "driver_confirmed_at": null,
+  "driver_confirmed_on_trip": null,
+  "passenger_can_rate": true,
+  "driver_can_rate": true
+}
+```
+
+- `state: "started"` — boarding confirmed (passenger app **Start Ride**, or the
+  driver's **Confirm Passenger Boarded**).
+- `state: "ended"` — the passenger finished the ride (passenger app **End
+  Ride**, or the driver's **Confirm Passenger Finished Ride**). The booking is
+  `completed` and paid.
+- `state: "driver_confirmed"` — driver post-trip attendance confirmation
+  (`was_on_trip` true/false); `true` also sets `passenger_ended_at`.
+
 ## Client -> Server events
 
 ### `trip:join`

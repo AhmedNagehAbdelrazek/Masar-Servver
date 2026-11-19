@@ -30,7 +30,33 @@ export function hasTripDeparted(trip: TripScheduleState, now: Date = new Date())
   return Number.isFinite(departure) && departure <= now.getTime();
 }
 
-const tripSchedule = { hasTripDeparted };
+/**
+ * A trip has "started" once the driver began it. Rating (and ride
+ * confirmations) unlock for the whole journey from this point on — including
+ * `abandoned` trips, where passengers may still have ridden part of the way.
+ * `cancelled` trips never started, and `published`/`full` have not departed.
+ */
+export const TRIP_STARTED_STATUSES = ['in_progress', 'ongoing', 'completed', 'abandoned'];
+
+export function hasTripStarted(tripStatus: string | null | undefined): boolean {
+  return tripStatus != null && TRIP_STARTED_STATUSES.includes(tripStatus);
+}
+
+/**
+ * A booking can be rated once its trip started and the booking still
+ * represents a seat on the ride (pending/cancelled bookings never rode).
+ */
+export function canRateBooking(
+  booking: { status?: string | null },
+  tripStatus: string | null | undefined,
+): boolean {
+  const inactive = booking.status == null
+    || booking.status === 'pending'
+    || booking.status === 'cancelled';
+  return hasTripStarted(tripStatus) && !inactive;
+}
+
+const tripSchedule = { hasTripDeparted, hasTripStarted, canRateBooking };
 export default tripSchedule;
 
 // CommonJS interop (matches the other utils consumed by both tsx and dist).

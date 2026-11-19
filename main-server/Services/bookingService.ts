@@ -3,7 +3,7 @@ import { Op } from 'sequelize';
 import { Booking, Trip, User, TripSeat, TripStop, TripAttribute, Rating, Vehicle, DriverProfile, sequelize } from '../Models';
 import { ApiErrors } from '../utils/ApiError';
 import { parsePagination, buildPagination } from '../utils/pagination';
-import { hasTripDeparted } from '../utils/tripSchedule';
+import { hasTripDeparted, canRateBooking } from '../utils/tripSchedule';
 import { maskPhone } from '../utils/masking';
 import { REDIS_KEYS } from '../utils/redisKeys';
 import { deleteKey } from '../config/redis';
@@ -61,14 +61,16 @@ function deriveRideStatus(booking, tripStatus) {
 
 function rideFields(booking, tripStatus = null) {
   const status = tripStatus || (booking.trip && booking.trip.status) || null;
+  const rateable = canRateBooking(booking, status);
   return {
     ride_status: deriveRideStatus(booking, status),
     passenger_started_at: booking.passengerStartedAt || null,
     passenger_ended_at: booking.passengerEndedAt || null,
     driver_confirmed_at: booking.driverConfirmedAt || null,
     driver_confirmed_on_trip: booking.driverConfirmedOnTrip ?? null,
-    passenger_can_rate: Boolean(booking.passengerEndedAt),
-    driver_can_rate: status === TRIP_STATUS.COMPLETED && booking.status === BOOKING_STATUS.COMPLETED,
+    // Rating unlocks for both sides once the trip starts (matches ratingService).
+    passenger_can_rate: rateable,
+    driver_can_rate: rateable,
   };
 }
 
@@ -1016,18 +1018,21 @@ async function cancelBooking(passengerId, bookingId) {
 }
 
 /**
- * Passenger confirms they boarded the vehicle. This is the passenger-side
- * counterpart to the driver's pickup status: it sets the source-of-truth
- * timestamp used by completion, rating and the driver's post-trip review.
+ * Ride-start confirmation. The booking's passenger confirms they boarded;
+ * the trip's driver may also confirm it for them (e.g. the passenger forgot
+ * to tap, or has no connection — the driver's pickup flow stays unblocked).
  */
-async function startRide(passengerId, bookingId) {
+async function startRide(actorId, bookingId) {
   const booking = await Booking.findByPk(bookingId, {
     include: [{ model: Trip, as: 'trip', attributes: ['id', 'driverId', 'status', 'originCity', 'destinationCity'] }],
   });
   if (!booking) throw ApiErrors.notFound('BOOKING_NOT_FOUND');
-  if (booking.passengerId !== passengerId) {
+  const isPassenger = booking.passengerId === actorId;
+  const isDriver = Boolean(booking.trip) && booking.trip.driverId === actorId;
+  if (!isPassenger && !isDriver) {
     throw ApiErrors.forbidden('YOU_CAN_ONLY_CONFIRM_YOUR_OWN_RIDE');
   }
+  const actorRole = isPassenger ? 'passenger' : 'driver';
   if (booking.status === BOOKING_STATUS.CANCELLED || booking.status === BOOKING_STATUS.NO_SHOW) {
     throw ApiErrors.custom('RIDE_IS_NOT_ACTIVE', 409, 'RIDE_IS_NOT_ACTIVE');
   }
@@ -1040,7 +1045,7 @@ async function startRide(passengerId, bookingId) {
   }
 
   if (booking.passengerStartedAt) {
-    return serializeRideConfirmation(booking);
+    return serializeRideConfirmation(booking, actorRole);
   }
 
   const now = new Date();
@@ -1051,49 +1056,55 @@ async function startRide(passengerId, bookingId) {
   }
   await booking.update(patch);
 
-  const passenger = await User.findByPk(passengerId, { attributes: ['id', 'fullName', 'phone'] });
+  const passenger = await User.findByPk(booking.passengerId, { attributes: ['id', 'fullName', 'phone'] });
   await tripEventService.record({
     tripId: booking.tripId,
     bookingId: booking.id,
-    passengerId,
+    passengerId: booking.passengerId,
     eventType: 'booking.passenger_boarded',
     toStatus: PICKUP_STATUS.PICKED_UP,
-    actorId: passengerId,
-    actorRole: 'passenger',
+    actorId,
+    actorRole,
     details: {
       booking_no: booking.referenceCode,
       passenger_name: passenger ? passenger.fullName : null,
       passenger_phone: passenger ? passenger.phone : null,
       seat_numbers: booking.seatNumbers || (booking.seatNumber != null ? [booking.seatNumber] : []),
-      source: 'passenger_confirmation',
+      source: actorRole === 'passenger' ? 'passenger_confirmation' : 'driver_confirmation',
     },
     occurredAt: now,
   });
 
-  emitRideStatus(booking, 'started');
+  emitRideStatus(booking, 'started', actorRole);
   auditService.track({
     action: 'booking.ride_started',
     resourceType: 'booking',
     resourceId: booking.id,
-    actorId: passengerId,
-    actorType: 'passenger',
+    actorId,
+    actorType: actorRole,
     payload: { trip_id: booking.tripId },
   });
-  return serializeRideConfirmation(booking);
+  return serializeRideConfirmation(booking, actorRole);
 }
 
 /**
- * Passenger confirms they left the vehicle. This completes the booking from
- * the passenger's side and unlocks passenger ratings.
+ * Ride-end confirmation ("passenger finished the ride"). The booking's
+ * passenger confirms they left the vehicle — and the trip's driver can send
+ * the same confirmation for them: it completes the booking from the
+ * passenger's side, unlocks passenger ratings and closes the post-trip
+ * "awaiting end" state even when the passenger never tapped the button.
  */
-async function endRide(passengerId, bookingId) {
+async function endRide(actorId, bookingId) {
   const booking = await Booking.findByPk(bookingId, {
     include: [{ model: Trip, as: 'trip', attributes: ['id', 'driverId', 'status', 'originCity', 'destinationCity'] }],
   });
   if (!booking) throw ApiErrors.notFound('BOOKING_NOT_FOUND');
-  if (booking.passengerId !== passengerId) {
+  const isPassenger = booking.passengerId === actorId;
+  const isDriver = Boolean(booking.trip) && booking.trip.driverId === actorId;
+  if (!isPassenger && !isDriver) {
     throw ApiErrors.forbidden('YOU_CAN_ONLY_CONFIRM_YOUR_OWN_RIDE');
   }
+  const actorRole = isPassenger ? 'passenger' : 'driver';
   const tripStatus = booking.trip ? booking.trip.status : null;
   if ([TRIP_STATUS.CANCELLED, TRIP_STATUS.ABANDONED].includes(tripStatus)) {
     throw ApiErrors.custom('TRIP_IS_NO_LONGER_ACTIVE', 409, 'TRIP_IS_NO_LONGER_ACTIVE');
@@ -1101,15 +1112,24 @@ async function endRide(passengerId, bookingId) {
   if (booking.status === BOOKING_STATUS.CANCELLED) {
     throw ApiErrors.custom('RIDE_IS_NOT_ACTIVE', 409, 'RIDE_IS_NOT_ACTIVE');
   }
+  // The driver already declared this passenger absent; restoring them to
+  // completed is the post-trip confirm-passengers flow (was_on_trip: true).
+  if (actorRole === 'driver' && booking.status === BOOKING_STATUS.NO_SHOW) {
+    throw ApiErrors.custom('PASSENGER_IS_MARKED_AS_NO_SHOW', 409, 'PASSENGER_MARKED_NO_SHOW');
+  }
   if (!booking.passengerStartedAt) {
-    throw ApiErrors.custom('PASSENGER_RIDE_NOT_STARTED', 409, 'PASSENGER_RIDE_NOT_STARTED');
+    if (isPassenger) {
+      throw ApiErrors.custom('PASSENGER_RIDE_NOT_STARTED', 409, 'PASSENGER_RIDE_NOT_STARTED');
+    }
+    // Driver-side confirmation implies boarding: finishing the ride proves
+    // the passenger boarded, so record both ends of the journey.
   }
   if (booking.passengerEndedAt) {
-    return serializeRideConfirmation(booking);
+    return serializeRideConfirmation(booking, actorRole);
   }
 
   const now = new Date();
-  await booking.update({
+  const patch = {
     passengerEndedAt: now,
     pickupStatus: PICKUP_STATUS.DROPPED_OFF,
     droppedOffAt: booking.droppedOffAt || now,
@@ -1118,54 +1138,61 @@ async function endRide(passengerId, bookingId) {
     paymentStatus: booking.paymentStatus === PAYMENT_STATUS.PENDING
       ? PAYMENT_STATUS.PAID_CASH
       : booking.paymentStatus,
-  });
+  };
+  if (!booking.passengerStartedAt) {
+    patch.passengerStartedAt = now;
+    patch.pickedUpAt = booking.pickedUpAt || now;
+  }
+  await booking.update(patch);
 
-  const passenger = await User.findByPk(passengerId, { attributes: ['id', 'fullName', 'phone'] });
+  const passenger = await User.findByPk(booking.passengerId, { attributes: ['id', 'fullName', 'phone'] });
   await tripEventService.record({
     tripId: booking.tripId,
     bookingId: booking.id,
-    passengerId,
+    passengerId: booking.passengerId,
     eventType: 'booking.passenger_left',
     toStatus: BOOKING_STATUS.COMPLETED,
-    actorId: passengerId,
-    actorRole: 'passenger',
+    actorId,
+    actorRole,
     details: {
       booking_no: booking.referenceCode,
       passenger_name: passenger ? passenger.fullName : null,
       passenger_phone: passenger ? passenger.phone : null,
       seat_numbers: booking.seatNumbers || (booking.seatNumber != null ? [booking.seatNumber] : []),
-      source: 'passenger_confirmation',
+      source: actorRole === 'passenger' ? 'passenger_confirmation' : 'driver_confirmation',
     },
     occurredAt: now,
   });
 
-  emitRideStatus(booking, 'ended');
+  emitRideStatus(booking, 'ended', actorRole);
   auditService.track({
     action: 'booking.ride_ended',
     resourceType: 'booking',
     resourceId: booking.id,
-    actorId: passengerId,
-    actorType: 'passenger',
+    actorId,
+    actorType: actorRole,
     payload: { trip_id: booking.tripId },
   });
-  return serializeRideConfirmation(booking);
+  return serializeRideConfirmation(booking, actorRole);
 }
 
-function serializeRideConfirmation(booking) {
+function serializeRideConfirmation(booking, confirmedBy = 'passenger') {
   return {
     booking_id: booking.id,
     trip_id: booking.tripId,
     booking_status: booking.status,
+    confirmed_by: confirmedBy,
     ...rideFields(booking),
   };
 }
 
-function emitRideStatus(booking, state) {
+function emitRideStatus(booking, state, confirmedBy = 'passenger') {
   const payload = {
     trip_id: booking.tripId,
     booking_id: booking.id,
     state,
     booking_status: booking.status,
+    confirmed_by: confirmedBy,
     ...rideFields(booking),
   };
   try {

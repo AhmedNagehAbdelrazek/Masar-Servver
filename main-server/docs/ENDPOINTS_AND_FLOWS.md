@@ -511,10 +511,10 @@
 **Watch out:** never cached; sweeps expired trips first. `last_trips` rows include full booking fields (`reference_code`, `payment_status`, seat numbers, pickup/dropoff/cancellation/completion timestamps) plus the same full `trip`, `driver` and `vehicle` blocks as `next_booking`.
 
 ### [rate-1] POST /api/ratings — passenger, driver
-**Use:** rate the other party after the ride (both directions).
+**Use:** rate the other party (both directions). Works **anytime after the trip starts** (`in_progress|ongoing|completed|abandoned`) — the passenger does not need to have tapped "end ride" and the driver does not need to complete the trip first.
 **Request:** body `{booking_id*, stars* (1–5), was_late (bool), late_minutes (≥0), review (≤500), tags (non-empty strings[])}`.
 **Response:** `200 {rating: {...}, already_rated (bool)}`.
-**Watch out:** only booking passenger or trip driver; one rating per rater per booking — repeats return the existing row with `already_rated: true`.
+**Watch out:** only booking passenger or trip driver; one rating per rater per booking — repeats return the existing row with `already_rated: true`. `409 TRIP_NOT_STARTED` before departure, `409 BOOKING_NOT_ACTIVE` for `pending|cancelled` bookings.
 
 ---
 

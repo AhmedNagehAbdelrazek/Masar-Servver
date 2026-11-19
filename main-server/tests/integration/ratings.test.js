@@ -76,19 +76,25 @@ function makeRef() {
   return 'MSR-' + Math.random().toString(36).slice(2, 9).toUpperCase();
 }
 
-async function createBooking() {
+async function createBooking(overrides = {}) {
   const tripRes = await getAgent()
     .post('/api/trips')
     .set('Authorization', `Bearer ${driverToken}`)
     .send(VALID_TRIP_BODY);
   const tripId = tripRes.body.trip_id;
+  const tripPatch = overrides.trip;
+  if (tripPatch === undefined) {
+    await Trip.update({ status: TRIP_STATUS.COMPLETED, completedAt: new Date() }, { where: { id: tripId } });
+  } else if (Object.keys(tripPatch).length > 0) {
+    await Trip.update(tripPatch, { where: { id: tripId } });
+  }
   const booking = await Booking.create({
     tripId, passengerId: PASSENGER_ID, seatNumber: 2, seatsBooked: 1,
     agreedFare: 15.5, status: BOOKING_STATUS.COMPLETED, referenceCode: makeRef(),
     pickupStatus: 'dropped_off', passengerStartedAt: new Date(),
     passengerEndedAt: new Date(), droppedOffAt: new Date(), completedAt: new Date(),
+    ...overrides.booking,
   });
-  await Trip.update({ status: TRIP_STATUS.COMPLETED, completedAt: new Date() }, { where: { id: tripId } });
   return booking;
 }
 
@@ -155,6 +161,68 @@ describe('US3 - Ratings', () => {
       const rating = await Rating.findOne({ where: { bookingId: booking.id } });
       expect(rating.rateeId).toBe(PASSENGER_ID);
       expect(rating.raterId).toBe(DRIVER_ID);
+    });
+
+    it('should let the passenger rate while the trip is in progress (ride not confirmed)', async () => {
+      const booking = await createBooking({
+        trip: { status: TRIP_STATUS.IN_PROGRESS, startedAt: new Date() },
+        booking: { status: BOOKING_STATUS.CONFIRMED, pickupStatus: 'picked_up', passengerStartedAt: new Date() },
+      });
+
+      const res = await getAgent()
+        .post('/api/ratings')
+        .set('Authorization', `Bearer ${passengerToken}`)
+        .send({ booking_id: booking.id, stars: 5 });
+
+      expect(res.status).toBe(200);
+      expect(res.body.rating.stars).toBe(5);
+    });
+
+    it('should let the driver rate while the trip is in progress (booking not completed)', async () => {
+      const booking = await createBooking({
+        trip: { status: TRIP_STATUS.IN_PROGRESS, startedAt: new Date() },
+        booking: { status: BOOKING_STATUS.CONFIRMED, pickupStatus: 'picked_up', passengerStartedAt: new Date() },
+      });
+
+      const res = await getAgent()
+        .post('/api/ratings')
+        .set('Authorization', `Bearer ${driverToken}`)
+        .send({ booking_id: booking.id, stars: 2 });
+
+      expect(res.status).toBe(200);
+      const rating = await Rating.findOne({ where: { bookingId: booking.id } });
+      expect(rating.raterId).toBe(DRIVER_ID);
+      expect(rating.rateeId).toBe(PASSENGER_ID);
+    });
+
+    it('should reject rating before the trip starts', async () => {
+      const booking = await createBooking({
+        trip: {},
+        booking: { status: BOOKING_STATUS.CONFIRMED },
+      });
+
+      const res = await getAgent()
+        .post('/api/ratings')
+        .set('Authorization', `Bearer ${passengerToken}`)
+        .send({ booking_id: booking.id, stars: 5 });
+
+      expect(res.status).toBe(409);
+      expect(res.body.code).toBe('TRIP_NOT_STARTED');
+    });
+
+    it('should reject rating a cancelled booking', async () => {
+      const booking = await createBooking({
+        trip: { status: TRIP_STATUS.IN_PROGRESS, startedAt: new Date() },
+        booking: { status: BOOKING_STATUS.CANCELLED, pickupStatus: 'pending' },
+      });
+
+      const res = await getAgent()
+        .post('/api/ratings')
+        .set('Authorization', `Bearer ${passengerToken}`)
+        .send({ booking_id: booking.id, stars: 5 });
+
+      expect(res.status).toBe(409);
+      expect(res.body.code).toBe('BOOKING_NOT_ACTIVE');
     });
 
     it('should reject negative late_minutes with 422', async () => {

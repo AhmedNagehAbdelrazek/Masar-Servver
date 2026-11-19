@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { Op } from 'sequelize';
 import { ApiErrors } from '../utils/ApiError';
-import { hasTripDeparted } from '../utils/tripSchedule';
+import { hasTripDeparted, canRateBooking } from '../utils/tripSchedule';
 import { TRIP_STATUS, GENDER_PREFERENCE, BOOKING_STATUS, FREE_OFFER_TYPE, PENALTY_TYPES, PENALTY_CATEGORY, PENALTY_SEVERITY, CANCELLATION_ESCALATION, TRIP_DURATION_HOURS, SEAT_TYPE, REQUEST_OFFER_STATUS, PICKUP_STATUS } from '../config/constants';
 import commissionService from './commissionService';
 import notificationService from './notificationService';
@@ -44,14 +44,16 @@ function rideInfoForBooking(booking, tripStatus = null) {
           ? 'awaiting_end'
           : 'in_progress'
         : 'not_started';
+  const rateable = canRateBooking(booking, tripStatus);
   return {
     ride_status: rideStatus,
     passenger_started_at: booking.passengerStartedAt || null,
     passenger_ended_at: booking.passengerEndedAt || null,
     driver_confirmed_at: booking.driverConfirmedAt || null,
     driver_confirmed_on_trip: booking.driverConfirmedOnTrip ?? null,
-    passenger_can_rate: Boolean(booking.passengerEndedAt),
-    driver_can_rate: tripStatus === TRIP_STATUS.COMPLETED && booking.status === BOOKING_STATUS.COMPLETED,
+    // Rating unlocks for both sides once the trip starts (matches ratingService).
+    passenger_can_rate: rateable,
+    driver_can_rate: rateable,
   };
 }
 
@@ -1905,6 +1907,10 @@ const completeTrip = async (driverId, tripId) => {
  * restored to completed when the driver confirms the passenger rode; a
  * completed booking cannot be downgraded to no-show (that needs admin
  * intervention) so payment/commission history stays consistent.
+ *
+ * Confirming a passenger rode also marks their ride as finished
+ * (`passenger_ended_at`), so the driver's confirmation closes the
+ * "awaiting end" state even when the passenger never tapped "end ride".
  */
 const confirmTripPassengers = async (driverId, tripId, confirmations) => {
   const trip = await Trip.findByPk(tripId);
@@ -1944,6 +1950,13 @@ const confirmTripPassengers = async (driverId, tripId, confirmations) => {
           patch.paymentStatus = 'paid_cash';
         }
       }
+      // The driver confirms the passenger finished the ride: close the
+      // "awaiting end" state for bookings the passenger never self-confirmed.
+      if (!booking.passengerEndedAt) {
+        patch.passengerEndedAt = now;
+        patch.droppedOffAt = booking.droppedOffAt || now;
+        patch.pickupStatus = PICKUP_STATUS.DROPPED_OFF;
+      }
     } else {
       const boarded = Boolean(booking.passengerStartedAt)
         || ['picked_up', 'dropped_off'].includes(booking.pickupStatus);
@@ -1971,6 +1984,7 @@ const confirmTripPassengers = async (driverId, tripId, confirmations) => {
         booking_no: booking.referenceCode,
         passenger_name: booking.passenger ? booking.passenger.fullName : null,
         passenger_phone: booking.passenger ? booking.passenger.phone : null,
+        passenger_ended_at: booking.passengerEndedAt || null,
       },
       occurredAt: now,
     });
@@ -1980,6 +1994,7 @@ const confirmTripPassengers = async (driverId, tripId, confirmations) => {
       was_on_trip: wasOnTrip,
       booking_status: booking.status,
       driver_confirmed_at: booking.driverConfirmedAt,
+      passenger_ended_at: booking.passengerEndedAt || null,
     });
     try {
       realtimeService.emitToRoom(`trip:${tripId}`, 'tracking:ride_status', {
@@ -1987,8 +2002,10 @@ const confirmTripPassengers = async (driverId, tripId, confirmations) => {
         booking_id: booking.id,
         state: 'driver_confirmed',
         booking_status: booking.status,
+        confirmed_by: 'driver',
         driver_confirmed_at: booking.driverConfirmedAt,
         driver_confirmed_on_trip: booking.driverConfirmedOnTrip,
+        passenger_ended_at: booking.passengerEndedAt || null,
       });
     } catch (_err) {
       // socket layer offline (e.g. tests) — ignore

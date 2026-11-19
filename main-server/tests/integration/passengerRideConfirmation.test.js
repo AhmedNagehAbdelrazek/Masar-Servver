@@ -117,21 +117,96 @@ describe('Passenger ride confirmation', () => {
     expect(res.status).toBe(403);
   });
 
-  it('unlocks rating after the passenger ends the ride', async () => {
-    const blocked = await getAgent()
+  it('lets the passenger rate as soon as the trip starts (no ride confirmation needed)', async () => {
+    const allowed = await getAgent()
       .post('/api/ratings')
       .set('Authorization', `Bearer ${passengerToken}`)
       .send({ booking_id: BOOKING_ID, stars: 5 });
-    expect(blocked.status).toBe(409);
-    expect(blocked.body.code).toBe('RIDE_NOT_COMPLETED');
+    expect(allowed.status).toBe(200);
 
-    await getAgent()
-      .post(`/api/bookings/${BOOKING_ID}/ride/start`)
-      .set('Authorization', `Bearer ${passengerToken}`);
-    await getAgent()
+    const repeat = await getAgent()
+      .post('/api/ratings')
+      .set('Authorization', `Bearer ${passengerToken}`)
+      .send({ booking_id: BOOKING_ID, stars: 1 });
+    expect(repeat.status).toBe(200);
+    expect(repeat.body.already_rated).toBe(true);
+    expect(repeat.body.rating.stars).toBe(5);
+  });
+
+  it('lets the driver confirm the passenger finished the ride and unlocks rating', async () => {
+    const ended = await getAgent()
       .post(`/api/bookings/${BOOKING_ID}/ride/end`)
-      .set('Authorization', `Bearer ${passengerToken}`);
+      .set('Authorization', `Bearer ${driverToken}`);
+    expect(ended.status).toBe(200);
+    expect(ended.body.ride_status).toBe('completed');
+    expect(ended.body.confirmed_by).toBe('driver');
+    expect(ended.body.passenger_started_at).toBeTruthy();
+    expect(ended.body.passenger_ended_at).toBeTruthy();
 
+    const afterEnd = await Booking.findByPk(BOOKING_ID);
+    expect(afterEnd.status).toBe(BOOKING_STATUS.COMPLETED);
+    expect(afterEnd.passengerEndedAt).toBeTruthy();
+    expect(afterEnd.pickupStatus).toBe('dropped_off');
+    expect(afterEnd.paymentStatus).toBe('paid_cash');
+
+    // The passenger never tapped start or end — rating still works.
+    const allowed = await getAgent()
+      .post('/api/ratings')
+      .set('Authorization', `Bearer ${passengerToken}`)
+      .send({ booking_id: BOOKING_ID, stars: 4 });
+    expect(allowed.status).toBe(200);
+  });
+
+  it('lets the driver confirm the passenger boarded', async () => {
+    const started = await getAgent()
+      .post(`/api/bookings/${BOOKING_ID}/ride/start`)
+      .set('Authorization', `Bearer ${driverToken}`);
+    expect(started.status).toBe(200);
+    expect(started.body.confirmed_by).toBe('driver');
+    expect(started.body.ride_status).toBe('in_progress');
+
+    const afterStart = await Booking.findByPk(BOOKING_ID);
+    expect(afterStart.passengerStartedAt).toBeTruthy();
+    expect(afterStart.pickupStatus).toBe('picked_up');
+  });
+
+  it('rejects a driver confirming the ride end of a no-show passenger', async () => {
+    const res = await getAgent()
+      .post(`/api/bookings/${NO_SHOW_BOOKING_ID}/ride/end`)
+      .set('Authorization', `Bearer ${driverToken}`);
+    expect(res.status).toBe(409);
+    expect(res.body.code).toBe('PASSENGER_MARKED_NO_SHOW');
+  });
+
+  it('rejects a driver of another trip confirming the ride', async () => {
+    await User.create({
+      id: '8b1d6f45-0f5e-4f3f-9a0e-0f1f2f3f4f08', fullName: 'Other Driver',
+      phone: '+962799980004', countryCode: 'JO', role: 'driver', passwordHash: 'hashed', isVerified: true,
+    });
+    const otherDriverToken = generateAccessToken({ id: '8b1d6f45-0f5e-4f3f-9a0e-0f1f2f3f4f08', role: 'driver' });
+
+    const res = await getAgent()
+      .post(`/api/bookings/${BOOKING_ID}/ride/end`)
+      .set('Authorization', `Bearer ${otherDriverToken}`);
+    expect(res.status).toBe(403);
+    await User.destroy({ where: { id: '8b1d6f45-0f5e-4f3f-9a0e-0f1f2f3f4f08' }, force: true });
+  });
+
+  it('marks the ride finished when the driver confirms the passenger post-trip', async () => {
+    await Trip.update({ status: TRIP_STATUS.COMPLETED, completedAt: new Date() }, { where: { id: TRIP_ID } });
+
+    const res = await getAgent()
+      .post(`/api/trips/${TRIP_ID}/confirm-passengers`)
+      .set('Authorization', `Bearer ${driverToken}`)
+      .send({ passengers: [{ booking_id: BOOKING_ID, was_on_trip: true }] });
+    expect(res.status).toBe(200);
+    expect(res.body.passengers[0].passenger_ended_at).toBeTruthy();
+
+    const booking = await Booking.findByPk(BOOKING_ID);
+    expect(booking.passengerEndedAt).toBeTruthy();
+    expect(booking.pickupStatus).toBe('dropped_off');
+
+    // and the passenger can rate now
     const allowed = await getAgent()
       .post('/api/ratings')
       .set('Authorization', `Bearer ${passengerToken}`)

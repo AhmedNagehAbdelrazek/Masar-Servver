@@ -291,7 +291,7 @@ Reference codes: Booking `MSR-XXXXXX`, Ticket `TKT-XXXXXX` (via `utils/reference
 - **Errors:** `ApiErrors.*` → `{status:'error', message, code}` with 400/401/403/404/409/422. Codes are stable (e.g. `REQUEST_ALREADY_PROCESSED`, `TRIP_STARTED` is event not error).
 - **i18n:** `successResponse` localizes via `?lang=/Accept-Language/X-Locale`, `ar` default; validation keys in `config/messages/`.
 - **Pagination:** `?page=&limit=` (1/20/100 defaults/max). Partial admin endpoints each paginated.
-- **Idempotency:** ratings once per `rater+booking` (immutable); favorites `findOrCreate`; complaints resolve idempotent; verification latest-wins; subscription approve first-wins.
+- **Idempotency:** ratings once per `rater+booking` (immutable), allowed **anytime after the trip starts** (trip `in_progress|ongoing|completed|abandoned`, booking not `pending|cancelled`) — no "must have tapped end ride" / "trip must be completed" gate; favorites `findOrCreate`; complaints resolve idempotent; verification latest-wins; subscription approve first-wins.
 - **Privacy:** masking (`utils/masking.ts`), PII gated to participants, suspended read-only / banned blocked.
 - **Performance SLOs:** spec targets p95 <300ms (mutations), dashboard/home <500ms, cached home ~108ms; admin summary ≤2s with ≤8 COUNTs.
 
@@ -314,7 +314,7 @@ Reference codes: Booking `MSR-XXXXXX`, Ticket `TKT-XXXXXX` (via `utils/reference
 - Rooms: `user:<id>` + `role:<role>`; Redis adapter; 2-min recovery; 10k conn target.
 - Modules per connection: `chatSocket, notificationSocket, sosSocket, trackingSocket, presenceSocket, enforcementSocket, adminSocket`.
 - **Chat:** trip P2P only `confirmed→completed`, plus support-ticket chat; typing 4s idle; read receipts; 10 msgs/10s rate limit; history via REST.
-- **Tracking:** live 3–5s + ETA; 1 loc/2s rate limit; persist-before-broadcast; `trip:<id>` rooms for `in_progress` trips only (013 — `ongoing` no longer opens rooms); single + batch (≤60, 5-min age window) ingest; per-passenger filtered ETA + next-pickup guidance; near/arrived proximity once per booking; `route_updated|pickup_status|ended` room events.
+- **Tracking:** live 3–5s + ETA; 1 loc/2s rate limit; persist-before-broadcast; `trip:<id>` rooms for `in_progress` trips only (013 — `ongoing` no longer opens rooms); single + batch (≤60, 5-min age window) ingest; per-passenger filtered ETA + next-pickup guidance; near/arrived proximity once per booking; `route_updated|pickup_status|ride_status|ended` room events; `tracking:ride_status` carries `state` (`started|ended|driver_confirmed`) + `confirmed_by` (`passenger|driver`) + ride fields (`passenger_started_at|passenger_ended_at|driver_confirmed_*`).
 - **SOS:** trip-only; ack/resolve; 60s re-alert; escalate L1 after 5min (`sosEscalationJob`).
 - **Presence:** 60s grace; `presence:{user}` in Redis.
 - **Enforcement:** revoke on suspend/ban; `disconnectUserSockets()` emits `force_disconnect`.
@@ -454,6 +454,10 @@ Started by `startJobs()` after boot (`jobs/index.js`). Worker thread (`worker.js
 **Decisions:** custom pickups auto-accept within platform limits (no driver approval); no bookings after start or scheduled departure, and a trip with `startedAt|completedAt` can never reopen for booking (cancels skip without re-route); Google deep links, no nav SDK; `MAPS_MOCK=true` until billing; route failure never blocks publish/booking; live ETA straight-line + speed (no per-update Routes calls); one-row recurrence + `occurrence_date`; waypoint overflow rejected (legs split for nav links only); `missed` touches `pickup_status` only (driver no-show rate untouched); 30d raw points / 1yr SOS-linked; `sendToUser` matches UPPER + lower type keys (taxonomy fix).
 **Models:** `trips.+route_*|actual_*|started_at|completed_at, bookings.+pickup_*|detour|status, trip_locations.+occurrence_date`; migrations `028–032`; Postman `Maps & Tracking` folder; `docs/Maps_Tracking_Guide.md` + socket guide updates.
 
+### Post-013 hotfix — ratings timing & driver ride confirmation
+
+**What it does:** `POST /ratings` unlocks for both sides **once the trip starts** (`in_progress|ongoing|completed|abandoned`, booking not `pending|cancelled`) — the passenger no longer must tap "end ride" first and the driver no longer must complete the trip first; idempotency unchanged. `POST /bookings/:booking_id/ride/start|end` accept the booking's passenger **or the trip's driver** (`confirmed_by: passenger|driver` in the body/response and `tracking:ride_status`): the driver confirms boarding/finish on behalf of a passenger who forgot to tap. Driver-side `ride/end` implies boarding when `passenger_started_at` is unset (sets it), is rejected for `cancelled` bookings and `no_show` passengers. `POST /trips/:id/confirm-passengers` with `was_on_trip: true` also sets `passenger_ended_at` (closing the post-trip `awaiting_end` state). `passenger_can_rate`/`driver_can_rate` payload flags now reflect the new rule (equal, trip-started based). No schema change (`035` columns reused); keys `TRIP_MUST_START_BEFORE_RATING`, `BOOKING_IS_NOT_ACTIVE`, `PASSENGER_IS_MARKED_AS_NO_SHOW` + ride-confirmation keys added to the message catalog (they previously rendered as raw keys).
+
 ---
 
 ## 17. Route Mount Table
@@ -475,13 +479,13 @@ All under `/api` (`main-server/Routes/index.ts`):
 | `/api/admin` | adminSubscriptionRoutes + adminModerationRoutes + sosRoutes + adminTripRoutes | Subscription approvals, users/trips moderation, penalties, SOS, read-only trip routes/paths |
 | `/api/admin/verification` | adminVerificationRoutes | Verification queue approve/reject |
 | `/api/admin/dashboard` | adminDashboardRoutes | 19 dashboard endpoints |
-| `/api/bookings` | bookingRoutes | Passenger bookings (multi-seat, cancel, driver-profile reveal) + pickup edit, booking route view |
+| `/api/bookings` | bookingRoutes | Passenger bookings (multi-seat, cancel, driver-profile reveal) + pickup edit, booking route view, ride start/end confirmation (passenger **or** trip driver) |
 | `/api/ride-requests` | rideRequestRoutes | Ride-request board + matches |
 | `/api/offers` | offersRoutes | Request offers + attach |
 | `/api/support-tickets` | supportTicketRoutes | Tickets + messages |
 | `/api/favorites` | favoriteRoutes | Favorite drivers/routes |
 | `/api/profile/passenger` | profileRoutes | Passenger profile + home |
-| `/api/ratings` | ratingRoutes | Bidirectional idempotent ratings |
+| `/api/ratings` | ratingRoutes | Bidirectional idempotent ratings (unlocked once the trip starts) |
 | `/api/complaints` | complaintRoutes | Complaints file/list/resolve |
 | `/api/notifications` | notificationRoutes | List / mark-read |
 | `/api/settings/notifications` | notificationSettingRoutes | Per-type preferences |

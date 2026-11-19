@@ -326,6 +326,16 @@ export const APP_MESSAGES = {
   ACTUAL_PATH_AVAILABLE_AFTER_COMPLETION: { en: 'The recorded path is available after the trip completes.', ar: 'المسار المسجل متاح بعد اكتمال الرحلة.' },
   LOCATION_POINT_TOO_OLD: { en: 'Location point is too old and was discarded.', ar: 'نقطة الموقع قديمة جداً وتم تجاهلها.' },
 
+  // ===== Ratings & ride confirmation =====
+  TRIP_MUST_START_BEFORE_RATING: { en: 'Rating unlocks once the trip starts.', ar: 'يتم فتح التقييم بعد بدء الرحلة.' },
+  BOOKING_IS_NOT_ACTIVE: { en: 'This booking is not active.', ar: 'هذا الحجز غير نشط.' },
+  PASSENGER_IS_MARKED_AS_NO_SHOW: { en: 'This passenger is already marked as a no-show.', ar: 'تم وضع علامة عدم الحضور على هذا الراكب بالفعل.' },
+  RIDE_IS_NOT_ACTIVE: { en: 'The ride is not active.', ar: 'الرحلة غير نشطة.' },
+  TRIP_IS_NO_LONGER_ACTIVE: { en: 'The trip is no longer active.', ar: 'لم تعد الرحلة نشطة.' },
+  TRIP_HAS_NOT_STARTED_YET: { en: 'The trip has not started yet.', ar: 'لم تبدأ الرحلة بعد.' },
+  PASSENGER_RIDE_NOT_STARTED: { en: 'The ride has not started yet. Confirm boarding first.', ar: 'لم تبدأ الرحلة بعد. قم بتأكيد الصعود أولاً.' },
+  YOU_CAN_ONLY_CONFIRM_YOUR_OWN_RIDE: { en: 'You can only confirm rides on your own booking or your own trip.', ar: 'يمكنك تأكيد الرحلات لحجرك أو لرحلتك فقط.' },
+
   // ===== Successes =====
 } as const;
 

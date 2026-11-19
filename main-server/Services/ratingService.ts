@@ -3,8 +3,9 @@ import sequelize from '../config/database';
 import { Op } from 'sequelize';
 import { Rating, Booking, Trip, User } from '../Models';
 import { ApiErrors } from '../utils/ApiError';
-import { BOOKING_STATUS, TRIP_STATUS } from '../config/constants';
+import { BOOKING_STATUS } from '../config/constants';
 import { parsePagination, buildPagination } from '../utils/pagination';
+import { hasTripStarted } from '../utils/tripSchedule';
 import auditService from './auditService';
 
 function serializeRating(rating) {
@@ -58,6 +59,10 @@ async function updateDriverAvg(rateeId, transaction = null) {
  * (booking_id, rater_id); a repeat returns the existing rating untouched
  * (immutable after submit). Ratee is inferred from the booking — the
  * passenger rates the trip's driver and vice versa.
+ *
+ * Both sides may rate from the moment the trip starts (in_progress/ongoing,
+ * and later completed/abandoned) — a passenger no longer has to have tapped
+ * "end ride" and the driver no longer has to complete the trip first.
  */
 async function create(raterId, data) {
   const booking = await Booking.findByPk(data.booking_id, {
@@ -66,7 +71,7 @@ async function create(raterId, data) {
   if (!booking) throw ApiErrors.notFound('BOOKING_NOT_FOUND');
 
   const isPassenger = booking.passengerId === raterId;
-  const isDriver = booking.trip.driverId === raterId;
+  const isDriver = booking.trip && booking.trip.driverId === raterId;
   if (!isPassenger && !isDriver) {
     throw ApiErrors.forbidden('ONLY_THE_PASSENGER_OR_THE_DRIVER_OF_A_BOOKING_MAY');
   }
@@ -80,23 +85,12 @@ async function create(raterId, data) {
     return { rating: serializeRating(existing), already_rated: true };
   }
 
-  if (isPassenger) {
-    if (!booking.passengerEndedAt) {
-      throw ApiErrors.custom(
-        'CONFIRM_YOU_LEFT_THE_RIDE_BEFORE_RATING',
-        409,
-        'RIDE_NOT_COMPLETED'
-      );
-    }
-  } else if (
-    booking.trip.status !== TRIP_STATUS.COMPLETED
-    || booking.status !== BOOKING_STATUS.COMPLETED
-  ) {
-    throw ApiErrors.custom(
-      'TRIP_MUST_BE_COMPLETED_BEFORE_RATING_A_PASSENGER',
-      409,
-      'TRIP_NOT_COMPLETED'
-    );
+  const tripStatus = booking.trip ? booking.trip.status : null;
+  if (!hasTripStarted(tripStatus)) {
+    throw ApiErrors.custom('TRIP_MUST_START_BEFORE_RATING', 409, 'TRIP_NOT_STARTED');
+  }
+  if (booking.status === BOOKING_STATUS.PENDING || booking.status === BOOKING_STATUS.CANCELLED) {
+    throw ApiErrors.custom('BOOKING_IS_NOT_ACTIVE', 409, 'BOOKING_NOT_ACTIVE');
   }
 
   const rating = await sequelize.transaction(async (transaction) => {
