@@ -173,6 +173,72 @@ describe('POST /api/admin/dashboard/drivers/:driver_id/status â€” direct wr
     expect(changes[0]).toMatchObject({ fromStatus: 'approved', toStatus: 'pending', changedBy: ADMIN_ID });
   });
 
+  it('suspend via direct status write appends a penalty and notifies the driver', async () => {
+    const res = await getAgent()
+      .post(`/api/admin/dashboard/drivers/${DRIVER_ID}/status`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ status: 'suspended' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.driver.account_status).toBe('suspended');
+
+    const penalties = await Penalty.findAll({ where: { userId: DRIVER_ID } });
+    expect(penalties).toHaveLength(1);
+    expect(penalties[0]).toMatchObject({ type: PENALTY_TYPES.SUSPENSION, issuedBy: ADMIN_ID });
+
+    const notices = await Notification.findAll({
+      where: { userId: DRIVER_ID, type: 'ACCOUNT_SUSPENDED' },
+    });
+    expect(notices).toHaveLength(1);
+  });
+
+  it('block via direct status write appends a ban penalty and notifies the driver', async () => {
+    const res = await getAgent()
+      .post(`/api/admin/dashboard/drivers/${DRIVER_ID}/status`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ status: 'blocked' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.driver.account_status).toBe('blocked');
+
+    const penalties = await Penalty.findAll({ where: { userId: DRIVER_ID } });
+    expect(penalties).toHaveLength(1);
+    expect(penalties[0]).toMatchObject({ type: PENALTY_TYPES.BAN, issuedBy: ADMIN_ID });
+
+    const notices = await Notification.findAll({
+      where: { userId: DRIVER_ID, type: 'ACCOUNT_BANNED' },
+    });
+    expect(notices).toHaveLength(1);
+  });
+
+  it('reactivate via direct status write closes open penalties and notifies the driver', async () => {
+    await User.update({ status: 'suspended' }, { where: { id: DRIVER_ID } });
+    await Penalty.create({
+      userId: DRIVER_ID,
+      type: PENALTY_TYPES.SUSPENSION,
+      reason: 'open suspension',
+      startsAt: new Date(),
+      endsAt: null,
+      issuedBy: ADMIN_ID,
+    });
+
+    const res = await getAgent()
+      .post(`/api/admin/dashboard/drivers/${DRIVER_ID}/status`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ status: 'active' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.driver.account_status).toBe('active');
+
+    const openPenalties = await Penalty.findAll({ where: { userId: DRIVER_ID, endsAt: null } });
+    expect(openPenalties).toHaveLength(0);
+
+    const notices = await Notification.findAll({
+      where: { userId: DRIVER_ID, type: 'ACCOUNT_REACTIVATED' },
+    });
+    expect(notices).toHaveLength(1);
+  });
+
   it('rejects invalid values with 422 and unknown drivers with 404', async () => {
     const bad = await getAgent()
       .post(`/api/admin/dashboard/drivers/${DRIVER_ID}/status`)

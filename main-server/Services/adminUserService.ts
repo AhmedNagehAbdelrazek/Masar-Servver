@@ -279,16 +279,35 @@ async function updateUser(actorId, userId, payload = {}) {
     }
   }
 
-  if (changes.status && payload.reason) {
+  if (changes.status) {
+    // Always tell the account owner that their status changed. Previously
+    // this was sent only when the admin supplied a reason, leaving silent
+    // suspensions/bans with no visible state in the app. Suspensions and
+    // bans use the same localized templates as the penalty flow.
     try {
-      await notificationService.sendToUser(user, 'ADMIN_NOTICE', {
-        channels: ['in_app'],
-        vars: {
-          title: 'تم تحديث حالة الحساب',
-          body: `تم تغيير حالة حسابك إلى ${payload.status}. السبب: ${payload.reason}`,
-        },
-        data: { status: payload.status, reason: payload.reason },
-      });
+      if (changes.status.to === USER_STATUS.SUSPENDED || changes.status.to === USER_STATUS.BANNED) {
+        await notificationService.sendToUser(
+          user,
+          changes.status.to === USER_STATUS.BANNED ? 'ACCOUNT_BANNED' : 'ACCOUNT_SUSPENDED',
+          {
+            channels: ['in_app', 'push', 'sms'],
+            vars: {
+              reason: payload.reason || 'Account status updated by admin',
+              duration: 'غير محدد',
+            },
+            data: { status: changes.status.to, reason: payload.reason || null },
+          }
+        );
+      } else {
+        const body = payload.reason
+          ? `تم تغيير حالة حسابك إلى ${changes.status.to}. السبب: ${payload.reason}`
+          : `تم تغيير حالة حسابك إلى ${changes.status.to}.`;
+        await notificationService.sendToUser(user, 'ADMIN_NOTICE', {
+          channels: ['in_app'],
+          vars: { title: 'تم تحديث حالة الحساب', body },
+          data: { status: changes.status.to, reason: payload.reason || null },
+        });
+      }
     } catch (err) {
       console.warn('[adminUserService] status notification failed:', err.message);
     }

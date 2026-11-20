@@ -20,7 +20,7 @@ beforeAll(async () => {
 });
 
 describe('Contract: action response shapes', () => {
-  it('POST /status returns {driver:{id, account_status}}', async () => {
+  it('POST /status returns the driver account state', async () => {
     const res = await getAgent()
       .post(`/api/admin/dashboard/drivers/${DRIVER_ID}/status`)
       .set('Authorization', `Bearer ${adminToken}`)
@@ -28,7 +28,26 @@ describe('Contract: action response shapes', () => {
     expect(res.status).toBe(200);
     expect(res.body.driver).toEqual({
       id: DRIVER_ID,
-      account_status: expect.stringMatching(/^(active|suspended|pending|blocked)$/),
+      account_status: 'suspended',
+      status: 'suspended',
+      verification_status: 'approved',
+      is_verified: true,
+      is_suspended: true,
+      is_banned: false,
+      suspension_details: {
+        reason: expect.any(String),
+        starts_at: expect.anything(),
+        ends_at: null,
+      },
+      active_penalties: [
+        {
+          id: expect.any(String),
+          type: 'suspension',
+          reason: expect.any(String),
+          created_at: expect.anything(),
+          expires_at: null,
+        },
+      ],
     });
   });
 
@@ -43,7 +62,9 @@ describe('Contract: action response shapes', () => {
       .send({ action: 'suspend' });
 
     expect(res.status).toBe(200);
-    expect(res.body.driver).toHaveProperty('account_status');
+    expect(res.body.driver).toHaveProperty('account_status', 'suspended');
+    expect(res.body.driver).toHaveProperty('is_suspended', true);
+    expect(res.body.driver).toHaveProperty('status', 'suspended');
   });
 
   it('document decisions return {document:{key,status,decided_by,decided_at}}', async () => {

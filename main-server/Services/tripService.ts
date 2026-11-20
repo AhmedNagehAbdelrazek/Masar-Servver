@@ -1,6 +1,7 @@
 // @ts-nocheck
 import { Op } from 'sequelize';
 import { ApiErrors } from '../utils/ApiError';
+import { ensureOperational, loadOperationalUser } from '../utils/userAccess';
 import { hasTripDeparted, canRateBooking } from '../utils/tripSchedule';
 import { TRIP_STATUS, GENDER_PREFERENCE, BOOKING_STATUS, FREE_OFFER_TYPE, PENALTY_TYPES, PENALTY_CATEGORY, PENALTY_SEVERITY, CANCELLATION_ESCALATION, TRIP_DURATION_HOURS, SEAT_TYPE, REQUEST_OFFER_STATUS, PICKUP_STATUS } from '../config/constants';
 import commissionService from './commissionService';
@@ -486,6 +487,10 @@ const createTrip = async (driverId, data) => {
   if (!driver) throw ApiErrors.notFound('USER_NOT_FOUND');
   if (driver.role !== 'driver') throw ApiErrors.forbidden('ONLY_DRIVERS_CAN_CREATE_TRIPS');
   if (!driver.isVerified) throw ApiErrors.forbidden('DRIVER_NOT_VERIFIED');
+  // Moderation gate: a suspended/banned driver cannot publish trips
+  // (client report: a temp-stopped driver could still publish). Read
+  // access stays available via ensureReadable-style endpoints.
+  ensureOperational(driver);
 
   // Fetch driver's vehicle (each driver has exactly one vehicle)
   const vehicle = await Vehicle.findOne({ where: { driverId } });
@@ -1536,6 +1541,8 @@ const getAvailableTrips = async (filters = {}) => {
  * balance check fails.
  */
 const startTrip = async (driverId, tripId) => {
+  // Moderation gate: suspended/banned drivers cannot start trips.
+  await loadOperationalUser(driverId);
   const trip = await Trip.findByPk(tripId);
   if (!trip) throw ApiErrors.notFound('TRIP_NOT_FOUND');
   if (trip.driverId !== driverId) throw ApiErrors.forbidden('YOU_CAN_ONLY_START_YOUR_OWN_TRIPS');
@@ -1637,7 +1644,11 @@ const startTrip = async (driverId, tripId) => {
  * Abandon an in-progress trip. This is the driver's explicit stop action:
  * it is terminal, cancels active bookings and notifies every passenger.
  */
-const abandonTrip = async (driverId, tripId, reason = null) => {
+const abandonTrip = async (driverId, tripId, reason = null, { system = false } = {}) => {
+  // Moderation gate: suspended/banned drivers cannot abandon trips. System
+  // lifecycle sweeps (tripExpiryService) bypass it — a stopped account must
+  // not keep its live trips running forever when the inventory sweep failed.
+  if (!system) await loadOperationalUser(driverId);
   const trip = await Trip.findByPk(tripId);
   if (!trip) throw ApiErrors.notFound('TRIP_NOT_FOUND');
   if (trip.driverId !== driverId) throw ApiErrors.forbidden('YOU_CAN_ONLY_ABANDON_YOUR_OWN_TRIPS');
@@ -1746,6 +1757,8 @@ const abandonTrip = async (driverId, tripId, reason = null) => {
  * deduction pushes the driver into debt their trips are blocked.
  */
 const completeTrip = async (driverId, tripId) => {
+  // Moderation gate: suspended/banned drivers cannot complete trips.
+  await loadOperationalUser(driverId);
   const trip = await Trip.findByPk(tripId);
   if (!trip) throw ApiErrors.notFound('TRIP_NOT_FOUND');
   if (trip.driverId !== driverId) throw ApiErrors.forbidden('YOU_CAN_ONLY_COMPLETE_YOUR_OWN_TRIPS');
@@ -1913,6 +1926,8 @@ const completeTrip = async (driverId, tripId) => {
  * "awaiting end" state even when the passenger never tapped "end ride".
  */
 const confirmTripPassengers = async (driverId, tripId, confirmations) => {
+  // Moderation gate: suspended/banned drivers cannot confirm passengers.
+  await loadOperationalUser(driverId);
   const trip = await Trip.findByPk(tripId);
   if (!trip) throw ApiErrors.notFound('TRIP_NOT_FOUND');
   if (trip.driverId !== driverId) {
@@ -2057,6 +2072,8 @@ module.exports = {
  * recompute is best-effort and booked passengers are notified (O8 pattern).
  */
 async function replaceTripStops(driverId, tripId, stops) {
+  // Moderation gate: suspended/banned drivers cannot edit trip stops.
+  await loadOperationalUser(driverId);
   const trip = await Trip.findByPk(tripId);
   if (!trip) throw ApiErrors.notFound('TRIP_NOT_FOUND');
   if (trip.driverId !== driverId) throw ApiErrors.forbidden('YOU_CAN_ONLY_EDIT_YOUR_OWN_TRIPS');
@@ -2374,6 +2391,8 @@ async function getTripPassengers(driverId, tripId, filters = {}) {
  * change notifies all confirmed passengers (best-effort, never throws).
  */
 async function updateTrip(driverId, tripId, data) {
+  // Moderation gate: suspended/banned drivers cannot edit trips.
+  await loadOperationalUser(driverId);
   const trip = await Trip.findByPk(tripId, {
     include: [{ model: TripAttribute, as: 'attributes' }],
   });
@@ -2495,6 +2514,8 @@ async function updateTrip(driverId, tripId, data) {
  * trip's seats, and notifies confirmed passengers (best-effort).
  */
 async function cancelTrip(driverId, tripId) {
+  // Moderation gate: suspended/banned drivers cannot cancel trips.
+  await loadOperationalUser(driverId);
   const trip = await Trip.findByPk(tripId);
   if (!trip) throw ApiErrors.notFound('TRIP_NOT_FOUND');
   if (trip.driverId !== driverId) throw ApiErrors.forbidden('YOU_CAN_ONLY_CANCEL_YOUR_OWN_TRIPS');
@@ -2680,6 +2701,8 @@ async function applyEscalation(penalty, driverId) {
  * Creates a penalty record and applies escalation logic.
  */
 async function cancelTripWithPenalty(driverId, tripId, { reason, note }) {
+  // Moderation gate: suspended/banned drivers cannot cancel trips.
+  await loadOperationalUser(driverId);
   const trip = await Trip.findByPk(tripId);
   if (!trip) throw ApiErrors.notFound('TRIP_NOT_FOUND');
   if (trip.driverId !== driverId) throw ApiErrors.forbidden('YOU_CAN_ONLY_CANCEL_YOUR_OWN_TRIPS');

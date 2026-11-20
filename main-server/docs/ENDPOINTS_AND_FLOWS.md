@@ -761,14 +761,17 @@
 ### [admin-15] POST /api/admin/dashboard/drivers/:driver_id/status — admin
 **Use:** set driver status from the dossier.
 **Request:** params `{driver_id}`; body `{status*: "active"|"suspended"|"pending"|"blocked"}`.
-**Response:** `200 {driver: {id, account_status}}`.
-**Watch out:** `409` no-op; audited.
+**Response:** `200 {driver: {id, account_status, status, verification_status, is_verified, is_suspended, is_banned, suspension_details, active_penalties[]}, inventory?}`.
+**Watch out:** `409` no-op; audited. `suspended`/`blocked` are routed through the penalty flow — an append-only `Penalty` row, localized `ACCOUNT_SUSPENDED`/`ACCOUNT_BANNED` notification (in-app + push + SMS), cancellation of live trips/bookings, socket enforcement `[sock-31]`/`[sock-32]`; `inventory` lists the cancelled trips/bookings when present. `active` closes open suspension/ban penalties and sends `ACCOUNT_REACTIVATED`.
 
 ### [admin-16] POST /api/admin/dashboard/drivers/:driver_id/account-status — admin
 **Use:** suspend / reactivate / unblock (standing actions).
 **Request:** params `{driver_id}`; body `{action*: "suspend"|"reactivate"|"unblock", reason (≤500, optional)}`.
-**Response:** `200 {driver: {id, account_status}}`.
+**Response:** `200 {driver: {id, account_status, status, verification_status, is_verified, is_suspended, is_banned, suspension_details, active_penalties[]}, inventory?}`.
 **Watch out:** suspend writes a suspension Penalty; `409` no-op; audited.
+
+### [admin-16b] Suspended-driver behavior (client report regression)
+A temp-stopped (suspended) driver keeps **read-only** access (bookings, earnings, stats, profile, penalties, complaints) but is blocked from every **mutating** driver action: publishing `403 SUSPENDED_ACCOUNTS_CANNOT_PERFORM_THIS_ACTION`, editing trips/stops, starting/completing/abandoning/cancelling trips, and submitting/attaching ride-request offers. Bans are blocked from reads too (`ACCOUNT_IS_BANNED`).
 
 ### [admin-17] POST /api/admin/dashboard/drivers/:driver_id/documents/:document_key/approve — admin
 **Use:** approve one document (`id_front|id_back|face_photo|license_front|license_back|registration_front|registration_back|insurance`).
@@ -810,7 +813,7 @@
 **Use:** change a user's enforcement status (+ optional reason notice).
 **Request:** params `{user_id}`; body `{status* ("active"|"warned"|"suspended"|"banned"), reason (≤500, optional)}`.
 **Response:** `200 {user: {id, status, updated_by}}`.
-**Watch out:** `404` missing; audited; in-app notice only when a reason is given (suspend/ban also revoke live sessions → `[sock-31]`/`[sock-32]`).
+**Watch out:** `404` missing; audited; every status change notifies the account owner — suspend/ban send the localized `ACCOUNT_SUSPENDED`/`ACCOUNT_BANNED` notification (in-app + push + SMS) and kick live sockets `[sock-31]`/`[sock-32]`, other transitions send an in-app `ADMIN_NOTICE` (reason included when provided).
 
 ### [mod-5] PUT /api/admin/trips/:trip_id — admin
 **Use:** moderate a trip (unpublish / block / restore).

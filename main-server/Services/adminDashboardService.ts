@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { Op, fn, col, literal } from 'sequelize';
 import sequelize from '../config/database';
-import { TRIP_STATUS, BOOKING_STATUS, COMPLAINT_STATUS, PENALTY_TYPES, VERIFICATION_STATUS } from '../config/constants';
+import { TRIP_STATUS, BOOKING_STATUS, COMPLAINT_STATUS, PENALTY_TYPES, VERIFICATION_STATUS, USER_STATUS } from '../config/constants';
 import { parsePagination, buildPagination } from '../utils/pagination';
 import { ApiErrors } from '../utils/ApiError';
 import { maskPhone } from '../utils/masking';
@@ -13,7 +13,6 @@ import { buildTripMapRoute } from './adminTripMapService';
 import { toAbsoluteMediaUrl } from '../utils/mediaUrl';
 import * as tripEventService from './tripEventService';
 import * as adminAuditService from './adminAuditService';
-import { revokeUserSessions } from './authService';
 
 // ===== Canonical document registry (data-model.md) =====
 const DOCUMENT_KEYS = {
@@ -82,6 +81,44 @@ function deriveAccountStatus(user) {
   if (Object.values(VERIFICATION_STATUS).includes(user.verificationStatus)
     && user.verificationStatus !== VERIFICATION_STATUS.APPROVED) return 'pending';
   return 'active';
+}
+
+/**
+ * Full account-state payload returned by the status-change endpoints so the
+ * dashboard/app can render the stopped state immediately (mirrors the driver
+ * GET /api/driver/account-status shape). `account_status` is the derived
+ * dashboard bucket; `status` is the canonical users.status enum.
+ */
+async function driverAccountState(driver) {
+  const now = new Date();
+  const activePenalties = await Penalty.findAll({
+    where: {
+      userId: driver.id,
+      startsAt: { [Op.lte]: now },
+      [Op.or]: [{ endsAt: null }, { endsAt: { [Op.gt]: now } }],
+    },
+    order: [['createdat', 'DESC']],
+  });
+  const suspension = activePenalties.find((p) => p.type === PENALTY_TYPES.SUSPENSION);
+  return {
+    id: driver.id,
+    account_status: deriveAccountStatus(driver),
+    status: driver.status,
+    verification_status: driver.verificationStatus,
+    is_verified: driver.isVerified === true,
+    is_suspended: driver.status === USER_STATUS.SUSPENDED,
+    is_banned: driver.status === USER_STATUS.BANNED,
+    suspension_details: suspension
+      ? { reason: suspension.reason, starts_at: suspension.startsAt, ends_at: suspension.endsAt }
+      : null,
+    active_penalties: activePenalties.map((p) => ({
+      id: p.id,
+      type: p.type,
+      reason: p.reason,
+      created_at: p.createdat || p.createdAt || null,
+      expires_at: p.endsAt || null,
+    })),
+  };
 }
 
 function bucketWhereFor(statusFilter) {
@@ -1259,31 +1296,61 @@ async function setDriverStatus(adminId, driverId, requestedStatus) {
 
   const originalVerification = driver.verificationStatus;
   const updates = {};
+  let inventory = null;
   if (requestedStatus === 'active') updates.status = 'active';
-  if (requestedStatus === 'suspended') updates.status = 'suspended';
-  if (requestedStatus === 'blocked') updates.status = 'banned';
   if (requestedStatus === 'pending') {
     updates.status = 'active';
     updates.verificationStatus = VERIFICATION_STATUS.PENDING;
   }
 
-  await driver.update(updates);
+  if (requestedStatus === 'suspended' || requestedStatus === 'blocked') {
+    // Route the direct status write through penaltyService so the driver is
+    // actually told about the stop: a localized ACCOUNT_SUSPENDED/ACCOUNT_BANNED
+    // notification (in-app + push + SMS), removal of current/future inventory,
+    // and realtime enforcement that kicks live sockets — parity with the
+    // standing action below. Without this the quick status write was silent
+    // and the app had no way to learn the account is stopped.
+    const result = await penaltyService.issue(adminId, {
+      user_id: driverId,
+      type: requestedStatus === 'suspended' ? PENALTY_TYPES.SUSPENSION : PENALTY_TYPES.BAN,
+      reason: requestedStatus === 'suspended'
+        ? 'Account suspended from the dashboard'
+        : 'Account blocked from the dashboard',
+      ...(requestedStatus === 'suspended' ? { allow_open_suspension: true } : {}),
+    });
+    inventory = result.inventory || null;
+  } else {
+    await driver.update(updates);
 
-  if (requestedStatus === 'blocked') {
-    try {
-      await revokeUserSessions(driverId);
-    } catch (err) {
-      console.warn('[adminDashboardService] session revocation failed:', err.message);
+    if (requestedStatus === 'active') {
+      // Close any open-ended suspension/ban penalties and tell the driver
+      // their account is running again (parity with the standing action).
+      await Penalty.update(
+        { endsAt: new Date() },
+        { where: { userId: driverId, type: { [Op.in]: [PENALTY_TYPES.SUSPENSION, PENALTY_TYPES.BAN] }, endsAt: null } }
+      );
+      try {
+        await notificationService.sendToUser(await driver.reload(), 'ACCOUNT_REACTIVATED', {
+          channels: ['in_app', 'push', 'sms'],
+          data: { source: 'admin_driver_status' },
+        });
+      } catch (err) {
+        console.warn('[adminDashboardService] reactivation notification failed:', err.message);
+      }
     }
   }
+
+  const freshDriver = await driver.reload();
 
   await adminAuditService.record({
     actorId: adminId,
     userId: driverId,
     action: 'status_changed',
     before: { account_status: currentDerived, verification_status: originalVerification },
-    after: { account_status: requestedStatus, verification_status: updates.verificationStatus || originalVerification },
-    reason: 'Status changed from the dashboard',
+    after: { account_status: deriveAccountStatus(freshDriver), verification_status: updates.verificationStatus || originalVerification },
+    reason: requestedStatus === 'suspended' || requestedStatus === 'blocked'
+      ? 'Status changed from the dashboard via penalty'
+      : 'Status changed from the dashboard',
     source: 'admin_driver_status',
   });
 
@@ -1297,7 +1364,10 @@ async function setDriverStatus(adminId, driverId, requestedStatus) {
     });
   }
 
-  return { driver: { id: driver.id, account_status: deriveAccountStatus(await driver.reload()) } };
+  return {
+    driver: await driverAccountState(freshDriver),
+    ...(inventory ? { inventory } : {}),
+  };
 }
 
 async function applyStandingAction(adminId, driverId, action, reason) {
@@ -1349,7 +1419,7 @@ async function applyStandingAction(adminId, driverId, action, reason) {
   });
 
   return {
-    driver: { id: driver.id, account_status: deriveAccountStatus(await driver.reload()) },
+    driver: await driverAccountState(await driver.reload()),
     ...(inventory ? { inventory } : {}),
   };
 }

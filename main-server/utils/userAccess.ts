@@ -34,20 +34,34 @@ export function ensureOperational(user: UserLike): void {
   }
 }
 
-const userAccess = { loadDriverUser, ensureReadable, ensureOperational };
+/**
+ * Load the account row and require it to be operational (not banned or
+ * suspended). Use in driver write flows (publish/edit/start/complete/cancel
+ * trips, submit offers) so a moderation stop gates every mutating action
+ * while read-only access stays available.
+ */
+export async function loadOperationalUser(userId: string): Promise<UserLike> {
+  const user = await loadDriverUser(userId);
+  ensureOperational(user);
+  return user;
+}
+
+const userAccess = { loadDriverUser, ensureReadable, ensureOperational, loadOperationalUser };
 export default userAccess;
 
 // CommonJS interop
 // @ts-ignore
 if (typeof module !== 'undefined' && module.exports) {
   // @ts-ignore
-  module.exports = { loadDriverUser, ensureReadable, ensureOperational };
+  module.exports = { loadDriverUser, ensureReadable, ensureOperational, loadOperationalUser };
   // @ts-ignore
   module.exports.loadDriverUser = loadDriverUser;
   // @ts-ignore
   module.exports.ensureReadable = ensureReadable;
   // @ts-ignore
   module.exports.ensureOperational = ensureOperational;
+  // @ts-ignore
+  module.exports.loadOperationalUser = loadOperationalUser;
   // @ts-ignore
   module.exports.default = userAccess;
 }

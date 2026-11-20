@@ -114,7 +114,9 @@ async function closeOutStaleTrip(trip, result) {
       const lastActivity = lastPoint?.createdat || trip.startedAt || trip.departureTime;
       const idleMinutes = (Date.now() - new Date(lastActivity).getTime()) / 60000;
       if (idleMinutes >= TRIP_ABANDON_AFTER_MINUTES) {
-        await abandonTrip(trip.driverId, trip.id, 'no_driver_activity');
+        // System lifecycle close-out: bypasses the driver moderation gate so
+        // a suspended/banned driver's stale trip still reaches a terminal state.
+        await abandonTrip(trip.driverId, trip.id, 'no_driver_activity', { system: true });
         result.abandoned.push(trip.id);
         auditService.track({
           action: 'trip.auto_abandoned',

@@ -2,6 +2,7 @@
 import { Op } from 'sequelize';
 import { Booking, Trip, User, TripSeat, TripStop, TripAttribute, Rating, Vehicle, DriverProfile, sequelize } from '../Models';
 import { ApiErrors } from '../utils/ApiError';
+import { ensureOperational, loadDriverUser } from '../utils/userAccess';
 import { parsePagination, buildPagination } from '../utils/pagination';
 import { hasTripDeparted, canRateBooking } from '../utils/tripSchedule';
 import { maskPhone } from '../utils/masking';
@@ -1033,6 +1034,9 @@ async function startRide(actorId, bookingId) {
     throw ApiErrors.forbidden('YOU_CAN_ONLY_CONFIRM_YOUR_OWN_RIDE');
   }
   const actorRole = isPassenger ? 'passenger' : 'driver';
+  // Moderation gate applies to the driver side only — passengers keep their
+  // own confirmation path even when the driver's account is stopped.
+  if (actorRole === 'driver') ensureOperational(await loadDriverUser(actorId));
   if (booking.status === BOOKING_STATUS.CANCELLED || booking.status === BOOKING_STATUS.NO_SHOW) {
     throw ApiErrors.custom('RIDE_IS_NOT_ACTIVE', 409, 'RIDE_IS_NOT_ACTIVE');
   }
@@ -1105,6 +1109,9 @@ async function endRide(actorId, bookingId) {
     throw ApiErrors.forbidden('YOU_CAN_ONLY_CONFIRM_YOUR_OWN_RIDE');
   }
   const actorRole = isPassenger ? 'passenger' : 'driver';
+  // Moderation gate applies to the driver side only — passengers keep their
+  // own confirmation path even when the driver's account is stopped.
+  if (actorRole === 'driver') ensureOperational(await loadDriverUser(actorId));
   const tripStatus = booking.trip ? booking.trip.status : null;
   if ([TRIP_STATUS.CANCELLED, TRIP_STATUS.ABANDONED].includes(tripStatus)) {
     throw ApiErrors.custom('TRIP_IS_NO_LONGER_ACTIVE', 409, 'TRIP_IS_NO_LONGER_ACTIVE');

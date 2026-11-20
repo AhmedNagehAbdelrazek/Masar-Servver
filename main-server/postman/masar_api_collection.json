@@ -21093,7 +21093,7 @@
                         "status"
                       ]
                     },
-                    "description": "Directly set a driver's account status.\n\n**Path parameter:**\n- `driver_id` *(UUID, required)*.\n\n**Body fields:**\n- `status` *(string, required)* â€” `active|suspended|pending|blocked`. Invalid value returns 422 `VALIDATION_FAILED`."
+                    "description": "Directly set a driver's account status.\n\n**Path parameter:**\n- `driver_id` *(UUID, required)*.\n\n**Body fields:**\n- `status` *(string, required)* â€” `active|suspended|pending|blocked`. Invalid value returns 422 `VALIDATION_FAILED`.\n\n**Response:** `driver` carries the full account state — `account_status` (derived dashboard bucket), `status` (canonical `active|warned|suspended|banned` enum), `verification_status`, `is_verified`, `is_suspended`, `is_banned`, `suspension_details` (`{reason, starts_at, ends_at}` or null) and `active_penalties[]`. `suspended`/`blocked` are routed through the penalty flow (appended penalty row + localized ACCOUNT_SUSPENDED/ACCOUNT_BANNED notification + live inventory cancellation + socket enforcement); `active` closes open suspension/ban penalties and sends ACCOUNT_REACTIVATED. `inventory` (`{trips_cancelled, bookings_cancelled}`) is included when trips/bookings were cancelled."
                   },
                   "response": [
                     {
@@ -21134,7 +21134,7 @@
                         }
                       ],
                       "cookie": [],
-                      "body": "{\n  \"driver\": {\n    \"id\": \"d1\",\n    \"account_status\": \"active\"\n  }\n}"
+                      "body": "{\n  \"driver\": {\n    \"id\": \"d1\",\n    \"account_status\": \"active\",\n    \"status\": \"active\",\n    \"verification_status\": \"approved\",\n    \"is_verified\": true,\n    \"is_suspended\": false,\n    \"is_banned\": false,\n    \"suspension_details\": null,\n    \"active_penalties\": []\n  }\n}"
                     },
                     {
                       "name": "Validation Failed",
@@ -21235,7 +21235,7 @@
                         "account-status"
                       ]
                     },
-                    "description": "Standing-action alias for driver status transitions.\n\n**Path parameter:**\n- `driver_id` *(UUID, required)*.\n\n**Body fields:**\n- `action` *(string, required)* â€” `suspend` (â†’ suspended + penalty row; sends in-app + push + SMS and cancels current/future trips/bookings), `reactivate` (â†’ active, close open suspensions and bans), `unblock` (â†’ active, close open suspensions and bans).\n- `reason` *(string, optional)* â€” note appended to the account log."
+                    "description": "Standing-action alias for driver status transitions.\n\n**Path parameter:**\n- `driver_id` *(UUID, required)*.\n\n**Body fields:**\n- `action` *(string, required)* â€” `suspend` (â†’ suspended + penalty row; sends in-app + push + SMS and cancels current/future trips/bookings), `reactivate` (â†’ active, close open suspensions and bans), `unblock` (â†’ active, close open suspensions and bans).\n- `reason` *(string, optional)* â€” note appended to the account log.\n\n**Response:** same account-state shape as `POST .../status` — `driver` includes `account_status`, `status`, `verification_status`, `is_verified`, `is_suspended`, `is_banned`, `suspension_details` and `active_penalties[]`, plus `inventory` (`{trips_cancelled, bookings_cancelled}`) when a suspend cancelled trips/bookings."
                   },
                   "response": [
                     {
@@ -21276,7 +21276,7 @@
                         }
                       ],
                       "cookie": [],
-                      "body": "{\n  \"driver\": {\n    \"id\": \"d1\",\n    \"account_status\": \"suspended\"\n  }\n}"
+                      "body": "{\n  \"driver\": {\n    \"id\": \"d1\",\n    \"account_status\": \"suspended\",\n    \"status\": \"suspended\",\n    \"verification_status\": \"approved\",\n    \"is_verified\": true,\n    \"is_suspended\": true,\n    \"is_banned\": false,\n    \"suspension_details\": {\n      \"reason\": \"Policy violation\",\n      \"starts_at\": \"2026-11-20T10:00:00.000Z\",\n      \"ends_at\": null\n    },\n    \"active_penalties\": [\n      {\n        \"id\": \"p1\",\n        \"type\": \"suspension\",\n        \"reason\": \"Policy violation\",\n        \"created_at\": \"2026-11-20T10:00:00.000Z\",\n        \"expires_at\": null\n      }\n    ]\n  },\n  \"inventory\": {\n    \"trips_cancelled\": 1,\n    \"bookings_cancelled\": 2\n  }\n}"
                     }
                   ]
                 },

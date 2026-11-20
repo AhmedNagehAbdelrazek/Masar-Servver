@@ -71,7 +71,7 @@ in `nest-server` (verify against `*_spec.ts` suites before wiring).
 | الرحلات (+ status/month filters) | `GET .../trips?status=all\|pending\|active\|completed\|canceled&month=YYYY-MM` |
 | التقييمات | `GET .../evaluations?page=&limit=` |
 | إيقاف نهائي / إيقاف مؤقت buttons, رفع إيقاف | `POST .../account-status { action: suspend\|reactivate\|unblock, reason? }` (lift closes open suspensions **and** bans) |
-| Set raw status | `POST .../status { status: active\|suspended\|pending\|blocked }` |
+| Set raw status | `POST .../status { status: active\|suspended\|pending\|blocked }` — `suspended`/`blocked` are routed through the penalty flow: appended `Penalty` row, localized `ACCOUNT_SUSPENDED`/`ACCOUNT_BANNED` notification (in-app + push + SMS), live inventory cancelled, sockets kicked; `active` closes open suspension/ban penalties and sends `ACCOUNT_REACTIVATED`. Response also includes `inventory` when trips/bookings were cancelled. |
 | إرسال إشعار modal — design: `...?node-id=9928-23297&t=ZET6iEIpKjTo9vnq-4` | `POST .../notifications { title, body, type: trip\|general\|account\|verification\|package }` |
 | إرسال إنذار modal — design: `...?node-id=9991-20231&t=ZET6iEIpKjTo9vnq-4` | `POST /api/admin/penalties { user_id, type: "warning", reason, details? }` |
 | Temp-suspend modal — design: `...?node-id=9995-20963&t=ZET6iEIpKjTo9vnq-4` | `POST /api/admin/penalties { user_id, type: "suspension", reason, ends_at (ISO, required), details? }` |

@@ -1,6 +1,7 @@
 // @ts-nocheck
 import { Op } from 'sequelize';
 import { ApiErrors } from '../utils/ApiError';
+import { ensureOperational, loadOperationalUser } from '../utils/userAccess';
 import { parsePagination, buildPagination } from '../utils/pagination';
 import { hasTripDeparted } from '../utils/tripSchedule';
 import { maskPhone } from '../utils/masking';
@@ -354,6 +355,8 @@ async function submitOffer(driverId, requestId, payload) {
 
   const driver = await User.findByPk(driverId);
   if (!driver) throw ApiErrors.notFound('USER_NOT_FOUND');
+  // Moderation gate: suspended/banned drivers cannot submit offers.
+  ensureOperational(driver);
 
   const request = await RideRequest.findByPk(requestId);
   if (!request) throw ApiErrors.notFound('RIDE_REQUEST_NOT_FOUND');
@@ -709,6 +712,8 @@ async function agreeOfferPrice(passengerId, offerId, agreedFare) {
  * attaches the offer to one of their trips.
  */
 async function attachOfferToTrip(driverId, tripId, offerId, payload = {}) {
+  // Moderation gate: suspended/banned drivers cannot attach offers.
+  await loadOperationalUser(driverId);
   const offer = await RequestOffer.findByPk(offerId, {
     include: [
       { model: RideRequest, as: 'rideRequest' },
