@@ -489,14 +489,14 @@
 ### [profile-1] GET /api/profile/passenger — passenger
 **Use:** profile screen header.
 **Request:** none.
-**Response:** `200 {passenger_profile: {full_name, age, gender, phone, national_id, home_address}}`.
-**Watch out:** auto-creates an empty row on first read.
+**Response:** `200 {passenger_profile: {full_name, age, gender, phone, avatar_url, national_id, home_address}}`.
+**Watch out:** auto-creates an empty row on first read. `avatar_url` is the raw stored value; prefix the API origin when it starts with `/uploads/`.
 
 ### [profile-2] PUT /api/profile/passenger — passenger
-**Use:** edit profile / preferences form.
-**Request:** body `{preferred_gender ("male"|"female"|"any"), smoking_preference, national_id (5–30), home_address, saved_routes (array), emergency_contacts (array)}`.
-**Response:** `200 {passenger_profile: {...}}`.
-**Watch out:** at least one field required (`400` otherwise).
+**Use:** edit profile / preferences form and profile picture.
+**Request:** body `{preferred_gender ("male"|"female"|"any"), smoking_preference, avatar_url (string|null), national_id (5–30), home_address, saved_routes (array), emergency_contacts (array)}`. Upload first with `POST /api/upload` and pass its `url` as `avatar_url`; `null` removes the picture.
+**Response:** `200 {passenger_profile: {..., avatar_url}}`.
+**Watch out:** at least one field required (`422` otherwise). Avatar-only updates do not change verification status.
 
 ### [profile-3] GET /api/profile/passenger/account-summary — passenger
 **Use:** account-health / safety screen (counts only).

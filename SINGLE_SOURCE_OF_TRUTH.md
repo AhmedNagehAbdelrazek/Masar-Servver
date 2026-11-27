@@ -458,6 +458,10 @@ Started by `startJobs()` after boot (`jobs/index.js`). Worker thread (`worker.js
 
 **What it does:** `POST /ratings` unlocks for both sides **once the trip starts** (`in_progress|ongoing|completed|abandoned`, booking not `pending|cancelled`) — the passenger no longer must tap "end ride" first and the driver no longer must complete the trip first; idempotency unchanged. `POST /bookings/:booking_id/ride/start|end` accept the booking's passenger **or the trip's driver** (`confirmed_by: passenger|driver` in the body/response and `tracking:ride_status`): the driver confirms boarding/finish on behalf of a passenger who forgot to tap. Driver-side `ride/end` implies boarding when `passenger_started_at` is unset (sets it), is rejected for `cancelled` bookings and `no_show` passengers. `POST /trips/:id/confirm-passengers` with `was_on_trip: true` also sets `passenger_ended_at` (closing the post-trip `awaiting_end` state). `passenger_can_rate`/`driver_can_rate` payload flags now reflect the new rule (equal, trip-started based). No schema change (`035` columns reused); keys `TRIP_MUST_START_BEFORE_RATING`, `BOOKING_IS_NOT_ACTIVE`, `PASSENGER_IS_MARKED_AS_NO_SHOW` + ride-confirmation keys added to the message catalog (they previously rendered as raw keys).
 
+### Post-013 hotfix — passenger profile pictures
+
+**What it does:** `PUT /profile/passenger` now accepts `avatar_url` (string or `null`) in addition to the existing preference/identity fields. It persists to `users.avatar_url`, returns the saved value in `passenger_profile.avatar_url`, and is also exposed by `GET /profile/passenger`. Avatar-only updates are valid and never change passenger verification; only `national_id|home_address` changes retain the existing re-verification behavior. Upload remains the shared `POST /upload` multipart flow. No schema change. Guide: `docs/PROFILE_PICTURE_GUIDE.md`; Postman passenger GET/PUT examples updated.
+
 ---
 
 ## 17. Route Mount Table

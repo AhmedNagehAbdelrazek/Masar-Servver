@@ -14444,7 +14444,7 @@
                     "passenger"
                   ]
                 },
-                "description": "Returns the caller's passenger personal data: full_name, age, phone, and national_id. The national_id is read from the passenger profile (created lazily on first access) and can be set via PUT /profile/passenger with { national_id }. Passenger only.\n\n**200** `{ passenger_profile: { full_name, age, phone, national_id } }`."
+                "description": "Returns the caller's passenger personal data: full_name, age, gender, phone, avatar_url, national_id, and home_address. The avatar_url is the raw users.avatar_url value (an absolute provider URL or a relative /uploads path). Passenger only.\n\n**200** `{ passenger_profile: { full_name, age, gender, phone, avatar_url, national_id, home_address } }`."
               },
               "response": [
                 {
@@ -14473,7 +14473,7 @@
                         "passenger"
                       ]
                     },
-                    "description": "Returns the caller's passenger personal data: full_name, age, phone, and national_id. The national_id is read from the passenger profile (created lazily on first access) and can be set via PUT /profile/passenger with { national_id }. Passenger only.\n\n**200** `{ passenger_profile: { full_name, age, phone, national_id } }`."
+                    "description": "Returns the caller's passenger personal data: full_name, age, gender, phone, avatar_url, national_id, and home_address. The avatar_url is the raw users.avatar_url value (an absolute provider URL or a relative /uploads path). Passenger only.\n\n**200** `{ passenger_profile: { full_name, age, gender, phone, avatar_url, national_id, home_address } }`."
                   },
                   "status": "OK",
                   "code": 200,
@@ -14486,7 +14486,7 @@
                     }
                   ],
                   "cookie": [],
-                  "body": "{\n  \"passenger_profile\": {\n    \"full_name\": \"Ahmad Masar\",\n    \"age\": 28,\n    \"gender\": \"male\",\n    \"phone\": \"+962790000000\",\n    \"national_id\": \"9871234567\",\n    \"home_address\": \"Amman, Jabal Amman\"\n  }\n}"
+                  "body": "{\n  \"passenger_profile\": {\n    \"full_name\": \"Ahmad Masar\",\n    \"age\": 28,\n    \"gender\": \"male\",\n    \"phone\": \"+962790000000\",\n    \"avatar_url\": \"/uploads/ahmad-avatar.jpg\",\n    \"national_id\": \"9871234567\",\n    \"home_address\": \"Amman, Jabal Amman\"\n  }\n}"
                 }
               ]
             },
@@ -14537,7 +14537,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"preferred_gender\": \"female\",\n  \"smoking_preference\": \"non_smoking\",\n  \"national_id\": \"9871234567\",\n  \"home_address\": \"Amman, Jabal Amman\",\n  \"saved_routes\": [\n    {\n      \"label\": \"Home weekends\",\n      \"origin\": \"Amman\",\n      \"destination\": \"Irbid\"\n    }\n  ],\n  \"emergency_contacts\": [\n    {\n      \"name\": \"Mother\",\n      \"phone\": \"+962791111111\"\n    }\n  ]\n}",
+                  "raw": "{\n  \"preferred_gender\": \"female\",\n  \"smoking_preference\": \"non_smoking\",\n  \"avatar_url\": \"/uploads/ahmad-avatar.jpg\",\n  \"national_id\": \"9871234567\",\n  \"home_address\": \"Amman, Jabal Amman\",\n  \"saved_routes\": [\n    {\n      \"label\": \"Home weekends\",\n      \"origin\": \"Amman\",\n      \"destination\": \"Irbid\"\n    }\n  ],\n  \"emergency_contacts\": [\n    {\n      \"name\": \"Mother\",\n      \"phone\": \"+962791111111\"\n    }\n  ]\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -14554,7 +14554,7 @@
                     "passenger"
                   ]
                 },
-                "description": "Partial update of ride preferences."
+                "description": "Partial update of ride preferences and profile picture. `avatar_url` accepts the `url` returned by `POST /upload`, or `null` to remove the picture. Avatar-only updates do not affect passenger verification."
               },
               "response": [
                 {
@@ -14575,7 +14575,7 @@
                     ],
                     "body": {
                       "mode": "raw",
-                      "raw": "{\n  \"preferred_gender\": \"female\",          // male | female | any\n  \"smoking_preference\": \"non_smoking\",   // no_preference | non_smoking | smoking_allowed\n  \"saved_routes\": [\n    {\"label\": \"Home weekends\", \"origin\": \"Amman\", \"destination\": \"Irbid\"}\n  ],\n  \"emergency_contacts\": [\n    {\"name\": \"Mother\", \"phone\": \"+962791111111\"}\n  ]\n}",
+                      "raw": "{\n  \"preferred_gender\": \"female\",          // male | female | any\n  \"smoking_preference\": \"non_smoking\",   // no_preference | non_smoking | smoking_allowed\n  \"avatar_url\": \"/uploads/ahmad-avatar.jpg\", // url from POST /upload, or null to remove\n  \"saved_routes\": [\n    {\"label\": \"Home weekends\", \"origin\": \"Amman\", \"destination\": \"Irbid\"}\n  ],\n  \"emergency_contacts\": [\n    {\"name\": \"Mother\", \"phone\": \"+962791111111\"}\n  ]\n}",
                       "options": {
                         "raw": {
                           "language": "json"
@@ -14592,7 +14592,7 @@
                         "passenger"
                       ]
                     },
-                    "description": "Partial update of ride preferences."
+                    "description": "Partial update of ride preferences and profile picture. `avatar_url` accepts the `url` returned by `POST /upload`, or `null` to remove the picture. Avatar-only updates do not affect passenger verification."
                   },
                   "status": "OK",
                   "code": 200,
@@ -14605,10 +14605,10 @@
                     }
                   ],
                   "cookie": [],
-                  "body": "{\n  \"passenger_profile\": {\n    \"id\": \"d947d357-aaf0-4898-a3f2-72c4d04efbad\",\n    \"preferred_gender\": \"female\",\n    \"smoking_preference\": \"non_smoking\",\n    \"updated_at\": \"2026-08-22T05:12:44.900Z\"\n  }\n}"
+                  "body": "{\n  \"passenger_profile\": {\n    \"id\": \"d947d357-aaf0-4898-a3f2-72c4d04efbad\",\n    \"preferred_gender\": \"female\",\n    \"smoking_preference\": \"non_smoking\",\n    \"avatar_url\": \"/uploads/ahmad-avatar.jpg\",\n    \"updated_at\": \"2026-08-22T05:12:44.900Z\"\n  }\n}"
                 }
               ],
-              "description": "---\nBody variants & field notes (moved out of the request body so the body is valid JSON — copy back into the body to use):\nmale | female | any\nno_preference | non_smoking | smoking_allowed\n5-30 chars\nstring"
+              "description": "---\nBody variants & field notes (moved out of the request body so the body is valid JSON — copy back into the body to use):\nmale | female | any\nno_preference | non_smoking | smoking_allowed\navatar_url: string returned by POST /upload, or null to remove the picture\n5-30 chars\nstring"
             },
             {
               "name": "Get Passenger Account Summary",

@@ -26,6 +26,7 @@ function serializePersonal(user) {
     age: user.age != null ? Number(user.age) : null,
     gender: user.gender ?? null,
     phone: user.phone ?? null,
+    avatar_url: user.avatarUrl ?? null,
   };
 }
 
@@ -50,10 +51,13 @@ async function getMyProfile(passengerId) {
 }
 
 async function updateMyProfile(passengerId, payload) {
-  const [profile, created] = await PassengerProfile.findOrCreate({
-    where: { passengerId },
-    defaults: { passengerId },
-  });
+  const [[profile, created], user] = await Promise.all([
+    PassengerProfile.findOrCreate({
+      where: { passengerId },
+      defaults: { passengerId },
+    }),
+    User.findByPk(passengerId),
+  ]);
 
   const updates = {};
   if (payload.preferred_gender !== undefined) updates.preferredGender = payload.preferred_gender;
@@ -63,7 +67,8 @@ async function updateMyProfile(passengerId, payload) {
   if (payload.home_address !== undefined) updates.homeAddress = payload.home_address;
   if (payload.emergency_contacts !== undefined) updates.emergencyContacts = payload.emergency_contacts;
 
-  if (Object.keys(updates).length === 0) {
+  const avatarProvided = payload.avatar_url !== undefined;
+  if (Object.keys(updates).length === 0 && !avatarProvided) {
     throw ApiErrors.validation('NO_UPDATABLE_FIELDS_PROVIDED');
   }
 
@@ -71,12 +76,17 @@ async function updateMyProfile(passengerId, payload) {
     (payload.national_id !== undefined && payload.national_id !== profile.nationalID) ||
     (payload.home_address !== undefined && payload.home_address !== profile.homeAddress);
 
-  await profile.update(updates);
+  if (Object.keys(updates).length > 0) {
+    await profile.update(updates);
+  }
 
-  if (identityChanged) {
-    const user = await User.findByPk(passengerId);
-    if (user && user.role === 'passenger') {
-      await user.update({
+  if (user) {
+    const userUpdates = {};
+    if (avatarProvided) userUpdates.avatarUrl = payload.avatar_url;
+
+    // Avatar changes are cosmetic and never affect passenger verification.
+    if (identityChanged && user.role === 'passenger') {
+      Object.assign(userUpdates, {
         isVerified: false,
         verificationStatus: VERIFICATION_STATUS.PENDING,
         verificationSubmittedAt: new Date(),
@@ -84,6 +94,10 @@ async function updateMyProfile(passengerId, payload) {
         verificationRejectionReason: null,
         verificationRejectionFields: [],
       });
+    }
+
+    if (Object.keys(userUpdates).length > 0) {
+      await user.update(userUpdates);
     }
   }
 
@@ -94,12 +108,17 @@ async function updateMyProfile(passengerId, payload) {
     actorId: passengerId,
     actorType: 'passenger',
     payload: {
-      fields: Object.keys(updates),
+      fields: [...Object.keys(updates), ...(avatarProvided ? ['avatar_url'] : [])],
       created,
     },
   });
 
-  return { passenger_profile: serializeProfile(profile) };
+  return {
+    passenger_profile: {
+      ...serializeProfile(profile),
+      avatar_url: user?.avatarUrl ?? null,
+    },
+  };
 }
 
 /**

@@ -66,6 +66,9 @@ export const updatePassengerProfileValidation: ValidationChain[] = [
   body('smoking_preference')
     .optional()
     .isIn(['no_preference', 'non_smoking', 'smoking_allowed']).withMessage(V.SMOKING_PREFERENCE_MUST_BE_ONE_OF_NO_PREFERENCE_NON_SMOKING_SMOKING_ALLOWED),
+  body('avatar_url')
+    .optional({ nullable: true })
+    .isString().withMessage(V.AVATAR_URL_MUST_BE_A_STRING),
   body('national_id')
     .optional()
     .trim()

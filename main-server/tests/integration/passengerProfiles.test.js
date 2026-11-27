@@ -50,6 +50,7 @@ describe('US8 - passenger profile auto-creation', () => {
     expect(res.body.passenger_profile.phone).toBe(PASSENGER_PHONE);
     expect(res.body.passenger_profile.national_id).toBeNull();
     expect(res.body.passenger_profile.home_address).toBeNull();
+    expect(res.body.passenger_profile.avatar_url).toBeNull();
 
     const rows = await PassengerProfile.findAll({ where: { passengerId: PASSENGER_ID } });
     expect(rows.length).toBe(1);
@@ -155,6 +156,53 @@ describe('US8 - updating the passenger profile', () => {
       .put('/api/profile/passenger')
       .set('Authorization', `Bearer ${passengerToken}`)
       .send({ preferred_gender: 'robot' });
+
+    expect(res.status).toBe(422);
+  });
+
+  it('should update and clear the avatar without changing verification', async () => {
+    await User.update(
+      { verificationStatus: 'approved', isVerified: true },
+      { where: { id: PASSENGER_ID } },
+    );
+
+    const res = await getAgent()
+      .put('/api/profile/passenger')
+      .set('Authorization', `Bearer ${passengerToken}`)
+      .send({ avatar_url: '/uploads/passenger-avatar.jpg' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.passenger_profile.avatar_url).toBe('/uploads/passenger-avatar.jpg');
+
+    let stored = await User.findByPk(PASSENGER_ID);
+    expect(stored.avatarUrl).toBe('/uploads/passenger-avatar.jpg');
+    expect(stored.verificationStatus).toBe('approved');
+    expect(stored.isVerified).toBe(true);
+
+    const fetched = await getAgent()
+      .get('/api/profile/passenger')
+      .set('Authorization', `Bearer ${passengerToken}`);
+    expect(fetched.status).toBe(200);
+    expect(fetched.body.passenger_profile.avatar_url).toBe('/uploads/passenger-avatar.jpg');
+
+    const cleared = await getAgent()
+      .put('/api/profile/passenger')
+      .set('Authorization', `Bearer ${passengerToken}`)
+      .send({ avatar_url: null });
+
+    expect(cleared.status).toBe(200);
+    expect(cleared.body.passenger_profile.avatar_url).toBeNull();
+    stored = await User.findByPk(PASSENGER_ID);
+    expect(stored.avatarUrl).toBeNull();
+    expect(stored.verificationStatus).toBe('approved');
+    expect(stored.isVerified).toBe(true);
+  });
+
+  it('should reject a non-string avatar url', async () => {
+    const res = await getAgent()
+      .put('/api/profile/passenger')
+      .set('Authorization', `Bearer ${passengerToken}`)
+      .send({ avatar_url: 123 });
 
     expect(res.status).toBe(422);
   });
